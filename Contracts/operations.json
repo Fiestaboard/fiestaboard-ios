@@ -2145,8 +2145,8 @@
         "anonymous_when_auth_disabled"
       ],
       "scope": "board",
-      "side_effects": "none",
-      "replay": "safe_read",
+      "side_effects": "external",
+      "replay": "explicit_only",
       "web_sources": [
         {
           "path": "web/src/lib/api/pages.ts",
@@ -2159,7 +2159,7 @@
       ],
       "contract_status": "candidate",
       "verification_status": "schema_only",
-      "notes": "Web functions: getCurrentDisplay. Backend source: src/mcp_server.py:1760; src/pages/routes.py:126. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78). Current-display preview and board current-message are distinct states; preserve selected/scheduled/actual/held/silence fields separately."
+      "notes": "Web functions: getCurrentDisplay. Backend source: src/mcp_server.py:1760; src/pages/routes.py:126. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78). Current-display preview and board current-message are distinct states; preserve selected/scheduled/actual/held/silence fields separately. Page-type-dependent behavior: a template page with stored template returns raw template/metadata; single/composite (and fallback) pages force preview_page(force_refresh=True), fan out to plugin rendering and replace preview cache. src/pages/routes.py:167\u2013174; src/pages/service.py:849\u2013854. Conservative explicit replay because this GET can trigger provider work, not merely return stored state."
     },
     {
       "id": "post_pages_import",
@@ -2912,8 +2912,8 @@
         "anonymous_when_auth_disabled"
       ],
       "scope": "board",
-      "side_effects": "none",
-      "replay": "safe_read",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
       "web_sources": [
         {
           "path": "web/src/lib/api/schedules.ts",
@@ -2926,7 +2926,7 @@
       ],
       "contract_status": "candidate",
       "verification_status": "schema_only",
-      "notes": "Web functions: getActiveSchedule. Backend source: src/schedules/routes.py:202. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+      "notes": "Web functions: getActiveSchedule. Backend source: src/schedules/routes.py:202. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78). Includes get_temporary_override for the countdown payload; this clears and persists an expired override before returning, even when scheduling is disabled. src/schedules/routes.py:209; src/settings/service.py:2695\u20132716. Not a pure read; no automatic replay."
     },
     {
       "id": "get_schedules_settings",
