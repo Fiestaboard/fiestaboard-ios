@@ -13,7 +13,7 @@ python3 scripts/check-contracts.py
 python3 scripts/check-contracts.py --release-ready
 ```
 
-Default checker mode validates artifact integrity and explicitly says NOT release ready. Release readiness requires all declared blockers resolved, every parity row verified, every inventory operation runtime verified, internal operations supported, and a supported release with passed acceptance for auth, OAuth, conditional writes, operation fixtures, physical native verification, and proxy/ingress topology. Every acceptance category needs source-matching, repository-confined, hashed evidence. This checks evidence traceability and declared statuses; reviewers/CI must establish that evidence actually proves the acceptance criteria. Missing files and malformed references are errors. It needs only committed artifacts, not `.reference` or backend source.
+Default checker mode validates artifact integrity and explicitly says NOT release ready. Release readiness requires all declared blockers resolved, every parity row verified, every inventory operation runtime verified, every operation contract supported, and a supported release with passed acceptance for auth, OAuth, conditional writes, operation fixtures, physical native verification, and proxy/ingress topology. Every acceptance category needs source-matching, repository-confined, hashed evidence. This checks evidence traceability and declared statuses; reviewers/CI must establish that evidence actually proves the acceptance criteria. Missing files and malformed references are errors. It needs only committed artifacts, not `.reference` or backend source.
 
 ## Build/rebuild
 

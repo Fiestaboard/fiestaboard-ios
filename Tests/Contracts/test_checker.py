@@ -116,22 +116,37 @@ class CheckerTests(unittest.TestCase):
         self.docs['parity.json']['rows'][0]['operation_ids'] *= 2
         self.assertNotEqual(self.run_check().returncode, 0)
 
-    def test_fully_evidenced_release_ready_can_pass(self):
+    def make_release_ready(self):
         self.docs['snapshot.json']['blockers'] = []
         self.docs['supported-servers.json']['blockers'] = []
         self.docs['parity.json']['rows'][0]['implementation_status'] = 'verified'
         op = self.docs['operations.json']['operations'][0]
         op['verification_status'] = 'runtime_verified'
+        op['contract_status'] = 'supported'
         release = self.docs['supported-servers.json']['releases'][0]
         release['status'] = 'supported'
         release['acceptance'] = {key:'passed' for key in ['auth','oauth','conditional_writes','operation_fixtures','native_physical','topology']}
         evidence = b'synthetic fully verified release fixture; not product proof\n'
         (self.root/'proof.txt').write_bytes(evidence)
         release['evidence'] = [{'source_commit':SHA,'path':'proof.txt','sha256':hashlib.sha256(evidence).hexdigest(),'category':category} for category in release['acceptance']]
+        return release
+
+    def test_fully_evidenced_release_ready_can_pass(self):
+        release = self.make_release_ready()
         result = self.run_check('--release-ready')
         self.assertEqual(result.returncode,0,result.stderr)
         # A supported claim with only one acceptance category is insufficient.
         release['evidence'] = release['evidence'][:1]
+        self.assertNotEqual(self.run_check('--release-ready').returncode,0)
+
+    def test_public_blocked_contract_fails_release_readiness(self):
+        self.make_release_ready()
+        self.docs['operations.json']['operations'][0]['contract_status'] = 'blocked'
+        self.assertNotEqual(self.run_check('--release-ready').returncode,0)
+
+    def test_public_candidate_contract_fails_release_readiness(self):
+        self.make_release_ready()
+        self.docs['operations.json']['operations'][0]['contract_status'] = 'candidate'
         self.assertNotEqual(self.run_check('--release-ready').returncode,0)
 
     def test_integrity_message_does_not_claim_release_ready(self):

@@ -138,7 +138,7 @@ def check(root, release_ready=False):
     for label, doc in [('snapshot',snap),('supported-servers',support)]:
         require(isinstance(doc.get('blockers'), list) and all(isinstance(x,str) and x for x in doc.get('blockers', [])), f'{label}: blockers list required')
         blockers.extend(doc.get('blockers', []))
-    coverage_ready = all(r.get('implementation_status') == 'verified' for r in rows) and all(o.get('verification_status') == 'runtime_verified' and (o.get('surface') != 'internal' or o.get('contract_status') == 'supported') for o in operations)
+    coverage_ready = all(r.get('implementation_status') == 'verified' for r in rows) and all(o.get('verification_status') == 'runtime_verified' and o.get('contract_status') == 'supported' for o in operations)
     def valid_release_evidence(item):
         if not isinstance(item,dict) or item.get('source_commit') != sha or not isinstance(item.get('path'),str):
             return False
