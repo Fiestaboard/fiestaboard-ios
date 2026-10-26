@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "source_commit": "2ced809c8fe20d4ac6e5dc6603d691c8cb4e475a",
+  "scope": "sanitized expected subsets; ephemeral credentials and session identifiers excluded",
+  "modes": {
+    "enabled": {"enabled": true, "mode": "enabled", "first_run": false, "setup_required": true, "authenticated": false},
+    "disabled": {"enabled": false, "mode": "disabled", "first_run": false, "setup_required": false, "authenticated": false},
+    "undecided": {"enabled": true, "mode": "undecided", "first_run": true, "setup_required": true, "authenticated": false}
+  }
+}
