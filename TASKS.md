@@ -13,9 +13,9 @@ This is the durable task tracker. Full web-app feature parity is required before
 
 | ID | Deliverable | Status / owner | Dependencies / acceptance |
 | --- | --- | --- | --- |
-| C-01 | Per-board pause/resume, schedule enablement/defaults, restore controls and faithful demo outcomes | Implemented; Astra requested visible action feedback, fix in progress | Exact pinned API; immutable targets; no automatic write retry; host tests, build, Astra review |
-| E-01 | Lossless page document model, local draft persistence, native editor feasibility | Implemented; Astra requested scalar-exact Unicode handling, fix in progress | Preserve unknown fields/numbers/null/markup; no remote save before revision protocol |
-| W1-03 | Integrate C-01/E-01 into the app and review the wave | Integrated `ec55acf`; two Astra findings being fixed | Preserve user signing edits; device/Simulator compilation; manual UI matrix |
+| C-01 | Per-board pause/resume, schedule enablement/defaults, restore controls and faithful demo outcomes | Complete for bounded scope — Astra approved `be72a11` | Exact pinned API; immutable targets; no automatic write retry; host tests, build, Astra review |
+| E-01 | Lossless page document model, local draft persistence, native editor feasibility | Complete for bounded scope — Astra approved `be72a11` | Preserve unknown fields/numbers/null/markup; no remote save before revision protocol |
+| W1-03 | Integrate C-01/E-01 into the app and review the wave | Complete — built and Astra approved; interactive device checks remain | Preserve user signing edits; device/Simulator compilation; manual UI matrix |
 | P-01 | All-writer server revisions and conditional saves | In progress — Sol, page API foundation first; single backend draft PR authorized | Web/AI/import/restore/background writers; both save orders; isolated backend branch |
 | S-01 | Shared schema vocabulary, secret-preserving drafts and native forms | Queued | Required by display configuration and integrations |
 | R-01 | Complete LED/pixel/layer/white-board renderer and geometry fidelity | Queued | Shared golden fixtures; actual visual/device checks |
@@ -47,7 +47,7 @@ Partial means a subset exists in the draft; the checkbox stays open until the en
 - [ ] **home_state** — Partial draft. Read actual remembered output/external frame, selected page and collection resolution, currently scheduled page, silence/held state and service state independently.
 - [ ] **home_commands** — Partial draft. Explicit target board message send and restore, discard held send/external frame, service start/stop, force refresh; honor paused/silenced/held/refused/outcome-unknown distinctions.
 - [ ] **temporary_override** — Remaining. Temporary or indefinite page/collection/inline compose override, duration, revert to schedule/blank/page, read expiry and cancel/refresh.
-- [ ] **board_control** — Remaining. Per-board pause/resume, default page and schedule enablement through PATCH BoardDetail.
+- [ ] **board_control** — Partial draft. Per-board pause/resume, default page and schedule enablement through PATCH BoardDetail.
 - [ ] **board_configuration** — Remaining. List/add/remove output boards, credentials/API modes, geometry, primary selection, resize/retarget compatibility warnings and settings round trip.
 - [ ] **board_setup** — Remaining. Validate first-run setup, scan boards, test connection, enable local API, send welcome message; report scan/probe/device verdicts.
 - [ ] **output_catalog** — Remaining. Installed/available/catalog output discovery and marketplace install; unavailable registry/offline seed and network cases.
@@ -93,10 +93,10 @@ Partial means a subset exists in the draft; the checkbox stays open until the en
 - [ ] **panel_link_sharing** — Remaining. Copy/open a panel viewer URL, long and short viewer route
 - [ ] **panel_presentation** — Remaining. Fullscreen panel/TV display, animation/matrix/font/backdrop/auto-dim and sleep behavior
 - [ ] **page_library_navigation** — Partial draft. Library search/filter/sort/grid-list, geometry/device compatibility and duplicate actions
-- [ ] **editor_document** — Remaining. Rich/plain template editor, tokens/formulas, line alignment/wrap, colors/icons and cell editing
+- [ ] **editor_document** — Partial draft. Rich/plain template editor, tokens/formulas, line alignment/wrap, colors/icons and cell editing
 - [ ] **editor_charset** — Remaining. Character-set-aware visual cells, painting, geometry and LED formatting
-- [ ] **editor_drafts** — Remaining. Draft recovery, unsaved navigation protection and page/new editor state
-- [ ] **editor_undo** — Remaining. Undo/redo, local selection and keyboard editing across rich/plain/canvas controls
+- [ ] **editor_drafts** — Partial draft. Draft recovery, unsaved navigation protection and page/new editor state
+- [ ] **editor_undo** — Partial draft. Undo/redo, local selection and keyboard editing across rich/plain/canvas controls
 - [ ] **canvas_management** — Remaining. Up to eight canvases; add/remove/select and area, bleed, scale and flow
 - [ ] **canvas_draw** — Remaining. Draw brush/eraser/bucket/eyedropper, RGB palette, zoom/grid and accessible pixel cursor
 - [ ] **canvas_shapes** — Remaining. Shapes parameters, order and dynamic expressions
@@ -138,3 +138,5 @@ Partial means a subset exists in the draft; the checkbox stays open until the en
 - Backend API work is isolated at `../fiestaboard-ios-api` on `codex/ios-api-access`, based on clean upstream `3a1d6e8b6` (10.1.2). The user authorized one ongoing draft PR for native API gaps. The original dirty backend checkout is untouched. The iOS draft remains pinned to its audited 10.0.0 candidate writes; a newer server version is not implicitly trusted.
 
 - [Native API access audit](docs/research/2026-10-25-native-api-gaps.md): current web source is a static SPA using existing API routes; no additional hidden SSR data gap was demonstrated. Page preconditions are the first backend patch; native adapters cover most remaining access work.
+
+- Wave 1 approved by Astra at `be72a11`, after scalar-exact Unicode and visible control outcome/readback fixes. 29 Kit + 23 AppState + 22 Documents tests passed; unsigned Simulator/device builds and UI-test compilation passed. UI tests were not executed. See [wave verification](docs/research/2026-10-25-parity-wave-1-verification.md).
