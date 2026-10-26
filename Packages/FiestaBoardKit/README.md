@@ -24,4 +24,19 @@ env CLANG_MODULE_CACHE_PATH="$PWD/.build/clang" \
     swift test --package-path Packages/FiestaBoardKit --disable-sandbox --scratch-path .build/draft-core
 ```
 
-Fixtures are synthetic, hand-authored from the pinned v10 contracts and source, not recordings from physical hardware. Endpoint provenance is recorded in the D1 report.
+Fixtures are synthetic, hand-authored from the pinned v10 contracts and source, not recordings from physical hardware. The adapter is grounded in archived FiestaBoard commit `2ced809c8fe20d4ac6e5dc6603d691c8cb4e475a`, the [pinned public schema](../../Contracts/public-openapi.json), and the [pinned internal schema](../../Contracts/mobile-internal-openapi.json). `/api` is the proxy prefix added after the deployment prefix; the paths below are schema paths.
+
+| Method and schema path | Exact pinned source | Bounded use |
+| --- | --- | --- |
+| `GET /auth/status` | `src/auth/routes.py:259`, `src/auth/routes.py:39` | Auth/setup state projection; no setup writes |
+| `POST /auth/login` | `src/auth/routes.py:346`, `src/auth/routes.py:54` | Username/password; `remember_me:false` |
+| `POST /auth/logout` | `src/auth/routes.py:370` | Revoke current cookie session |
+| `GET /version` | `src/system/routes.py:85`, `src/system/models.py:14` | Running version and exact candidate gate |
+| `GET /v1/boards` | `src/v1/routes_boards.py:102`, `src/v1/models.py:33` | Board IDs, geometry, output profile |
+| `GET /v1/boards/{board}` | `src/v1/routes_boards.py:126`, `src/v1/models.py:84` | Server-reported output/selection projection |
+| `GET /v1/pages` | `src/v1/routes_content.py:52`, `src/pages/models.py:355` | Read-only library projection |
+| `GET /v1/pages/{page_id}` | `src/v1/routes_content.py:83`, `src/pages/models.py:114` | Read-only page projection |
+| `POST /v1/boards/{board}/message` | `src/v1/routes_boards.py:398`, `src/v1/models.py:190,298` | Only `{ "text": ... }`; no override flags |
+| `PUT /v1/boards/{board}/active-page` | `src/v1/routes_boards.py:743`, `src/v1/models.py:362,377` | Only `{ "page_id": ... }`; stored selection vs immediate send |
+
+The [web operation inventory](../../Contracts/operations.json) records exact web-client calls. Its auth/version/page/message entries were inspected. The board-list/detail and active-page routes are canonical public native alternatives grounded in the pinned schema/source; their absence from that web-call inventory is not a claim of runtime verification. All Swift fixtures are synthetic, and the native adapter remains a draft candidate.
