@@ -29,3 +29,24 @@ The generated project retains `CODE_SIGN_STYLE = Automatic` and blank `DEVELOPME
 ## Limits
 
 No signing configuration on main was touched. Builds use `CODE_SIGNING_ALLOWED=NO`. No live server, hardware, simulator execution, UI test execution or visual QA is claimed. UI source targets an iPhone-sized navigation surface. Runtime checks remain necessary for rotation/iPad widths, keyboard/IME, accessibility, local recovery and connection-loss dismissal. This wave supplies bounded local drafts and board controls; it does not deliver full web parity, server page publishing, schedule editing, plugins, administration or pixel rendering.
+
+## Astra review follow-up: controls status and readback
+
+The P2 finding was confirmed against the view composition: Home displayed `store.message` and pending/readback state, while its Board controls destination contained only the disabled mutation Section. The destination now has two independent Sections before the controls:
+
+- Connection/action status reuses the visible connection banner, including pending progress and result/error text. Read-only users see the exact-version/explicit-opt-in explanation.
+- Readback shows an explicit prompt when another action requires a refresh and supplies **Refresh board state** outside the disabled mutation Section. Refresh stays available after an uncertain outcome; it is disabled only while busy/refreshing/connecting or without a selected connected target. The copy states that refresh does not repeat the previous action.
+
+Added UI test source using existing demo behavior: an unknown PATCH must show its uncertain result and readable readback prompt while controls remain disabled, then recover through refresh without replay; a restore while paused must show its refusal on the same destination. Existing store/transport mutation and readback gates are unchanged. The UI test source is compiled, not executed.
+
+Final combined validation ran after the Unicode owner committed `47f96b8`. That fix adds no native production file, so the existing generated project memberships remain correct and no regeneration was needed.
+
+| Command/check | Result | Evidence |
+| --- | --- | --- |
+| `scripts/build-draft.sh simulator` | Exit 0; `BUILD SUCCEEDED` | `integration-reviewfix-simulator.log` |
+| `scripts/build-draft.sh device` | Exit 0; `BUILD SUCCEEDED` | `integration-reviewfix-device.log` |
+| `xcodebuild -project FiestaBoard.xcodeproj -scheme FiestaBoard -destination 'generic/platform=iOS Simulator' -derivedDataPath "$PWD/.build/draft-derived" CODE_SIGNING_ALLOWED=NO build-for-testing` | Exit 0; `TEST BUILD SUCCEEDED` | `integration-reviewfix-uitest-compile.log` |
+| Log inspection | Zero Swift source warnings/errors in all three final logs | Python assertions over final logs |
+| `git diff --check` | Exit 0 | No whitespace errors |
+
+No simulator/device UI execution, main-worktree/signing change, live service call or hardware action occurred. Runtime visibility, scrolling and UI interaction checks remain unexecuted in this environment.

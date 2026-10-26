@@ -151,8 +151,7 @@ struct DraftScene: View {
                                     NavigationLink { pageChooser } label: { Label("Choose a page", systemImage: "rectangle.stack") }
                                         .buttonStyle(.bordered).disabled(!store.canWrite)
                                     NavigationLink {
-                                        Form { BoardControlsView(store: store) }
-                                            .navigationTitle("Board controls")
+                                        boardControlsDestination
                                     } label: { Label("Board controls", systemImage: "slider.horizontal.3") }
                                         .buttonStyle(.bordered)
                                         .accessibilityIdentifier("boardControlsEntry")
@@ -165,6 +164,29 @@ struct DraftScene: View {
             .navigationTitle("FiestaBoard")
             .toolbar { ToolbarItem(placement: .primaryAction) { refreshButton } }
         }
+    }
+    private var boardControlsDestination: some View {
+        Form {
+            Section("Connection & action status") {
+                connectionBanner
+                if store.status?.access == .readOnly {
+                    Text("This connection is read-only. See Settings to review the exact server version gate and explicitly enable draft controls when available.")
+                        .font(.callout).foregroundStyle(.secondary)
+                }
+            }
+            Section("Read current board state") {
+                if store.needsReadback && !store.commandBusy {
+                    Text("Refresh the board state before another action. Refresh reads current state and never repeats the previous action.")
+                        .foregroundStyle(.orange)
+                        .accessibilityIdentifier("controlReadbackPrompt")
+                }
+                Button("Refresh board state") { store.refresh() }
+                    .disabled(store.refreshing || store.commandBusy || store.connecting || store.status == nil || store.selectedBoardID == nil)
+                    .accessibilityIdentifier("refreshBoardControls")
+            }
+            BoardControlsView(store: store)
+        }
+        .navigationTitle("Board controls")
     }
     private var boardPicker: some View {
         Picker("Display", selection: Binding(get: { store.selectedBoardID ?? "" }, set: { store.selectBoard($0) })) {
@@ -247,6 +269,7 @@ struct DraftScene: View {
                 if store.status?.isDemo == true {
                     Section("Simulate an outcome") {
                         Picker("Next action", selection: $demoMode) { ForEach(DemoSimulation.allCases, id: \.self) { Text($0.rawValue.capitalized).tag($0) } }
+                            .accessibilityIdentifier("demoOutcomePicker")
                         Text("Demonstrate held, partial, rejected and unknown results without hardware.").font(.footnote)
                     }.onChange(of: demoMode) { _, value in if let demo { Task { await demo.setSimulation(value) } } }
                 } else {
