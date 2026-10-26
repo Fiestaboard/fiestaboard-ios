@@ -1,0 +1,52 @@
+{
+  "id": "board-2",
+  "name": "Demo Kitchen",
+  "device_type": "panel",
+  "rows": 2,
+  "cols": 4,
+  "is_primary": true,
+  "paused": false,
+  "schedule_enabled": true,
+  "auto_restore": true,
+  "output": "fiestapanel",
+  "device_model": "vestaboard_note",
+  "charset": "vestaboard_v1",
+  "characters": [
+    [
+      1,
+      2,
+      3,
+      4
+    ],
+    [
+      5,
+      6,
+      7,
+      8
+    ]
+  ],
+  "text": "ABCD\nEFGH",
+  "expected_characters": [
+    [
+      8,
+      7,
+      6,
+      5
+    ],
+    [
+      4,
+      3,
+      2,
+      1
+    ]
+  ],
+  "read_at": "2026-10-25T12:00:00+00:00",
+  "active_page_id": "page-selected",
+  "scheduled_page_id": "page-scheduled",
+  "resolved_page_id": "page-actual",
+  "resolved_next_check_seconds": null,
+  "source": "manual",
+  "default_page_id": null,
+  "override_expires_at": null,
+  "layers": null
+}

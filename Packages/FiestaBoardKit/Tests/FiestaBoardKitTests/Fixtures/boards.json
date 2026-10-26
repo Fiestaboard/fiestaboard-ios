@@ -1,0 +1,19 @@
+{
+  "boards": [
+    {
+      "id": "board-2",
+      "name": "Demo Kitchen",
+      "device_type": "panel",
+      "rows": 2,
+      "cols": 4,
+      "is_primary": false,
+      "paused": false,
+      "schedule_enabled": true,
+      "auto_restore": true,
+      "output": "fiestapanel",
+      "device_model": "vestaboard_note",
+      "charset": "vestaboard_v1"
+    }
+  ],
+  "total": 1
+}
