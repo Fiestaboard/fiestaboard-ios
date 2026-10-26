@@ -9,7 +9,6 @@ case "${1:-simulator}" in
   *) echo 'Usage: scripts/build-draft.sh [simulator|device]' >&2; exit 2 ;;
 esac
 mkdir -p "$draft_root/.build/clang"
-if command -v xcodegen >/dev/null 2>&1; then xcodegen generate; fi
 env CLANG_MODULE_CACHE_PATH="$draft_root/.build/clang" \
   xcodebuild -project FiestaBoard.xcodeproj -scheme FiestaBoard \
   -destination "$draft_destination" -derivedDataPath "$draft_root/.build/draft-derived" \

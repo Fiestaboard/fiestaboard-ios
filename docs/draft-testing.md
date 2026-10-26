@@ -12,16 +12,30 @@ open FiestaBoard.xcodeproj
 
 Select the shared **FiestaBoard** scheme, choose an installed iPhone or iPad simulator, and press Run. The scheme includes `--demo`, which creates a memory-only demo without a network session. Remove `--demo` under Product → Scheme → Edit Scheme → Run → Arguments to see Welcome and enter a server. The app never restores or automatically connects to a live deployment on launch.
 
-The generated project is committed; XcodeGen is only needed to regenerate it after changing `project.yml`:
+The committed project is ready to build. The helper uses the existing project and preserves signing choices made in Xcode:
 
 ```sh
-xcodegen generate
 scripts/build-draft.sh simulator
-# Optional unsigned physical-device SDK build, not installable without signing:
+# Compile against the device SDK without signing; this cannot install on a phone:
 scripts/build-draft.sh device
 ```
 
-Build artifacts are `.build/draft-derived/Build/Products/Debug-iphonesimulator/FiestaBoard.app` and, if requested, `Debug-iphoneos/FiestaBoard.app`. Use Xcode and your own signing team to run on a device; no development team or signing credential is committed. There is intentionally no asset catalog or app icon in this draft.
+Both commands set `CODE_SIGNING_ALLOWED=NO`. Build artifacts are `.build/draft-derived/Build/Products/Debug-iphonesimulator/FiestaBoard.app` and, if requested, `Debug-iphoneos/FiestaBoard.app`.
+
+To install and run on your iPhone, use Xcode:
+
+1. Select the **FiestaBoard** app target under **TARGETS**, rather than either framework target, and open **Signing & Capabilities**.
+2. Keep your existing development **Team** selected and enable **Automatically manage signing**.
+3. Select the shared **FiestaBoard** scheme and your connected, trusted iPhone as the run destination.
+4. Press **Run**. Xcode builds, signs and installs the app using your selected team. Follow any device prompts, including Developer Mode if required.
+
+Project regeneration is a separate step, only needed after changing `project.yml`:
+
+```sh
+xcodegen generate
+```
+
+Regeneration replaces project settings and can reset a Team chosen in Xcode; recheck signing afterward. Normal `build-draft.sh` builds never regenerate the project. No development team or signing credential is committed. There is intentionally no asset catalog or app icon in this draft.
 
 ## Demo walkthrough
 
