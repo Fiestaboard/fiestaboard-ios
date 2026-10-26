@@ -1,6 +1,6 @@
 # FiestaBoard iOS design
 
-**Status:** Proposed design for review; user requires full first-release parity and all useful device poses. Implementation has not started.
+**Status:** Approved by the user on October 25, 2026. Contract-foundation work has started; full first-release parity and all useful device poses remain required.
 
 Build `fiestaboard-ios` as a native SwiftUI controller for an existing FiestaBoard server. First App Store release must cover the complete web app, including advanced administration. Milestones are development checkpoints, not permission to ship a reduced feature set.
 
@@ -63,7 +63,7 @@ Platform-specific items such as PWA installation map to native installation/life
 
 ## Server and authentication contracts
 
-The public `/api/v1` contract covers much of control and CRUD. Rich previews, live rendering, administration, AI and marketplace workflows still need internal endpoints. `/api/internal/openapi.json` explicitly offers no compatibility guarantee. Therefore **a supported first-party mobile API contract is a release gate**: reuse public v1 operations; for missing operations, stabilize/version the selected backend operations or adopt a documented version-bounded first-party adapter with automated cross-repo compatibility tests. Do not simply generate a client from all internal routes and assume it is supported.
+The public `/api/v1` contract covers much of control and CRUD. Rich previews, live rendering, administration, AI and marketplace workflows still need internal endpoints. `/api/internal/openapi.json` explicitly offers no compatibility guarantee. Therefore **a supported first-party mobile API contract is a release gate**: reuse public v1 operations and use version-bounded first-party adapters for required internal operations, with automated compatibility tests. The implementation decision and acceptance rules are in [Mobile API compatibility](../../contracts.md). Do not simply generate a client from all internal routes and assume it is supported.
 
 Milestone 0 produces an exact endpoint ledger and supported server version matrix. Proposed initial floor is v10.0.0 for validated operations, with an explicit newer minimum if required contracts land later. Do not advertise v9 support from the local 9.14.9 probe. Unknown server versions receive read-only capabilities that are verified and a clear upgrade/compatibility message before unsupported writes.
 
@@ -101,4 +101,4 @@ App Store work includes signing/bundle identity, privacy manifest and data discl
 
 GPT-6.1 Sol agents implement bounded tasks with explicit ownership and tests; GPT-6 Astra reviews architecture/contracts, high-risk editor/auth work and each integrated milestone, then the complete release. Sol fixes findings; Astra rechecks substantive fixes. Review is a gate with evidence, not a promise that model choice guarantees quality. Run at most two implementers at once after shared interfaces settle; keep one reviewer/integrator slot.
 
-Proposed defaults awaiting product review: iOS 26 minimum, operator-provided remote connectivity, and a single universal app. Later release setup needs Apple team/bundle identifier, App Store ownership/branding and pricing. These do not block the design or initial technical validation. No implementation or App Store submission is part of this planning deliverable.
+Approved defaults: iOS 26 minimum, operator-provided remote connectivity, and a single universal app. Later release setup needs Apple team/bundle identifier, App Store ownership/branding and pricing. These do not block initial technical validation. App Store submission remains a separate release action.

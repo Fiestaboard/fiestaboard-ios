@@ -1,0 +1,2287 @@
+{
+  "schema_version": 1,
+  "source_commit": "2ced809c8fe20d4ac6e5dc6603d691c8cb4e475a",
+  "rows": [
+    {
+      "id": "connection_boot",
+      "area": "connection",
+      "workflow": "Boot health/retry and server identity/configuration; distinguish unavailable server from authentication state.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 290
+        },
+        {
+          "path": "web/src/components/boot-gate.tsx",
+          "line": 54
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 289
+        }
+      ],
+      "operation_ids": [
+        "get_config",
+        "get_health",
+        "get_v1_status"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "auth_onboarding",
+      "area": "account",
+      "workflow": "Authentication undecided/enabled/disabled, first administrator setup, remember-me login, wrong password/lockout, redirect and sign out.",
+      "web_sources": [
+        {
+          "path": "web/app/routes/login.tsx",
+          "line": 165
+        },
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 43
+        },
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 109
+        },
+        {
+          "path": "web/app/routes/login.tsx",
+          "line": 236
+        },
+        {
+          "path": "web/app/routes/login.tsx",
+          "line": 212
+        },
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 41
+        },
+        {
+          "path": "web/app/routes/login.tsx",
+          "line": 59
+        }
+      ],
+      "operation_ids": [
+        "post_auth_login",
+        "post_auth_logout",
+        "post_auth_preference",
+        "post_auth_setup",
+        "get_auth_status"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "account_credentials",
+      "area": "account",
+      "workflow": "Change username/password and disable authentication with current-password confirmation; surface account generation/session changes.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 51
+        },
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 77
+        },
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 138
+        }
+      ],
+      "operation_ids": [
+        "post_auth_change_password",
+        "post_auth_change_username",
+        "post_auth_disable"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "device_activation",
+      "area": "account",
+      "workflow": "Inspect, approve or deny the entered/QR device code; expiry/denial/error; enable or disable device enrollment.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 64
+        },
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 65
+        },
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 63
+        },
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 70
+        },
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 71
+        }
+      ],
+      "operation_ids": [
+        "post_auth_device_approve",
+        "post_auth_device_deny",
+        "post_auth_device_inspect",
+        "get_auth_device_settings",
+        "put_auth_device_settings"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "session_management",
+      "area": "account",
+      "workflow": "List signed-in browsers/TVs; fetch CSRF context; revoke one, all other or all sessions including current.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 66
+        },
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 50
+        },
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 69
+        },
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 67
+        }
+      ],
+      "operation_ids": [
+        "get_auth_sessions",
+        "get_auth_sessions_context",
+        "post_auth_sessions_revoke",
+        "delete_auth_sessions_session_id"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "mcp_credentials",
+      "area": "administration",
+      "workflow": "Inspect, rotate and delete MCP token; one-time plaintext display/copy; current-token gate on auth-disabled installs.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 188
+        },
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 170
+        },
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 181
+        }
+      ],
+      "operation_ids": [
+        "delete_auth_mcp_token",
+        "get_auth_mcp_token",
+        "post_auth_mcp_token"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "home_state",
+      "area": "home",
+      "workflow": "Read actual remembered output/external frame, selected page and collection resolution, currently scheduled page, silence/held state and service state independently.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 590
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 591
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 249
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 287
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 231
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 232
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 237
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 320
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 321
+        }
+      ],
+      "operation_ids": [
+        "get_board_current_message",
+        "get_pages_current_display",
+        "get_schedules_active_page",
+        "get_settings_active_page",
+        "put_settings_active_page",
+        "get_silence_status"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "home_commands",
+      "area": "home",
+      "workflow": "Explicit target board message send and restore, discard held send/external frame, service start/stop, force refresh; honor paused/silenced/held/refused/outcome-unknown distinctions.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 597
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 598
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 295
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 329
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 330
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 292
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 293
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 582
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 580
+        }
+      ],
+      "operation_ids": [
+        "delete_board_external_frame",
+        "post_force_refresh",
+        "delete_silence_queue",
+        "post_start",
+        "post_stop",
+        "post_v1_boards_board_message",
+        "post_v1_boards_board_restore"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "temporary_override",
+      "area": "home",
+      "workflow": "Temporary or indefinite page/collection/inline compose override, duration, revert to schedule/blank/page, read expiry and cancel/refresh.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 259
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 252
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 254
+        }
+      ],
+      "operation_ids": [
+        "delete_settings_temporary_override",
+        "get_settings_temporary_override",
+        "post_settings_temporary_override"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "board_control",
+      "area": "displays",
+      "workflow": "Per-board pause/resume, default page and schedule enablement through PATCH BoardDetail.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 644
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 303
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 309
+        }
+      ],
+      "operation_ids": [
+        "patch_v1_boards_board"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "board_configuration",
+      "area": "displays",
+      "workflow": "List/add/remove output boards, credentials/API modes, geometry, primary selection, resize/retarget compatibility warnings and settings round trip.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 603
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 610
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 605
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 612
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 602
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 618
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 624
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 630
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 636
+        }
+      ],
+      "operation_ids": [
+        "get_config_board",
+        "put_config_board",
+        "get_config_full",
+        "get_settings_board",
+        "put_settings_board",
+        "post_settings_board_add",
+        "delete_settings_board_board_id"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "board_setup",
+      "area": "setup",
+      "workflow": "Validate first-run setup, scan boards, test connection, enable local API, send welcome message; report scan/probe/device verdicts.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/setup.ts",
+          "line": 79
+        },
+        {
+          "path": "web/src/lib/api/setup.ts",
+          "line": 85
+        },
+        {
+          "path": "web/src/lib/api/setup.ts",
+          "line": 66
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 616
+        },
+        {
+          "path": "web/src/lib/api/setup.ts",
+          "line": 63
+        },
+        {
+          "path": "web/src/lib/api/setup.ts",
+          "line": 73
+        }
+      ],
+      "operation_ids": [
+        "post_config_board_enable_local_api",
+        "post_config_board_scan",
+        "post_config_board_test",
+        "get_config_validate",
+        "post_send_welcome_message"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "output_catalog",
+      "area": "displays",
+      "workflow": "Installed/available/catalog output discovery and marketplace install; unavailable registry/offline seed and network cases.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 170
+        },
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 175
+        },
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 173
+        },
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 179
+        }
+      ],
+      "operation_ids": [
+        "get_outputs",
+        "get_outputs_available",
+        "get_outputs_catalog",
+        "post_outputs_output_id_install"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "output_actions",
+      "area": "displays",
+      "workflow": "Schema-driven draft/saved-board test/discover/identify/detect-geometry and arbitrary plugin actions, secret result fields and geometry application.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 203
+        },
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 191
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 687
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 691
+        }
+      ],
+      "operation_ids": [
+        "post_boards_board_id_actions_action",
+        "post_outputs_output_id_actions_action",
+        "post_settings_board_board_id_detect_size",
+        "post_settings_board_board_id_identify"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "output_board_creation",
+      "area": "displays",
+      "workflow": "Choose output model, submit schema settings and geometry, create named output board.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 210
+        }
+      ],
+      "operation_ids": [
+        "post_outputs_output_id_boards"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "panel_configuration",
+      "area": "displays",
+      "workflow": "Create/edit/remove virtual panels, resolve geometry, display/TV/backdrop/auto-dim/matrix/font/sizing/presentation settings and HDMI kiosk capability.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 656
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 659
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 651
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 673
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 667
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 676
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 678
+        }
+      ],
+      "operation_ids": [
+        "get_panels",
+        "post_panels",
+        "post_panels_geometry",
+        "delete_panels_panel_id",
+        "patch_panels_panel_id",
+        "get_settings_hdmi_kiosk",
+        "post_settings_hdmi_kiosk"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "panel_viewer",
+      "area": "displays",
+      "workflow": "Read standalone panel configuration/frame with full split-flap/LED rendering and read-only display playback.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 684
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 685
+        }
+      ],
+      "operation_ids": [
+        "get_panel_panel_id",
+        "get_panel_panel_id_frame"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "wizard_state",
+      "area": "setup",
+      "workflow": "Welcome/output/model/connection/panel/easy-plugin setup; skip or complete with durable wizard outcome and reopen.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 215
+        },
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 218
+        }
+      ],
+      "operation_ids": [
+        "get_settings_wizard",
+        "put_settings_wizard"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "pages_crud",
+      "area": "pages",
+      "workflow": "List/get/create/update/delete all single/composite/template page types; duplicate via create; preserve metadata/charset/geometry/transitions/canvases and explicit nulls.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 248
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 253
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 262
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 250
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 258
+        }
+      ],
+      "operation_ids": [
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "page_preview",
+      "area": "editor",
+      "workflow": "Saved page and batch previews, target geometry/LED spans/icons/cells/layers, availability and rendering errors.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 266
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 263
+        }
+      ],
+      "operation_ids": [
+        "post_pages_preview_batch",
+        "post_pages_page_id_preview"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "page_sharing",
+      "area": "pages",
+      "workflow": "Export/copy page share string and import pasted/file/shared content; preserve format and validation errors.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 273
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 270
+        }
+      ],
+      "operation_ids": [
+        "post_pages_import",
+        "get_pages_page_id_share"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "staff_picks",
+      "area": "pages",
+      "workflow": "Browse/filter Picks by device, inspect plugin requirements, retrieve share data and import a pick.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 277
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 278
+        }
+      ],
+      "operation_ids": [
+        "get_staff_picks",
+        "get_staff_picks_pick_id_share"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "collections",
+      "area": "collections",
+      "workflow": "Create/update/delete/list ordered collections with time/variable/random modes, rules, default behavior and per-page durations.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/collections.ts",
+          "line": 83
+        },
+        {
+          "path": "web/src/lib/api/collections.ts",
+          "line": 86
+        },
+        {
+          "path": "web/src/lib/api/collections.ts",
+          "line": 98
+        },
+        {
+          "path": "web/src/lib/api/collections.ts",
+          "line": 92
+        }
+      ],
+      "operation_ids": [
+        "get_v1_collections",
+        "post_v1_collections",
+        "delete_v1_collections_collection_id",
+        "put_v1_collections_collection_id"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "schedule_entries",
+      "area": "schedules",
+      "workflow": "Board-scoped schedule CRUD/toggle; weekly/annual/one-off recurrence, day patterns, start/end/sun offsets, page/collection targets and compatibility warnings.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 266
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 269
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 281
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 275
+        }
+      ],
+      "operation_ids": [
+        "get_v1_schedules",
+        "post_v1_schedules",
+        "delete_v1_schedules_schedule_id",
+        "put_v1_schedules_schedule_id"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "schedule_validation",
+      "area": "schedules",
+      "workflow": "Calendar/list active resolution, overlaps and gaps, schedule behavior settings and validation.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 356
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 359
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 291
+        }
+      ],
+      "operation_ids": [
+        "get_schedules_settings",
+        "put_schedules_settings",
+        "post_schedules_validate"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "silence_configuration",
+      "area": "schedules",
+      "workflow": "Global/per-board silence schedule with overnight windows, indicator/freeze/page, indicator placement, queued-on-exit and explicit nullable page fields.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 348
+        }
+      ],
+      "operation_ids": [
+        "put_settings_silence_schedule"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "plugins_configuration",
+      "area": "integrations",
+      "workflow": "Installed plugin list/detail/manifest, enable/disable, schema configuration, secret masks/preservation, variables, data and circuit-breaker errors.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 77
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 265
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 320
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 276
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 311
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 274
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 283
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 289
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 295
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 270
+        }
+      ],
+      "operation_ids": [
+        "post_displays_raw_batch",
+        "get_plugins",
+        "get_plugins_errors",
+        "get_plugins_plugin_id_manifest",
+        "get_plugins_plugin_id_variables",
+        "get_v1_plugins_plugin_id",
+        "patch_v1_plugins_plugin_id",
+        "get_v1_plugins_plugin_id_data"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "plugin_instances",
+      "area": "integrations",
+      "workflow": "List/add/delete named plugin instances; configure and identify instance-specific secrets, variables and OAuth connections.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 323
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 326
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 332
+        }
+      ],
+      "operation_ids": [
+        "get_plugins_plugin_id_instances",
+        "post_plugins_plugin_id_instances",
+        "delete_plugins_plugin_id_instances_instance_label"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "plugin_demo",
+      "area": "integrations",
+      "workflow": "Inspect/create plugin demo pages with provenance and idempotent existing-demo behavior.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 313
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 316
+        }
+      ],
+      "operation_ids": [
+        "get_plugins_plugin_id_demo_page",
+        "post_plugins_plugin_id_demo_page"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "plugin_marketplace",
+      "area": "integrations",
+      "workflow": "Registry list/install, Git repository install, update/uninstall, available update checks and bulk application; display progress/errors/provenance.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "line": 88
+        },
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "line": 80
+        },
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "line": 83
+        },
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "line": 103
+        },
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "line": 112
+        },
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "line": 106
+        },
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "line": 94
+        },
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "line": 99
+        }
+      ],
+      "operation_ids": [
+        "post_plugins_install",
+        "get_plugins_registry",
+        "post_plugins_registry_plugin_id_install",
+        "get_plugins_updates",
+        "post_plugins_updates_apply",
+        "post_plugins_updates_check",
+        "delete_plugins_plugin_id_uninstall",
+        "post_plugins_plugin_id_update"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "plugin_options",
+      "area": "integrations",
+      "workflow": "Dynamic schema remote options, query/search/dependent settings, pagination/current labels, secret-preserving settings context and loading/error/empty cases.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 306
+        }
+      ],
+      "operation_ids": [
+        "post_plugins_plugin_id_options_options_id"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "oauth_connections",
+      "area": "integrations",
+      "workflow": "List status/configuration/scopes/expiry/reconnect reason, start relay/device/key_exchange/plex_pin, complete pasted URL/code, disconnect, browser return and plugin/AI routing.",
+      "web_sources": [
+        {
+          "path": "web/src/components/plugin-settings/oauth-connection.tsx",
+          "line": 281
+        },
+        {
+          "path": "web/src/lib/api/oauth.ts",
+          "line": 100
+        },
+        {
+          "path": "web/src/lib/api/oauth.ts",
+          "line": 119
+        },
+        {
+          "path": "web/src/lib/api/oauth.ts",
+          "line": 104
+        },
+        {
+          "path": "web/src/lib/api/oauth.ts",
+          "line": 113
+        }
+      ],
+      "operation_ids": [
+        "get_oauth_callback",
+        "get_oauth_connections",
+        "delete_oauth_connections_connection_id",
+        "post_oauth_connections_connection_id_authorize",
+        "post_oauth_connections_connection_id_complete"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "template_authoring",
+      "area": "editor",
+      "workflow": "Variable/function discovery, validation and side-effect-free server rendering with text, tokens, line metadata, geometry, charset warnings and canvas layers.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "line": 184
+        },
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "line": 154
+        },
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "line": 152
+        },
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "line": 151
+        }
+      ],
+      "operation_ids": [
+        "post_templates_render",
+        "post_templates_validate",
+        "get_v1_functions",
+        "get_v1_variables"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "template_live_output",
+      "area": "editor",
+      "workflow": "Explicit live-to-board render with named target, pause/silence/override/held handling; separate saved state from live hardware effect.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "line": 209
+        }
+      ],
+      "operation_ids": [
+        "post_templates_render_live"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "integration_helpers",
+      "area": "integrations",
+      "workflow": "Bay Wheels/Muni station/stop lists and nearby/address search, traffic geocode/validation, stock search/validation, generic data test fetch and Home Assistant entity picker.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 85
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 98
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 112
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 193
+        },
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "line": 225
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 116
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 129
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 143
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 178
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 181
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 148
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 163
+        }
+      ],
+      "operation_ids": [
+        "get_baywheels_stations",
+        "get_baywheels_stations_nearby",
+        "get_baywheels_stations_search",
+        "post_generic_data_test_fetch",
+        "get_home_assistant_entities",
+        "get_muni_stops",
+        "get_muni_stops_nearby",
+        "get_muni_stops_search",
+        "get_stocks_search",
+        "post_stocks_validate",
+        "post_traffic_routes_geocode",
+        "post_traffic_routes_validate"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "ai_configuration",
+      "area": "ai",
+      "workflow": "Provider CRUD/order/protocol/model/base URL/key/sign-in preset configuration, default provider, approval mode/turn cap and provider model/test results.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 154
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 157
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 165
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 168
+        }
+      ],
+      "operation_ids": [
+        "get_settings_ai",
+        "put_settings_ai",
+        "get_settings_ai_providers_provider_id_models",
+        "post_settings_ai_test"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "ai_generate",
+      "area": "ai",
+      "workflow": "Generate page draft with warnings and explicit staged application/save semantics.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 182
+        }
+      ],
+      "operation_ids": [
+        "post_pages_ai_generate"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "ai_chat",
+      "area": "ai",
+      "workflow": "Global/editor POST SSE chat: text/status/tool streaming/call/result/warning/error/done, approvals, elicitation, cancel and non-replayed interrupted turns.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api-stream.ts",
+          "line": 69
+        }
+      ],
+      "operation_ids": [
+        "post_pages_ai_chat"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "ai_history",
+      "area": "ai",
+      "workflow": "List/search/open/save/rename/delete/clear/export conversations and restore editor/global context with interrupted-turn semantics.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 228
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 210
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 226
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 212
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 221
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 215
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 231
+        }
+      ],
+      "operation_ids": [
+        "delete_ai_conversations",
+        "get_ai_conversations",
+        "delete_ai_conversations_conversation_id",
+        "get_ai_conversations_conversation_id",
+        "patch_ai_conversations_conversation_id",
+        "put_ai_conversations_conversation_id",
+        "get_ai_conversations_conversation_id_export"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "general_settings",
+      "area": "settings",
+      "workflow": "General config/instance identity/timezone/date/output mode, aggregate settings and restore notices/dismissal.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 138
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 143
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 156
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 131
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 133
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 127
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 125
+        }
+      ],
+      "operation_ids": [
+        "get_config_general",
+        "put_config_general",
+        "get_settings_all",
+        "get_settings_output",
+        "put_settings_output",
+        "delete_settings_restore_notice",
+        "get_settings_restore_notice"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "display_preferences",
+      "area": "settings",
+      "workflow": "Board/site animations, reduce motion, preview/display preferences and capability-appropriate native presentation.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 158
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 160
+        }
+      ],
+      "operation_ids": [
+        "get_settings_display",
+        "put_settings_display"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "polling_preferences",
+      "area": "settings",
+      "workflow": "Polling/UI and plugin refresh/update intervals with restart requirements and scheduling cadence.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 180
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 182
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 149
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 151
+        }
+      ],
+      "operation_ids": [
+        "get_settings_plugins",
+        "put_settings_plugins",
+        "get_settings_polling",
+        "put_settings_polling"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "location_settings",
+      "area": "settings",
+      "workflow": "Location latitude/longitude/timezone and single-day/week sunrise/sunset values, no-location and polar/DST cases.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 167
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 169
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 175
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 177
+        }
+      ],
+      "operation_ids": [
+        "get_settings_location",
+        "put_settings_location",
+        "get_settings_location_sun_times",
+        "get_settings_location_sun_times_week"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "mqtt_settings",
+      "area": "settings",
+      "workflow": "MQTT broker settings/credentials and runtime enabled/connected/running state.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 353
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 345
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 348
+        }
+      ],
+      "operation_ids": [
+        "get_mqtt_status",
+        "get_settings_mqtt",
+        "put_settings_mqtt"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "backup_restore",
+      "area": "administration",
+      "workflow": "Download complete backup and import/restore with reinstall_plugins choice, pre-restore copies, skipped files, external-plugin/manual install and reload errors.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 356
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 376
+        }
+      ],
+      "operation_ids": [
+        "get_backup_export",
+        "post_backup_import"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "system_updates",
+      "area": "administration",
+      "workflow": "Current/running/build version, sidecar status and rollback/regression information, check/apply updates, auto interval and release channel switch; manual instructions when unavailable.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 403
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 406
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 307
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 302
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 310
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 316
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 305
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 299
+        }
+      ],
+      "operation_ids": [
+        "get_system_channel",
+        "post_system_channel",
+        "post_system_update",
+        "get_system_update_check",
+        "post_system_update_auto",
+        "get_system_update_status",
+        "get_version"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "system_power",
+      "area": "administration",
+      "workflow": "Explicit restart/shutdown with progress and later reconnect health; capability/error handling.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 321
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 323
+        }
+      ],
+      "operation_ids": [
+        "post_system_restart",
+        "post_system_shutdown"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "wifi_management",
+      "area": "administration",
+      "workflow": "Capability-gated Wi-Fi status/scan/saved profiles/connect/disconnect/forget including password and lost-connectivity recovery.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 381
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 391
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 397
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 389
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 399
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 384
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 382
+        }
+      ],
+      "operation_ids": [
+        "get_network_wifi_capability",
+        "post_network_wifi_connect",
+        "post_network_wifi_disconnect",
+        "get_network_wifi_saved",
+        "delete_network_wifi_saved_con_name",
+        "post_network_wifi_scan",
+        "get_network_wifi_status"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "diagnostics",
+      "area": "administration",
+      "workflow": "Blank/fill/info/test board, clear/cache status, system/network diagnostics and hardware verdicts.",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 325
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 339
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 337
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 328
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 333
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 343
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 341
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 335
+        }
+      ],
+      "operation_ids": [
+        "post_debug_blank",
+        "get_debug_cache_status",
+        "post_debug_clear_cache",
+        "post_debug_fill",
+        "post_debug_info",
+        "get_debug_network_diagnostics",
+        "get_debug_system_info",
+        "post_debug_test_connection"
+      ],
+      "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
+      "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "native_connection_management",
+      "area": "connection",
+      "workflow": "Manual URL/server selection, deployment identity, discovery permission and offline reconnect",
+      "web_sources": [
+        {
+          "path": "web/src/lib/base-path.ts",
+          "line": 21
+        }
+      ],
+      "operation_ids": [],
+      "native_equivalent": "Native server picker plus Bonjour/manual entry. Browser uses its current origin; server switching/discovery is a required native equivalent, not a web endpoint.",
+      "verification": "Verify scheme/host/port/prefix isolation, HTTP LAN permission, IPv4/IPv6, denied discovery and reconnection on physical devices.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "route_navigation",
+      "area": "navigation",
+      "workflow": "All browser route destinations and nested layouts, back navigation and durable selection",
+      "web_sources": [
+        {
+          "path": "web/app/routes.ts",
+          "line": 7
+        }
+      ],
+      "operation_ids": [],
+      "native_equivalent": "Native route model covers /, activate, login, offline, profile, settings, collections, debug, displays/:boardId, picks, integrations/:pluginId, pages/new/edit/:id, schedule, panel/:panelId and /p/:panelId. No navigation API operation.",
+      "verification": "Verify every route and section alias opens, preserves selection and restores after resize/relaunch.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "deep_links",
+      "area": "navigation",
+      "workflow": "Query/hash deep links, legacy settings sections, safe post-login redirect and activation code",
+      "web_sources": [
+        {
+          "path": "web/app/routes/settings.tsx",
+          "line": 125
+        }
+      ],
+      "operation_ids": [],
+      "native_equivalent": "Native links retain settings section/hash, board/plugin/page IDs, schedule context, activation code and OAuth outcomes; validate local destinations. No additional API.",
+      "verification": "Exercise direct cold/warm links, unknown IDs, legacy hardware/AI sections and unsafe redirect rejection.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "panel_link_sharing",
+      "area": "displays",
+      "workflow": "Copy/open a panel viewer URL, long and short viewer route",
+      "web_sources": [
+        {
+          "path": "web/src/components/settings/fiestapanel-settings.tsx",
+          "line": 374
+        }
+      ],
+      "operation_ids": [
+        "get_panel_panel_id",
+        "get_panel_panel_id_frame"
+      ],
+      "native_equivalent": "Native ShareLink/copy browser viewer URL and native monitoring view. Reuse panel read operations; no new share endpoint.",
+      "verification": "Verify prefixed URLs, clipboard/share sheet and both viewer routes.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "panel_presentation",
+      "area": "displays",
+      "workflow": "Fullscreen panel/TV display, animation/matrix/font/backdrop/auto-dim and sleep behavior",
+      "web_sources": [
+        {
+          "path": "web/src/components/panel/panel-view.tsx",
+          "line": 1
+        }
+      ],
+      "operation_ids": [
+        "get_panel_panel_id",
+        "get_panel_panel_id_frame"
+      ],
+      "native_equivalent": "Native immersive viewer and supported screen-awake/brightness controls; preserve output rendering. Browser fullscreen APIs have no backend operation.",
+      "verification": "Compare flagship/note/array/panel/LED/white board fixtures and reduced-motion/TV sizing.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "page_library_navigation",
+      "area": "pages",
+      "workflow": "Library search/filter/sort/grid-list, geometry/device compatibility and duplicate actions",
+      "web_sources": [
+        {
+          "path": "web/app/routes/pages._index.tsx",
+          "line": 1
+        }
+      ],
+      "operation_ids": [
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id",
+        "post_pages_preview_batch",
+        "post_pages_page_id_preview"
+      ],
+      "native_equivalent": "Native searchable grid/list with matching filters and duplicate-via-create semantics; list presentation has no extra API.",
+      "verification": "Verify large library, empty/error states, incompatible targets and duplicate content preservation.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "editor_document",
+      "area": "editor",
+      "workflow": "Rich/plain template editor, tokens/formulas, line alignment/wrap, colors/icons and cell editing",
+      "web_sources": [
+        {
+          "path": "web/src/components/page-builder.tsx",
+          "line": 135
+        }
+      ],
+      "operation_ids": [
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id",
+        "post_templates_render",
+        "post_templates_validate",
+        "get_v1_functions",
+        "get_v1_variables"
+      ],
+      "native_equivalent": "Native document/TextKit editing with retained unknown fields/nodes; use server render/validate, not an invented editor endpoint.",
+      "verification": "Golden round trips, token-adjacent edits, IME/multiline paste, all charsets, explicit null and rich/plain switching.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "editor_charset",
+      "area": "editor",
+      "workflow": "Character-set-aware visual cells, painting, geometry and LED formatting",
+      "web_sources": [
+        {
+          "path": "web/src/components/charset-template-editor.tsx",
+          "line": 1
+        }
+      ],
+      "operation_ids": [
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id",
+        "post_templates_render",
+        "post_templates_validate",
+        "get_v1_functions",
+        "get_v1_variables"
+      ],
+      "native_equivalent": "Native grid/text editing preserves board charset, icon/color spans and metadata. Local gestures map to existing save/render operations.",
+      "verification": "Compare device/charset golden fixtures and unsupported character/case/tile/icon/color/block-span warnings.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "editor_drafts",
+      "area": "editor",
+      "workflow": "Draft recovery, unsaved navigation protection and page/new editor state",
+      "web_sources": [
+        {
+          "path": "web/src/lib/page-draft.ts",
+          "line": 1
+        }
+      ],
+      "operation_ids": [],
+      "native_equivalent": "Persist per-server/resource drafts and route/selection/undo state; no server draft operation in the web.",
+      "verification": "Recover after force quit, background/resume, server switch and fold/resize; verify discard/save decisions.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "editor_undo",
+      "area": "editor",
+      "workflow": "Undo/redo, local selection and keyboard editing across rich/plain/canvas controls",
+      "web_sources": [
+        {
+          "path": "web/src/components/page-builder.tsx",
+          "line": 1
+        }
+      ],
+      "operation_ids": [],
+      "native_equivalent": "Native undo manager and accessible toolbar/keyboard equivalents. Local edit history needs no API.",
+      "verification": "Verify undo/redo grouping, mode switches, canvas strokes and draft navigation.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "canvas_management",
+      "area": "canvas",
+      "workflow": "Up to eight canvases; add/remove/select and area, bleed, scale and flow",
+      "web_sources": [
+        {
+          "path": "web/src/components/canvas-editor/canvases-panel.tsx",
+          "line": 100
+        }
+      ],
+      "operation_ids": [
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id",
+        "post_templates_render",
+        "post_templates_validate",
+        "get_v1_functions",
+        "get_v1_variables",
+        "post_pages_preview_batch",
+        "post_pages_page_id_preview"
+      ],
+      "native_equivalent": "Native canvas inspector stores the existing page canvases field; no standalone canvas CRUD endpoint.",
+      "verification": "Verify limit, selection/focus, field removal/nulls, target resize and server raster layers/issues.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "canvas_draw",
+      "area": "canvas",
+      "workflow": "Draw brush/eraser/bucket/eyedropper, RGB palette, zoom/grid and accessible pixel cursor",
+      "web_sources": [
+        {
+          "path": "web/src/components/canvas-editor/canvas-draw-tab.tsx",
+          "line": 189
+        }
+      ],
+      "operation_ids": [
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id",
+        "post_templates_render",
+        "post_templates_validate",
+        "get_v1_functions",
+        "get_v1_variables"
+      ],
+      "native_equivalent": "Native pointer/touch/Pencil pixel editor and keyboard/VoiceOver alternatives, persisted through page save.",
+      "verification": "Golden palette/pixel results, erase transparency, bounded strokes and undo.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "canvas_shapes",
+      "area": "canvas",
+      "workflow": "Shapes parameters, order and dynamic expressions",
+      "web_sources": [
+        {
+          "path": "web/src/components/canvas-editor/canvas-shapes-editor.tsx",
+          "line": 1
+        }
+      ],
+      "operation_ids": [
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id",
+        "post_templates_render",
+        "post_templates_validate",
+        "get_v1_functions",
+        "get_v1_variables"
+      ],
+      "native_equivalent": "Native shape form preserves schema values and dynamic expressions in page canvases. No shape endpoint.",
+      "verification": "Compare supported shape geometry/layers and validation warnings.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "canvas_source",
+      "area": "canvas",
+      "workflow": "Canvas plugin source variable or arbitrary expression",
+      "web_sources": [
+        {
+          "path": "web/src/components/canvas-editor/canvas-source-picker.tsx",
+          "line": 3
+        }
+      ],
+      "operation_ids": [
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id",
+        "post_templates_render",
+        "post_templates_validate",
+        "get_v1_functions",
+        "get_v1_variables"
+      ],
+      "native_equivalent": "Native source picker and expression field; render server-side using existing template/page endpoints.",
+      "verification": "Verify source replacing content, empty choices, invalid expression and transparent output.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "calendar_interaction",
+      "area": "schedules",
+      "workflow": "Calendar/list views, recurrence/timezone-aware drag and resize, accessible entry form",
+      "web_sources": [
+        {
+          "path": "web/src/components/schedule/schedule-calendar-view.tsx",
+          "line": 1
+        }
+      ],
+      "operation_ids": [
+        "get_v1_schedules",
+        "post_v1_schedules",
+        "delete_v1_schedules_schedule_id",
+        "put_v1_schedules_schedule_id",
+        "get_schedules_settings",
+        "put_schedules_settings",
+        "post_schedules_validate",
+        "get_settings_location",
+        "put_settings_location",
+        "get_settings_location_sun_times",
+        "get_settings_location_sun_times_week"
+      ],
+      "native_equivalent": "Native calendar/list plus explicit time form. Gestures produce existing schedule updates; no calendar transport.",
+      "verification": "Verify weekly/annual/one-off entries, sun offsets, overnight, DST transitions, drag/resize and keyboard form parity.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "collection_rules_editor",
+      "area": "collections",
+      "workflow": "Collection page ordering, rule modes/expressions, durations and default controls",
+      "web_sources": [
+        {
+          "path": "web/app/routes/collections.tsx",
+          "line": 1
+        }
+      ],
+      "operation_ids": [
+        "get_v1_collections",
+        "post_v1_collections",
+        "delete_v1_collections_collection_id",
+        "put_v1_collections_collection_id",
+        "get_board_current_message",
+        "get_pages_current_display",
+        "get_schedules_active_page",
+        "get_settings_active_page",
+        "put_settings_active_page",
+        "get_silence_status"
+      ],
+      "native_equivalent": "Native ordered list and rule forms backed by collection CRUD. Local reordering/rule drafts use no new endpoint.",
+      "verification": "Compare time/variable/random resolution, default and per-page duration, empty/broken references.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "oauth_relay_flow",
+      "area": "integrations",
+      "workflow": "Relay browser start, signed local/prefixed callback, refusal/expiry and manual URL/code rescue",
+      "web_sources": [
+        {
+          "path": "web/src/components/plugin-settings/oauth-connection.tsx",
+          "line": 255
+        }
+      ],
+      "operation_ids": [
+        "get_oauth_callback",
+        "get_oauth_connections",
+        "delete_oauth_connections_connection_id",
+        "post_oauth_connections_connection_id_authorize",
+        "post_oauth_connections_connection_id_complete"
+      ],
+      "native_equivalent": "Use secure browser plus server authorize/complete/status. Existing callback redirects browser pages; app completion must be separately validated.",
+      "verification": "Runtime gate: direct/prefix/HTTPS/LAN, cancellation, denied/expired/single-use state, paste and suspend/resume without duplicate enrollment.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "oauth_device_flow",
+      "area": "integrations",
+      "workflow": "Device verification URL/code, server polling and pending/expired/denied/failed statuses",
+      "web_sources": [
+        {
+          "path": "web/src/components/plugin-settings/oauth-connection.tsx",
+          "line": 14
+        }
+      ],
+      "operation_ids": [
+        "get_oauth_callback",
+        "get_oauth_connections",
+        "delete_oauth_connections_connection_id",
+        "post_oauth_connections_connection_id_authorize",
+        "post_oauth_connections_connection_id_complete"
+      ],
+      "native_equivalent": "Native code/copy/open-provider UI plus list-connections polling. Server owns provider device code and tokens.",
+      "verification": "Runtime gate: poll interval/backoff, provider expiry/denial/failure, app resume and interrupted sign-in.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "oauth_key_exchange_flow",
+      "area": "integrations",
+      "workflow": "Key exchange callback or explicit headless pasted provider code",
+      "web_sources": [
+        {
+          "path": "web/src/components/plugin-settings/oauth-connection.tsx",
+          "line": 589
+        }
+      ],
+      "operation_ids": [
+        "get_oauth_callback",
+        "get_oauth_connections",
+        "delete_oauth_connections_connection_id",
+        "post_oauth_connections_connection_id_authorize",
+        "post_oauth_connections_connection_id_complete"
+      ],
+      "native_equivalent": "Native headless option/manual paste and pending-flow continuity; use existing server contracts.",
+      "verification": "Runtime gate: PKCE/code binding, callback and headless, full pasted address/bare code, stale or duplicate completion.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "oauth_plex_flow",
+      "area": "integrations",
+      "workflow": "Plex PIN authorization opens browser and server polls, optional forward URL",
+      "web_sources": [
+        {
+          "path": "web/src/components/plugin-settings/oauth-connection.tsx",
+          "line": 274
+        }
+      ],
+      "operation_ids": [
+        "get_oauth_callback",
+        "get_oauth_connections",
+        "delete_oauth_connections_connection_id",
+        "post_oauth_connections_connection_id_authorize",
+        "post_oauth_connections_connection_id_complete"
+      ],
+      "native_equivalent": "Native browser/polling equivalent with no assumption that provider return is an app callback.",
+      "verification": "Runtime gate: PIN expiry/denial, direct/prefixed forward URL, resumed polling and duplicate start avoidance.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "oauth_app_registration",
+      "area": "integrations",
+      "workflow": "Shared/user OAuth app registration fields, reconnect, saved paste offer and AI provider sign-in",
+      "web_sources": [
+        {
+          "path": "web/src/components/plugin-settings/oauth-connection.tsx",
+          "line": 160
+        }
+      ],
+      "operation_ids": [
+        "get_oauth_callback",
+        "get_oauth_connections",
+        "delete_oauth_connections_connection_id",
+        "post_oauth_connections_connection_id_authorize",
+        "post_oauth_connections_connection_id_complete",
+        "post_displays_raw_batch",
+        "get_plugins",
+        "get_plugins_errors",
+        "get_plugins_plugin_id_manifest",
+        "get_plugins_plugin_id_variables",
+        "get_v1_plugins_plugin_id",
+        "patch_v1_plugins_plugin_id",
+        "get_v1_plugins_plugin_id_data",
+        "get_settings_ai",
+        "put_settings_ai",
+        "get_settings_ai_providers_provider_id_models",
+        "post_settings_ai_test"
+      ],
+      "native_equivalent": "Native app-registration/schema fields and recoverable paste state; connection IDs include plugin:instance and ai.provider.",
+      "verification": "Verify client ID/secret masks, shared-app override, developer links, ChatGPT loopback paste and settings-vs-integrations outcome routing.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "ai_staging",
+      "area": "ai",
+      "workflow": "Editor AI staging/diffs, approvals/questions, global drawer and saved conversation context",
+      "web_sources": [
+        {
+          "path": "web/src/lib/use-ai-chat.ts",
+          "line": 270
+        }
+      ],
+      "operation_ids": [
+        "post_pages_ai_chat",
+        "delete_ai_conversations",
+        "get_ai_conversations",
+        "delete_ai_conversations_conversation_id",
+        "get_ai_conversations_conversation_id",
+        "patch_ai_conversations_conversation_id",
+        "put_ai_conversations_conversation_id",
+        "get_ai_conversations_conversation_id_export",
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id"
+      ],
+      "native_equivalent": "Native global/editor transcript and staged edits; tool outcomes remain server-authoritative; cancellation cannot undo an already-running tool.",
+      "verification": "Verify ask/auto approval modes, elicitation resume, cancel races, incomplete stream persistence and apply/save separation.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "appearance_theme",
+      "area": "settings",
+      "workflow": "Light/dark/system appearance",
+      "web_sources": [
+        {
+          "path": "web/src/components/settings/appearance-settings.tsx",
+          "line": 9
+        }
+      ],
+      "operation_ids": [],
+      "native_equivalent": "Native app/system appearance preference. Web theme is local; no new backend setting.",
+      "verification": "Verify light/dark/system and preserved preference across launches.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "localization",
+      "area": "settings",
+      "workflow": "Fourteen locales and language persistence, locale-aware formatting/output labels",
+      "web_sources": [
+        {
+          "path": "web/src/i18n/config.ts",
+          "line": 1
+        }
+      ],
+      "operation_ids": [],
+      "native_equivalent": "Native locale choice for en/es/fr/de/it/pt/nl/pl/ru/sv/tr/ja/ko/zh. Preserve server-shared output language settings separately.",
+      "verification": "Review translated routes/forms/errors and long/CJK strings, locale change while editing/scheduling.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "accessibility",
+      "area": "accessibility",
+      "workflow": "Skip/focus/labels, motion preferences, keyboard and form error announcements",
+      "web_sources": [
+        {
+          "path": "web/src/components/skip-to-content.tsx",
+          "line": 1
+        }
+      ],
+      "operation_ids": [
+        "get_settings_display",
+        "put_settings_display"
+      ],
+      "native_equivalent": "Native VoiceOver, focus, Dynamic Type, Reduce Motion/Transparency/Contrast and keyboard behavior. Web skip links map to native focus/navigation.",
+      "verification": "VoiceOver and largest-type audit on all screens; persist shared reduce_motion with existing display settings API.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "pwa_installation",
+      "area": "lifecycle",
+      "workflow": "Browser install prompt, manifest/service worker and installed-app lifecycle",
+      "web_sources": [
+        {
+          "path": "web/src/components/install-prompt.tsx",
+          "line": 1
+        }
+      ],
+      "operation_ids": [],
+      "native_equivalent": "Native App Store installation/lifecycle and foreground recovery replace browser install/service-worker UI. No API operation.",
+      "verification": "Verify install/onboarding, background/foreground refresh and no duplicated commands after app resume.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "offline_recovery",
+      "area": "lifecycle",
+      "workflow": "Offline page and health retry; cache/offline/read/write distinction",
+      "web_sources": [
+        {
+          "path": "web/app/routes/offline.tsx",
+          "line": 1
+        }
+      ],
+      "operation_ids": [],
+      "native_equivalent": "Native cached/offline states and explicit retry with per-deployment credential/cache separation. No synthetic offline write queue.",
+      "verification": "Verify unavailable server/network change, stale cache labels, pending logout revocation and outcome-unknown mutations.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "geolocation_permission",
+      "area": "settings",
+      "workflow": "Use browser location to fill server latitude/longitude",
+      "web_sources": [
+        {
+          "path": "web/src/components/settings/location-settings.tsx",
+          "line": 88
+        }
+      ],
+      "operation_ids": [
+        "get_settings_location",
+        "put_settings_location",
+        "get_settings_location_sun_times",
+        "get_settings_location_sun_times_week"
+      ],
+      "native_equivalent": "Native Core Location permission and manual coordinates. Permission itself has no API; save uses location setting operation.",
+      "verification": "Verify granted/denied/restricted/no fix and manual fallback.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "external_plugin_documents",
+      "area": "integrations",
+      "workflow": "Fetch repository README and manifest-derived preview images/relative links",
+      "web_sources": [
+        {
+          "path": "web/src/lib/github.ts",
+          "line": 47
+        }
+      ],
+      "operation_ids": [],
+      "native_equivalent": "Native safe external document/image loading and browser links; external GitHub resources are not FiestaBoard OpenAPI operations.",
+      "verification": "Verify raw README/manifest requests, relative image rewrite, unavailable content, credential isolation and prefix-independent external URLs.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "mcp_connector_instructions",
+      "area": "administration",
+      "workflow": "Generate/copy MCP client instructions and endpoint/token config",
+      "web_sources": [
+        {
+          "path": "web/src/components/settings/mcp-settings.tsx",
+          "line": 46
+        }
+      ],
+      "operation_ids": [],
+      "native_equivalent": "Native copy/share instructions with operator endpoint and one-time token. Web does not call MCP transport itself; no fake REST MCP operation.",
+      "verification": "Verify endpoint port/trailing slash and prefix behavior, secret redaction and secure clipboard UI.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "removed_debug_monitor",
+      "area": "administration",
+      "workflow": "Legacy /debug monitor route explains removed monitoring and docker logs command",
+      "web_sources": [
+        {
+          "path": "web/app/routes/debug.tsx",
+          "line": 23
+        }
+      ],
+      "operation_ids": [],
+      "native_equivalent": "Native diagnostics/help equivalent can show existing operator log instructions. No web log streaming/download endpoint exists here.",
+      "verification": "Verify truthful absence of live log API; do not mark a new log backend operation as existing parity.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "adaptive_device_poses",
+      "area": "layout",
+      "workflow": "Preserve every workflow across compact/expanded/resized/folded/seated/standing layouts",
+      "web_sources": [
+        {
+          "path": "web/app/routes.ts",
+          "line": 7
+        }
+      ],
+      "operation_ids": [],
+      "native_equivalent": "Native adaptive navigation, split editor/preview when usable, accessible single-column fallback and system geometry; this is a native presentation requirement, not a backend operation.",
+      "verification": "Device/simulator matrix: narrow/closed, open/wide, seated/part-folded, tent/short-wide, iPad multiwindow, rotation; preserve draft/selection/undo/target.",
+      "implementation_status": "planned"
+    }
+  ]
+}
