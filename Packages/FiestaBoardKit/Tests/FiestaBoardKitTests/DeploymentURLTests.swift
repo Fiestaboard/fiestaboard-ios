@@ -38,3 +38,30 @@ final class DeploymentURLTests: XCTestCase {
         }
     }
 }
+
+extension DeploymentURLTests {
+    func testIPv6LocalHTTPUsesNumericNetworkBoundaries() throws {
+        let local = ["::1", "0:0:0:0:0:0:0:1", "fc00::", "fc00::1",
+                     "fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", "fe80::",
+                     "fe80::1", "febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff"]
+        for host in local {
+            XCTAssertThrowsError(try DeploymentURL("http://[\(host)]"), host)
+            XCTAssertNoThrow(try DeploymentURL("http://[\(host)]", allowLocalHTTP: true), host)
+        }
+    }
+
+    func testIPv6ShortenedHextetsAndAdjacentRemoteRangesCannotEnableHTTP() {
+        for host in ["fc::1", "fd::1", "fe8::1", "fe9::1", "fea::1", "feb::1",
+                     "fbff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", "fe00::",
+                     "fe7f:ffff:ffff:ffff:ffff:ffff:ffff:ffff", "fec0::",
+                     "::", "::2", "::ffff:127.0.0.1", "2001:db8::1", "ff02::1"] {
+            XCTAssertThrowsError(try DeploymentURL("http://[\(host)]", allowLocalHTTP: true), host)
+        }
+    }
+
+    func testMalformedIPv6CannotEnableHTTP() {
+        for host in ["fc00:::1", "fc00::g", "fc00:1:2:3:4:5:6:7:8", "fe80::1::2", "::ffff:999.1.1.1"] {
+            XCTAssertThrowsError(try DeploymentURL("http://[\(host)]", allowLocalHTTP: true), host)
+        }
+    }
+}

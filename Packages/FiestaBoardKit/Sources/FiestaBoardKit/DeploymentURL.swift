@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 
 /// A validated deployment identity, including its reverse-proxy prefix.
 /// Percent-encoded deployment paths are deliberately unsupported in this draft.
@@ -50,10 +51,18 @@ public struct DeploymentURL: Hashable, Sendable, Codable, CustomStringConvertibl
 
     private static func isLocal(_ rawHost: String) -> Bool {
         let host = rawHost.trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
-        if host == "localhost" || host.hasSuffix(".local") || host == "::1" { return true }
+        if host == "localhost" || host.hasSuffix(".local") { return true }
         if host.contains(":") {
-            // Unique-local IPv6 and link-local IPv6. No zone identifiers/encoded hosts.
-            return host.hasPrefix("fc") || host.hasPrefix("fd") || ["fe8", "fe9", "fea", "feb"].contains(where: host.hasPrefix)
+            // Parse the literal before checking scope: a shortened hextet such as
+            // fc::1 means 00fc::1, not an address inside fc00::/7.
+            var address = in6_addr()
+            guard host.withCString({ inet_pton(AF_INET6, $0, &address) }) == 1 else { return false }
+            return withUnsafeBytes(of: address) { bytes in
+                let loopback = bytes.prefix(15).allSatisfy { $0 == 0 } && bytes[15] == 1
+                let uniqueLocal = bytes[0] & 0xfe == 0xfc // fc00::/7
+                let linkLocal = bytes[0] == 0xfe && bytes[1] & 0xc0 == 0x80 // fe80::/10
+                return loopback || uniqueLocal || linkLocal
+            }
         }
         let parts = host.split(separator: ".", omittingEmptySubsequences: false)
         guard parts.count == 4, parts.allSatisfy({ $0.allSatisfy(\.isNumber) }),
