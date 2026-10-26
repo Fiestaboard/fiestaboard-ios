@@ -1,13 +1,14 @@
 import Foundation
 
 public struct APIRequest: Sendable {
-    public enum Method: String, Sendable { case get = "GET", post = "POST", put = "PUT" }
+    public enum Method: String, Sendable { case get = "GET", post = "POST", put = "PUT", patch = "PATCH" }
     public let method: Method
     public let path: [String]
     public let body: Data?
+    public let timeout: TimeInterval
     public var isMutation: Bool { method != .get }
-    public init(_ method: Method = .get, path: [String], body: Data? = nil) {
-        self.method = method; self.path = path; self.body = body
+    public init(_ method: Method = .get, path: [String], body: Data? = nil, timeout: TimeInterval = 20) {
+        self.method = method; self.path = path; self.body = body; self.timeout = timeout
     }
 }
 public struct APIResponse: Sendable {
@@ -35,7 +36,7 @@ public actor URLSessionTransport: APITransport {
         configuration.urlCache = nil
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         configuration.timeoutIntervalForRequest = 20
-        configuration.timeoutIntervalForResource = 30
+        configuration.timeoutIntervalForResource = 300
         if !protocolClasses.isEmpty { configuration.protocolClasses = protocolClasses }
         session = URLSession(configuration: configuration, delegate: RefuseRedirectDelegate(), delegateQueue: nil)
     }
@@ -51,6 +52,7 @@ public actor URLSessionTransport: APITransport {
         let currentGeneration = generation
         let url = try deployment.apiURL(request.path)
         var wire = URLRequest(url: url)
+        wire.timeoutInterval = request.timeout
         wire.httpMethod = request.method.rawValue
         wire.httpBody = request.body
         wire.httpShouldHandleCookies = false

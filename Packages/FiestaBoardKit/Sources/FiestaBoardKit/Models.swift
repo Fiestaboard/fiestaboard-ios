@@ -82,6 +82,7 @@ public struct BoardDetail: Codable, Sendable {
     public let scheduledPageID: String?
     public let resolvedPageID: String?
     public let source: String
+    public let defaultPageID: String?
     public let layers: [CanvasLayer]?
     public var renderingSupport: RenderingSupport {
         guard summary.charset == "vestaboard_v1", layers?.isEmpty != false,
@@ -91,6 +92,7 @@ public struct BoardDetail: Codable, Sendable {
     }
     enum CodingKeys: String, CodingKey {
         case characters, text, source, layers
+        case defaultPageID = "default_page_id"
         case expectedCharacters = "expected_characters", readAt = "read_at", activePageID = "active_page_id"
         case scheduledPageID = "scheduled_page_id", resolvedPageID = "resolved_page_id"
     }
@@ -104,6 +106,7 @@ public struct BoardDetail: Codable, Sendable {
         activePageID = try c.decodeIfPresent(String.self, forKey: .activePageID)
         scheduledPageID = try c.decodeIfPresent(String.self, forKey: .scheduledPageID)
         resolvedPageID = try c.decodeIfPresent(String.self, forKey: .resolvedPageID)
+        defaultPageID = try c.decodeIfPresent(String.self, forKey: .defaultPageID)
         source = try c.decode(String.self, forKey: .source)
         layers = try c.decodeIfPresent([CanvasLayer].self, forKey: .layers)
     }
@@ -117,6 +120,7 @@ public struct BoardDetail: Codable, Sendable {
         try c.encodeIfPresent(activePageID, forKey: .activePageID)
         try c.encodeIfPresent(scheduledPageID, forKey: .scheduledPageID)
         try c.encodeIfPresent(resolvedPageID, forKey: .resolvedPageID)
+        try c.encodeIfPresent(defaultPageID, forKey: .defaultPageID)
         try c.encode(source, forKey: .source)
         try c.encodeIfPresent(layers, forKey: .layers)
     }

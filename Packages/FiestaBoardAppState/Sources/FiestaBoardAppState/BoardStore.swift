@@ -2,8 +2,14 @@ import Foundation
 import Combine
 import FiestaBoardKit
 
+public struct PageDocumentSnapshot: Sendable {
+    public let id: String
+    public let deployment: DeploymentURL
+    public let data: Data
+}
+
 public enum RemoteLogoutState: Sendable, Equatable { case pending, succeeded, failed }
-public enum ActionPayload: Sendable { case text(String), page(String) }
+public enum ActionPayload: Sendable { case text(String), page(String), configuration(BoardPatch), restore }
 /// A confirmation binds the exact payload to the deployment, board and current UI generation.
 public struct PreparedAction: Identifiable, Sendable {
     public let id = UUID()
@@ -142,7 +148,7 @@ public struct PreparedAction: Identifiable, Sendable {
             do {
                 let detail = try await service.board(target)
                 guard valid(token) else { return }
-                board = detail; readbackTargets.remove(target)
+                acceptSnapshot(detail); readbackTargets.remove(target)
             } catch {
                 guard valid(token) else { return }
                 if !handleAuthenticationLoss(error) { message = safeDescription(error) }
@@ -153,11 +159,33 @@ public struct PreparedAction: Identifiable, Sendable {
         return task
     }
 
+    /// Bind local editor input to this connection; a late reply cannot become another server's document.
+    public func loadPageDocument(id: String) async throws -> PageDocumentSnapshot {
+        guard let service, status != nil, !connecting, pages.contains(where: { $0.id == id }) else {
+            throw FiestaBoardError.invalidTarget
+        }
+        let token = generation
+        let deployment = service.deployment
+        do {
+            let data = try await service.pageDocumentData(id: id)
+            guard valid(token), self.service?.deployment == deployment else { throw FiestaBoardError.staleSession }
+            return PageDocumentSnapshot(id: id, deployment: deployment, data: data)
+        } catch {
+            guard valid(token) else { throw FiestaBoardError.staleSession }
+            _ = handleAuthenticationLoss(error)
+            throw error
+        }
+    }
+
     public func prepare(_ payload: ActionPayload) -> PreparedAction? {
         guard canWrite, let target, let summary = boards.first(where: { $0.id == target.boardID }) else { return nil }
         switch payload {
         case .text(let value): guard !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
         case .page(let id): guard pages.contains(where: { $0.id == id }) else { return nil }
+        case .configuration(let patch):
+            guard (try? patch.validate()) != nil else { return nil }
+            if case .set(let id) = patch.defaultPage, !pages.contains(where: { $0.id == id }) { return nil }
+        case .restore: break
         }
         return PreparedAction(target: target, payload: payload, boardName: summary.name,
                               isDemo: status?.isDemo == true, generation: generation)
@@ -174,18 +202,26 @@ public struct PreparedAction: Identifiable, Sendable {
             guard let self else { return }
             defer { inFlight.remove(action.target) }
             do {
-                let result: MutationResult
+                let receipt: String
                 switch action.payload {
-                case .text(let value): result = try await service.sendText(value, to: action.target)
-                case .page(let id): result = try await service.selectPage(id: id, on: action.target)
+                case .text(let value): receipt = Self.describe(try await service.sendText(value, to: action.target), simulated: action.isDemo)
+                case .page(let id): receipt = Self.describe(try await service.selectPage(id: id, on: action.target), simulated: action.isDemo)
+                case .configuration(let patch):
+                    _ = try await service.updateBoard(patch, on: action.target)
+                    receipt = (action.isDemo ? "Simulated — " : "") + "Board settings updated. Physical output is not verified."
+                case .restore:
+                    let result = try await service.restoreBoard(action.target)
+                    receipt = (action.isDemo ? "Simulated — " : "") + (result.sent
+                        ? "Restore write accepted. Physical output is not verified."
+                        : "Restore did not send content. The pinned selection was retained.")
                 }
                 guard valid(token) else { return }
-                message = Self.describe(result, simulated: action.isDemo)
+                message = receipt
                 // Keep the receipt separate from readback; a failed refresh never upgrades the receipt.
                 do {
                     let detail = try await service.board(action.target)
                     guard valid(token) else { return }
-                    board = detail; readbackTargets.remove(action.target)
+                    acceptSnapshot(detail); readbackTargets.remove(action.target)
                 } catch {
                     guard valid(token) else { return }
                     readbackTargets.insert(action.target)
@@ -197,14 +233,24 @@ public struct PreparedAction: Identifiable, Sendable {
                 guard valid(token) else { return }
                 if handleAuthenticationLoss(error) { return }
                 message = (action.isDemo ? "Simulated — " : "") + safeDescription(error)
-                switch error as? FiestaBoardError {
-                case .unknownMutationOutcome, .partialWrite: readbackTargets.insert(action.target)
-                default: readbackTargets.remove(action.target)
+                // PATCH setters run in sequence. Even a 400/404/503 can follow an applied field.
+                if case .configuration = action.payload {
+                    readbackTargets.insert(action.target)
+                    message = (message ?? "") + " Refresh before another action; some settings may have changed."
+                } else {
+                    switch error as? FiestaBoardError {
+                    case .unknownMutationOutcome, .partialWrite: readbackTargets.insert(action.target)
+                    default: readbackTargets.remove(action.target)
+                    }
                 }
             }
         }
         commandTask = task
         return task
+    }
+    private func acceptSnapshot(_ detail: BoardDetail) {
+        board = detail
+        if let index = boards.firstIndex(where: { $0.id == detail.summary.id }) { boards[index] = detail.summary }
     }
     /// Authentication loss ends this UI session at every request boundary. It also
     /// invalidates prepared actions; a readback failure cannot erase an earlier receipt.

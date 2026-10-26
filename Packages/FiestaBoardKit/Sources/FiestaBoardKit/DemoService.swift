@@ -25,7 +25,10 @@ public actor DemoFiestaBoardService: FiestaBoardService {
     public func boards() async throws -> [BoardSummary] { try await service.boards() }
     public func board(_ target: BoardTarget) async throws -> BoardDetail { try await service.board(target) }
     public func pages() async throws -> [Page] { try await service.pages() }
+    public func pageDocumentData(id: String) async throws -> Data { try await service.pageDocumentData(id: id) }
     public func page(id: String) async throws -> Page { try await service.page(id: id) }
+    public func updateBoard(_ patch: BoardPatch, on target: BoardTarget) async throws -> BoardConfigurationReceipt { try await service.updateBoard(patch, on: target) }
+    public func restoreBoard(_ target: BoardTarget) async throws -> BoardRestoreReceipt { try await service.restoreBoard(target) }
     public func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult { try await service.sendText(text, to: target) }
     public func selectPage(id: String, on target: BoardTarget) async throws -> MutationResult { try await service.selectPage(id: id, on: target) }
 }
@@ -68,10 +71,41 @@ private actor DemoTransport: APITransport {
             throw FiestaBoardError.rejected(status: 404)
         }
         let key = path[2] == "board-2" ? "board" : "board-led"
+        if path.count == 3 && request.method == .patch {
+            if mode == .rejected { throw FiestaBoardError.conflict }
+            var board = try JSONSerialization.jsonObject(with: data[key]!) as! [String: Any]
+            let body = try JSONSerialization.jsonObject(with: request.body!) as! [String: Any]
+            if let page = body["default_page_id"] as? String, !["page-selected", "page-weather"].contains(page) { throw FiestaBoardError.rejected(status: 404) }
+            for (field, value) in body { board[field] = value }
+            if board["schedule_enabled"] as? Bool == true {
+                board["source"] = "schedule"
+                board["resolved_page_id"] = board["scheduled_page_id"] ?? board["default_page_id"] ?? NSNull()
+            } else {
+                board["source"] = board["active_page_id"] is String ? "manual" : "none"
+                board["resolved_page_id"] = board["active_page_id"] ?? NSNull()
+            }
+            data[key] = try JSONSerialization.data(withJSONObject: board)
+            var list = try JSONSerialization.jsonObject(with: data["boards"]!) as! [String: Any]
+            var summaries = list["boards"] as! [[String: Any]]
+            if let index = summaries.firstIndex(where: { $0["id"] as? String == path[2] }) {
+                for field in ["paused", "schedule_enabled", "auto_restore"] { summaries[index][field] = board[field] }
+            }
+            list["boards"] = summaries; data["boards"] = try JSONSerialization.data(withJSONObject: list)
+            if mode == .unknown || mode == .partial { throw FiestaBoardError.unknownMutationOutcome }
+            return APIResponse(status: 200, data: data[key]!)
+        }
         guard path.count == 4 else { return APIResponse(status: 200, data: data[key]!) }
         var board = try JSONSerialization.jsonObject(with: data[key]!) as! [String: Any]
         let body = try JSONSerialization.jsonObject(with: request.body ?? Data("{}".utf8)) as! [String: Any]
         if mode == .rejected { throw FiestaBoardError.conflict }
+        if path[3] == "restore" {
+            if board["paused"] as? Bool == true || mode == .held { throw FiestaBoardError.conflict }
+            if mode == .unknown || mode == .partial { throw FiestaBoardError.unknownMutationOutcome }
+            return APIResponse(status: 200, data: try JSONSerialization.data(withJSONObject: [
+                "board_id": path[2], "page_id": board["active_page_id"] ?? NSNull(),
+                "sent": true, "reason": NSNull(), "device_observed": false]))
+        }
+        if board["paused"] as? Bool == true { throw FiestaBoardError.conflict }
         let selectedPage = body["page_id"] as? String
         var text = body["text"] as? String ?? "SUN DAY"
         if let selectedPage {

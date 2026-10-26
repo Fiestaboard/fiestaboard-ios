@@ -10,7 +10,10 @@ public protocol FiestaBoardService: Sendable {
     func boards() async throws -> [BoardSummary]
     func board(_ target: BoardTarget) async throws -> BoardDetail
     func pages() async throws -> [Page]
+    func pageDocumentData(id: String) async throws -> Data
     func page(id: String) async throws -> Page
+    func updateBoard(_ patch: BoardPatch, on target: BoardTarget) async throws -> BoardConfigurationReceipt
+    func restoreBoard(_ target: BoardTarget) async throws -> BoardRestoreReceipt
     func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult
     func selectPage(id: String, on target: BoardTarget) async throws -> MutationResult
 }
@@ -112,6 +115,16 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         return page
     }
 
+    /// Returns the exact public document bytes, preserving fields outside the read-only Page projection.
+    public func pageDocumentData(id: String) async throws -> Data {
+        guard DeploymentURL.validSegment(id) else { throw FiestaBoardError.invalidPath }
+        let result = try await response(APIRequest(path: ["v1", "pages", id]))
+        guard let page = try? JSONDecoder().decode(Page.self, from: result.data), page.id == id else {
+            throw FiestaBoardError.invalidResponse
+        }
+        return result.data
+    }
+
     public func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult {
         try requireWrites(target)
         struct Body: Encodable { let text: String }
@@ -146,6 +159,25 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         return MutationResult(boardID: target.boardID, pageID: reply.page_id,
             disposition: reply.sent ? .accepted : .selectionStored, sent: reply.sent,
             silenced: reply.silenced ?? false, deliveryFailed: reply.error != nil, warningCount: reply.warnings?.count ?? 0)
+    }
+
+    public func updateBoard(_ patch: BoardPatch, on target: BoardTarget) async throws -> BoardConfigurationReceipt {
+        try requireWrites(target)
+        try patch.validate()
+        let detail: BoardDetail = try await fetch(APIRequest(.patch, path: ["v1", "boards", target.boardID],
+                                                            body: JSONEncoder().encode(patch)))
+        do { try detail.validate() } catch { throw FiestaBoardError.unknownMutationOutcome }
+        guard detail.summary.id == target.boardID else { throw FiestaBoardError.unknownMutationOutcome }
+        return BoardConfigurationReceipt(board: detail)
+    }
+
+    public func restoreBoard(_ target: BoardTarget) async throws -> BoardRestoreReceipt {
+        try requireWrites(target)
+        // The pinned send executor can wait behind a 120-second transition, then run another.
+        let receipt: BoardRestoreReceipt = try await fetch(APIRequest(.post, path: ["v1", "boards", target.boardID, "restore"], timeout: 300))
+        guard receipt.boardID == target.boardID, !receipt.deviceObserved,
+              receipt.pageID.map(DeploymentURL.validSegment) ?? true else { throw FiestaBoardError.unknownMutationOutcome }
+        return receipt
     }
 
     private func validateTarget(_ target: BoardTarget) throws {

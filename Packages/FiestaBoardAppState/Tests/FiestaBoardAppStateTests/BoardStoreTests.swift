@@ -216,8 +216,10 @@ private actor DelayedService: FiestaBoardService {
     private let delayConnection: Bool
     private var delayRead = false
     private var delayMutation = false
+    private var delayPage = false
     private(set) var sentCount = 0
     func delayNextRead() { delayRead = true }
+    func delayNextPageRead() { delayPage = true }
     func delayNextMutation() { delayMutation = true }
     private var gate: CheckedContinuation<Void, Never>?
     private var observers: [CheckedContinuation<Void, Never>] = []
@@ -243,12 +245,24 @@ private actor DelayedService: FiestaBoardService {
     }
     func pages() async throws -> [Page] { try await demo.pages() }
     func page(id: String) async throws -> Page { try await demo.page(id: id) }
+    func pageDocumentData(id: String) async throws -> Data {
+        let value = try await demo.pageDocumentData(id: id)
+        if delayPage { delayPage = false; await hold() }
+        return value
+    }
     func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult {
         sentCount += 1
         let result = try await demo.sendText(text, to: target)
         if delayMutation { delayMutation = false; await hold() }
         return result
     }
+    func updateBoard(_ patch: BoardPatch, on target: BoardTarget) async throws -> BoardConfigurationReceipt {
+        sentCount += 1
+        let result = try await demo.updateBoard(patch, on: target)
+        if delayMutation { delayMutation = false; await hold() }
+        return result
+    }
+    func restoreBoard(_ target: BoardTarget) async throws -> BoardRestoreReceipt { try await demo.restoreBoard(target) }
     func selectPage(id: String, on target: BoardTarget) async throws -> MutationResult { try await demo.selectPage(id: id, on: target) }
 }
 
@@ -294,9 +308,136 @@ private actor SessionFaultService: FiestaBoardService {
     }
     func pages() async throws -> [Page] { try await demo.pages() }
     func page(id: String) async throws -> Page { try await demo.page(id: id) }
+    func pageDocumentData(id: String) async throws -> Data {
+        if rejectRead { rejectRead = false; throw FiestaBoardError.unauthenticated }
+        return try await demo.pageDocumentData(id: id)
+    }
     func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult {
         sentCount += 1
         return try await demo.sendText(text, to: target)
     }
+    func updateBoard(_ patch: BoardPatch, on target: BoardTarget) async throws -> BoardConfigurationReceipt { try await demo.updateBoard(patch, on: target) }
+    func restoreBoard(_ target: BoardTarget) async throws -> BoardRestoreReceipt { try await demo.restoreBoard(target) }
     func selectPage(id: String, on target: BoardTarget) async throws -> MutationResult { try await demo.selectPage(id: id, on: target) }
+}
+
+
+extension BoardStoreTests {
+    func testControlsUseImmutableConfirmationAndConfigurationCopy() async throws {
+        let store = BoardStore()
+        await store.connect(try DemoFiestaBoardService()).value
+        let pause = try XCTUnwrap(store.prepare(.configuration(BoardPatch(paused: true))))
+        await store.confirm(pause).value
+        XCTAssertEqual(store.board?.summary.paused, true)
+        XCTAssertEqual(store.boards.first?.paused, true)
+        XCTAssertTrue(store.message?.contains("settings updated") == true)
+        XCTAssertFalse(store.message?.contains("acknowledged a send") == true)
+        await store.confirm(pause).value
+        let stale = try XCTUnwrap(store.prepare(.configuration(BoardPatch(paused: false))))
+        await store.selectBoard("board-led").value
+        await store.confirm(stale).value
+        await store.selectBoard("board-2").value
+        XCTAssertEqual(store.board?.summary.paused, true)
+        await store.confirm(try XCTUnwrap(store.prepare(.restore))).value
+        XCTAssertTrue(store.message?.contains("refused") == true)
+    }
+    func testUnknownConfigurationNeedsRefreshAndCannotBeReplayed() async throws {
+        let demo = try DemoFiestaBoardService(), store = BoardStore()
+        await store.connect(demo).value
+        await demo.setSimulation(.unknown)
+        let action = try XCTUnwrap(store.prepare(.configuration(BoardPatch(scheduleEnabled: true))))
+        await store.confirm(action).value
+        XCTAssertTrue(store.needsReadback)
+        XCTAssertNil(store.prepare(.restore))
+        await store.refresh().value
+        XCTAssertEqual(store.board?.summary.scheduleEnabled, true)
+        await demo.setSimulation(.accepted)
+        await store.confirm(try XCTUnwrap(store.prepare(.configuration(BoardPatch(scheduleEnabled: false))))).value
+        await store.confirm(action).value
+        XCTAssertEqual(store.board?.summary.scheduleEnabled, false)
+    }
+    func testLateConfigurationDoesNotReplaceDifferentBoardAndNoDuplicateWrites() async throws {
+        let delayed = try DelayedService(delayConnection: false), store = BoardStore()
+        await store.connect(delayed).value
+        await delayed.delayNextMutation()
+        let action = try XCTUnwrap(store.prepare(.configuration(BoardPatch(paused: true))))
+        let first = store.confirm(action), duplicate = store.confirm(action)
+        await delayed.waitUntilBlocked()
+        await store.selectBoard("board-led").value
+        await delayed.release()
+        await first.value; await duplicate.value
+        XCTAssertEqual(store.board?.summary.id, "board-led")
+        XCTAssertEqual(store.board?.summary.paused, false)
+        let writes = await delayed.sentCount
+        XCTAssertEqual(writes, 1)
+        await store.selectBoard("board-2").value
+        XCTAssertEqual(store.board?.summary.paused, true)
+    }
+}
+
+
+extension BoardStoreTests {
+    func testPageDocumentSnapshotBindsDeploymentAndPageIdentity() async throws {
+        let demo = try DemoFiestaBoardService(), store = BoardStore()
+        await store.connect(demo).value
+        let snapshot = try await store.loadPageDocument(id: "page-selected")
+        XCTAssertEqual(snapshot.id, "page-selected")
+        XCTAssertEqual(snapshot.deployment, demo.deployment)
+        XCTAssertEqual((try JSONSerialization.jsonObject(with: snapshot.data) as? [String: Any])?["id"] as? String, "page-selected")
+        XCTAssertFalse(snapshot.data.isEmpty)
+    }
+}
+
+extension BoardStoreTests {
+    func testLatePageDocumentCannotCrossConnections() async throws {
+        let service = try DelayedService(delayConnection: false), store = BoardStore()
+        await store.connect(service).value
+        await service.delayNextPageRead()
+        let old = Task { try await store.loadPageDocument(id: "page-selected") }
+        await service.waitUntilBlocked()
+        await store.connect(try DemoFiestaBoardService()).value
+        await service.release()
+        do { _ = try await old.value; XCTFail("Expected stale snapshot rejection") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+    }
+    func testPageDocumentAuthenticationLossInvalidatesSession() async throws {
+        let service = try SessionFaultService(), store = BoardStore()
+        await store.connect(service).value
+        await service.rejectNextRead()
+        do { _ = try await store.loadPageDocument(id: "page-selected"); XCTFail("Expected auth failure") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .unauthenticated) }
+        XCTAssertNil(store.status)
+        XCTAssertTrue(store.message?.contains("sign in again") == true)
+    }
+}
+
+extension BoardStoreTests {
+    func testRefusedConfigurationStillRequiresReadbackBecauseSettersMayPartiallyApply() async throws {
+        let demo = try DemoFiestaBoardService(), store = BoardStore()
+        await store.connect(demo).value
+        await demo.setSimulation(.rejected)
+        await store.confirm(try XCTUnwrap(store.prepare(.configuration(BoardPatch(paused: true))))).value
+        XCTAssertTrue(store.needsReadback)
+        XCTAssertFalse(store.canWrite)
+        XCTAssertEqual(store.board?.summary.paused, false)
+        await store.refresh().value
+        XCTAssertFalse(store.needsReadback)
+        XCTAssertTrue(store.canWrite)
+    }
+    func testRestoreUnknownOutcomeRequiresRefreshWithoutClearingPinnedPage() async throws {
+        let demo = try DemoFiestaBoardService(), store = BoardStore()
+        await store.connect(demo).value
+        let pinned = store.board?.activePageID
+        await demo.setSimulation(.unknown)
+        let action = try XCTUnwrap(store.prepare(.restore))
+        await store.confirm(action).value
+        XCTAssertTrue(store.needsReadback)
+        await store.refresh().value
+        XCTAssertEqual(store.board?.activePageID, pinned)
+        await demo.setSimulation(.accepted)
+        await store.confirm(action).value
+        XCTAssertTrue(store.message?.contains("unknown") == true, "Used restore confirmation cannot be replayed")
+        await store.confirm(try XCTUnwrap(store.prepare(.restore))).value
+        XCTAssertTrue(store.message?.contains("Restore write accepted") == true)
+    }
 }
