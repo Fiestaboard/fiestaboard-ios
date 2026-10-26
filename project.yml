@@ -1,0 +1,76 @@
+name: FiestaBoard
+options:
+  deploymentTarget:
+    iOS: '26.0'
+  xcodeVersion: '27.1'
+settings:
+  base:
+    SWIFT_VERSION: '6.0'
+    IPHONEOS_DEPLOYMENT_TARGET: '26.0'
+    TARGETED_DEVICE_FAMILY: '1,2'
+    CODE_SIGN_STYLE: Automatic
+    DEVELOPMENT_TEAM: ''
+targets:
+  FiestaBoardKit:
+    type: framework
+    platform: iOS
+    sources:
+      - path: Packages/FiestaBoardKit/Sources/FiestaBoardKit
+        excludes: [DemoFixtures]
+      - path: App/PackageResources.swift
+      - path: Packages/FiestaBoardKit/Sources/FiestaBoardKit/DemoFixtures
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft.core
+        GENERATE_INFOPLIST_FILE: YES
+  FiestaBoardAppState:
+    type: framework
+    platform: iOS
+    sources: [Packages/FiestaBoardAppState/Sources/FiestaBoardAppState]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft.state
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: FiestaBoardKit
+  FiestaBoard:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+        excludes: [PackageResources.swift]
+      - path: ThirdPartyNotices/FiestaBoardTV-MIT.txt
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: App/Info.plist
+        SUPPORTS_MACCATALYST: NO
+        ENABLE_USER_SCRIPT_SANDBOXING: YES
+    dependencies:
+      - target: FiestaBoardKit
+      - target: FiestaBoardAppState
+  FiestaBoardUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [Tests/UITests]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft.uitests
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: FiestaBoard
+schemes:
+  FiestaBoard:
+    build:
+      targets:
+        FiestaBoard: all
+        FiestaBoardUITests: [test]
+    run:
+      commandLineArguments:
+        '--demo': true
+    test:
+      targets: [FiestaBoardUITests]

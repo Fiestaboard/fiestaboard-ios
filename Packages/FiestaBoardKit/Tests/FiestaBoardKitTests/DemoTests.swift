@@ -11,13 +11,16 @@ final class DemoTests: XCTestCase {
         let boards = try await service.boards()
         let pages = try await service.pages()
         XCTAssertEqual(boards.first?.id, "board-2")
+        XCTAssertEqual(boards.first?.rows, 6)
+        XCTAssertEqual(boards.first?.cols, 22)
+        XCTAssertEqual(boards.first?.deviceModel, "fiestapanel_split_flap")
         XCTAssertEqual(pages.first?.id, "page-selected")
         let target = try BoardTarget(deployment: service.deployment, boardID: "board-2")
         let initial = try await service.board(target)
-        let accepted = try await service.sendText("TESTABCD", to: target)
+        let accepted = try await service.sendText("TESTABCD" + String(repeating: "A", count: 124), to: target)
         let changed = try await service.board(target)
         XCTAssertEqual(accepted.disposition, .accepted)
-        XCTAssertEqual(changed.characters?.first, [20,5,19,20])
+        XCTAssertEqual(changed.characters?.first.map { Array($0.prefix(8)) }, [20,5,19,20,1,2,3,4])
         XCTAssertNotEqual(initial.characters, changed.characters)
         await service.setSimulation(.held)
         let held = try await service.sendText("WAIT", to: target)
@@ -33,8 +36,9 @@ final class DemoTests: XCTestCase {
         do { _ = try await service.sendText("NEXT", to: target); XCTFail("Expected partial") }
         catch { guard case .partialWrite = error as? FiestaBoardError else { return XCTFail("Expected partial") } }
         let partialState = try await service.board(target)
-        XCTAssertEqual(partialState.characters?.first, [14,5,24,20])
-        XCTAssertEqual(partialState.characters?.last, [1,2,3,4], "Failed region must retain its earlier content")
+        XCTAssertEqual(partialState.characters?.first.map { Array($0.prefix(4)) }, [14,5,24,20])
+        XCTAssertEqual(partialState.characters?.last, changed.characters?.last, "Failed region must retain its earlier content")
+        XCTAssertTrue(changed.characters?.last?.contains(1) == true, "Retention assertion needs nonblank previous content")
         for simulation in [DemoSimulation.rejected, .unknown] {
             await service.setSimulation(simulation)
             do { _ = try await service.sendText("NEXT", to: target); XCTFail("Expected simulation") }

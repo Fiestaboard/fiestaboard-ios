@@ -1,0 +1,756 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		04E946E5828F8F24ACA3B84C /* BoardOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D5842953E51F07878D5A3BB /* BoardOutputView.swift */; };
+		1EDB6D6A37593CDC64B9C86B /* PackageResources.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C2B0E6480EA5DA45AAE4DC4 /* PackageResources.swift */; };
+		1F17B659C5A4800BBD4066C0 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = B269490EAA2BC1900A3319B2 /* Models.swift */; };
+		2962C6835DC311B89804BF0E /* Transport.swift in Sources */ = {isa = PBXBuildFile; fileRef = E86A00533E2B630F562A1AC0 /* Transport.swift */; };
+		452E97E77640C8CA6CA6B32C /* BoardStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 678A2B4C279B5B863E7FB900 /* BoardStore.swift */; };
+		4EE875B70538AF084473FD0D /* DemoFixtures in Resources */ = {isa = PBXBuildFile; fileRef = CC201510D850CA3750B8128B /* DemoFixtures */; };
+		69FAE33C2ABCA25412B6CEEB /* FiestaBoardTV-MIT.txt in Resources */ = {isa = PBXBuildFile; fileRef = 918875B3FE2650F6F4E9D4CA /* FiestaBoardTV-MIT.txt */; };
+		7DBA4232691B74518CE13653 /* FiestaBoardApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8F61E1D6DA7D9178AE932E5 /* FiestaBoardApp.swift */; };
+		82536B6015C825E11468AE5B /* FiestaBoardKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */; };
+		A1A3A42C2589FBD43FE6ABFD /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F4AB195B07FBE0B1390B13E5 /* PrivacyInfo.xcprivacy */; };
+		AD9743F499C713E7272DF91B /* DemoUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7CD60F365F22213C8C5A3BD /* DemoUITests.swift */; };
+		B87FD124C751FC4DA14916E3 /* FiestaBoardError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39295C71C5ED93F6ABEFB0B4 /* FiestaBoardError.swift */; };
+		BAD482CED31067DA3AED1957 /* FiestaBoardKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */; };
+		C46722FA41E6A76CE9DFCA28 /* FiestaBoardAppState.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2E21A61E3064CBB07099A3E1 /* FiestaBoardAppState.framework */; };
+		C60C83F52F1EDEF3766EED47 /* FiestaBoardKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		D04415239B53F363AD383EA2 /* FiestaBoardAppState.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 2E21A61E3064CBB07099A3E1 /* FiestaBoardAppState.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		E6BBBAB3BD99634882D9AAE5 /* Service.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F65FAC9659A00AF389AC325 /* Service.swift */; };
+		ECCD8C8DE3D983B4431AFAAE /* DeploymentURL.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DD4D3175C0AE6D2D868EC75 /* DeploymentURL.swift */; };
+		EFDCC3B513E73C17BC931593 /* BoardTables.swift in Sources */ = {isa = PBXBuildFile; fileRef = C99AB94FD5D397EF2F36EFA1 /* BoardTables.swift */; };
+		F52BEDA807B1A9BAF303000E /* DemoService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A97B4AF51A85801376D6EE28 /* DemoService.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		26CD399079AE6799FC525200 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BCF1504AFC6505A8FEA4E64A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AB43966DBC70902F9D9A848C;
+			remoteInfo = FiestaBoardAppState;
+		};
+		C11ACD71AAC23633DA5FD337 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BCF1504AFC6505A8FEA4E64A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 51029BE48713573B931AC4CE;
+			remoteInfo = FiestaBoardKit;
+		};
+		CD90C1F00F8AEEEAF1A5D67C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BCF1504AFC6505A8FEA4E64A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 51029BE48713573B931AC4CE;
+			remoteInfo = FiestaBoardKit;
+		};
+		FC78369A86F8F63B21FB866E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BCF1504AFC6505A8FEA4E64A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A2DF4688EBE929C023968982;
+			remoteInfo = FiestaBoard;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F5EA68A5985213D16DFFD1C2 /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				C60C83F52F1EDEF3766EED47 /* FiestaBoardKit.framework in Embed Frameworks */,
+				D04415239B53F363AD383EA2 /* FiestaBoardAppState.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		2E21A61E3064CBB07099A3E1 /* FiestaBoardAppState.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FiestaBoardAppState.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		39295C71C5ED93F6ABEFB0B4 /* FiestaBoardError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiestaBoardError.swift; sourceTree = "<group>"; };
+		3D5842953E51F07878D5A3BB /* BoardOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardOutputView.swift; sourceTree = "<group>"; };
+		3DD4D3175C0AE6D2D868EC75 /* DeploymentURL.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeploymentURL.swift; sourceTree = "<group>"; };
+		5417092099F25D7A2F04F3C6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FiestaBoardKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		678A2B4C279B5B863E7FB900 /* BoardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardStore.swift; sourceTree = "<group>"; };
+		80B7025A77DB33DB399EC12D /* FiestaBoard.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FiestaBoard.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8624ABBD546279E8133D9396 /* FiestaBoardUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FiestaBoardUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8C2B0E6480EA5DA45AAE4DC4 /* PackageResources.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackageResources.swift; sourceTree = "<group>"; };
+		918875B3FE2650F6F4E9D4CA /* FiestaBoardTV-MIT.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "FiestaBoardTV-MIT.txt"; sourceTree = "<group>"; };
+		9F65FAC9659A00AF389AC325 /* Service.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Service.swift; sourceTree = "<group>"; };
+		A7CD60F365F22213C8C5A3BD /* DemoUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoUITests.swift; sourceTree = "<group>"; };
+		A97B4AF51A85801376D6EE28 /* DemoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoService.swift; sourceTree = "<group>"; };
+		B269490EAA2BC1900A3319B2 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		C99AB94FD5D397EF2F36EFA1 /* BoardTables.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardTables.swift; sourceTree = "<group>"; };
+		CC201510D850CA3750B8128B /* DemoFixtures */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DemoFixtures; path = Packages/FiestaBoardKit/Sources/FiestaBoardKit/DemoFixtures; sourceTree = SOURCE_ROOT; };
+		D8F61E1D6DA7D9178AE932E5 /* FiestaBoardApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiestaBoardApp.swift; sourceTree = "<group>"; };
+		E86A00533E2B630F562A1AC0 /* Transport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Transport.swift; sourceTree = "<group>"; };
+		F4AB195B07FBE0B1390B13E5 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A4DAA7BD323E35576B713375 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BAD482CED31067DA3AED1957 /* FiestaBoardKit.framework in Frameworks */,
+				C46722FA41E6A76CE9DFCA28 /* FiestaBoardAppState.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C52996D914B5CD3D38424781 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				82536B6015C825E11468AE5B /* FiestaBoardKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		5214043506ED068863C92A82 /* FiestaBoardKit */ = {
+			isa = PBXGroup;
+			children = (
+				A97B4AF51A85801376D6EE28 /* DemoService.swift */,
+				3DD4D3175C0AE6D2D868EC75 /* DeploymentURL.swift */,
+				39295C71C5ED93F6ABEFB0B4 /* FiestaBoardError.swift */,
+				B269490EAA2BC1900A3319B2 /* Models.swift */,
+				9F65FAC9659A00AF389AC325 /* Service.swift */,
+				E86A00533E2B630F562A1AC0 /* Transport.swift */,
+			);
+			name = FiestaBoardKit;
+			path = Packages/FiestaBoardKit/Sources/FiestaBoardKit;
+			sourceTree = "<group>";
+		};
+		55F7EDF63B78B9F429159445 /* FiestaBoardAppState */ = {
+			isa = PBXGroup;
+			children = (
+				678A2B4C279B5B863E7FB900 /* BoardStore.swift */,
+				C99AB94FD5D397EF2F36EFA1 /* BoardTables.swift */,
+			);
+			name = FiestaBoardAppState;
+			path = Packages/FiestaBoardAppState/Sources/FiestaBoardAppState;
+			sourceTree = "<group>";
+		};
+		57B3A47A0B2A3035083F9772 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				80B7025A77DB33DB399EC12D /* FiestaBoard.app */,
+				2E21A61E3064CBB07099A3E1 /* FiestaBoardAppState.framework */,
+				5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */,
+				8624ABBD546279E8133D9396 /* FiestaBoardUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		97DE572B09991EE50A31C8E6 /* ThirdPartyNotices */ = {
+			isa = PBXGroup;
+			children = (
+				918875B3FE2650F6F4E9D4CA /* FiestaBoardTV-MIT.txt */,
+			);
+			path = ThirdPartyNotices;
+			sourceTree = "<group>";
+		};
+		A8C381AA094EA08ED178D2A4 /* UITests */ = {
+			isa = PBXGroup;
+			children = (
+				A7CD60F365F22213C8C5A3BD /* DemoUITests.swift */,
+			);
+			name = UITests;
+			path = Tests/UITests;
+			sourceTree = "<group>";
+		};
+		C58BB397D159B1A07CC3AFCA = {
+			isa = PBXGroup;
+			children = (
+				CC201510D850CA3750B8128B /* DemoFixtures */,
+				ECE34FF7EFE478C4DB307AF6 /* App */,
+				55F7EDF63B78B9F429159445 /* FiestaBoardAppState */,
+				5214043506ED068863C92A82 /* FiestaBoardKit */,
+				97DE572B09991EE50A31C8E6 /* ThirdPartyNotices */,
+				A8C381AA094EA08ED178D2A4 /* UITests */,
+				57B3A47A0B2A3035083F9772 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		ECE34FF7EFE478C4DB307AF6 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				3D5842953E51F07878D5A3BB /* BoardOutputView.swift */,
+				D8F61E1D6DA7D9178AE932E5 /* FiestaBoardApp.swift */,
+				5417092099F25D7A2F04F3C6 /* Info.plist */,
+				8C2B0E6480EA5DA45AAE4DC4 /* PackageResources.swift */,
+				F4AB195B07FBE0B1390B13E5 /* PrivacyInfo.xcprivacy */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		51029BE48713573B931AC4CE /* FiestaBoardKit */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BFB5F81863AE0003DD3CD646 /* Build configuration list for PBXNativeTarget "FiestaBoardKit" */;
+			buildPhases = (
+				5EBE22F33337382A4098B0FC /* Sources */,
+				C599EBE52BA1FC218A163907 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FiestaBoardKit;
+			packageProductDependencies = (
+			);
+			productName = FiestaBoardKit;
+			productReference = 5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+		A2DF4688EBE929C023968982 /* FiestaBoard */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D472053AAEB69BF3ECDE5186 /* Build configuration list for PBXNativeTarget "FiestaBoard" */;
+			buildPhases = (
+				D0BC45582217B6462DAF5C2F /* Sources */,
+				5E22BF96E4F2821A52E3C13E /* Resources */,
+				A4DAA7BD323E35576B713375 /* Frameworks */,
+				F5EA68A5985213D16DFFD1C2 /* Embed Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				30F20422DFD9C450AFCE06DC /* PBXTargetDependency */,
+				CAF6C199F65EE58B24D20F77 /* PBXTargetDependency */,
+			);
+			name = FiestaBoard;
+			packageProductDependencies = (
+			);
+			productName = FiestaBoard;
+			productReference = 80B7025A77DB33DB399EC12D /* FiestaBoard.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A7FA0B8C8BF23BC94B380584 /* FiestaBoardUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 082DD1B02FF9C66C12318438 /* Build configuration list for PBXNativeTarget "FiestaBoardUITests" */;
+			buildPhases = (
+				5705BC10A7A247D58B03914C /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				4876B534A62AC723433C2C86 /* PBXTargetDependency */,
+			);
+			name = FiestaBoardUITests;
+			packageProductDependencies = (
+			);
+			productName = FiestaBoardUITests;
+			productReference = 8624ABBD546279E8133D9396 /* FiestaBoardUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		AB43966DBC70902F9D9A848C /* FiestaBoardAppState */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3D11195D52BB22773930EE00 /* Build configuration list for PBXNativeTarget "FiestaBoardAppState" */;
+			buildPhases = (
+				50A6F5763C0752068DB11CE5 /* Sources */,
+				C52996D914B5CD3D38424781 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3E355B3F574575085F4727F9 /* PBXTargetDependency */,
+			);
+			name = FiestaBoardAppState;
+			packageProductDependencies = (
+			);
+			productName = FiestaBoardAppState;
+			productReference = 2E21A61E3064CBB07099A3E1 /* FiestaBoardAppState.framework */;
+			productType = "com.apple.product-type.framework";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		BCF1504AFC6505A8FEA4E64A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 2710;
+				TargetAttributes = {
+					51029BE48713573B931AC4CE = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					A2DF4688EBE929C023968982 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+					A7FA0B8C8BF23BC94B380584 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+						TestTargetID = A2DF4688EBE929C023968982;
+					};
+					AB43966DBC70902F9D9A848C = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 9E375A4E4CF34A53582CD793 /* Build configuration list for PBXProject "FiestaBoard" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = C58BB397D159B1A07CC3AFCA;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 57B3A47A0B2A3035083F9772 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				51029BE48713573B931AC4CE /* FiestaBoardKit */,
+				AB43966DBC70902F9D9A848C /* FiestaBoardAppState */,
+				A2DF4688EBE929C023968982 /* FiestaBoard */,
+				A7FA0B8C8BF23BC94B380584 /* FiestaBoardUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		5E22BF96E4F2821A52E3C13E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				69FAE33C2ABCA25412B6CEEB /* FiestaBoardTV-MIT.txt in Resources */,
+				A1A3A42C2589FBD43FE6ABFD /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C599EBE52BA1FC218A163907 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4EE875B70538AF084473FD0D /* DemoFixtures in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		50A6F5763C0752068DB11CE5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				452E97E77640C8CA6CA6B32C /* BoardStore.swift in Sources */,
+				EFDCC3B513E73C17BC931593 /* BoardTables.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5705BC10A7A247D58B03914C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AD9743F499C713E7272DF91B /* DemoUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5EBE22F33337382A4098B0FC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F52BEDA807B1A9BAF303000E /* DemoService.swift in Sources */,
+				ECCD8C8DE3D983B4431AFAAE /* DeploymentURL.swift in Sources */,
+				B87FD124C751FC4DA14916E3 /* FiestaBoardError.swift in Sources */,
+				1F17B659C5A4800BBD4066C0 /* Models.swift in Sources */,
+				1EDB6D6A37593CDC64B9C86B /* PackageResources.swift in Sources */,
+				E6BBBAB3BD99634882D9AAE5 /* Service.swift in Sources */,
+				2962C6835DC311B89804BF0E /* Transport.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D0BC45582217B6462DAF5C2F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				04E946E5828F8F24ACA3B84C /* BoardOutputView.swift in Sources */,
+				7DBA4232691B74518CE13653 /* FiestaBoardApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		30F20422DFD9C450AFCE06DC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 51029BE48713573B931AC4CE /* FiestaBoardKit */;
+			targetProxy = C11ACD71AAC23633DA5FD337 /* PBXContainerItemProxy */;
+		};
+		3E355B3F574575085F4727F9 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 51029BE48713573B931AC4CE /* FiestaBoardKit */;
+			targetProxy = CD90C1F00F8AEEEAF1A5D67C /* PBXContainerItemProxy */;
+		};
+		4876B534A62AC723433C2C86 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A2DF4688EBE929C023968982 /* FiestaBoard */;
+			targetProxy = FC78369A86F8F63B21FB866E /* PBXContainerItemProxy */;
+		};
+		CAF6C199F65EE58B24D20F77 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AB43966DBC70902F9D9A848C /* FiestaBoardAppState */;
+			targetProxy = 26CD399079AE6799FC525200 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0EB5B66834B9AB5E407858B5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GENERATE_INFOPLIST_FILE = YES;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.fiestaboard.ios.draft.state;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Debug;
+		};
+		1034670FCF1218C376B4C7CA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.fiestaboard.ios.draft.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = FiestaBoard;
+			};
+			name = Release;
+		};
+		2757DD3B27D5C3CC7101F778 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.fiestaboard.ios.draft;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		4B6E007FED3F29F6AD962A03 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		5AC8C0F41B690B9DD7DA4AB9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GENERATE_INFOPLIST_FILE = YES;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.fiestaboard.ios.draft.core;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+		734B7377F3DC1F9FCAC4DA1B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.fiestaboard.ios.draft;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		7443D424904071BF77FE3665 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C006BBDEEC37F11EC14B6264 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.fiestaboard.ios.draft.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = FiestaBoard;
+			};
+			name = Debug;
+		};
+		D486CA6E6ACBD58DA9F52B66 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GENERATE_INFOPLIST_FILE = YES;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.fiestaboard.ios.draft.state;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Release;
+		};
+		DF83FFF0E6339BE76434CAF7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "";
+				CURRENT_PROJECT_VERSION = 1;
+				DEFINES_MODULE = YES;
+				DYLIB_COMPATIBILITY_VERSION = 1;
+				DYLIB_CURRENT_VERSION = 1;
+				DYLIB_INSTALL_NAME_BASE = "@rpath";
+				GENERATE_INFOPLIST_FILE = YES;
+				INSTALL_PATH = "$(LOCAL_LIBRARY_DIR)/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.fiestaboard.ios.draft.core;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VERSIONING_SYSTEM = "apple-generic";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		082DD1B02FF9C66C12318438 /* Build configuration list for PBXNativeTarget "FiestaBoardUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C006BBDEEC37F11EC14B6264 /* Debug */,
+				1034670FCF1218C376B4C7CA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		3D11195D52BB22773930EE00 /* Build configuration list for PBXNativeTarget "FiestaBoardAppState" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0EB5B66834B9AB5E407858B5 /* Debug */,
+				D486CA6E6ACBD58DA9F52B66 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		9E375A4E4CF34A53582CD793 /* Build configuration list for PBXProject "FiestaBoard" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7443D424904071BF77FE3665 /* Debug */,
+				4B6E007FED3F29F6AD962A03 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		BFB5F81863AE0003DD3CD646 /* Build configuration list for PBXNativeTarget "FiestaBoardKit" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DF83FFF0E6339BE76434CAF7 /* Debug */,
+				5AC8C0F41B690B9DD7DA4AB9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D472053AAEB69BF3ECDE5186 /* Build configuration list for PBXNativeTarget "FiestaBoard" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				734B7377F3DC1F9FCAC4DA1B /* Debug */,
+				2757DD3B27D5C3CC7101F778 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = BCF1504AFC6505A8FEA4E64A /* Project object */;
+}
