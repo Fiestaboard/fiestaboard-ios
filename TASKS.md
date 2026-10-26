@@ -13,10 +13,10 @@ This is the durable task tracker. Full web-app feature parity is required before
 
 | ID | Deliverable | Status / owner | Dependencies / acceptance |
 | --- | --- | --- | --- |
-| C-01 | Per-board pause/resume, schedule enablement/defaults, restore controls and faithful demo outcomes | In progress — Sol (Opus CLI attempted; authentication expired) | Exact pinned API; immutable targets; no automatic write retry; host tests, build, Astra review |
+| C-01 | Per-board pause/resume, schedule enablement/defaults, restore controls and faithful demo outcomes | Implemented `0448589`; awaiting integration and Astra review | Exact pinned API; immutable targets; no automatic write retry; host tests, build, Astra review |
 | E-01 | Lossless page document model, local draft persistence, native editor feasibility | In progress — Sol (Opus CLI attempted; authentication expired) | Preserve unknown fields/numbers/null/markup; no remote save before revision protocol |
-| W1-03 | Integrate C-01/E-01 into the app and review the wave | Queued — single integrator + Astra | Preserve user signing edits; device/Simulator compilation; manual UI matrix |
-| P-01 | All-writer server revisions and conditional saves | Queued | Web/AI/import/restore/background writers; both save orders; isolated backend branch |
+| W1-03 | Integrate C-01/E-01 into the app and review the wave | In progress — Sol integrator; Astra next | Preserve user signing edits; device/Simulator compilation; manual UI matrix |
+| P-01 | All-writer server revisions and conditional saves | In progress — Sol, page API foundation first; single backend draft PR authorized | Web/AI/import/restore/background writers; both save orders; isolated backend branch |
 | S-01 | Shared schema vocabulary, secret-preserving drafts and native forms | Queued | Required by display configuration and integrations |
 | R-01 | Complete LED/pixel/layer/white-board renderer and geometry fidelity | Queued | Shared golden fixtures; actual visual/device checks |
 
@@ -134,3 +134,5 @@ Partial means a subset exists in the draft; the checkbox stays open until the en
 - Next-wave choice: Jev recommended controls + editor foundation over schema/renderer or immediate broad backend revisions (0.95 reported confidence). Source dependencies and acceptance tests determine readiness; the advisory is not proof.
 
 - Claude Opus CLI attempts for C-01 and E-01 both returned HTTP 401: saved OAuth access token expired. No Opus code contribution is claimed. Sol continues; retry only after authentication is refreshed.
+
+- Backend API work is isolated at `../fiestaboard-ios-api` on `codex/ios-api-access`, based on clean upstream `3a1d6e8b6` (10.1.2). The user authorized one ongoing draft PR for native API gaps. The original dirty backend checkout is untouched. The iOS draft remains pinned to its audited 10.0.0 candidate writes; a newer server version is not implicitly trusted.
