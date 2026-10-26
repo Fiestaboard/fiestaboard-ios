@@ -53,7 +53,7 @@
       "paho-mqtt==2.1.0",
       "pandas==3.1.0",
       "peewee==4.5.3",
-      "pillow==12.3.0",
+      "pillow==13.0.0",
       "pip==26.2.2",
       "platformdirs==4.13.5",
       "pluggy==1.7.0",
@@ -95,7 +95,7 @@
       "yfinance==1.7.0",
       "zeroconf==0.151.5"
     ],
-    "image": "sha256:71de37804fb6c8529def83e52ee0bbd778fd08ee665bb062ccf10c65d9b38a17",
+    "image": "sha256:eade8ae94aad6b921665aa8e9f44eca135c9764d79b24ff103d0501403c71f37",
     "implementation": "CPython",
     "lifespan": "not entered; no startup hardware workers",
     "output_seed": {

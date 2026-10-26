@@ -2,6 +2,8 @@
 ARG BASE_IMAGE=fb-2354-test:latest
 FROM ${BASE_IMAGE}
 USER root
+COPY dependencies.lock /dependencies.lock
+RUN python -m pip install --no-cache-dir --index-url https://pypi.org/simple -r /dependencies.lock
 COPY backend /seed-source
 RUN cd /seed-source && python scripts/seed_outputs.py build --lock outputs.lock.json --dest /opt/fiestaboard/v10-seed/outputs \
     && rm -rf /opt/fiestaboard/seed/outputs \

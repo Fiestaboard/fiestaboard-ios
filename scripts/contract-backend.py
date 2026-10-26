@@ -13,7 +13,7 @@ import tarfile
 import tempfile
 
 BOOTSTRAP_IMAGE = 'sha256:77fc6a98ca7f16f15810fd0bd8b3b51e7a0ed81b90c38ce8ede492cd8a4caa62'
-IMAGE = 'sha256:71de37804fb6c8529def83e52ee0bbd778fd08ee665bb062ccf10c65d9b38a17'
+IMAGE = 'sha256:eade8ae94aad6b921665aa8e9f44eca135c9764d79b24ff103d0501403c71f37'
 ROOT = Path(__file__).resolve().parents[1]
 OMITTED = {'.env', 'data', 'config.json', 'auth.json'}
 
