@@ -16,14 +16,16 @@ This is the durable task tracker. Full web-app feature parity is required before
 | C-01 | Per-board pause/resume, schedule enablement/defaults, restore controls and faithful demo outcomes | Complete for bounded scope — Astra approved `be72a11` | Exact pinned API; immutable targets; no automatic write retry; host tests, build, Astra review |
 | E-01 | Lossless page document model, local draft persistence, native editor feasibility | Complete for bounded scope — Astra approved `be72a11` | Preserve unknown fields/numbers/null/markup; no remote save before revision protocol |
 | W1-03 | Integrate C-01/E-01 into the app and review the wave | Complete — built and Astra approved; interactive device checks remain | Preserve user signing edits; device/Simulator compilation; manual UI matrix |
-| P-01 | All-writer server revisions and conditional saves | In progress — Sol, page API foundation first; single backend draft PR authorized | Web/AI/import/restore/background writers; both save orders; isolated backend branch |
+| P-01 | All-writer server revisions and conditional saves | Page foundation reviewed and pushed; draft PR creation blocked by connector approval policy; broader writer work remains | Web/AI/import/restore/background writers; both save orders; isolated backend branch |
+| P-02 | Native conditional page saves and explicit conflict handling | Queued | Consume reviewed backend protocol; audited release and lossless field contract; never retry stale writes automatically |
+| E-02 | Server template validation and render previews | Queued | Adapt existing internal endpoints with geometry/charset/canvas fixtures |
 | S-01 | Shared schema vocabulary, secret-preserving drafts and native forms | Queued | Required by display configuration and integrations |
 | R-01 | Complete LED/pixel/layer/white-board renderer and geometry fidelity | Queued | Shared golden fixtures; actual visual/device checks |
 
 ## Release milestones still open
 
 - [ ] Finish API behavior fixtures, supported server matrix, native session persistence/discovery/setup, authenticated proxy/HA topology and all four OAuth proofs.
-- [ ] Complete adaptive scene restoration, TextKit rich/plain editor feasibility and all supported Duo poses.
+- [ ] Complete adaptive scene restoration, TextKit rich/plain editor feasibility and supported window/device poses.
 - [ ] Complete home controls, temporary overrides/silence/held/external frames, output/display setup and schema-driven configuration.
 - [ ] Complete page CRUD/Picks/import/export/share, rich/plain editing, tokens/cells/formulas, undo, persistent drafts, preview and revision-safe saves.
 - [ ] Complete Draw/Shapes/Source canvas authoring, up to eight canvases, Pencil/accessibility and server-rendered parity.
@@ -140,3 +142,7 @@ Partial means a subset exists in the draft; the checkbox stays open until the en
 - [Native API access audit](docs/research/2026-10-25-native-api-gaps.md): current web source is a static SPA using existing API routes; no additional hidden SSR data gap was demonstrated. Page preconditions are the first backend patch; native adapters cover most remaining access work.
 
 - Wave 1 approved by Astra at `be72a11`, after scalar-exact Unicode and visible control outcome/readback fixes. 29 Kit + 23 AppState + 22 Documents tests passed; unsigned Simulator/device builds and UI-test compilation passed. UI tests were not executed. See [wave verification](docs/research/2026-10-25-parity-wave-1-verification.md).
+
+- Backend page foundation: `1514c274a` pushed to `Fiestaboard/FiestaBoard:codex/ios-api-access`; product changes Astra-approved at `4967cb7e2`. 523 focused Python tests and the corrected full web suite (3,060 passed, seven skipped) passed. Full Python run OOMed at 54%; no complete Python-suite claim. [Prepared single draft PR and branch](docs/research/2026-10-25-backend-pr-draft.md). GitHub connector requires approval but this session has approval policy never, so PR creation remains pending.
+
+- Local main received the reviewed iOS wave, preserving all 21 local Xcode project-property changes. Fresh main unsigned iPhone build, contract integrity and all 25 contract-tool tests passed. User signing selections remain uncommitted; no automatic project regeneration was performed on main.
