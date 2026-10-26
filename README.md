@@ -22,5 +22,6 @@ The contract foundation includes a source-grounded parity inventory, pinned publ
 - [Run the isolated checks](Tests/Integration/README.md)
 - [Run and test the native draft](docs/draft-testing.md)
 - [Native draft verification and limits](docs/research/2026-10-25-draft-verification.md)
+- [Remaining tasks and current work](TASKS.md)
 
-First-release requirement: complete web-app feature parity, adapted to native interaction and supported window sizes/poses. Implementation uses GPT-6.1 Sol subagents; GPT-6 Astra reviews architecture, milestones, and release readiness.
+First-release requirement: complete web-app feature parity, adapted to native interaction and supported window sizes/poses. GPT-6.1 Sol agents coordinate implementation and tests, with Claude Opus CLI contributions on bounded parallel tasks. GPT-6 Astra independently reviews architecture, integrated milestones, and release readiness.

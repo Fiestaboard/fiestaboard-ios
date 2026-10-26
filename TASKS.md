@@ -13,8 +13,8 @@ This is the durable task tracker. Full web-app feature parity is required before
 
 | ID | Deliverable | Status / owner | Dependencies / acceptance |
 | --- | --- | --- | --- |
-| C-01 | Per-board pause/resume, schedule enablement/defaults, restore controls and faithful demo outcomes | In progress — Sol + Claude Opus CLI | Exact pinned API; immutable targets; no automatic write retry; host tests, build, Astra review |
-| E-01 | Lossless page document model, local draft persistence, native editor feasibility | In progress — Sol + Claude Opus CLI | Preserve unknown fields/numbers/null/markup; no remote save before revision protocol |
+| C-01 | Per-board pause/resume, schedule enablement/defaults, restore controls and faithful demo outcomes | In progress — Sol (Opus CLI attempted; authentication expired) | Exact pinned API; immutable targets; no automatic write retry; host tests, build, Astra review |
+| E-01 | Lossless page document model, local draft persistence, native editor feasibility | In progress — Sol (Opus CLI attempted; authentication expired) | Preserve unknown fields/numbers/null/markup; no remote save before revision protocol |
 | W1-03 | Integrate C-01/E-01 into the app and review the wave | Queued — single integrator + Astra | Preserve user signing edits; device/Simulator compilation; manual UI matrix |
 | P-01 | All-writer server revisions and conditional saves | Queued | Web/AI/import/restore/background writers; both save orders; isolated backend branch |
 | S-01 | Shared schema vocabulary, secret-preserving drafts and native forms | Queued | Required by display configuration and integrations |
@@ -132,3 +132,5 @@ Partial means a subset exists in the draft; the checkbox stays open until the en
 
 - Baseline: `d6b8a26` (Astra-approved draft), `3c77d42` (signing-preserving helper). See [draft verification](docs/research/2026-10-25-draft-verification.md).
 - Next-wave choice: Jev recommended controls + editor foundation over schema/renderer or immediate broad backend revisions (0.95 reported confidence). Source dependencies and acceptance tests determine readiness; the advisory is not proof.
+
+- Claude Opus CLI attempts for C-01 and E-01 both returned HTTP 401: saved OAuth access token expired. No Opus code contribution is claimed. Sol continues; retry only after authentication is refreshed.
