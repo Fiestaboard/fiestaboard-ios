@@ -564,8 +564,8 @@
         "authorization_header_forbidden"
       ],
       "scope": "server",
-      "side_effects": "none",
-      "replay": "safe_read",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
       "web_sources": [
         {
           "path": "web/src/lib/api/sessions.ts",
@@ -577,7 +577,7 @@
       ],
       "contract_status": "candidate",
       "verification_status": "schema_only",
-      "notes": "Web functions: listSessions. Backend source: src/auth/session_routes.py:22. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+      "notes": "Web functions: listSessions. Backend source: src/auth/session_routes.py:22. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78). Listing calls SessionStore.cleanup and deletes expired session, CSRF, challenge and rate-limit records before selecting rows; persisted maintenance, not a pure read. src/auth/session_store.py:82\u201388,141\u2013148."
     },
     {
       "id": "get_auth_sessions_context",
@@ -1794,8 +1794,8 @@
         "signed_single_use_oauth_state_or_provider_bound_pending_flow"
       ],
       "scope": "public",
-      "side_effects": "none",
-      "replay": "safe_read",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
       "web_sources": [
         {
           "path": "web/src/components/plugin-settings/oauth-connection.tsx",
@@ -1812,7 +1812,7 @@
       ],
       "contract_status": "candidate",
       "verification_status": "schema_only",
-      "notes": "Web functions: browser relay return. Backend source: src/oauth/routes.py:165. Not an app callback. Signed state completion then 302 relative browser return to ../../integrations or ../../settings; src/oauth/routes.py:135. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+      "notes": "Web functions: browser relay return. Backend source: src/oauth/routes.py:165. Not an app callback. Signed state completion then 302 relative browser return to ../../integrations or ../../settings; src/oauth/routes.py:135. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78). Mutating single-use completion: a valid matched pending state is popped before denial/provider-error/missing-code handling, so those outcomes and exchange failure consume the attempt too. Successful completion exchanges the provider code, persists tokens and invalidates provider data; never replay automatically. src/oauth/service.py:730\u2013775,829\u2013850."
     },
     {
       "id": "get_oauth_connections",
