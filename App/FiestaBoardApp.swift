@@ -320,7 +320,11 @@ private struct WelcomeView: View {
                         } catch { validationError = (error as? FiestaBoardError)?.localizedDescription ?? "Check the server URL." }
                     }.disabled(store.connecting || serverURL.isEmpty)
                     if store.connecting { ProgressView("Connecting…"); Button("Cancel") { store.disconnect() } }
-                    if let error = validationError ?? store.message { Text(error).foregroundStyle(.red) }
+                    if let error = validationError { Text(error).foregroundStyle(.red) }
+                    else if let message = store.message {
+                        Label(message, systemImage: store.remoteLogoutState == .succeeded ? "checkmark.circle" : store.remoteLogoutState == .pending ? "clock" : "exclamationmark.triangle")
+                            .foregroundStyle(store.remoteLogoutState == .succeeded || store.remoteLogoutState == .pending ? Color.secondary : Color.red)
+                    }
                 }
                 Section("Draft details") { DraftScopeView() }
             }.navigationTitle("Welcome")

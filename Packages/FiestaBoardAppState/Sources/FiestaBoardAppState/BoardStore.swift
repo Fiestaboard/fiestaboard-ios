@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import FiestaBoardKit
 
+public enum RemoteLogoutState: Sendable, Equatable { case pending, succeeded, failed }
 public enum ActionPayload: Sendable { case text(String), page(String) }
 /// A confirmation binds the exact payload to the deployment, board and current UI generation.
 public struct PreparedAction: Identifiable, Sendable {
@@ -21,6 +22,7 @@ public struct PreparedAction: Identifiable, Sendable {
     @Published public private(set) var board: BoardDetail?
     @Published public private(set) var selectedBoardID: String?
     @Published public private(set) var message: String?
+    @Published public private(set) var remoteLogoutState: RemoteLogoutState?
     @Published public private(set) var connecting = false
     @Published public private(set) var refreshing = false
     @Published private var readbackTargets: Set<BoardTarget> = []
@@ -77,7 +79,7 @@ public struct PreparedAction: Identifiable, Sendable {
                 if let target, !inFlight.contains(target) { readbackTargets.remove(target) }
             } catch {
                 guard valid(token) else { return }
-                message = safeDescription(error)
+                if !handleAuthenticationLoss(error) { message = safeDescription(error) }
             }
             if valid(token) { connecting = false }
         }
@@ -95,7 +97,7 @@ public struct PreparedAction: Identifiable, Sendable {
         connectionTask?.cancel(); refreshTask?.cancel(); commandTask?.cancel()
         connectionTask = nil; refreshTask = nil; commandTask = nil
         service = nil; status = nil; boards = []; pages = []; board = nil; selectedBoardID = nil
-        connecting = false; refreshing = false; message = nil
+        connecting = false; refreshing = false; message = nil; remoteLogoutState = nil
         connectionLabel = "Disconnected"; usedActions = []
     }
 
@@ -103,7 +105,23 @@ public struct PreparedAction: Identifiable, Sendable {
     @discardableResult public func logout() -> Task<Void, Never> {
         let old = service
         disconnect()
-        return Task { try? await old?.logout() }
+        guard let old else { return Task {} }
+        let token = generation
+        let server = old.deployment.description
+        remoteLogoutState = .pending
+        message = "Disconnected locally. Signing out of \(server)…"
+        return Task { [weak self] in
+            do {
+                try await old.logout()
+                guard let self, generation == token else { return }
+                remoteLogoutState = .succeeded
+                message = "Disconnected locally. Server sign-out confirmed for \(server)."
+            } catch {
+                guard let self, generation == token else { return }
+                remoteLogoutState = .failed
+                message = "Disconnected locally. Server sign-out could not be confirmed for \(server); the server session may still be active. Sign out in the server’s web interface if needed."
+            }
+        }
     }
 
     @discardableResult public func selectBoard(_ id: String) -> Task<Void, Never> {
@@ -127,7 +145,7 @@ public struct PreparedAction: Identifiable, Sendable {
                 board = detail; readbackTargets.remove(target)
             } catch {
                 guard valid(token) else { return }
-                message = safeDescription(error)
+                if !handleAuthenticationLoss(error) { message = safeDescription(error) }
             }
             if valid(token) { refreshing = false }
         }
@@ -171,20 +189,32 @@ public struct PreparedAction: Identifiable, Sendable {
                 } catch {
                     guard valid(token) else { return }
                     readbackTargets.insert(action.target)
-                    message = (message ?? "") + " Readback unavailable. Refresh before another action."
+                    if !handleAuthenticationLoss(error, preservingReceipt: message) {
+                        message = (message ?? "") + " Readback unavailable. Refresh before another action."
+                    }
                 }
             } catch {
                 guard valid(token) else { return }
+                if handleAuthenticationLoss(error) { return }
                 message = (action.isDemo ? "Simulated — " : "") + safeDescription(error)
                 switch error as? FiestaBoardError {
                 case .unknownMutationOutcome, .partialWrite: readbackTargets.insert(action.target)
-                case .unauthenticated: status = nil
                 default: readbackTargets.remove(action.target)
                 }
             }
         }
         commandTask = task
         return task
+    }
+    /// Authentication loss ends this UI session at every request boundary. It also
+    /// invalidates prepared actions; a readback failure cannot erase an earlier receipt.
+    private func handleAuthenticationLoss(_ error: any Error, preservingReceipt: String? = nil) -> Bool {
+        guard (error as? FiestaBoardError) == .unauthenticated else { return false }
+        let server = connectionLabel
+        disconnect()
+        let prompt = "Authentication is required for \(server). Use the manual connection form to sign in again."
+        message = preservingReceipt.map { $0 + " " + prompt } ?? prompt
+        return true
     }
     private func valid(_ token: UInt64) -> Bool { token == generation && !Task.isCancelled }
     private func safeDescription(_ error: any Error) -> String {
