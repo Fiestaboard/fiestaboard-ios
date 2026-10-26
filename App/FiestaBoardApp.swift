@@ -72,6 +72,17 @@ struct DraftScene: View {
                         switch action.payload {
                         case .text(let value): Text(value).font(.body.monospaced()).textSelection(.enabled)
                         case .page(let id): LabeledContent("Select page", value: pageName(id))
+                        case .configuration(let patch):
+                            if let paused = patch.paused { LabeledContent("Updates", value: paused ? "Pause" : "Resume") }
+                            if let enabled = patch.scheduleEnabled { LabeledContent("Schedule", value: enabled ? "Follow schedule" : "Off") }
+                            if let enabled = patch.autoRestore { LabeledContent("Automatic restore", value: enabled ? "On" : "Off") }
+                            switch patch.defaultPage {
+                            case .omit: EmptyView()
+                            case .clear: Text("Clear the fallback page")
+                            case .set(let id): LabeledContent("Fallback page", value: pageName(id))
+                            }
+                        case .restore:
+                            Text("Restore the content FiestaBoard currently intends to show. The pinned selection remains in place; pause and silence settings still apply.")
                         }
                         Text(action.isDemo ? "This action stays in memory and does not contact hardware." : "The server may send this to the board. An acknowledgement does not verify physical output.").foregroundStyle(.secondary)
                     }
@@ -95,7 +106,7 @@ struct DraftScene: View {
         VStack(alignment: .leading, spacing: 8) {
             Label(store.connectionLabel, systemImage: store.status?.isDemo == true ? "sparkles" : "network")
                 .font(.subheadline.weight(.semibold)).textSelection(.enabled)
-            Text(store.status?.isDemo == true ? "Demo · all actions are simulated" : "\(store.status?.version.displayedVersion ?? "Unknown version") · \(store.status?.access == .candidateWrites ? "Draft controls enabled" : "Read-only")")
+            Text(store.status?.isDemo == true ? "Demo · board actions are simulated" : "\(store.status?.version.displayedVersion ?? "Unknown version") · \(store.status?.access == .candidateWrites ? "Draft controls enabled" : "Read-only")")
                 .font(.caption).foregroundStyle(.secondary)
             if let message = store.message {
                 Text(message).font(.callout).accessibilityIdentifier("actionOutcome")
@@ -139,6 +150,12 @@ struct DraftScene: View {
                                     selectionDetails(board)
                                     NavigationLink { pageChooser } label: { Label("Choose a page", systemImage: "rectangle.stack") }
                                         .buttonStyle(.bordered).disabled(!store.canWrite)
+                                    NavigationLink {
+                                        Form { BoardControlsView(store: store) }
+                                            .navigationTitle("Board controls")
+                                    } label: { Label("Board controls", systemImage: "slider.horizontal.3") }
+                                        .buttonStyle(.bordered)
+                                        .accessibilityIdentifier("boardControlsEntry")
                                 }
                             }.frame(maxWidth: wide ? 290 : .infinity, alignment: .leading)
                         }
@@ -171,7 +188,7 @@ struct DraftScene: View {
         NavigationStack {
             List {
                 Section { connectionBanner }
-                Section("Pages · read-only library") {
+                Section("Pages · local drafts available") {
                     ForEach(store.pages.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }) { page in
                         NavigationLink { PageDetailView(page: page, store: store, prepare: { pending = store.prepare(.page(page.id)) }) } label: {
                             Label { VStack(alignment: .leading, spacing: 4) { Text(page.name).font(.headline); Text("\(page.type) · \(page.deviceType)").font(.caption).foregroundStyle(.secondary) } } icon: { Image(systemName: "rectangle.stack").foregroundStyle(.orange) }.padding(.vertical, 6)
@@ -263,25 +280,6 @@ struct DraftScene: View {
     }
 }
 
-private struct PageDetailView: View {
-    let page: Page
-    @ObservedObject var store: BoardStore
-    let prepare: () -> Void
-    var body: some View {
-        Form {
-            Section("Template · read-only") {
-                if let lines = page.template { Text(lines.joined(separator: "\n")).font(.body.monospaced()).textSelection(.enabled) }
-                else { Text("This page has no plain-text template projection. Use the web interface for its full preview.") }
-                Text("Template expressions are shown as source. This draft does not render plugins or edit pages.").font(.footnote).foregroundStyle(.secondary)
-            }
-            Section {
-                Text("Destination: \(store.boards.first(where: { $0.id == store.selectedBoardID })?.name ?? "No selected board")")
-                Button(store.status?.isDemo == true ? "Simulate showing on board" : "Show on board", action: prepare).disabled(!store.canWrite)
-            }
-        }.navigationTitle(page.name)
-    }
-}
-
 private struct WelcomeView: View {
     @ObservedObject var store: BoardStore
     let startDemo: () -> Void
@@ -333,8 +331,8 @@ private struct WelcomeView: View {
 }
 private struct DraftScopeView: View {
     var body: some View {
-        Text("Native draft: manual connection, read-only pages, display selection, text and page actions. Refresh is manual; there is no background polling. Demo is entirely simulated.")
-        Text("Discovery, server setup, OAuth, page editing, scheduling controls, plugins, administration and pixel rendering are still planned. Use the server’s web interface for those features.")
+        Text("Native draft: manual connection, page library, on-device page drafts, display selection, text and page actions, pause, schedule following, fallback page and restore controls. Refresh is manual; there is no background polling. Demo board actions are entirely simulated.")
+        Text("Local drafts stay on this device and are never published to the server. Discovery, server setup, OAuth, publishing pages, schedule editing, plugins, administration and pixel rendering are still planned. Use the server’s web interface for those features.")
         Text("No supported release pairing or full web/TV renderer parity is claimed.").font(.footnote).foregroundStyle(.secondary)
     }
 }

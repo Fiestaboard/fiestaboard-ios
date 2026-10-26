@@ -1,6 +1,6 @@
 # Native draft testing
 
-This is a runnable iOS/iPadOS 26+ SwiftUI draft built with Xcode 27.1 / SDK 27.1 and Swift 6. It covers demo mode, manual server connection, display selection, server-reported output, a read-only page library, and basic text/page controls. It is not full web parity or a supported released server/app pairing.
+This is a runnable iOS/iPadOS 26+ SwiftUI draft built with Xcode 27.1 / SDK 27.1 and Swift 6. It covers demo mode, manual server connection, display selection, server-reported output, a page library with local on-device drafts, text/page actions, and pause, schedule-following, fallback-page and restore controls. It is not full web parity or a supported released server/app pairing.
 
 ## Open and run
 
@@ -24,7 +24,7 @@ Both commands set `CODE_SIGNING_ALLOWED=NO`. Build artifacts are `.build/draft-d
 
 To install and run on your iPhone, use Xcode:
 
-1. Select the **FiestaBoard** app target under **TARGETS**, rather than either framework target, and open **Signing & Capabilities**.
+1. Select the **FiestaBoard** app target under **TARGETS**, rather than a framework target, and open **Signing & Capabilities**.
 2. Keep your existing development **Team** selected and enable **Automatically manage signing**.
 3. Select the shared **FiestaBoard** scheme and your connected, trusted iPhone as the run destination.
 4. Press **Run**. Xcode builds, signs and installs the app using your selected team. Follow any device prompts, including Developer Mode if required.
@@ -42,10 +42,11 @@ Regeneration replaces project settings and can reset a Team chosen in Xcode; rec
 1. Tap **Explore Demo**, or launch the shared scheme with `--demo`.
 2. Home shows **Demo Kitchen**, its server-reported output, selected/resolved/scheduled page distinctions, and a simulated connection banner.
 3. Compose text, enter `HELLO`, then **Review action**. Confirm the captured server, board ID and exact text; **Confirm simulated action** changes only memory. The result says whether a send was acknowledged and never claims physical observation.
-4. Open Library, search `Sunny`, open **Sunny day**, and simulate showing it on the selected board. Template source is read-only; expressions/plugins are not rendered.
-5. Open Displays and use **Demo Pixel Panel**. Its unsupported character set is explained rather than displayed as a flap approximation. Switch back to Demo Kitchen.
-6. In Settings, choose a simulated outcome: accepted, held, partial, rejected or unknown. Held selection remains distinct from reported output. Partial and unknown results require **Refresh output** before another action. Refresh reads state and never replays a mutation.
-7. Disconnect. A new demo starts from the bundled fixtures.
+4. Open Library, search `Sunny`, open **Sunny day**, and simulate showing it on the selected board. The server template preview remains read-only; expressions/plugins are not rendered. Tap **Edit local draft** to fetch its full raw document. The editor labels changes as on-device only. Change the name or supported fixed template lines, use Undo/Redo, and **Save local draft**. Close and reopen to review draft recovery. Local save never publishes to the server or changes the board. Closing with unsaved changes requires save, discard or keep editing.
+5. From Home, open **Board controls**. Pause/resume, follow/disable the schedule, change or clear the fallback page, and restore content each require confirmation of the captured board and deployment. Cancel leaves the board unchanged. Restore retains the pinned page and respects pause/silence; it does not promise a send. These controls simulate changes in demo mode and use the existing write gate on a live server.
+6. Open Displays and use **Demo Pixel Panel**. Its unsupported character set is explained rather than displayed as a flap approximation. Switch back to Demo Kitchen.
+7. In Settings, choose a simulated outcome: accepted, held, partial, rejected or unknown. Held selection remains distinct from reported output. Partial and unknown results require **Refresh output** before another action. Refresh reads state and never replays a mutation.
+8. Disconnect. A new demo starts server simulation from the bundled fixtures; saved on-device drafts remain available for recovery.
 
 Demo Kitchen uses a 6 × 22 split-flap welcome frame with color cells. Simulated text wrapping is simpler than backend layout. All demo controls are labeled simulated. The split-flap table is reused from the TV project under its [MIT license](../ThirdPartyNotices/FiestaBoardTV-MIT.txt); this app does not claim TV renderer parity.
 
@@ -75,9 +76,17 @@ env CLANG_MODULE_CACHE_PATH="$PWD/.build/clang" \
   swift test --package-path Packages/FiestaBoardAppState --disable-sandbox --scratch-path .build/draft-state
 ```
 
+Documents and local-draft host tests can also run independently:
+
+```sh
+env CLANG_MODULE_CACHE_PATH="$PWD/.build/clang" \
+  SWIFTPM_MODULECACHE_OVERRIDE="$PWD/.build/module" \
+  swift test --package-path Packages/FiestaBoardDocuments --disable-sandbox --scratch-path .build/draft-documents
+```
+
 The Xcode project builds these same source files as native frameworks, with a framework resource accessor for DemoFixtures. This avoids a managed-environment SwiftPM manifest-cache write denial in Xcode; the packages remain independently host-testable. The store uses Apple Combine `ObservableObject`/`@Published` with a scene-owned `@StateObject`. This is a bounded deviation from the preferred `@Observable` design because this environment cannot launch Xcode’s compiler macro sandbox. `DraftState` is a typealias to the standard `SwiftUI.State<Value>` property wrapper: SDK 27.1 also defines a `State` macro, and the alias unambiguously selects the wrapper. No compiler sandbox or global filesystem permission is changed.
 
-UI test source and the shared test scheme cover the demo compose confirmation and tab navigation on an iPhone-sized destination. In Xcode, choose an available iPhone simulator and Product → Test. The test can be compiled without launching a simulator:
+UI test source and the shared test scheme cover demo compose confirmation, tab navigation, local-draft entry and unsaved-close handling, and board-control cancellation/confirmed pause on an iPhone-sized destination. In Xcode, choose an available iPhone simulator and Product → Test. The test can be compiled without launching a simulator:
 
 ```sh
 xcodebuild -project FiestaBoard.xcodeproj -scheme FiestaBoard \
@@ -92,10 +101,13 @@ The agent environment cannot access CoreSimulatorService. An unsigned generic Si
 | Transport and domain | Core fixture tests: URL security, cookies, version gate, receipts, demo outcomes |
 | Store races and commands | Host tests: disconnect/server/board stale results, captured target/text, duplicate suppression, held/partial/rejected/unknown outcomes, readback lock, expired authentication, remote logout outcomes and late logout completion |
 | Flap mapping | Exact punctuation/undefined codes, pigments, degree/heart code 62; Note models use heart |
+| Documents/local drafts | Host tests cover lossless documents, bounded editing and local persistence; runtime recovery, TextKit/IME, keyboard and rotation checks still needed |
 | Generic iOS build | Unsigned SDK build, app/framework fixture packaging, UI test compilation |
 | Geometry | Manual simulator/device check still needed: narrow portrait, short landscape, iPad split widths and large windows; no screen/device/orientation branching |
 | Accessibility | VoiceOver board text, Dynamic Type, dark/light, Reduce Motion/Transparency require runtime review; static board has no animation/custom glass |
 | Safe areas | Manual asymmetric safe-area/keyboard review still needed; native scrolling/navigation preserve system insets |
 | Live server | No automated live writes; LAN/auth and physical output require an explicit user-run test with a compatible server |
 
-Refresh is manual, with no foreground/background polling task. Navigation and the text draft live in the scene outside geometry-dependent layouts. Content surfaces remain opaque/readable; native tabs, sidebar and toolbars provide system Liquid Glass. Missing release work includes discovery, setup, OAuth, editors, conditional saves, scheduling controls, plugins, administration, pixel rendering and exhaustive hardware acceptance.
+Refresh is manual, with no foreground/background polling task. Navigation and the text draft live in the scene outside geometry-dependent layouts. Content surfaces remain opaque/readable; native tabs, sidebar and toolbars provide system Liquid Glass. Local editors fetch the full raw page response, capture its deployment/page identity, and keep edits outside geometry-dependent layouts. Disconnect, authentication loss or changing connections closes the editor; stale fetches cannot open a document for a new connection. Local drafts use atomic on-device files, not server persistence. Unsupported content remains read-only; template expressions stay raw. There is no server page save, conditional publish, server revision handling or schedule editor.
+
+Missing release work includes discovery, setup, OAuth, server page publishing, full page/layout editors, schedule editing, plugins, administration, pixel rendering and exhaustive hardware acceptance.
