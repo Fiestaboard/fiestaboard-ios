@@ -10,6 +10,14 @@ public struct DraftIdentity: Codable, Hashable, Sendable {
         self.deploymentID = deploymentID
         self.pageID = pageID
     }
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        LosslessJSON.stringsEqual(lhs.deploymentID, rhs.deploymentID)
+            && LosslessJSON.stringsEqual(lhs.pageID, rhs.pageID)
+    }
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(ExactUnicodeString(deploymentID))
+        hasher.combine(ExactUnicodeString(pageID))
+    }
 }
 
 public struct DraftSnapshot: Codable, Equatable, Sendable {

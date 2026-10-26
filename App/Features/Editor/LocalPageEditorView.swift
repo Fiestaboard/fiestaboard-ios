@@ -145,7 +145,7 @@ private struct RawTemplateTextView: UIViewRepresentable {
 
     func updateUIView(_ view: UITextView, context: Context) {
         context.coordinator.parent = self
-        guard view.markedTextRange == nil, view.text != text else { return }
+        guard view.markedTextRange == nil, !LosslessJSON.stringsEqual(view.text ?? "", text) else { return }
         let selection = view.selectedRange
         view.text = text
         let length = (text as NSString).length
@@ -164,7 +164,7 @@ private struct RawTemplateTextView: UIViewRepresentable {
         func textViewDidChange(_ textView: UITextView) {
             guard textView.markedTextRange == nil else { return }
             parent.text = textView.text
-            if textView.text != parent.text { textView.text = parent.text }
+            if !LosslessJSON.stringsEqual(textView.text ?? "", parent.text) { textView.text = parent.text }
         }
         func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
             !text.contains("\n") && !text.contains("\r")

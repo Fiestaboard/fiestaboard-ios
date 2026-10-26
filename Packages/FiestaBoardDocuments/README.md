@@ -4,7 +4,7 @@ Swift 6 / Foundation + CryptoKit document core. It preserves the complete page J
 
 ## Representation and edit policy
 
-`PageDocument(data:)` requires a full raw page object. Do not reconstruct it from an API projection. The `root` retains unknown nested fields, canvases, geometry, transitions, explicit nulls, and all page types. `LosslessJSON.number(String)` preserves the original JSON numeric token without `Double` or `Decimal`. Serialization sorts object keys and normalizes whitespace/escapes; those syntactic details are not document content. Invalid JSON, duplicate keys, invalid Unicode, and nesting beyond 256 levels are refused rather than silently repaired.
+`PageDocument(data:)` requires a full raw page object. Do not reconstruct it from an API projection. The `root` retains unknown nested fields, canvases, geometry, transitions, explicit nulls, and all page types. `LosslessJSON.number(String)` preserves the original JSON numeric token without `Double` or `Decimal`. Serialization sorts object keys and normalizes whitespace/escapes; those syntactic details are not document content. String values and object keys compare exact decoded UTF-8 sequences, preserving canonically equivalent but scalar-distinct names such as U+00E9 and U+0065 U+0301. `LosslessJSONObject` backs `root` and `.object`, preserving String subscripts, dictionary literals, keys, iteration and filtering without native String-key normalization collisions. Invalid JSON, true duplicate decoded keys, invalid Unicode, and nesting beyond 256 levels are refused rather than silently repaired.
 
 The archived backend stores template content as a string array plus `line_metadata`; the web editor translates that syntax to/from TipTap. It is not HTML. This slice exposes raw strings and leaves formatting/expression tokens untouched.
 
@@ -14,7 +14,7 @@ Only name and single existing line-slot content can change. A line's original in
 
 ## Local drafts and history
 
-`DraftIdentity(deploymentID:pageID:)` must use immutable canonical deployment and page identities. The actor `LocalDraftStore(directory:)` hashes a sorted, JSON-framed identity using SHA-256 for a traversal-safe filename. `defaultDirectory()` selects Application Support/FiestaBoard/LocalDrafts.
+`DraftIdentity(deploymentID:pageID:)` must use immutable canonical deployment and page identities. Its equality and hashing use exact UTF-8 bytes, matching persisted identity validation without Unicode normalization. The actor `LocalDraftStore(directory:)` hashes a sorted, JSON-framed identity using SHA-256 for a traversal-safe filename. `defaultDirectory()` selects Application Support/FiestaBoard/LocalDrafts.
 
 `save(_:)` validates both full raw documents and atomically replaces the latest draft file. A snapshot stores its baseline, current document, local revision, identity and timestamp. `load(_:)` distinguishes absence, recoverable draft, and corrupt/unsupported content; I/O errors propagate separately. A corrupt file cannot be overwritten. `quarantineCorruptDraft(_:)` explicitly preserves its original bytes under a unique filename, after which a new draft can be saved. No existing draft is automatically applied to fetched content.
 

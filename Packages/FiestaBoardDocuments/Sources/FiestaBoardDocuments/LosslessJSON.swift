@@ -20,16 +20,76 @@ public enum DocumentError: Error, Equatable, Sendable, LocalizedError {
     }
 }
 
+/// Exact Unicode identity for JSON keys and deployment/page identifiers. Swift String's
+/// default equality/hash normalizes canonically equivalent sequences; JSON does not.
+struct ExactUnicodeString: Hashable, Sendable {
+    let value: String
+    init(_ value: String) { self.value = value }
+    static func == (lhs: Self, rhs: Self) -> Bool { LosslessJSON.stringsEqual(lhs.value, rhs.value) }
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(value.utf8.count)
+        for byte in value.utf8 { hasher.combine(byte) }
+    }
+}
+
+/// Dictionary-style object storage whose keys retain exact decoded Unicode sequences.
+/// String subscripts and literals remain convenient without native String-key collisions.
+public struct LosslessJSONObject: Equatable, Sendable, ExpressibleByDictionaryLiteral, Sequence {
+    public typealias Element = (key: String, value: LosslessJSON)
+    private var storage: [ExactUnicodeString: LosslessJSON] = [:]
+
+    public init() {}
+    public init(dictionaryLiteral elements: (String, LosslessJSON)...) {
+        for (key, value) in elements { self[key] = value }
+    }
+    public var count: Int { storage.count }
+    public var isEmpty: Bool { storage.isEmpty }
+    public var keys: [String] { storage.keys.map(\.value) }
+    public subscript(key: String) -> LosslessJSON? {
+        get { storage[ExactUnicodeString(key)] }
+        set { storage[ExactUnicodeString(key)] = newValue }
+    }
+    public func makeIterator() -> AnyIterator<Element> {
+        var iterator = storage.makeIterator()
+        return AnyIterator {
+            guard let entry = iterator.next() else { return nil }
+            return (key: entry.key.value, value: entry.value)
+        }
+    }
+    public func filter(_ isIncluded: (Element) throws -> Bool) rethrows -> Self {
+        var result = Self()
+        for entry in self where try isIncluded(entry) { result[entry.key] = entry.value }
+        return result
+    }
+}
+
 /// JSON syntax tree with numeric lexemes kept verbatim. No floating-point conversion.
 /// Object key order and whitespace are canonicalized; null and absent stay distinct.
 /// Duplicate keys are rejected, since collapsing them would lose source information.
 public indirect enum LosslessJSON: Equatable, Sendable {
-    case object([String: LosslessJSON])
+    case object(LosslessJSONObject)
     case array([LosslessJSON])
     case string(String)
     case number(String)
     case bool(Bool)
     case null
+
+    /// Raw JSON and editor strings compare decoded UTF-8, without Unicode normalization.
+    public static func stringsEqual(_ lhs: String, _ rhs: String) -> Bool {
+        lhs.utf8.elementsEqual(rhs.utf8)
+    }
+
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        switch (lhs, rhs) {
+        case (.object(let a), .object(let b)): return a == b
+        case (.array(let a), .array(let b)): return a == b
+        case (.string(let a), .string(let b)), (.number(let a), .number(let b)):
+            return stringsEqual(a, b)
+        case (.bool(let a), .bool(let b)): return a == b
+        case (.null, .null): return true
+        default: return false
+        }
+    }
 
     public static func parse(_ data: Data) throws -> Self {
         var parser = JSONParser(bytes: Array(data))
@@ -50,7 +110,8 @@ public indirect enum LosslessJSON: Equatable, Sendable {
         switch self {
         case .object(let object):
             output.append(123)
-            for (index, key) in object.keys.sorted().enumerated() {
+            let keys = object.keys.sorted { $0.utf8.lexicographicallyPrecedes($1.utf8) }
+            for (index, key) in keys.enumerated() {
                 if index > 0 { output.append(44) }
                 try LosslessJSON.string(key).append(to: &output, depth: depth + 1)
                 output.append(58)
@@ -104,7 +165,7 @@ private struct JSONParser {
         switch next {
         case 123:
             offset += 1
-            var object: [String: LosslessJSON] = [:]
+            var object = LosslessJSONObject()
             skipWhitespace()
             if consume(125) { return .object(object) }
             repeat {
