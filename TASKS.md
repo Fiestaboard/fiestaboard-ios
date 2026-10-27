@@ -17,8 +17,8 @@ This is the durable task tracker. Full web-app feature parity is required before
 | E-01 | Lossless page document model, local draft persistence, native editor feasibility | Complete for bounded scope — Astra approved `be72a11` | Preserve unknown fields/numbers/null/markup; no remote save before revision protocol |
 | W1-03 | Integrate C-01/E-01 into the app and review the wave | Complete — built and Astra approved; interactive device checks remain | Preserve user signing edits; device/Simulator compilation; manual UI matrix |
 | P-01 | All-writer server revisions and conditional saves | Page foundation reviewed and pushed; draft PR creation blocked by connector approval policy; broader writer work remains | Web/AI/import/restore/background writers; both save orders; isolated backend branch |
-| P-02 | Native conditional page saves and explicit conflict handling | Queued | Consume reviewed backend protocol; audited release and lossless field contract; never retry stale writes automatically |
-| E-02 | Server template validation and render previews | Queued | Adapt existing internal endpoints with geometry/charset/canvas fixtures |
+| P-02 | Native conditional page saves and explicit conflict handling | In progress — Sol service and editor owners | Consume reviewed backend protocol; audited release and lossless field contract; never retry stale writes automatically |
+| E-02 | Server template validation and render previews | In progress — shared editor wave | Adapt existing internal endpoints with geometry/charset/canvas fixtures |
 | S-01 | Shared schema vocabulary, secret-preserving drafts and native forms | Queued | Required by display configuration and integrations |
 | R-01 | Complete LED/pixel/layer/white-board renderer and geometry fidelity | Queued | Shared golden fixtures; actual visual/device checks |
 
@@ -146,3 +146,5 @@ Partial means a subset exists in the draft; the checkbox stays open until the en
 - Backend page foundation: `1514c274a` pushed to `Fiestaboard/FiestaBoard:codex/ios-api-access`; product changes Astra-approved at `4967cb7e2`. 523 focused Python tests and the corrected full web suite (3,060 passed, seven skipped) passed. Full Python run OOMed at 54%; no complete Python-suite claim. [Prepared single draft PR and branch](docs/research/2026-10-25-backend-pr-draft.md). GitHub connector requires approval but this session has approval policy never, so PR creation remains pending.
 
 - Local main received the reviewed iOS wave, preserving all 21 local Xcode project-property changes. Fresh main unsigned iPhone build, contract integrity and all 25 contract-tool tests passed. User signing selections remain uncommitted; no automatic project regeneration was performed on main.
+
+- 2026-10-26 continuation: GitHub confirms no PR exists for `codex/ios-api-access`. Creation remains blocked by the connector approval policy. [Page editing plan](docs/superpowers/plans/2026-10-26-page-editing.md) adds a narrow advertised page protocol, native changed-field saves/conflict recovery, and explicit template validation/previews. Jev recommended the per-page protocol field (0.94 confidence); source/tests and Astra determine acceptance.
