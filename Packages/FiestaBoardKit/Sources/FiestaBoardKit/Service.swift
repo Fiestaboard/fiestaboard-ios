@@ -12,6 +12,9 @@ public protocol FiestaBoardService: Sendable {
     func pages() async throws -> [Page]
     func pageDocumentData(id: String) async throws -> Data
     func page(id: String) async throws -> Page
+    func savePage(id: String, patch: PageSavePatch) async throws -> PageSaveReceipt
+    func validatePage(requestData: Data, target: BoardTarget) async throws -> TemplateValidationResult
+    func previewPage(requestData: Data, target: BoardTarget) async throws -> TemplatePreviewResult
     func updateBoard(_ patch: BoardPatch, on target: BoardTarget) async throws -> BoardConfigurationReceipt
     func restoreBoard(_ target: BoardTarget) async throws -> BoardRestoreReceipt
     func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult
@@ -25,6 +28,12 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     private let transport: any APITransport
     private var generation: UInt64 = 0
     private var access = DraftAccess.readOnly
+    private var pageWritesOptedIn = false
+    private var previewAudited = false
+    private var knownPages: [String: Page] = [:]
+    private var savingPages: Set<String> = []
+    private var pageReadbacks: Set<String> = []
+    private var pageWriteGenerations: [String: UInt64] = [:]
     private var knownBoards: [String: BoardSummary] = [:]
 
     public init(deployment: DeploymentURL, transport: (any APITransport)? = nil) {
@@ -34,13 +43,14 @@ public actor LiveFiestaBoardService: FiestaBoardService {
 
     public func authStatus() async throws -> AuthStatus {
         let status: AuthStatus = try await fetch(APIRequest(path: ["auth", "status"]))
-        if status.enabled && !status.authenticated { access = .readOnly }
+        if status.enabled && !status.authenticated { access = .readOnly; pageWritesOptedIn = false; knownPages = [:] }
         return status
     }
 
     public func login(username: String, password: String) async throws -> AuthStatus {
         generation &+= 1
         access = .readOnly
+        pageWritesOptedIn = false; previewAudited = false; knownPages = [:]
         knownBoards = [:]
         let token = generation
         await transport.resetSession()
@@ -57,6 +67,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         generation &+= 1
         let token = generation
         access = .readOnly
+        pageWritesOptedIn = false; previewAudited = false; knownPages = [:]
         knownBoards = [:]
         do {
             struct Reply: Decodable { let status: String }
@@ -72,11 +83,14 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         generation &+= 1
         let token = generation
         access = .readOnly
+        pageWritesOptedIn = false; previewAudited = false; knownPages = [:]
         knownBoards = [:]
         let version: VersionInfo = try await fetch(APIRequest(path: ["version"]))
         let boards = try await boards()
         guard generation == token else { throw FiestaBoardError.staleSession }
         knownBoards = Dictionary(uniqueKeysWithValues: boards.map { ($0.id, $0) })
+        pageWritesOptedIn = allowCandidateWrites
+        previewAudited = ["10.0.0", "10.1.2"].contains(version.runningVersion ?? "") && !version.isDev
         if allowCandidateWrites && version.runningVersion == "10.0.0" && !version.isDev { access = .candidateWrites }
         return ConnectionStatus(version: version, access: access, isDemo: false, sessionPersistence: "Memory only")
     }
@@ -110,19 +124,77 @@ public actor LiveFiestaBoardService: FiestaBoardService {
 
     public func page(id: String) async throws -> Page {
         guard DeploymentURL.validSegment(id) else { throw FiestaBoardError.invalidPath }
+        let writeGeneration = pageWriteGenerations[id, default: 0]
         let page: Page = try await fetch(APIRequest(path: ["v1", "pages", id]))
+        guard writeGeneration == pageWriteGenerations[id, default: 0] else { throw FiestaBoardError.staleSession }
         guard page.id == id else { throw FiestaBoardError.invalidResponse }
+        knownPages[id] = page
+        if !savingPages.contains(id) { pageReadbacks.remove(id) }
         return page
     }
 
     /// Returns the exact public document bytes, preserving fields outside the read-only Page projection.
     public func pageDocumentData(id: String) async throws -> Data {
         guard DeploymentURL.validSegment(id) else { throw FiestaBoardError.invalidPath }
+        let writeGeneration = pageWriteGenerations[id, default: 0]
         let result = try await response(APIRequest(path: ["v1", "pages", id]))
+        guard writeGeneration == pageWriteGenerations[id, default: 0] else { throw FiestaBoardError.staleSession }
         guard let page = try? JSONDecoder().decode(Page.self, from: result.data), page.id == id else {
             throw FiestaBoardError.invalidResponse
         }
+        knownPages[id] = page
+        if !savingPages.contains(id) { pageReadbacks.remove(id) }
         return result.data
+    }
+
+    public func savePage(id: String, patch: PageSavePatch) async throws -> PageSaveReceipt {
+        guard DeploymentURL.validSegment(id) else { throw FiestaBoardError.invalidPath }
+        try patch.validate()
+        guard pageWritesOptedIn, let baseline = knownPages[id], baseline.editProtocol == "page-revision-v1",
+              baseline.revision?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false, baseline.type == "template" else { throw FiestaBoardError.pageWritesDisabled }
+        guard !savingPages.contains(id), !pageReadbacks.contains(id) else { throw FiestaBoardError.pageReadbackRequired }
+        pageWriteGenerations[id, default: 0] &+= 1
+        savingPages.insert(id); pageReadbacks.insert(id)
+        defer { savingPages.remove(id) }
+        do {
+            let response = try await response(APIRequest(.put, path: ["v1", "pages", id], body: JSONEncoder().encode(patch)))
+            if response.status == 412 { throw FiestaBoardError.pageConflict }
+            guard response.status == 200 else { throw FiestaBoardError.unknownMutationOutcome }
+            let receipt = try PageSaveReceipt(rawData: response.data, expectedPageID: id)
+            let updated = try JSONDecoder().decode(Page.self, from: receipt.pageData)
+            guard updated.revision != patch.expectedRevision else { throw FiestaBoardError.unknownMutationOutcome }
+            knownPages[id] = updated; pageReadbacks.remove(id)
+            return receipt
+        } catch {
+            switch error as? FiestaBoardError {
+            case .unknownMutationOutcome, .pageConflict, .staleSession: break
+            default: pageReadbacks.remove(id)
+            }
+            throw error
+        }
+    }
+    public func validatePage(requestData: Data, target: BoardTarget) async throws -> TemplateValidationResult {
+        try requirePreview(requestData, target: target, render: false)
+        let result = try await response(APIRequest(.post, path: ["templates", "validate"], body: requestData))
+        return try TemplateValidationResult(rawData: result.data)
+    }
+    public func previewPage(requestData: Data, target: BoardTarget) async throws -> TemplatePreviewResult {
+        try requirePreview(requestData, target: target, render: true)
+        let result = try await response(APIRequest(.post, path: ["templates", "render"], body: requestData))
+        return try TemplatePreviewResult(rawData: result.data)
+    }
+    private func requirePreview(_ data: Data, target: BoardTarget, render: Bool) throws {
+        try validateTarget(target)
+        guard previewAudited else { throw FiestaBoardError.previewUnsupported }
+        guard knownBoards[target.boardID] != nil,
+              let members = try? RawJSONObject.members(data), let boardData = members["board_id"],
+              (try? JSONDecoder().decode(String.self, from: boardData)) == target.boardID,
+              let template = members["template"],
+              (try? JSONDecoder().decode(String.self, from: template)) != nil || (try? JSONDecoder().decode([String].self, from: template)) != nil else { throw FiestaBoardError.invalidTarget }
+        let allowed: Set<String> = render
+            ? ["template", "board_id", "device_type", "notes_wide", "notes_tall", "grid_rows", "grid_cols", "line_metadata", "canvases"]
+            : ["template", "board_id"]
+        guard Set(members.keys).isSubset(of: allowed) else { throw FiestaBoardError.previewUnsupported }
     }
 
     public func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult {
@@ -196,7 +268,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
             return result
         } catch {
             guard token == generation else { throw FiestaBoardError.staleSession }
-            if (error as? FiestaBoardError) == .unauthenticated { access = .readOnly }
+            if (error as? FiestaBoardError) == .unauthenticated { access = .readOnly; pageWritesOptedIn = false; knownPages = [:] }
             throw (error as? FiestaBoardError) ?? (request.isMutation ? .unknownMutationOutcome : .networkUnavailable)
         }
     }

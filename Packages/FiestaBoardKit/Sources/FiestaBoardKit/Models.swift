@@ -134,19 +134,22 @@ public struct BoardDetail: Codable, Sendable {
         guard ["manual", "schedule", "none"].contains(source) else { throw FiestaBoardError.invalidResponse }
     }
 }
-/// Read-only projection. No editor round-trip or save operation is provided.
+/// A read projection. Editing retains the original raw document separately.
 public struct Page: Codable, Sendable, Identifiable, Equatable {
     public let id: String
     public let name: String
     public let type: String
     public let deviceType: String
     public let template: [String]?
+    public let revision: String?
+    public let editProtocol: String?
     public let notesWide: Int?
     public let notesTall: Int?
     public let gridRows: Int?
     public let gridCols: Int?
     enum CodingKeys: String, CodingKey {
-        case id, name, type, template
+        case id, name, type, template, revision
+        case editProtocol = "edit_protocol"
         case deviceType = "device_type", notesWide = "notes_wide", notesTall = "notes_tall"
         case gridRows = "grid_rows", gridCols = "grid_cols"
     }

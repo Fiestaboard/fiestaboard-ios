@@ -6,7 +6,10 @@ public struct APIRequest: Sendable {
     public let path: [String]
     public let body: Data?
     public let timeout: TimeInterval
-    public var isMutation: Bool { method != .get }
+    /// The two bounded evaluation POSTs never write a page or send to hardware.
+    public var isMutation: Bool {
+        method != .get && !(method == .post && (path == ["templates", "validate"] || path == ["templates", "render"]))
+    }
     public init(_ method: Method = .get, path: [String], body: Data? = nil, timeout: TimeInterval = 20) {
         self.method = method; self.path = path; self.body = body; self.timeout = timeout
     }
@@ -77,6 +80,7 @@ public actor URLSessionTransport: APITransport {
         case 200..<300: return APIResponse(status: http.statusCode, data: data)
         case 300..<400: throw request.isMutation ? FiestaBoardError.unknownMutationOutcome : .redirectRefused
         case 401: throw FiestaBoardError.unauthenticated
+        case 412: throw FiestaBoardError.pageConflict
         case 409: throw FiestaBoardError.conflict
         case 429:
             let seconds = http.value(forHTTPHeaderField: "Retry-After").flatMap(Int.init).flatMap { $0 >= 0 ? $0 : nil }

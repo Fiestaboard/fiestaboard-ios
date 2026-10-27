@@ -2,10 +2,34 @@ import Foundation
 import Combine
 import FiestaBoardKit
 
+public struct PageEditingContext: Sendable, Equatable {
+    public let pageID: String
+    public let deployment: DeploymentURL
+    public let originalRevision: String?
+    public let editProtocol: String?
+    fileprivate let pageType: String
+    fileprivate let generation: UInt64
+    fileprivate let documentID: UUID
+}
+public enum PageEditingAccess: Sendable, Equatable {
+    case enabled, simulated, disabled(String)
+    public var canSave: Bool { if case .disabled = self { return false }; return true }
+    public var reason: String {
+        switch self {
+        case .enabled: "Page storage is enabled for this session. Saving does not directly send to hardware."
+        case .simulated: "Simulated page storage; changes remain in memory."
+        case .disabled(let reason): reason
+        }
+    }
+}
+private struct PageIdentity: Hashable { let deployment: DeploymentURL; let id: String }
 public struct PageDocumentSnapshot: Sendable {
     public let id: String
     public let deployment: DeploymentURL
     public let data: Data
+    public let context: PageEditingContext
+    public let editingAccess: PageEditingAccess
+    public let incompatibleReferenceCount: Int
 }
 
 public enum RemoteLogoutState: Sendable, Equatable { case pending, succeeded, failed }
@@ -35,6 +59,11 @@ public struct PreparedAction: Identifiable, Sendable {
     public var needsReadback: Bool { target.map { readbackTargets.contains($0) } ?? false }
     @Published public private(set) var connectionLabel = "Disconnected"
     private var generation: UInt64 = 0
+    private var pageSessionOptedIn = false
+    private var pageContexts: [String: UUID] = [:]
+    private var savingPages: Set<PageIdentity> = []
+    private var pageReadbacks: Set<PageIdentity> = []
+    private var pageWriteGenerations: [PageIdentity: UInt64] = [:]
     private var service: (any FiestaBoardService)?
     private var connectionTask: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
@@ -80,6 +109,7 @@ public struct PreparedAction: Identifiable, Sendable {
                     detail = try await next.board(BoardTarget(deployment: next.deployment, boardID: first.id))
                 }
                 guard valid(token) else { return }
+                pageSessionOptedIn = allowCandidateWrites || result.isDemo
                 status = result; boards = list; pages = library
                 selectedBoardID = list.first?.id; board = detail
                 if let target, !inFlight.contains(target) { readbackTargets.remove(target) }
@@ -104,7 +134,7 @@ public struct PreparedAction: Identifiable, Sendable {
         connectionTask = nil; refreshTask = nil; commandTask = nil
         service = nil; status = nil; boards = []; pages = []; board = nil; selectedBoardID = nil
         connecting = false; refreshing = false; message = nil; remoteLogoutState = nil
-        connectionLabel = "Disconnected"; usedActions = []
+        connectionLabel = "Disconnected"; usedActions = []; pageContexts = [:]; pageSessionOptedIn = false
     }
 
     /// Drops the local session immediately; the captured old service revokes its session separately.
@@ -166,15 +196,100 @@ public struct PreparedAction: Identifiable, Sendable {
         }
         let token = generation
         let deployment = service.deployment
+        let identity = PageIdentity(deployment: deployment, id: id)
+        let writeGeneration = pageWriteGenerations[identity, default: 0]
+        guard !savingPages.contains(identity) else { throw FiestaBoardError.pageReadbackRequired }
         do {
             let data = try await service.pageDocumentData(id: id)
-            guard valid(token), self.service?.deployment == deployment else { throw FiestaBoardError.staleSession }
-            return PageDocumentSnapshot(id: id, deployment: deployment, data: data)
+            guard valid(token), self.service?.deployment == deployment,
+                  writeGeneration == pageWriteGenerations[identity, default: 0] else { throw FiestaBoardError.staleSession }
+            guard !savingPages.contains(identity) else { throw FiestaBoardError.pageReadbackRequired }
+            pageReadbacks.remove(identity)
+            return try acceptPageDocument(id: id, deployment: deployment, data: data)
         } catch {
             guard valid(token) else { throw FiestaBoardError.staleSession }
             _ = handleAuthenticationLoss(error)
             throw error
         }
+    }
+
+    public func readbackPage(context: PageEditingContext) async throws -> PageDocumentSnapshot {
+        try requirePageContext(context)
+        return try await loadPageDocument(id: context.pageID)
+    }
+    /// Explicit, connection-scoped page storage. No save replay or hidden revision refresh.
+    public func savePage(patch: PageSavePatch, context: PageEditingContext) async throws -> PageDocumentSnapshot {
+        try requirePageContext(context)
+        let identity = PageIdentity(deployment: context.deployment, id: context.pageID)
+        guard !savingPages.contains(identity), !pageReadbacks.contains(identity) else { throw FiestaBoardError.pageReadbackRequired }
+        guard pageEditingAccess(context: context).canSave, let service else { throw FiestaBoardError.pageWritesDisabled }
+        try patch.validate()
+        pageWriteGenerations[identity, default: 0] &+= 1
+        savingPages.insert(identity); pageReadbacks.insert(identity)
+        defer { savingPages.remove(identity) }
+        do {
+            let receipt = try await service.savePage(id: context.pageID, patch: patch)
+            try requirePageContext(context)
+            pageReadbacks.remove(identity); savingPages.remove(identity)
+            return try acceptPageDocument(id: context.pageID, deployment: context.deployment, data: receipt.pageData, incompatibleReferenceCount: receipt.incompatibleReferenceCount)
+        } catch {
+            guard valid(context.generation) else { throw FiestaBoardError.staleSession }
+            _ = handleAuthenticationLoss(error)
+            switch error as? FiestaBoardError {
+            case .unknownMutationOutcome, .pageConflict, .staleSession: break
+            default: pageReadbacks.remove(identity)
+            }
+            throw error
+        }
+    }
+    public func pageEditingAccess(context: PageEditingContext) -> PageEditingAccess {
+        guard (try? requirePageContext(context)) != nil else { return .disabled(FiestaBoardError.staleSession.localizedDescription) }
+        let identity = PageIdentity(deployment: context.deployment, id: context.pageID)
+        guard !savingPages.contains(identity), !pageReadbacks.contains(identity) else { return .disabled(FiestaBoardError.pageReadbackRequired.localizedDescription) }
+        guard pageSessionOptedIn, context.pageType == "template", context.editProtocol == "page-revision-v1", context.originalRevision?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else {
+            return .disabled(FiestaBoardError.pageWritesDisabled.localizedDescription)
+        }
+        return status?.isDemo == true ? .simulated : .enabled
+    }
+    public func validatePage(requestData: Data, context: PageEditingContext, target: BoardTarget) async throws -> TemplateValidationResult {
+        try requirePageContext(context); try requirePreviewTarget(target)
+        guard let service else { throw FiestaBoardError.staleSession }
+        do {
+            let result = try await service.validatePage(requestData: requestData, target: target)
+            try requirePageContext(context); try requirePreviewTarget(target)
+            return result
+        } catch {
+            guard valid(context.generation) else { throw FiestaBoardError.staleSession }
+            _ = handleAuthenticationLoss(error); throw error
+        }
+    }
+    public func previewPage(requestData: Data, context: PageEditingContext, target: BoardTarget) async throws -> TemplatePreviewResult {
+        try requirePageContext(context); try requirePreviewTarget(target)
+        guard let service else { throw FiestaBoardError.staleSession }
+        do {
+            let result = try await service.previewPage(requestData: requestData, target: target)
+            try requirePageContext(context); try requirePreviewTarget(target)
+            return result
+        } catch {
+            guard valid(context.generation) else { throw FiestaBoardError.staleSession }
+            _ = handleAuthenticationLoss(error); throw error
+        }
+    }
+    private func requirePageContext(_ context: PageEditingContext) throws {
+        guard valid(context.generation), !connecting, status != nil,
+              service?.deployment == context.deployment, pageContexts[context.pageID] == context.documentID else { throw FiestaBoardError.staleSession }
+    }
+    private func requirePreviewTarget(_ target: BoardTarget) throws {
+        guard target.deployment == service?.deployment, boards.contains(where: { $0.id == target.boardID }) else { throw FiestaBoardError.invalidTarget }
+    }
+    private func acceptPageDocument(id: String, deployment: DeploymentURL, data: Data, incompatibleReferenceCount: Int = 0) throws -> PageDocumentSnapshot {
+        let page = try JSONDecoder().decode(Page.self, from: data)
+        guard page.id == id else { throw FiestaBoardError.invalidResponse }
+        let context = PageEditingContext(pageID: id, deployment: deployment, originalRevision: page.revision,
+                                         editProtocol: page.editProtocol, pageType: page.type, generation: generation, documentID: UUID())
+        pageContexts[id] = context.documentID
+        if let index = pages.firstIndex(where: { $0.id == id }) { pages[index] = page }
+        return PageDocumentSnapshot(id: id, deployment: deployment, data: data, context: context, editingAccess: pageEditingAccess(context: context), incompatibleReferenceCount: incompatibleReferenceCount)
     }
 
     public func prepare(_ payload: ActionPayload) -> PreparedAction? {

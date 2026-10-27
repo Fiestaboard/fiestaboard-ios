@@ -217,6 +217,10 @@ private actor DelayedService: FiestaBoardService {
     private var delayRead = false
     private var delayMutation = false
     private var delayPage = false
+    private var delayPreview = false
+    private var previewFailure: FiestaBoardError?
+    func failNextPreview() { previewFailure = .networkUnavailable }
+    func delayNextPreview() { delayPreview = true }
     private(set) var sentCount = 0
     func delayNextRead() { delayRead = true }
     func delayNextPageRead() { delayPage = true }
@@ -248,6 +252,21 @@ private actor DelayedService: FiestaBoardService {
     func pageDocumentData(id: String) async throws -> Data {
         let value = try await demo.pageDocumentData(id: id)
         if delayPage { delayPage = false; await hold() }
+        return value
+    }
+    func savePage(id: String, patch: PageSavePatch) async throws -> PageSaveReceipt {
+        sentCount += 1
+        let value = try await demo.savePage(id: id, patch: patch)
+        if delayMutation { delayMutation = false; await hold() }
+        return value
+    }
+    func validatePage(requestData: Data, target: BoardTarget) async throws -> TemplateValidationResult {
+        try await demo.validatePage(requestData: requestData, target: target)
+    }
+    func previewPage(requestData: Data, target: BoardTarget) async throws -> TemplatePreviewResult {
+        if let error = previewFailure { previewFailure = nil; throw error }
+        let value = try await demo.previewPage(requestData: requestData, target: target)
+        if delayPreview { delayPreview = false; await hold() }
         return value
     }
     func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult {
@@ -311,6 +330,18 @@ private actor SessionFaultService: FiestaBoardService {
     func pageDocumentData(id: String) async throws -> Data {
         if rejectRead { rejectRead = false; throw FiestaBoardError.unauthenticated }
         return try await demo.pageDocumentData(id: id)
+    }
+    func savePage(id: String, patch: PageSavePatch) async throws -> PageSaveReceipt {
+        if rejectRead { rejectRead = false; throw FiestaBoardError.unauthenticated }
+        return try await demo.savePage(id: id, patch: patch)
+    }
+    func validatePage(requestData: Data, target: BoardTarget) async throws -> TemplateValidationResult {
+        if rejectRead { rejectRead = false; throw FiestaBoardError.unauthenticated }
+        return try await demo.validatePage(requestData: requestData, target: target)
+    }
+    func previewPage(requestData: Data, target: BoardTarget) async throws -> TemplatePreviewResult {
+        if rejectRead { rejectRead = false; throw FiestaBoardError.unauthenticated }
+        return try await demo.previewPage(requestData: requestData, target: target)
     }
     func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult {
         sentCount += 1
@@ -439,5 +470,154 @@ extension BoardStoreTests {
         XCTAssertTrue(store.message?.contains("unknown") == true, "Used restore confirmation cannot be replayed")
         await store.confirm(try XCTUnwrap(store.prepare(.restore))).value
         XCTAssertTrue(store.message?.contains("Restore write accepted") == true)
+    }
+}
+
+extension BoardStoreTests {
+    func testPageSaveReturnsNewContextAndRejectsOldContext() async throws {
+        let demo = try DemoFiestaBoardService(), store = BoardStore()
+        await store.connect(demo).value
+        let original = try await store.loadPageDocument(id: "page-selected")
+        XCTAssertTrue(original.editingAccess.canSave)
+        let saved = try await store.savePage(patch: PageSavePatch(name: "Stored only", expectedRevision: original.context.originalRevision!), context: original.context)
+        XCTAssertTrue(saved.editingAccess.canSave)
+        XCTAssertNotEqual(saved.context, original.context)
+        XCTAssertEqual(store.pages.first?.name, "Stored only")
+        do { _ = try await store.savePage(patch: PageSavePatch(name: "Replay", expectedRevision: original.context.originalRevision!), context: original.context); XCTFail() }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+    }
+    func testSameURLReconnectInvalidatesLoadedPageContext() async throws {
+        let demo = try DemoFiestaBoardService(), store = BoardStore()
+        await store.connect(demo).value
+        let original = try await store.loadPageDocument(id: "page-selected")
+        await store.reconnect(allowCandidateWrites: true).value
+        do { _ = try await store.savePage(patch: PageSavePatch(name: "Old session", expectedRevision: original.context.originalRevision!), context: original.context); XCTFail() }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+    }
+    func testUnknownPageSaveRequiresExplicitReadAndDoesNotReplay() async throws {
+        let demo = try DemoFiestaBoardService(), store = BoardStore()
+        await store.connect(demo).value
+        let original = try await store.loadPageDocument(id: "page-selected")
+        await demo.setSimulation(.unknown)
+        let patch = PageSavePatch(name: "Maybe stored", expectedRevision: original.context.originalRevision!)
+        do { _ = try await store.savePage(patch: patch, context: original.context); XCTFail() }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .unknownMutationOutcome) }
+        await demo.setSimulation(.accepted)
+        do { _ = try await store.savePage(patch: patch, context: original.context); XCTFail() }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .pageReadbackRequired) }
+        let readback = try await store.loadPageDocument(id: original.id)
+        XCTAssertNotEqual(readback.context.originalRevision, original.context.originalRevision)
+        let page = try JSONDecoder().decode(Page.self, from: readback.data)
+        XCTAssertEqual(page.name, "Maybe stored")
+    }
+}
+
+extension BoardStoreTests {
+    func testDuplicatePageSaveAndLateSameURLSessionAreGuardedUntilReadback() async throws {
+        let service = try DelayedService(delayConnection: false), store = BoardStore()
+        await store.connect(service).value
+        let original = try await store.loadPageDocument(id: "page-selected")
+        await service.delayNextMutation()
+        let patch = PageSavePatch(name: "Once", expectedRevision: original.context.originalRevision!)
+        let first = Task { try await store.savePage(patch: patch, context: original.context) }
+        await service.waitUntilBlocked()
+        do { _ = try await store.savePage(patch: patch, context: original.context); XCTFail() }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .pageReadbackRequired) }
+        do { _ = try await store.readbackPage(context: original.context); XCTFail() }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .pageReadbackRequired) }
+        await store.reconnect(allowCandidateWrites: true).value
+        await service.release()
+        do { _ = try await first.value; XCTFail() }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+        let count = await service.sentCount
+        XCTAssertEqual(count, 1)
+        let readback = try await store.loadPageDocument(id: original.id)
+        let page = try JSONDecoder().decode(Page.self, from: readback.data)
+        XCTAssertEqual(page.name, "Once")
+    }
+    func testPreviewAcceptsAnyKnownBoardAndDropsReplyAfterBoardOrDocumentChanges() async throws {
+        for changeDocument in [false, true] {
+            let service = try DelayedService(delayConnection: false), store = BoardStore()
+            await store.connect(service).value
+            let original = try await store.loadPageDocument(id: "page-selected")
+            let target = try BoardTarget(deployment: service.deployment, boardID: "board-led")
+            let body = Data(#"{"template":["🛰️"],"board_id":"board-led"}"#.utf8)
+            let accepted = try await store.previewPage(requestData: body, context: original.context, target: target)
+            XCTAssertTrue(accepted.isSimulated)
+            await service.delayNextPreview()
+            let preview = Task { try await store.previewPage(requestData: body, context: original.context, target: target) }
+            await service.waitUntilBlocked()
+            if changeDocument { _ = try await store.loadPageDocument(id: original.id) }
+            else { await store.selectBoard("board-led").value }
+            await service.release()
+            do { _ = try await preview.value; XCTFail() }
+            catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+        }
+    }
+    func testPageActionsInvalidateAuthenticationAndDoNotCrossReadbackContext() async throws {
+        for action in ["save", "validate", "preview"] {
+            let service = try SessionFaultService(), store = BoardStore()
+            await store.connect(service, allowCandidateWrites: true).value
+            let original = try await store.loadPageDocument(id: "page-selected")
+            let target = try BoardTarget(deployment: service.deployment, boardID: "board-2")
+            let body = Data(#"{"template":[],"board_id":"board-2"}"#.utf8)
+            await service.rejectNextRead()
+            do {
+                switch action {
+                case "save": _ = try await store.savePage(patch: PageSavePatch(name: "Auth lost", expectedRevision: original.context.originalRevision!), context: original.context)
+                case "validate": _ = try await store.validatePage(requestData: body, context: original.context, target: target)
+                default: _ = try await store.previewPage(requestData: body, context: original.context, target: target)
+                }
+                XCTFail()
+            } catch { XCTAssertEqual(error as? FiestaBoardError, .unauthenticated) }
+            XCTAssertNil(store.status)
+            await store.connect(service, allowCandidateWrites: true).value
+            do { _ = try await store.readbackPage(context: original.context); XCTFail() }
+            catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+        }
+    }
+    func testRecoveredBaselineRevisionIsSentUnchangedAndConflicts() async throws {
+        let store = BoardStore()
+        await store.connect(try DemoFiestaBoardService()).value
+        let original = try await store.loadPageDocument(id: "page-selected")
+        do { _ = try await store.savePage(patch: PageSavePatch(name: "Recovered", expectedRevision: "old-recovered-revision"), context: original.context); XCTFail() }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .pageConflict) }
+        XCTAssertFalse(store.pageEditingAccess(context: original.context).canSave)
+        let readback = try await store.readbackPage(context: original.context)
+        XCTAssertTrue(readback.editingAccess.canSave)
+    }
+}
+
+extension BoardStoreTests {
+    func testPreviewFailureLeavesPageStorageAvailableWithoutReadback() async throws {
+        let service = try DelayedService(delayConnection: false), store = BoardStore()
+        await store.connect(service).value
+        let original = try await store.loadPageDocument(id: "page-selected")
+        await service.failNextPreview()
+        do {
+            _ = try await store.previewPage(requestData: Data(#"{"template":[],"board_id":"board-2"}"#.utf8), context: original.context,
+                                            target: BoardTarget(deployment: service.deployment, boardID: "board-2"))
+            XCTFail()
+        } catch { XCTAssertEqual(error as? FiestaBoardError, .networkUnavailable) }
+        XCTAssertTrue(store.pageEditingAccess(context: original.context).canSave)
+        let result = try await store.savePage(patch: PageSavePatch(name: "Can save", expectedRevision: original.context.originalRevision!), context: original.context)
+        XCTAssertTrue(result.editingAccess.canSave)
+    }
+}
+
+extension BoardStoreTests {
+    func testReadStartedBeforeSaveCannotReplaceAcknowledgedRevision() async throws {
+        let service = try DelayedService(delayConnection: false), store = BoardStore()
+        await store.connect(service).value
+        let original = try await store.loadPageDocument(id: "page-selected")
+        await service.delayNextPageRead()
+        let read = Task { try await store.readbackPage(context: original.context) }
+        await service.waitUntilBlocked()
+        let saved = try await store.savePage(patch: PageSavePatch(name: "Newest", expectedRevision: original.context.originalRevision!), context: original.context)
+        await service.release()
+        do { _ = try await read.value; XCTFail("Old read must not replace save receipt") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+        XCTAssertTrue(store.pageEditingAccess(context: saved.context).canSave)
+        XCTAssertEqual(store.pages.first?.name, "Newest")
     }
 }

@@ -45,7 +45,7 @@ final class TransportTests: XCTestCase {
     func testHTTPAuthenticationConflictsThrottleAndPartialWritesStayDistinct() async throws {
         let cases: [(Int, String, FiestaBoardError)] = [
             (401, #"{"detail":"password=secret"}"#, .unauthenticated),
-            (409, "{}", .conflict), (429, "{}", .rateLimited(retryAfterSeconds: 7)),
+            (409, "{}", .conflict), (412, "{}", .pageConflict), (429, "{}", .rateLimited(retryAfterSeconds: 7)),
             (502, #"{"detail":{"message":"secret","partial":true,"failed_regions":[{"row":0,"col":3,"rows":2,"cols":3}]}}"#,
              .partialWrite(failedRegions: [try JSONDecoder().decode(FailedRegion.self, from: Data(#"{"row":0,"col":3,"rows":2,"cols":3}"#.utf8))]))
         ]

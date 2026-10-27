@@ -27,6 +27,15 @@ public actor DemoFiestaBoardService: FiestaBoardService {
     public func pages() async throws -> [Page] { try await service.pages() }
     public func pageDocumentData(id: String) async throws -> Data { try await service.pageDocumentData(id: id) }
     public func page(id: String) async throws -> Page { try await service.page(id: id) }
+    public func savePage(id: String, patch: PageSavePatch) async throws -> PageSaveReceipt { try await service.savePage(id: id, patch: patch) }
+    public func validatePage(requestData: Data, target: BoardTarget) async throws -> TemplateValidationResult {
+        let result = try await service.validatePage(requestData: requestData, target: target)
+        return try TemplateValidationResult(rawData: result.rawData, isSimulated: true)
+    }
+    public func previewPage(requestData: Data, target: BoardTarget) async throws -> TemplatePreviewResult {
+        let result = try await service.previewPage(requestData: requestData, target: target)
+        return try TemplatePreviewResult(rawData: result.rawData, isSimulated: true)
+    }
     public func updateBoard(_ patch: BoardPatch, on target: BoardTarget) async throws -> BoardConfigurationReceipt { try await service.updateBoard(patch, on: target) }
     public func restoreBoard(_ target: BoardTarget) async throws -> BoardRestoreReceipt { try await service.restoreBoard(target) }
     public func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult { try await service.sendText(text, to: target) }
@@ -43,6 +52,11 @@ private actor DemoTransport: APITransport {
                 throw FiestaBoardError.invalidResponse
             }
             data[name] = try Data(contentsOf: url)
+        }
+        for name in ["page", "page-weather"] {
+            var page = try JSONSerialization.jsonObject(with: data[name]!) as! [String: Any]
+            page["revision"] = "demo-original-" + name; page["edit_protocol"] = "page-revision-v1"
+            data[name] = try JSONSerialization.data(withJSONObject: page)
         }
         for name in ["board", "board-led"] {
             try JSONDecoder().decode(BoardDetail.self, from: data[name]!).validate()
@@ -61,10 +75,33 @@ private actor DemoTransport: APITransport {
         }
         if path == ["auth", "logout"] { return reply(#"{"status":"ok"}"#) }
         if path == ["v1", "boards"] { return APIResponse(status: 200, data: data["boards"]!) }
-        if path == ["v1", "pages"] { return APIResponse(status: 200, data: data["pages"]!) }
+        if path == ["templates", "validate"] { return reply(#"{"valid":true,"errors":[]}"#) }
+        if path == ["templates", "render"] {
+            let body = try JSONSerialization.jsonObject(with: request.body!) as! [String: Any]
+            let template = (body["template"] as? [String]) ?? (body["template"] as? String)?.components(separatedBy: "\n") ?? []
+            // A literal simulation, not server evaluation of plugins, formulas or canvas drawing.
+            return APIResponse(status: 200, data: try JSONSerialization.data(withJSONObject: [
+                "rendered": template.joined(separator: "\n"), "lines": template, "line_count": template.count,
+                "charset": NSNull(), "charset_issues": NSNull(), "simulation": "Literal template only; dynamic expressions and canvases are not evaluated."
+            ]))
+        }
+        if path == ["v1", "pages"] {
+            let pages = try ["page", "page-weather"].map { try JSONSerialization.jsonObject(with: data[$0]!) }
+            return APIResponse(status: 200, data: try JSONSerialization.data(withJSONObject: ["pages": pages, "total": pages.count]))
+        }
         if path.count == 3 && path.prefix(2) == ["v1", "pages"] {
             let name = path[2] == "page-selected" ? "page" : path[2]
             guard let fixture = data[name] else { throw FiestaBoardError.rejected(status: 404) }
+            if request.method == .put {
+                var page = try JSONSerialization.jsonObject(with: fixture) as! [String: Any]
+                let body = try JSONSerialization.jsonObject(with: request.body!) as! [String: Any]
+                guard mode != .rejected, body["expected_revision"] as? String == page["revision"] as? String else { throw FiestaBoardError.pageConflict }
+                for field in ["name", "template"] { if let value = body[field] { page[field] = value } }
+                page["revision"] = "demo-" + UUID().uuidString
+                data[name] = try JSONSerialization.data(withJSONObject: page)
+                if mode == .unknown || mode == .partial { throw FiestaBoardError.unknownMutationOutcome }
+                return APIResponse(status: 200, data: try JSONSerialization.data(withJSONObject: ["page": page, "incompatible_references": []]))
+            }
             return APIResponse(status: 200, data: fixture)
         }
         guard path.count >= 3, path.prefix(2) == ["v1", "boards"], ["board-2", "board-led"].contains(path[2]) else {
