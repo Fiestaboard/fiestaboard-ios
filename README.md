@@ -2,7 +2,7 @@
 
 Native SwiftUI controller for FiestaBoard on iPhone and iPad, with layouts driven by available window space.
 
-A native development draft is available with Home, Library, Displays, Settings, a simulated demo, manual connection/sign-in, board previews, text/page actions, board configuration/restore controls, and on-device page drafts with recovery and undo. It uses adaptive SwiftUI navigation and system Liquid Glass. Full web-app parity remains the first-release requirement; this draft is not a release candidate.
+A native development draft is available with Home, Library, Displays, Settings, a simulated demo, manual connection/sign-in, board previews, text/page actions, board configuration/restore controls, on-device page drafts with recovery and undo, conditional page saves on compatible servers, and explicit template validation/previews. It uses adaptive SwiftUI navigation and system Liquid Glass. Full web-app parity remains the first-release requirement; this draft is not a release candidate.
 
 Open [FiestaBoard.xcodeproj](FiestaBoard.xcodeproj), choose the **FiestaBoard** scheme and an iPhone or iPad simulator, then Run. The shared scheme starts in demo mode. See the [testing guide](docs/draft-testing.md) for live connection, device signing, resizing checks, and current limits.
 
@@ -23,6 +23,7 @@ The contract foundation includes a source-grounded parity inventory, pinned publ
 - [Run and test the native draft](docs/draft-testing.md)
 - [Native draft verification and limits](docs/research/2026-10-25-draft-verification.md)
 - [Controls and local-editor verification](docs/research/2026-10-25-parity-wave-1-verification.md)
+- [Page saving and preview verification](docs/research/2026-10-26-page-editing-verification.md)
 - [Remaining tasks and current work](TASKS.md)
 
 First-release requirement: complete web-app feature parity, adapted to native interaction and supported window sizes/poses. GPT-6.1 Sol agents coordinate implementation and tests, with Claude Opus CLI requested for bounded parallel tasks when available. Current CLI authentication limits are recorded in the task tracker. GPT-6 Astra independently reviews architecture, integrated milestones, and release readiness.

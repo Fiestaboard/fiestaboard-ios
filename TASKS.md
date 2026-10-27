@@ -17,8 +17,8 @@ This is the durable task tracker. Full web-app feature parity is required before
 | E-01 | Lossless page document model, local draft persistence, native editor feasibility | Complete for bounded scope — Astra approved `be72a11` | Preserve unknown fields/numbers/null/markup; no remote save before revision protocol |
 | W1-03 | Integrate C-01/E-01 into the app and review the wave | Complete — built and Astra approved; interactive device checks remain | Preserve user signing edits; device/Simulator compilation; manual UI matrix |
 | P-01 | All-writer server revisions and conditional saves | Page foundation reviewed and pushed; draft PR creation blocked by connector approval policy; broader writer work remains | Web/AI/import/restore/background writers; both save orders; isolated backend branch |
-| P-02 | Native conditional page saves and explicit conflict handling | In progress — Sol service and editor owners | Consume reviewed backend protocol; audited release and lossless field contract; never retry stale writes automatically |
-| E-02 | Server template validation and render previews | In progress — shared editor wave | Adapt existing internal endpoints with geometry/charset/canvas fixtures |
+| P-02 | Native conditional page saves and explicit conflict handling | Complete for bounded template-edit scope — Astra approved `aa03da7` | Consume reviewed backend protocol; audited release and lossless field contract; never retry stale writes automatically |
+| E-02 | Server template validation and render previews | Complete for explicit text/warning scope — Astra approved `aa03da7` | Adapt existing internal endpoints with geometry/charset/canvas fixtures |
 | S-01 | Shared schema vocabulary, secret-preserving drafts and native forms | Queued | Required by display configuration and integrations |
 | R-01 | Complete LED/pixel/layer/white-board renderer and geometry fidelity | Queued | Shared golden fixtures; actual visual/device checks |
 
@@ -58,7 +58,7 @@ Partial means a subset exists in the draft; the checkbox stays open until the en
 - [ ] **panel_configuration** — Remaining. Create/edit/remove virtual panels, resolve geometry, display/TV/backdrop/auto-dim/matrix/font/sizing/presentation settings and HDMI kiosk capability.
 - [ ] **panel_viewer** — Remaining. Read standalone panel configuration/frame with full split-flap/LED rendering and read-only display playback.
 - [ ] **wizard_state** — Remaining. Welcome/output/model/connection/panel/easy-plugin setup; skip or complete with durable wizard outcome and reopen.
-- [ ] **pages_crud** — Remaining. List/get/create/update/delete all single/composite/template page types; duplicate via create; preserve metadata/charset/geometry/transitions/canvases and explicit nulls.
+- [ ] **pages_crud** — Partial draft. Read/list and supported conditional updates implemented; create/delete/duplicate remain. List/get/create/update/delete all single/composite/template page types; duplicate via create; preserve metadata/charset/geometry/transitions/canvases and explicit nulls.
 - [ ] **page_preview** — Remaining. Saved page and batch previews, target geometry/LED spans/icons/cells/layers, availability and rendering errors.
 - [ ] **page_sharing** — Remaining. Export/copy page share string and import pasted/file/shared content; preserve format and validation errors.
 - [ ] **staff_picks** — Remaining. Browse/filter Picks by device, inspect plugin requirements, retrieve share data and import a pick.
@@ -72,7 +72,7 @@ Partial means a subset exists in the draft; the checkbox stays open until the en
 - [ ] **plugin_marketplace** — Remaining. Registry list/install, Git repository install, update/uninstall, available update checks and bulk application; display progress/errors/provenance.
 - [ ] **plugin_options** — Remaining. Dynamic schema remote options, query/search/dependent settings, pagination/current labels, secret-preserving settings context and loading/error/empty cases.
 - [ ] **oauth_connections** — Remaining. List status/configuration/scopes/expiry/reconnect reason, start relay/device/key_exchange/plex_pin, complete pasted URL/code, disconnect, browser return and plugin/AI routing.
-- [ ] **template_authoring** — Remaining. Variable/function discovery, validation and side-effect-free server rendering with text, tokens, line metadata, geometry, charset warnings and canvas layers.
+- [ ] **template_authoring** — Partial draft. Explicit validation/render previews implemented; discovery/rich authoring remain. Variable/function discovery, validation and side-effect-free server rendering with text, tokens, line metadata, geometry, charset warnings and canvas layers.
 - [ ] **template_live_output** — Remaining. Explicit live-to-board render with named target, pause/silence/override/held handling; separate saved state from live hardware effect.
 - [ ] **integration_helpers** — Remaining. Bay Wheels/Muni station/stop lists and nearby/address search, traffic geocode/validation, stock search/validation, generic data test fetch and Home Assistant entity picker.
 - [ ] **ai_configuration** — Remaining. Provider CRUD/order/protocol/model/base URL/key/sign-in preset configuration, default provider, approval mode/turn cap and provider model/test results.
@@ -150,3 +150,5 @@ Partial means a subset exists in the draft; the checkbox stays open until the en
 - 2026-10-26 continuation: GitHub confirms no PR exists for `codex/ios-api-access`. Creation remains blocked by the connector approval policy. [Page editing plan](docs/superpowers/plans/2026-10-26-page-editing.md) adds a narrow advertised page protocol, native changed-field saves/conflict recovery, and explicit template validation/previews. Jev recommended the per-page protocol field (0.94 confidence); source/tests and Astra determine acceptance.
 
 - Wave 2 backend protocol `dadbc191e` passed Astra review and is pushed to the same backend branch (522 focused/contract tests; 75 independently checked). Native wave initially passed 108 tests but Astra found a late-preview recovery overwrite; fixes are now under focused review. Native compilation and contract checks are green; no interactive UI execution is claimed.
+
+- Wave 2 accepted at `aa03da7`: Astra P1 recovery overwrite fixed and original reproduction passes unchanged. 117 Swift host tests (42 Kit, 35 AppState, 25 Documents, 15 EditorState), 25 contract-tool tests, final unsigned Simulator/device builds and UI-test compilation pass. Seven UI tests are compiled, none executed. [Wave verification and testing limits](docs/research/2026-10-26-page-editing-verification.md).
