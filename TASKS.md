@@ -16,11 +16,14 @@ This is the durable task tracker. Full web-app feature parity is required before
 | C-01 | Per-board pause/resume, schedule enablement/defaults, restore controls and faithful demo outcomes | Complete for bounded scope — Astra approved `be72a11` | Exact pinned API; immutable targets; no automatic write retry; host tests, build, Astra review |
 | E-01 | Lossless page document model, local draft persistence, native editor feasibility | Complete for bounded scope — Astra approved `be72a11` | Preserve unknown fields/numbers/null/markup; no remote save before revision protocol |
 | W1-03 | Integrate C-01/E-01 into the app and review the wave | Complete — built and Astra approved; interactive device checks remain | Preserve user signing edits; device/Simulator compilation; manual UI matrix |
-| P-01 | All-writer server revisions and conditional saves | Page foundation reviewed; draft PR [#2373](https://github.com/Fiestaboard/FiestaBoard/pull/2373) open; broader writer work remains | Web/AI/import/restore/background writers; both save orders; isolated backend branch |
+| P-01 | Server revisions and participating-writer conditional saves | Implemented and Astra-reviewed in single draft PR [#2373](https://github.com/Fiestaboard/FiestaBoard/pull/2373); awaiting merge/deployment | Pages, collections, schedules/defaults, web/AI/MCP original revisions, restore/recovery invalidation; compatible unconditional maintenance remains explicit |
 | P-02 | Native conditional page saves and explicit conflict handling | Complete for bounded template-edit scope — Astra approved `aa03da7` | Consume reviewed backend protocol; audited release and lossless field contract; never retry stale writes automatically |
 | E-02 | Server template validation and render previews | Complete for explicit text/warning scope — Astra approved `aa03da7` | Adapt existing internal endpoints with geometry/charset/canvas fixtures |
+| P-03 | Adopt richer backend contracts in native clients | Queued — backend preparation complete; merge/deployment and native adapters remain | Gate rich editing on page-document-v1 plus page-revision-v1; collection/schedule/default protocols; native OAuth/session flows; device acceptance |
 | S-01 | Shared schema vocabulary, secret-preserving drafts and native forms | Queued | Required by display configuration and integrations |
 | R-01 | Complete LED/pixel/layer/white-board renderer and geometry fidelity | Queued | Shared golden fixtures; actual visual/device checks |
+
+Backend completion evidence and native followups: [2026-10-26-native-backend-readiness.md](docs/research/2026-10-26-native-backend-readiness.md). Backend verification does not check off native workflow acceptance.
 
 ## Release milestones still open
 
