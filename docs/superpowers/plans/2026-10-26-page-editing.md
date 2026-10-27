@@ -19,7 +19,7 @@
 - Keep exact Unicode/numeric/unknown document content, original revision, explicit local saves, and immutable deployment/page/board/session context.
 - No automatic replay of saves, no refreshing a revision then silently reapplying an old edit.
 - Existing Claude CLI attempts failed with expired authentication. No unchanged retry or credential modifications.
-- PR creation was denied by the GitHub connector's approval policy; do not attempt the same action through another write path. Pushing the authorized reviewed branch is available.
+- The user explicitly requested `gh` for GitHub operations after the connector blocked creation. Draft PR [#2373](https://github.com/Fiestaboard/FiestaBoard/pull/2373) now exists; update this single PR and do not merge or deploy without the applicable authorization.
 
 ## Review focus
 

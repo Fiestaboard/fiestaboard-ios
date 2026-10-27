@@ -8,7 +8,7 @@ Head: `codex/ios-api-access` (`dadbc191e`), based on `main` (`3a1d6e8b6`).
 
 Title: **Add page revision preconditions for native editing**
 
-Status: branch pushed; draft PR not created. The GitHub connector returned `MCP tool call requires approval, but approval policy is never`. Do not create a second PR if one has since been opened for this branch; use one ongoing draft PR for the native API work. No merge or production deployment was performed.
+Status: [Draft PR #2373](https://github.com/Fiestaboard/FiestaBoard/pull/2373) is open against `main`, created with `gh` at the user's direction. Continue updating this single PR. The earlier connector approval block is resolved by the requested CLI workflow. No merge or production deployment was performed.
 
 ## Prepared PR description
 
