@@ -2,7 +2,7 @@
 
 Repository: `Fiestaboard/FiestaBoard`
 
-Head: `codex/ios-api-access` (`1514c274a`), based on `main` (`3a1d6e8b6`).
+Head: `codex/ios-api-access` (`dadbc191e`), based on `main` (`3a1d6e8b6`).
 
 [Review the pushed branch](https://github.com/Fiestaboard/FiestaBoard/compare/main...codex/ios-api-access)
 
@@ -12,15 +12,15 @@ Status: branch pushed; draft PR not created. The GitHub connector returned `MCP 
 
 ## Prepared PR description
 
-Two editors can currently load the same page and silently overwrite each other. This first milestone adds optional page revision preconditions through the existing APIs and makes the web editor retain the revision it originally loaded.
+Two editors can currently load the same page and silently overwrite each other. This branch adds optional page revision preconditions through the existing APIs, makes the web editor retain its original revision, and advertises the exact runtime page-edit protocol for native clients.
 
-- Stored pages expose opaque runtime revisions. Conditional update/delete returns HTTP 412 when another writer changed the page.
+- Stored pages advertise read-only `edit_protocol: "page-revision-v1"` and expose opaque runtime revisions. Both runtime fields are excluded from disk. Conditional update/delete returns HTTP 412 when another writer changed the page.
 - Legacy unconditional writes remain compatible and invalidate outstanding revisions.
 - Restart, delete/recreate and backup restore invalidate old revisions. Restore retains the live owner so cached services cannot resurrect old content.
 - Deletion follows the established cross-store lock order, including concurrent panel resizing.
 - Web button/imperative saves and deletes carry the draft revision; background refetches do not replace it.
 
-This is the single ongoing draft PR for native iOS API needs. Native remote publishing is still disabled. Collections/schedules, participating AI writers, and lossless document compatibility remain follow-ups documented in `docs/development/ios-api-access.md`. Existing internal APIs cover most remaining access needs; no separate mobile API namespace is added.
+This is the single ongoing draft PR for native iOS API needs. Native page saving requires this advertised protocol, the loaded revision and explicit session opt-in; unpatched servers remain save-disabled. Collections/schedules, participating AI writers, and lossless document compatibility remain follow-ups documented in `docs/development/ios-api-access.md`. Existing internal APIs cover most remaining access needs; no separate mobile API namespace is added.
 
 Validation:
 - 523 focused Python tests pass, including 15 revision tests, storage kernel, resize, restore, pages, v1, operations and conventions.
@@ -31,3 +31,7 @@ Validation:
 
 Tests ran in disposable Docker containers without test network access or production hardware. The full Python suite was attempted but OOMed at 54% (exit 137); there is no full-Python-suite pass claim. The initial web run's fixture error and three failures are documented; the corrected complete rerun passes.
 
+
+## Subsequent protocol verification
+
+The additive protocol commit `dadbc191e` passed Astra specification/quality review with no findings. Latest backend checks: 522 focused/contract tests, including all 22 revision tests, schema honesty and response-shape goldens. Astra independently ran 75 tests. The earlier full web result above predates this runtime metadata addition; no web code changed in the addition. The full Python OOM limit still applies. The native draft independently consumes the protocol; this does not deploy the backend branch to any install.

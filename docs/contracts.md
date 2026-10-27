@@ -28,8 +28,18 @@ Jev compared these three strategies using the inspected source and the approved 
 
 ## Remaining protocol work
 
-The current backend does not provide atomic revision preconditions for pages, collections or schedules. File locks protect storage, but do not detect stale editor saves. Revision work must cover all mutation paths and restores, not only a new native endpoint. Native and participating first-party editors need preconditions; legacy unconditional writes remain an explicitly documented overwrite risk.
+The pinned 10.0.0 backend does not provide atomic revision preconditions for pages, collections or schedules. The unmerged `codex/ios-api-access` branch now adds page preconditions; collection/schedule and additional participating-writer coverage remain unfinished. File locks protect storage, but do not detect stale editor saves. Revision work must cover all mutation paths and restores, not only a new native endpoint. Native and participating first-party editors need preconditions; legacy unconditional writes remain an explicitly documented overwrite risk.
 
 The Home Assistant test proxy demonstrates path rewriting, not Home Assistant authentication. Native access through an actual ingress-only deployment needs its own authenticated proof. Likewise, the four OAuth flow families require native completion/lifecycle validation; browser callback success alone is insufficient.
 
 These gates remain visible rather than being hidden by a green schema check.
+
+## Experimental page protocol and template evaluation
+
+The development draft now has a separate, narrow page-save adapter. It requires explicit session opt-in and a loaded template page advertising both `edit_protocol: "page-revision-v1"` and a nonempty original `revision`. It sends only supported changed name/fixed-slot template fields plus `expected_revision`; a version string alone cannot enable this operation. The reviewed backend implementation is `dadbc191e7b329a2803f229dcca22914e6a83b6e` on the unmerged `codex/ios-api-access` branch. This feature contract does not certify an app/server release pairing or enable board commands.
+
+Board commands retain the exact, non-development 10.0.0 candidate gate. Template validation/rendering uses separate adapters for non-development 10.0.0 and 10.1.2. These explicit evaluation requests can fetch plugin data but never call the live-send route. Unknown internal-API versions remain blocked. HTTP POST alone does not imply mutation: only the two exact evaluation paths have nonmutating error semantics, without automatic retries.
+
+The local document retains unknown JSON/numeric/Unicode content. Backend `Page` remains typed and does not promise arbitrary unknown on-disk-field preservation; the adapter sends only the narrow supported changed fields. A save acknowledges page storage, not physical board output. Running displays may use the changed page during normal operation.
+
+Conflicts and uncertain results preserve local work and require explicit comparison/reload. Readback does not silently rebase an old draft or resend it. Emergency checkpoints on actual authentication/session loss preserve new local work without overwriting a pre-reload draft with unchanged server content. Interactive device, topology and release verification remain separate gates.
