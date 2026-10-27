@@ -174,4 +174,79 @@ import FiestaBoardKit
         XCTAssertEqual(try PageDocument(data: preserved.documentData).name, "Original")
     }
 
+    func testLateStalePreviewMustNotErasePreservedPreReloadDraft() async throws {
+        try await assertPreviewAfterReloadPreservesDraft(error: .stalePageContext)
+    }
+
+    func testLateSessionLossAfterReloadWithoutNewEditsPreservesPriorDraft() async throws {
+        try await assertPreviewAfterReloadPreservesDraft(error: .staleSession)
+    }
+
+    func testLateAuthenticationLossAfterReloadWithoutNewEditsPreservesPriorDraft() async throws {
+        try await assertPreviewAfterReloadPreservesDraft(error: .unauthenticated)
+    }
+
+    func testLateAuthenticationLossAfterReloadAndNewEditsPreservesLatestDeliberateWork() async throws {
+        try await assertPreviewAfterReloadPreservesDraft(error: .unauthenticated, editAfterReload: true)
+    }
+
+    func testLateAuthenticationLossAfterReloadAndUndoneEditsPreservesPriorDraft() async throws {
+        try await assertPreviewAfterReloadPreservesDraft(error: .unauthenticated, editAfterReload: true, undoAfterEdit: true)
+    }
+
+    func testDocumentContextInvalidationDoesNotCreateEmergencyCheckpoint() async throws {
+        let target = try BoardTarget(deployment: DeploymentURL("https://example.test"), boardID: "a")
+        let server = raw("Server", revision: "r2")
+        var continuation: CheckedContinuation<TemplatePreviewResult, any Error>?
+        let actions = EditorRemoteActions(disabledReason: { nil }, save: { _ in throw FiestaBoardError.pageWritesDisabled },
+            fetch: { server }, validate: { _, _ in throw FiestaBoardError.previewUnsupported }, preview: { _, _ in
+                try await withCheckedThrowingContinuation { continuation = $0 }
+            })
+        let model = try LocalPageEditorModel(rawDocumentData: raw(), identity: identity, draftStore: store, remote: actions,
+            boards: [EditorBoardChoice(name: "A", target: target)])
+        model.setName("Local unsaved work")
+        model.chooseBoard("a")
+        let pending = Task { await model.evaluate(preview: true) }
+        while continuation == nil { await Task.yield() }
+        await model.fetchRemoteComparison() // Rotates document identity without losing connection.
+        continuation!.resume(throwing: FiestaBoardError.stalePageContext)
+        await pending.value
+        guard case .absent = try await store.load(identity) else { return XCTFail("Context invalidation must not implicitly save") }
+        XCTAssertEqual(model.name, "Local unsaved work")
+        XCTAssertEqual(model.baselineRevision, "r1")
+        XCTAssertTrue(model.hasUnsavedChanges)
+    }
+
+    private func assertPreviewAfterReloadPreservesDraft(error: FiestaBoardError, editAfterReload: Bool = false, undoAfterEdit: Bool = false) async throws {
+        let target = try BoardTarget(deployment: DeploymentURL("https://example.test"), boardID: "a")
+        let server = raw("Server", revision: "r2")
+        var continuation: CheckedContinuation<TemplatePreviewResult, any Error>?
+        let actions = EditorRemoteActions(disabledReason: { nil }, save: { _ in throw FiestaBoardError.pageWritesDisabled },
+            fetch: { server }, validate: { _, _ in throw FiestaBoardError.previewUnsupported }, preview: { _, _ in
+                try await withCheckedThrowingContinuation { continuation = $0 }
+            })
+        let model = try LocalPageEditorModel(rawDocumentData: raw(), identity: identity, draftStore: store, remote: actions,
+            boards: [EditorBoardChoice(name: "A", target: target)])
+        model.setName("Work that must survive reload")
+        model.chooseBoard("a")
+        let pending = Task { await model.evaluate(preview: true) }
+        while continuation == nil { await Task.yield() }
+        await model.fetchRemoteComparison()
+        await model.reloadComparedRemote()
+        guard case .recovered(let before) = try await store.load(identity) else { return XCTFail("Preserved local draft") }
+        XCTAssertEqual(try PageDocument(data: before.documentData).name, "Work that must survive reload")
+        XCTAssertEqual(model.name, "Server")
+        XCTAssertTrue(model.hasUnsavedChanges, "Server adoption is not a saved local checkpoint")
+        if editAfterReload { model.setName("New deliberate edit after reload") }
+        if undoAfterEdit { model.undo() }
+        continuation!.resume(throwing: error)
+        await pending.value
+        guard case .recovered(let after) = try await store.load(identity) else { return XCTFail("Draft must remain") }
+        let expected = editAfterReload && !undoAfterEdit ? "New deliberate edit after reload" : "Work that must survive reload"
+        XCTAssertEqual(try PageDocument(data: after.documentData).name, expected)
+        XCTAssertEqual(model.baselineRevision, "r2", "No callback may rebase the server baseline")
+        XCTAssertTrue(model.hasUnsavedChanges, "Recovery exception must not advance explicit local-save checkpoint")
+        XCTAssertNil(model.preview)
+    }
+
 }

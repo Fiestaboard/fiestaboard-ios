@@ -27,13 +27,18 @@ public final class LocalPageEditorModel: ObservableObject {
     private var evaluationGeneration: UInt64 = 0
     private var isPreparingRemoteSave = false
     private var editingEnded = false
+    // A recovery side effect may preserve only content produced since the last intentional
+    // checkpoint/adoption. Metadata-only local dirty state after reload is not new local work.
+    private var recoveryPreservationBarrier: PageDocument
 
     public init(rawDocumentData: Data, identity: DraftIdentity, draftStore: LocalDraftStore, remote: EditorRemoteActions? = nil, boards: [EditorBoardChoice] = []) throws {
         self.remote = remote
         self.boards = boards
         self.identity = identity
         self.draftStore = draftStore
-        session = try DocumentEditingSession(data: rawDocumentData)
+        let initialSession = try DocumentEditingSession(data: rawDocumentData)
+        session = initialSession
+        recoveryPreservationBarrier = initialSession.document
     }
     public var name: String { session.document.name ?? "" }
     public var pageType: String { session.document.pageType ?? "Unknown page type" }
@@ -95,6 +100,7 @@ public final class LocalPageEditorModel: ObservableObject {
                 return
             }
             try session.recover(recovery)
+            recoveryPreservationBarrier = session.document
             invalidateEvaluation()
             self.recovery = nil
             recoveryNotice = nil
@@ -127,6 +133,7 @@ public final class LocalPageEditorModel: ObservableObject {
             let snapshot = try session.snapshot(identity: identity)
             try await draftStore.save(snapshot)
             session.markSaved(captured, baseline: capturedBaseline)
+            recoveryPreservationBarrier = captured
             recovery = nil
             recoveryNotice = nil
             if session.hasUnsavedChanges {
@@ -216,6 +223,7 @@ public final class LocalPageEditorModel: ObservableObject {
                 throw FiestaBoardError.unknownMutationOutcome
             }
             try session.adoptServerDocument(data)
+            recoveryPreservationBarrier = session.document
             remoteStatus = .idle
             message = (isSimulated ? "Simulated save. " : "") + "Page storage acknowledged. Running displays may use this persisted page. Save the updated revision locally to refresh your recovery checkpoint."
             if receipt.incompatibleReferenceCount > 0 {
@@ -261,6 +269,7 @@ public final class LocalPageEditorModel: ObservableObject {
         defer { isPreparingRemoteSave = false }
         do {
             try session.adoptServerDocument(data)
+            recoveryPreservationBarrier = session.document
             remoteComparisonData = nil; remoteComparisonText = nil
             remoteStatus = .idle
             invalidateEvaluation()
@@ -295,13 +304,23 @@ public final class LocalPageEditorModel: ObservableObject {
 
     /// A read can invalidate authentication and remove the sheet. Its suspended operation retains
     /// this coordinator, allowing the latest edits (including edits after a stale preview started)
-    /// to be checkpointed before returning. Do not discard this because the result became stale.
+    /// to be checkpointed before returning. A stale result is not itself evidence of connection
+    /// loss, and acknowledged/reloaded server content must not overwrite the prior recovery copy.
     private func preserveForConnectionLoss(_ error: any Error) async {
-        guard !editingEnded, let error = error as? FiestaBoardError, error == .unauthenticated || error == .staleSession else { return }
+        guard !editingEnded, let error = error as? FiestaBoardError,
+              error == .unauthenticated || error == .staleSession,
+              session.document != recoveryPreservationBarrier else { return }
         do {
             // This is an emergency recovery copy, not the user's explicit local-save checkpoint.
             // Leave local dirty bookkeeping intact even after a successful preservation write.
+            let captured = session.document
+            let capturedBaseline = session.baseline
             try await draftStore.save(session.snapshot(identity: identity))
+            // A concurrent explicit reload/checkpoint owns its newer barrier. An emergency
+            // write must not reset that choice when its actor continuation resumes later.
+            if session.document == captured, session.baseline == capturedBaseline {
+                recoveryPreservationBarrier = captured
+            }
         } catch {
             message = "Connection ended and the recovery draft could not be saved: \(error.localizedDescription)"
         }
