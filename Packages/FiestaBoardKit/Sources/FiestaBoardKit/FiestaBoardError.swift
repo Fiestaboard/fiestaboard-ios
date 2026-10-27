@@ -7,7 +7,7 @@ public enum FiestaBoardError: Error, Sendable, Equatable, LocalizedError {
     case partialWrite(failedRegions: [FailedRegion])
     case rejected(status: Int), redirectRefused, invalidResponse, networkUnavailable
     case unknownMutationOutcome, staleSession, writesDisabled
-    case pageConflict, pageWritesDisabled, pageReadbackRequired, previewUnsupported
+    case stalePageContext, pageConflict, pageWritesDisabled, pageReadbackRequired, previewUnsupported
 
     public var errorDescription: String? {
         switch self {
@@ -25,6 +25,7 @@ public enum FiestaBoardError: Error, Sendable, Equatable, LocalizedError {
         case .networkUnavailable: "The deployment could not be reached."
         case .unknownMutationOutcome: "The result is unknown. Refresh before sending another action."
         case .staleSession: "The deployment session changed. Refresh to continue."
+        case .stalePageContext: "The page context changed. Keep your local work and use the current page snapshot."
         case .pageConflict: "This page changed on the server. Keep your local work and explicitly reload before saving again."
         case .pageWritesDisabled: "Page saving requires page-revision-v1, an original revision, and explicit session opt-in."
         case .pageReadbackRequired: "Read the page again before another save; the previous result may be unknown."

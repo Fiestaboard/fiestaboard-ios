@@ -126,7 +126,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard DeploymentURL.validSegment(id) else { throw FiestaBoardError.invalidPath }
         let writeGeneration = pageWriteGenerations[id, default: 0]
         let page: Page = try await fetch(APIRequest(path: ["v1", "pages", id]))
-        guard writeGeneration == pageWriteGenerations[id, default: 0] else { throw FiestaBoardError.staleSession }
+        guard writeGeneration == pageWriteGenerations[id, default: 0] else { throw FiestaBoardError.stalePageContext }
         guard page.id == id else { throw FiestaBoardError.invalidResponse }
         knownPages[id] = page
         if !savingPages.contains(id) { pageReadbacks.remove(id) }
@@ -138,7 +138,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard DeploymentURL.validSegment(id) else { throw FiestaBoardError.invalidPath }
         let writeGeneration = pageWriteGenerations[id, default: 0]
         let result = try await response(APIRequest(path: ["v1", "pages", id]))
-        guard writeGeneration == pageWriteGenerations[id, default: 0] else { throw FiestaBoardError.staleSession }
+        guard writeGeneration == pageWriteGenerations[id, default: 0] else { throw FiestaBoardError.stalePageContext }
         guard let page = try? JSONDecoder().decode(Page.self, from: result.data), page.id == id else {
             throw FiestaBoardError.invalidResponse
         }
@@ -167,7 +167,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
             return receipt
         } catch {
             switch error as? FiestaBoardError {
-            case .unknownMutationOutcome, .pageConflict, .staleSession: break
+            case .unknownMutationOutcome, .pageConflict, .staleSession, .stalePageContext: break
             default: pageReadbacks.remove(id)
             }
             throw error

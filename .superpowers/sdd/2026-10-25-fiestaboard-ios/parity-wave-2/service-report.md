@@ -39,3 +39,13 @@ git diff --check -- Packages/FiestaBoardKit Packages/FiestaBoardAppState
 ```
 
 The first plain SwiftPM attempt could not write the default global module cache. The documented writable temporary caches resolve that environment issue. SwiftPM still reports disabled user-level caches/read-only manifest-cache warnings; these do not affect compilation or test outcomes. No unresolved test failures. Combined app builds, UI checks and independent review are owned by the coordinating agent.
+
+## Astra P1 follow-up — distinguish page context from session loss
+
+Reviewed `astra-native-review.md` and verified the source classification defect: document ID rotation after comparison readback used the same `staleSession` error as real connection-generation loss. Added `FiestaBoardError.stalePageContext` for document-token changes and per-page write-generation invalidation in the new page service/store helpers. `pageEditingAccess` now preserves that precise disabled reason. Same-URL reconnect/connection-generation invalidation still uses `staleSession`; genuine HTTP 401 still uses `unauthenticated`. Existing board action behavior is unchanged.
+
+Also removed the new page helpers' use of task cancellation as a proxy for session loss. A cancelled successful evaluation returns `CancellationError`, avoiding an unintended authentication-recovery checkpoint. A cancelled save retains its explicit-readback lock because the server may already have stored the captured content; cancellation never permits replay. Tests verify that readback resolves that state and the mutation happened exactly once.
+
+Observed behavioral red failures before the fix for comparison readback expecting page-context staleness (actual session loss) and a cancelled preview expecting cancellation (actual session loss). Focused AppState checks (six existing/new affected cases) and the service late-read check passed after the change. Then ran each full package suite once: **42 FiestaBoardKit tests and 35 FiestaBoardAppState tests passed, 77 total, zero failures**. Existing same-URL reconnect and genuine 401 tests remain green. `git diff --check` is clean. Writable-cache SwiftPM warnings remain environmental; no compiler warnings or unresolved test failures. The editor owner separately covers the full preview → comparison → reload → late error draft-preservation reproduction and late-401 protection barrier.
+
+Only the owned Kit/AppState packages, their tests, README and this report changed. The optional whitespace-only page-name policy difference is outside this P1 fix and was left unchanged.

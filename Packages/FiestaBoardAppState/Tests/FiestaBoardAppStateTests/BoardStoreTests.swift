@@ -484,7 +484,7 @@ extension BoardStoreTests {
         XCTAssertNotEqual(saved.context, original.context)
         XCTAssertEqual(store.pages.first?.name, "Stored only")
         do { _ = try await store.savePage(patch: PageSavePatch(name: "Replay", expectedRevision: original.context.originalRevision!), context: original.context); XCTFail() }
-        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .stalePageContext) }
     }
     func testSameURLReconnectInvalidatesLoadedPageContext() async throws {
         let demo = try DemoFiestaBoardService(), store = BoardStore()
@@ -551,7 +551,7 @@ extension BoardStoreTests {
             else { await store.selectBoard("board-led").value }
             await service.release()
             do { _ = try await preview.value; XCTFail() }
-            catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+            catch { XCTAssertEqual(error as? FiestaBoardError, changeDocument ? .stalePageContext : .staleSession) }
         }
     }
     func testPageActionsInvalidateAuthenticationAndDoNotCrossReadbackContext() async throws {
@@ -616,8 +616,69 @@ extension BoardStoreTests {
         let saved = try await store.savePage(patch: PageSavePatch(name: "Newest", expectedRevision: original.context.originalRevision!), context: original.context)
         await service.release()
         do { _ = try await read.value; XCTFail("Old read must not replace save receipt") }
-        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .stalePageContext) }
         XCTAssertTrue(store.pageEditingAccess(context: saved.context).canSave)
         XCTAssertEqual(store.pages.first?.name, "Newest")
+    }
+}
+
+extension BoardStoreTests {
+    func testComparisonReadbackInvalidatesOldPageContextWithoutLosingSession() async throws {
+        let demo = try DemoFiestaBoardService(), store = BoardStore()
+        await store.connect(demo).value
+        let original = try await store.loadPageDocument(id: "page-selected")
+        let comparison = try await store.readbackPage(context: original.context)
+        let target = try BoardTarget(deployment: demo.deployment, boardID: "board-2")
+        let body = Data(#"{"template":[],"board_id":"board-2"}"#.utf8)
+        do { _ = try await store.validatePage(requestData: body, context: original.context, target: target); XCTFail() }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .stalePageContext) }
+        XCTAssertNotNil(store.status)
+        XCTAssertTrue(store.pageEditingAccess(context: comparison.context).canSave)
+        XCTAssertEqual(store.pageEditingAccess(context: original.context), .disabled(FiestaBoardError.stalePageContext.localizedDescription))
+        await store.reconnect(allowCandidateWrites: true).value
+        do { _ = try await store.readbackPage(context: comparison.context); XCTFail() }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+    }
+}
+
+extension BoardStoreTests {
+    func testCancelledPreviewIsNotReportedAsSessionLoss() async throws {
+        let service = try DelayedService(delayConnection: false), store = BoardStore()
+        await store.connect(service).value
+        let original = try await store.loadPageDocument(id: "page-selected")
+        let target = try BoardTarget(deployment: service.deployment, boardID: "board-2")
+        await service.delayNextPreview()
+        let preview = Task { try await store.previewPage(requestData: Data(#"{"template":[],"board_id":"board-2"}"#.utf8), context: original.context, target: target) }
+        await service.waitUntilBlocked()
+        preview.cancel()
+        await service.release()
+        do { _ = try await preview.value; XCTFail() }
+        catch { XCTAssertTrue(error is CancellationError, "Cancellation is not authentication or connection loss") }
+        XCTAssertNotNil(store.status)
+        XCTAssertTrue(store.pageEditingAccess(context: original.context).canSave)
+    }
+}
+
+extension BoardStoreTests {
+    func testCancelledSavePreservesReadbackLockWithoutClaimingSessionLoss() async throws {
+        let service = try DelayedService(delayConnection: false), store = BoardStore()
+        await store.connect(service).value
+        let original = try await store.loadPageDocument(id: "page-selected")
+        await service.delayNextMutation()
+        let patch = PageSavePatch(name: "Stored before cancellation", expectedRevision: original.context.originalRevision!)
+        let save = Task { try await store.savePage(patch: patch, context: original.context) }
+        await service.waitUntilBlocked()
+        save.cancel()
+        await service.release()
+        do { _ = try await save.value; XCTFail() }
+        catch { XCTAssertTrue(error is CancellationError) }
+        XCTAssertNotNil(store.status)
+        do { _ = try await store.savePage(patch: patch, context: original.context); XCTFail() }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .pageReadbackRequired) }
+        let readback = try await store.readbackPage(context: original.context)
+        let page = try JSONDecoder().decode(Page.self, from: readback.data)
+        XCTAssertEqual(page.name, "Stored before cancellation")
+        let count = await service.sentCount
+        XCTAssertEqual(count, 1)
     }
 }

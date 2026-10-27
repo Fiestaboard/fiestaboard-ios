@@ -235,7 +235,7 @@ extension PageEditingTests {
         catch { XCTAssertEqual(error as? FiestaBoardError, .unknownMutationOutcome) }
         await transport.releaseRead()
         do { _ = try await read.value; XCTFail() }
-        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .stalePageContext) }
         do { _ = try await service.savePage(id: "p", patch: patch); XCTFail() }
         catch { XCTAssertEqual(error as? FiestaBoardError, .pageReadbackRequired) }
     }
