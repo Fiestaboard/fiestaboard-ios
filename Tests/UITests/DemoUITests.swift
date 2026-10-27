@@ -33,7 +33,7 @@ extension DemoUITests {
         app.tabBars.buttons["Library"].tap()
         app.staticTexts["Welcome"].tap()
         app.buttons["editLocalDraft"].tap()
-        XCTAssertTrue(app.staticTexts["Local draft only"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Local draft"].waitForExistence(timeout: 5))
         let name = app.textFields["Name"]
         XCTAssertTrue(name.exists)
         name.tap()
@@ -45,7 +45,7 @@ extension DemoUITests {
         app.buttons["Close"].tap()
         app.buttons["Discard unsaved changes"].tap()
         XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 3))
-        XCTAssertFalse(app.staticTexts["Local draft only"].exists)
+        XCTAssertFalse(app.staticTexts["Local draft"].exists)
     }
 
     @MainActor
@@ -127,4 +127,114 @@ extension DemoUITests {
         XCTAssertTrue(app.buttons["refreshBoardControls"].isEnabled)
     }
 
+}
+
+
+extension DemoUITests {
+    @MainActor
+    func testPagePreviewAndConfirmedSimulatedSave() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo"]
+        app.launch()
+        openPageEditor(app)
+
+        let preview = app.buttons["previewPage"]
+        scrollTo(preview, in: app)
+        XCTAssertFalse(preview.isEnabled, "Evaluation requires an explicit board choice.")
+        let boardPicker = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Board for evaluation")).firstMatch
+        scrollTo(boardPicker, in: app)
+        boardPicker.tap()
+        app.buttons["Demo Kitchen"].tap()
+        preview.tap()
+        let simulatedPreview = app.staticTexts["Demo preview · simulated, expressions are not evaluated"]
+        scrollTo(simulatedPreview, in: app)
+        XCTAssertTrue(simulatedPreview.waitForExistence(timeout: 5))
+
+        let name = app.textFields["Name"]
+        scrollTo(name, in: app, upwards: false)
+        name.tap()
+        name.typeText(" UI save")
+        app.navigationBars.buttons["Close"].tap()
+        app.buttons["Keep editing"].tap()
+        let save = app.buttons["savePageOnServer"]
+        scrollTo(save, in: app)
+        XCTAssertTrue(save.isEnabled)
+        save.tap()
+        XCTAssertTrue(app.buttons["Simulate save"].waitForExistence(timeout: 3))
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(save.isEnabled, "Cancelling confirmation must leave the edit pending.")
+        save.tap()
+        app.buttons["Simulate save"].tap()
+        let acknowledgement = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Simulated save. Page storage acknowledged.")).firstMatch
+        scrollTo(acknowledgement, in: app)
+        XCTAssertTrue(acknowledgement.waitForExistence(timeout: 5))
+        XCTAssertFalse(save.isEnabled)
+        scrollTo(app.buttons["Undo"], in: app)
+        XCTAssertFalse(app.buttons["Undo"].isEnabled)
+    }
+
+    @MainActor
+    func testPageConflictPreservesDraftUntilExplicitReload() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo"]
+        app.launch()
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        app.tabBars.buttons["Settings"].tap()
+        app.buttons["demoOutcomePicker"].tap()
+        app.buttons["Rejected"].tap()
+        openPageEditor(app)
+        let name = app.textFields["Name"]
+        scrollTo(name, in: app)
+        name.tap()
+        name.typeText(" conflict work")
+        app.navigationBars.buttons["Close"].tap()
+        app.buttons["Keep editing"].tap()
+        let save = app.buttons["savePageOnServer"]
+        scrollTo(save, in: app)
+        save.tap()
+        app.buttons["Simulate save"].tap()
+        let conflict = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "The server page changed.")).firstMatch
+        scrollTo(conflict, in: app)
+        XCTAssertTrue(conflict.waitForExistence(timeout: 5))
+        XCTAssertFalse(save.isEnabled)
+        let fetch = app.buttons["Fetch server page for comparison"]
+        scrollTo(fetch, in: app, upwards: false)
+        fetch.tap()
+        let reload = app.buttons["Reload compared page…"]
+        scrollTo(reload, in: app)
+        XCTAssertTrue(reload.waitForExistence(timeout: 5))
+        scrollTo(name, in: app, upwards: false)
+        XCTAssertTrue((name.value as? String)?.contains("conflict work") == true)
+        scrollTo(reload, in: app)
+        reload.tap()
+        app.buttons["Keep local work"].tap()
+        XCTAssertTrue(reload.exists)
+        reload.tap()
+        app.buttons["Preserve local draft and reload"].tap()
+        let reloaded = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Reloaded the compared server page")).firstMatch
+        scrollTo(reloaded, in: app)
+        XCTAssertTrue(reloaded.waitForExistence(timeout: 5))
+        scrollTo(name, in: app, upwards: false)
+        XCTAssertEqual(name.value as? String, "Welcome")
+        scrollTo(app.buttons["Undo"], in: app)
+        XCTAssertFalse(app.buttons["Undo"].isEnabled)
+    }
+
+    @MainActor
+    private func openPageEditor(_ app: XCUIApplication) {
+        XCTAssertTrue(app.tabBars.buttons["Library"].waitForExistence(timeout: 10))
+        app.tabBars.buttons["Library"].tap()
+        app.staticTexts["Welcome"].tap()
+        app.buttons["editLocalDraft"].tap()
+        XCTAssertTrue(app.navigationBars["Page editor"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.textFields["Name"].exists)
+    }
+
+    @MainActor
+    private func scrollTo(_ element: XCUIElement, in app: XCUIApplication, upwards: Bool = true) {
+        for _ in 0..<10 {
+            if element.exists && element.isHittable { return }
+            if upwards { app.swipeUp() } else { app.swipeDown() }
+        }
+    }
 }

@@ -106,7 +106,7 @@ struct DraftScene: View {
         VStack(alignment: .leading, spacing: 8) {
             Label(store.connectionLabel, systemImage: store.status?.isDemo == true ? "sparkles" : "network")
                 .font(.subheadline.weight(.semibold)).textSelection(.enabled)
-            Text(store.status?.isDemo == true ? "Demo · board actions are simulated" : "\(store.status?.version.displayedVersion ?? "Unknown version") · \(store.status?.access == .candidateWrites ? "Draft controls enabled" : "Read-only")")
+            Text(store.status?.isDemo == true ? "Demo · page saves, previews and board actions are simulated" : "\(store.status?.version.displayedVersion ?? "Unknown version") · \(store.status?.access == .candidateWrites ? "Board controls enabled" : "Board controls read-only") · Page save access checked per document")
                 .font(.caption).foregroundStyle(.secondary)
             if let message = store.message {
                 Text(message).font(.callout).accessibilityIdentifier("actionOutcome")
@@ -144,7 +144,7 @@ struct DraftScene: View {
                                 Label("Make room for a little joy.", systemImage: "sun.max").font(.title2.bold())
                                 Button { composing = true } label: { Label("Compose text", systemImage: "square.and.pencil").frame(maxWidth: .infinity, minHeight: 36) }
                                     .buttonStyle(.borderedProminent).disabled(!store.canWrite)
-                                if store.status?.access == .readOnly { Text("This connection is read-only. See Settings for the draft’s exact version gate.").font(.callout).foregroundStyle(.secondary) }
+                                if store.status?.access == .readOnly { Text("Board controls are read-only. Settings explains their exact version gate; page saves have a separate protocol check.").font(.callout).foregroundStyle(.secondary) }
                                 if store.needsReadback { Text("Refresh output before another action.").font(.callout).foregroundStyle(.orange) }
                                 if let board = store.board {
                                     selectionDetails(board)
@@ -170,7 +170,7 @@ struct DraftScene: View {
             Section("Connection & action status") {
                 connectionBanner
                 if store.status?.access == .readOnly {
-                    Text("This connection is read-only. See Settings to review the exact server version gate and explicitly enable draft controls when available.")
+                    Text("Board controls are read-only. Settings explains their exact server version gate and session opt-in. Supported page saves are checked separately.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
             }
@@ -261,7 +261,7 @@ struct DraftScene: View {
                 Section("Connection") {
                     connectionBanner
                     LabeledContent("Version", value: store.status?.version.displayedVersion ?? "Unknown")
-                    LabeledContent("Access", value: store.status?.access.rawValue ?? "Disconnected")
+                    LabeledContent("Board controls", value: store.status?.access.rawValue ?? "Disconnected")
                     Text("Sessions stay in memory for this window. Passwords are never saved. Closing the app or disconnecting clears the local session.").font(.footnote).foregroundStyle(.secondary)
                     Button("Disconnect") { store.disconnect(); demo = nil; candidateWrites = false }
                     if store.status?.isDemo != true { Button("Log out & disconnect") { store.logout(); candidateWrites = false } }
@@ -270,13 +270,13 @@ struct DraftScene: View {
                     Section("Simulate an outcome") {
                         Picker("Next action", selection: $demoMode) { ForEach(DemoSimulation.allCases, id: \.self) { Text($0.rawValue.capitalized).tag($0) } }
                             .accessibilityIdentifier("demoOutcomePicker")
-                        Text("Demonstrate held, partial, rejected and unknown results without hardware.").font(.footnote)
+                        Text("Demonstrate board outcomes without hardware. For page saves, Rejected simulates a revision conflict; Unknown and Partial simulate an uncertain save result.").font(.footnote)
                     }.onChange(of: demoMode) { _, value in if let demo { Task { await demo.setSimulation(value) } } }
                 } else {
-                    Section("Draft controls") {
-                        Toggle("Enable controls on this server", isOn: $candidateWrites)
-                        Text("Controls use the FiestaBoard 10.0.0 test schema and can change the chosen board. Only that exact server version can enable them here; other versions stay read-only. This draft has no supported release pairing.").font(.footnote)
-                        Button("Apply control setting") { store.reconnect(allowCandidateWrites: candidateWrites) }.disabled(store.commandBusy || store.connecting)
+                    Section("Server changes") {
+                        Toggle("Enable changes on this server", isOn: $candidateWrites)
+                        Text("Applying reconnects. With this setting enabled, this session opts into supported page saves and board controls. Page saves require the exact page-revision-v1 protocol and a loaded revision; each save needs confirmation. Board controls separately require the exact non-development FiestaBoard 10.0.0 version and can change the chosen board. Other versions may support page saves while board controls remain read-only. This draft has no supported release pairing.").font(.footnote)
+                        Button("Apply change setting") { store.reconnect(allowCandidateWrites: candidateWrites) }.disabled(store.commandBusy || store.connecting)
                     }
                 }
                 Section("About this draft") {
@@ -354,8 +354,8 @@ private struct WelcomeView: View {
 }
 private struct DraftScopeView: View {
     var body: some View {
-        Text("Native draft: manual connection, page library, on-device page drafts, display selection, text and page actions, pause, schedule following, fallback page and restore controls. Refresh is manual; there is no background polling. Demo board actions are entirely simulated.")
-        Text("Local drafts stay on this device and are never published to the server. Discovery, server setup, OAuth, publishing pages, schedule editing, plugins, administration and pixel rendering are still planned. Use the server’s web interface for those features.")
+        Text("Native draft: manual connection, page library, on-device drafts, supported page name and fixed template edits, explicit template validation and text preview, revision-checked server page saves, display selection, text and page actions, pause, schedule following, fallback page and restore controls. Refresh is manual; there is no background polling. Demo saves, evaluations and board actions are entirely simulated.")
+        Text("Save local draft keeps a recovery copy on this device. A separate confirmed server save updates supported stored page fields when the server advertises the known page protocol and this session opts in. Rich, canvas and collection editing, discovery, server setup, OAuth, schedule editing, plugins, administration and pixel rendering remain planned. Use the web interface for those features and full visual previews.")
         Text("No supported release pairing or full web/TV renderer parity is claimed.").font(.footnote).foregroundStyle(.secondary)
     }
 }

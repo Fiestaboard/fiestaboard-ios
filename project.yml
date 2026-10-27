@@ -43,6 +43,17 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft.documents
         GENERATE_INFOPLIST_FILE: YES
+  FiestaBoardEditorState:
+    type: framework
+    platform: iOS
+    sources: [Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft.editorstate
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: FiestaBoardKit
+      - target: FiestaBoardDocuments
   FiestaBoard:
     type: application
     platform: iOS
@@ -62,6 +73,7 @@ targets:
       - target: FiestaBoardKit
       - target: FiestaBoardAppState
       - target: FiestaBoardDocuments
+      - target: FiestaBoardEditorState
   FiestaBoardUITests:
     type: bundle.ui-testing
     platform: iOS
