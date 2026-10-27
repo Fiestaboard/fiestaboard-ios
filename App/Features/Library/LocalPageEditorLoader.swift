@@ -2,12 +2,20 @@ import SwiftUI
 import FiestaBoardKit
 import FiestaBoardAppState
 import FiestaBoardDocuments
+import FiestaBoardEditorState
 
 private typealias LoaderState<Value> = SwiftUI.State<Value>
 
 /// All windows share one file actor so editors serialize access to local draft files.
 @MainActor private enum LocalDraftResources {
     static let store = Result { LocalDraftStore(directory: try LocalDraftStore.defaultDirectory()) }
+}
+
+/// Advances only from an acknowledged page receipt or explicit scoped readback. The coordinator
+/// separately decides when a fetched comparison becomes its editing baseline.
+@MainActor private final class RemoteEditorContext {
+    var value: PageEditingContext
+    init(_ value: PageEditingContext) { self.value = value }
 }
 
 /// Owns one fetched snapshot and one editor for the entire sheet presentation.
@@ -48,8 +56,34 @@ private typealias LoaderState<Value> = SwiftUI.State<Value>
                 // BoardStore validates the captured session generation before returning.
                 guard store.status != nil else { return }
                 let identity = DraftIdentity(deploymentID: snapshot.deployment.description, pageID: snapshot.id)
+                let context = RemoteEditorContext(snapshot.context)
+                let boardStore = store
+                let actions = EditorRemoteActions(isSimulated: store.status?.isDemo == true, disabledReason: {
+                    let access = boardStore.pageEditingAccess(context: context.value)
+                    return access.canSave ? nil : access.reason
+                }, save: { patch in
+                    let capturedContext = context.value
+                    let result = try await boardStore.savePage(patch: patch, context: capturedContext)
+                    context.value = result.context
+                    return EditorSaveResult(data: result.data, incompatibleReferenceCount: result.incompatibleReferenceCount)
+                }, fetch: {
+                    let capturedContext = context.value
+                    let result = try await boardStore.readbackPage(context: capturedContext)
+                    context.value = result.context
+                    return result.data
+                }, validate: { data, target in
+                    let capturedContext = context.value
+                    return try await boardStore.validatePage(requestData: data, context: capturedContext, target: target)
+                }, preview: { data, target in
+                    let capturedContext = context.value
+                    return try await boardStore.previewPage(requestData: data, context: capturedContext, target: target)
+                })
+                let boards = store.boards.compactMap { board -> EditorBoardChoice? in
+                    guard let target = try? BoardTarget(deployment: snapshot.deployment, boardID: board.id) else { return nil }
+                    return EditorBoardChoice(name: board.name, target: target)
+                }
                 editor = try LocalPageEditorView(rawDocumentData: snapshot.data, identity: identity,
-                                                draftStore: LocalDraftResources.store.get())
+                                                draftStore: LocalDraftResources.store.get(), remote: actions, boards: boards)
             } catch is CancellationError {
                 // A dismissed sheet must never reopen when its fetch completes.
             } catch {

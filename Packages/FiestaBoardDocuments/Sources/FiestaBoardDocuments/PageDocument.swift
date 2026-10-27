@@ -62,4 +62,35 @@ public struct PageDocument: Equatable, Sendable {
         for key in baseline.root.keys where root[key] == nil { throw DocumentError.deletionRequiresExplicitPolicy(key) }
         return .object(root.filter { key, value in baseline.root[key] != value })
     }
+    /// Retain the exact values accepted by the evaluation endpoints, without converting through
+    /// floating point or reconstructing nested metadata/canvas objects. Storage fields stay local.
+    public func evaluationData(boardID: String, preview: Bool) throws -> Data {
+        guard pageType == "template", templateLines != nil, !boardID.isEmpty else {
+            throw DocumentError.unsupportedTemplate
+        }
+        var payload: LosslessJSONObject = ["template": root["template"]!, "board_id": .string(boardID)]
+        if preview {
+            for key in ["device_type", "notes_wide", "notes_tall", "grid_rows", "grid_cols", "line_metadata", "canvases"] {
+                guard let value = root[key] else { continue }
+                switch (key, value) {
+                case ("device_type", .null), ("grid_rows", .null), ("grid_cols", .null),
+                     ("line_metadata", .null), ("canvases", .null): break
+                case ("device_type", .string(let kind)):
+                    guard ["flagship", "note", "note_array", "panel"].contains(kind) else { throw DocumentError.unsupportedTemplate }
+                case ("notes_wide", .number(let n)), ("notes_tall", .number(let n)),
+                     ("grid_rows", .number(let n)), ("grid_cols", .number(let n)):
+                    guard !n.isEmpty, n.utf8.allSatisfy({ (48...57).contains($0) }), n != "0" else { throw DocumentError.unsupportedTemplate }
+                case ("line_metadata", .array(let values)), ("canvases", .array(let values)):
+                    guard values.allSatisfy({ if case .object = $0 { true } else { false } }) else { throw DocumentError.unsupportedTemplate }
+                default: throw DocumentError.unsupportedTemplate
+                }
+                payload[key] = value
+            }
+            if root["device_type"] == .string("panel") {
+                guard case .number = root["grid_rows"], case .number = root["grid_cols"] else { throw DocumentError.unsupportedTemplate }
+            }
+        }
+        return try LosslessJSON.object(payload).serializedData()
+    }
+
 }

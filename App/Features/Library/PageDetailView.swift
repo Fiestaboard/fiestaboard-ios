@@ -21,11 +21,11 @@ struct PageDetailView: View {
                 Text("Template expressions are shown as source. Plugins are not rendered here.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
-            Section("On-device draft") {
+            Section("Page editing") {
                 Button("Edit local draft") { editing = true }
                     .disabled(store.status == nil || store.connecting)
                     .accessibilityIdentifier("editLocalDraft")
-                Text("Fetch the full page document and edit a draft on this device. Local changes do not update or publish the server page.")
+                Text("Edit the full page document, keep a local draft, and explicitly evaluate or save supported changes when the deployment allows it.")
                     .font(.footnote).foregroundStyle(.secondary)
             }
             Section {

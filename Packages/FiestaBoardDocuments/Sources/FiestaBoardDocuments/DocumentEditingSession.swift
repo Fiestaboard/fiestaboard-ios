@@ -91,6 +91,18 @@ public struct DocumentEditingSession: Sendable {
         savedDocument = recovered
         savedBaseline = recoveredBaseline
     }
+    /// Acknowledged server storage establishes a new baseline. Old history is deliberately
+    /// cleared: undo must never restore an obsolete server concurrency token.
+    /// This does not mark a local draft saved; the existing disk snapshot still has its old base.
+    public mutating func adoptServerDocument(_ data: Data) throws {
+        let accepted = try PageDocument(data: data)
+        try advanceRevision()
+        document = accepted
+        baseline = accepted
+        undoHistory.removeAll()
+        redoHistory.removeAll()
+    }
+
     private mutating func advanceRevision() throws {
         guard revision < .max else { throw DraftError.revisionExhausted }
         revision += 1

@@ -93,3 +93,40 @@ final class DocumentTests: XCTestCase {
         XCTAssertThrowsError(try deleted.changedFields(from: before))
     }
 }
+
+
+final class EvaluationPayloadTests: XCTestCase {
+    func testPreviewCopiesSupportedFieldsLosslesslyAndExcludesStorageFields() throws {
+        let data = Data(#"{"id":"p","name":"N","revision":"r1","type":"template","template":["e\u0301"],"grid_cols":128,"line_metadata":[{"future":12345678901234567890}],"canvases":[{"unknown":1e+999}],"future_page":"kept on disk"}"#.utf8)
+        let document = try PageDocument(data: data)
+        let preview = try LosslessJSON.parse(document.evaluationData(boardID: "b", preview: true))
+        guard case .object(let payload) = preview else { return XCTFail("object") }
+        XCTAssertNil(payload["name"])
+        XCTAssertNil(payload["revision"])
+        XCTAssertNil(payload["future_page"])
+        XCTAssertEqual(payload["board_id"], .string("b"))
+        XCTAssertEqual(payload["grid_cols"], document.root["grid_cols"])
+        XCTAssertEqual(payload["line_metadata"], document.root["line_metadata"])
+        XCTAssertEqual(payload["canvases"], document.root["canvases"])
+        guard case .object(let validate) = try LosslessJSON.parse(document.evaluationData(boardID: "b", preview: false)) else { return XCTFail("object") }
+        XCTAssertEqual(validate.count, 2)
+    }
+    func testEvaluationRefusesMalformedShape() throws {
+        for source in [#"{"type":"single","template":["x"]}"#, #"{"type":"template","template":[1]}"#, #"{"type":"template","template":["x"],"canvases":{}}"#, #"{"type":"template","template":["x"],"line_metadata":[1]}"#, #"{"type":"template","template":["x"],"device_type":"unknown"}"#, #"{"type":"template","template":["x"],"notes_wide":null}"#, #"{"type":"template","template":["x"],"device_type":"panel"}"#] {
+            let document = try PageDocument(data: Data(source.utf8))
+            XCTAssertThrowsError(try document.evaluationData(boardID: "b", preview: true))
+        }
+    }
+    func testServerAdoptionClearsOldHistoryButDoesNotClaimDiskIsCurrent() throws {
+        var session = try DocumentEditingSession(data: Data(#"{"name":"Old","revision":"r1"}"#.utf8))
+        try session.setName("New")
+        let saved = session.document
+        session.markSaved(saved)
+        try session.adoptServerDocument(Data(#"{"name":"New","revision":"r2"}"#.utf8))
+        XCTAssertFalse(session.canUndo)
+        XCTAssertTrue(session.hasUnsavedChanges)
+        XCTAssertEqual(session.baseline.root["revision"], .string("r2"))
+        try session.undo()
+        XCTAssertEqual(session.baseline.root["revision"], .string("r2"))
+    }
+}
