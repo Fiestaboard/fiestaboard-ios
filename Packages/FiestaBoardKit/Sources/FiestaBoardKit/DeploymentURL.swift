@@ -36,11 +36,16 @@ public struct DeploymentURL: Hashable, Sendable, Codable, CustomStringConvertibl
     }
 
     public func apiURL(_ segments: [String]) throws -> URL {
-        guard !segments.isEmpty, segments.allSatisfy(Self.validSegment),
+        guard !segments.isEmpty, segments.allSatisfy(Self.validAPISegment),
               let url = URL(string: description + "/api/" + segments.joined(separator: "/")) else {
             throw FiestaBoardError.invalidPath
         }
         return url
+    }
+
+    // Colon is supported only for the collection identifier prefix; ordinary segments stay bounded.
+    static func validAPISegment(_ value: String) -> Bool {
+        validSegment(value) || (value.hasPrefix("collection:") && validSegment(String(value.dropFirst("collection:".count))))
     }
 
     static func validSegment(_ value: String) -> Bool {

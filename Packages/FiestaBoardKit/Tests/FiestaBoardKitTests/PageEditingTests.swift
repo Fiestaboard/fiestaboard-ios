@@ -38,7 +38,8 @@ import XCTest
 
 private actor PageFixtureTransport: APITransport {
     var requests: [APIRequest] = []
-    let version: String
+    let version: String?
+    let isDev: Bool
     let protocolName: String?
     let revision: String?
     var saveOutcome: FiestaBoardError?
@@ -53,15 +54,17 @@ private actor PageFixtureTransport: APITransport {
         await withCheckedContinuation { readObservers.append($0) }
     }
     func releaseRead() { readGate?.resume(); readGate = nil }
-    init(version: String = "10.1.2", protocolName: String? = "page-revision-v1", revision: String? = "original", saveOutcome: FiestaBoardError? = nil, saveStatus: Int = 200) {
-        self.version = version; self.protocolName = protocolName; self.revision = revision; self.saveOutcome = saveOutcome; self.saveStatus = saveStatus
+    init(version: String? = "10.1.2", isDev: Bool = false, protocolName: String? = "page-revision-v1", revision: String? = "original", saveOutcome: FiestaBoardError? = nil, saveStatus: Int = 200) {
+        self.version = version; self.isDev = isDev; self.protocolName = protocolName; self.revision = revision; self.saveOutcome = saveOutcome; self.saveStatus = saveStatus
         previewReply = Data(#"{"rendered":"🛰️","lines":["🛰️"],"line_count":1,"charset":"rich_future","charset_issues":[{"row":0,"col":0,"token":{"x":9007199254740993},"reason":"icon","fallback":{}}],"layers":[{"future":true}],"canvas_issues":[{"future":"warning"}]}"#.utf8)
     }
     func resetSession() {}
     func send(_ request: APIRequest) async throws -> APIResponse {
         requests.append(request)
         if request.path == ["version"] {
-            return APIResponse(status: 200, data: Data("{\"package_version\":\"\(version)\",\"build_version\":\"fixture\",\"running_version\":\"\(version)\",\"is_dev\":false}".utf8))
+            var body: [String: Any] = ["package_version": version ?? "package-only", "build_version": "fixture", "is_dev": isDev]
+            body["running_version"] = version
+            return APIResponse(status: 200, data: try JSONSerialization.data(withJSONObject: body))
         }
         if request.path == ["v1", "boards"] { return APIResponse(status: 200, data: fixture("boards")) }
         if request.path == ["templates", "validate"] { return APIResponse(status: 200, data: Data(#"{"valid":false,"errors":[{"line":1,"column":2,"message":"bad expression"}]}"#.utf8)) }
@@ -238,5 +241,33 @@ extension PageEditingTests {
         catch { XCTAssertEqual(error as? FiestaBoardError, .stalePageContext) }
         do { _ = try await service.savePage(id: "p", patch: patch); XCTFail() }
         catch { XCTAssertEqual(error as? FiestaBoardError, .pageReadbackRequired) }
+    }
+}
+
+
+extension PageEditingTests {
+    func testAudited1017PreviewHasSeparateExactNonDevelopmentVersionGate() async throws {
+        let cases: [(String?, Bool, Bool)] = [("10.1.7", false, true), ("10.1.7", true, false), ("10.1.8", false, false), (nil, false, false)]
+        for (version, dev, permits) in cases {
+            let transport = PageFixtureTransport(version: version, isDev: dev)
+            let deployment = try DeploymentURL("https://fixture.test")
+            let service = LiveFiestaBoardService(deployment: deployment, transport: transport)
+            let status = try await service.connect(allowCandidateWrites: true)
+            XCTAssertEqual(status.access, .readOnly, "Collection candidate never widens board controls")
+            let target = try BoardTarget(deployment: deployment, boardID: "board-2")
+            let request = Data(#"{"template":["🛰️"],"board_id":"board-2"}"#.utf8)
+            if permits {
+                _ = try await service.validatePage(requestData: request, target: target)
+                let preview = try await service.previewPage(requestData: request, target: target)
+                XCTAssertEqual(preview.lines, ["🛰️"])
+            } else {
+                do { _ = try await service.validatePage(requestData: request, target: target); XCTFail() }
+                catch { XCTAssertEqual(error as? FiestaBoardError, .previewUnsupported) }
+                do { _ = try await service.previewPage(requestData: request, target: target); XCTFail() }
+                catch { XCTAssertEqual(error as? FiestaBoardError, .previewUnsupported) }
+            }
+            let sent = await transport.requests
+            XCTAssertEqual(sent.filter { $0.method == .post }.count, permits ? 2 : 0)
+        }
     }
 }

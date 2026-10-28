@@ -1,17 +1,18 @@
 import Foundation
 
 public struct APIRequest: Sendable {
-    public enum Method: String, Sendable { case get = "GET", post = "POST", put = "PUT", patch = "PATCH" }
+    public enum Method: String, Sendable { case get = "GET", post = "POST", put = "PUT", patch = "PATCH", delete = "DELETE" }
     public let method: Method
     public let path: [String]
     public let body: Data?
+    public let queryItems: [URLQueryItem]
     public let timeout: TimeInterval
     /// The two bounded evaluation POSTs never write a page or send to hardware.
     public var isMutation: Bool {
         method != .get && !(method == .post && (path == ["templates", "validate"] || path == ["templates", "render"]))
     }
-    public init(_ method: Method = .get, path: [String], body: Data? = nil, timeout: TimeInterval = 20) {
-        self.method = method; self.path = path; self.body = body; self.timeout = timeout
+    public init(_ method: Method = .get, path: [String], body: Data? = nil, timeout: TimeInterval = 20, queryItems: [URLQueryItem] = []) {
+        self.method = method; self.path = path; self.body = body; self.timeout = timeout; self.queryItems = queryItems
     }
 }
 public struct APIResponse: Sendable {
@@ -53,7 +54,14 @@ public actor URLSessionTransport: APITransport {
 
     public func send(_ request: APIRequest) async throws -> APIResponse {
         let currentGeneration = generation
-        let url = try deployment.apiURL(request.path)
+        let baseURL = try deployment.apiURL(request.path)
+        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else { throw FiestaBoardError.invalidPath }
+        if !request.queryItems.isEmpty {
+            components.queryItems = request.queryItems
+            // FastAPI treats query strings as form data: a literal plus must stay a plus.
+            components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+        }
+        guard let url = components.url else { throw FiestaBoardError.invalidPath }
         var wire = URLRequest(url: url)
         wire.timeoutInterval = request.timeout
         wire.httpMethod = request.method.rawValue
@@ -80,8 +88,8 @@ public actor URLSessionTransport: APITransport {
         case 200..<300: return APIResponse(status: http.statusCode, data: data)
         case 300..<400: throw request.isMutation ? FiestaBoardError.unknownMutationOutcome : .redirectRefused
         case 401: throw FiestaBoardError.unauthenticated
-        case 412: throw FiestaBoardError.pageConflict
-        case 409: throw FiestaBoardError.conflict
+        case 412: throw request.path.starts(with: ["v1", "collections"]) ? FiestaBoardError.collectionConflict : .pageConflict
+        case 409: throw request.method == .delete && request.path.starts(with: ["v1", "collections"]) ? FiestaBoardError.collectionInUse : .conflict
         case 429:
             let seconds = http.value(forHTTPHeaderField: "Retry-After").flatMap(Int.init).flatMap { $0 >= 0 ? $0 : nil }
             throw FiestaBoardError.rateLimited(retryAfterSeconds: seconds)

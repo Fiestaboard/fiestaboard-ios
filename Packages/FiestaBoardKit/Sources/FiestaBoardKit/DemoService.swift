@@ -12,7 +12,7 @@ public actor DemoFiestaBoardService: FiestaBoardService {
     public init() throws {
         deployment = try DeploymentURL("https://demo.fiestaboard.invalid")
         simulation = try DemoTransport()
-        service = LiveFiestaBoardService(deployment: deployment, transport: simulation)
+        service = LiveFiestaBoardService(demoDeployment: deployment, transport: simulation)
     }
     public func setSimulation(_ mode: DemoSimulation) async { await simulation.setMode(mode) }
     public func authStatus() async throws -> AuthStatus { try await service.authStatus() }
@@ -24,6 +24,18 @@ public actor DemoFiestaBoardService: FiestaBoardService {
     }
     public func boards() async throws -> [BoardSummary] { try await service.boards() }
     public func board(_ target: BoardTarget) async throws -> BoardDetail { try await service.board(target) }
+    public func collectionAccess() async -> CollectionWriteAccess {
+        let access = await service.collectionAccess()
+        return .init(writesOptedIn: access.writesOptedIn, canCreate: access.canCreate, isSimulated: true)
+    }
+    public func collections() async throws -> [PageCollection] { try await service.collections() }
+    public func collection(id: String) async throws -> PageCollection { try await service.collection(id: id) }
+    public func acknowledgeCollectionCreationReview() async throws { try await service.acknowledgeCollectionCreationReview() }
+    public func createCollection(_ input: CollectionInput) async throws -> PageCollection { try await service.createCollection(input) }
+    public func updateCollection(id: String, input: CollectionInput, expectedRevision: String) async throws -> PageCollection {
+        try await service.updateCollection(id: id, input: input, expectedRevision: expectedRevision)
+    }
+    public func deleteCollection(id: String, expectedRevision: String) async throws { try await service.deleteCollection(id: id, expectedRevision: expectedRevision) }
     public func pages() async throws -> [Page] { try await service.pages() }
     public func pageDocumentData(id: String) async throws -> Data { try await service.pageDocumentData(id: id) }
     public func page(id: String) async throws -> Page { try await service.page(id: id) }
@@ -45,6 +57,7 @@ public actor DemoFiestaBoardService: FiestaBoardService {
 private actor DemoTransport: APITransport {
     private var data: [String: Data] = [:]
     private var mode = DemoSimulation.accepted
+    private var collections: [String: PageCollection] = [:]
 
     init() throws {
         for name in ["boards", "board", "board-led", "pages", "page", "page-weather"] {
@@ -74,6 +87,7 @@ private actor DemoTransport: APITransport {
             return reply(#"{"enabled":false,"setup_required":false,"authenticated":false,"username":null,"mode":"disabled","first_run":false}"#)
         }
         if path == ["auth", "logout"] { return reply(#"{"status":"ok"}"#) }
+        if path.starts(with: ["v1", "collections"]) { return try collectionResponse(request) }
         if path == ["v1", "boards"] { return APIResponse(status: 200, data: data["boards"]!) }
         if path == ["templates", "validate"] { return reply(#"{"valid":true,"errors":[]}"#) }
         if path == ["templates", "render"] {
@@ -183,6 +197,46 @@ private actor DemoTransport: APITransport {
         }
         return APIResponse(status: selectedPage == nil && mode == .held ? 202 : 200,
                            data: try JSONSerialization.data(withJSONObject: result))
+    }
+    private func collectionResponse(_ request: APIRequest) throws -> APIResponse {
+        let encoder = JSONEncoder()
+        if request.path == ["v1", "collections"], request.method == .get {
+            struct List: Encodable { let collections: [PageCollection]; let total: Int }
+            let values = collections.values.sorted { $0.id < $1.id }
+            return APIResponse(status: 200, data: try encoder.encode(List(collections: values, total: values.count)))
+        }
+        let id = request.path.count == 3 ? request.path[2] : "collection:" + UUID().uuidString.lowercased()
+        if request.method == .get {
+            guard let value = collections[id] else { throw FiestaBoardError.rejected(status: 404) }
+            return APIResponse(status: 200, data: try encoder.encode(value))
+        }
+        if request.method != .post {
+            guard let current = collections[id] else { throw FiestaBoardError.rejected(status: 404) }
+            let expected: String?
+            if request.method == .delete { expected = request.queryItems.first { $0.name == "expected_revision" }?.value }
+            else {
+                struct Update: Decodable { let expected_revision: String }
+                expected = try JSONDecoder().decode(Update.self, from: request.body!).expected_revision
+            }
+            guard current.revision == expected, mode != .rejected else { throw FiestaBoardError.collectionConflict }
+        } else if mode == .rejected { throw FiestaBoardError.rejected(status: 400) }
+        if request.method == .delete {
+            collections.removeValue(forKey: id)
+            if mode == .unknown || mode == .partial { throw FiestaBoardError.unknownMutationOutcome }
+            struct Deleted: Encodable { let id: String }
+            return APIResponse(status: 200, data: try encoder.encode(Deleted(id: id)))
+        }
+        let input = try JSONDecoder().decode(CollectionInput.self, from: request.body!)
+        try input.validate()
+        guard input.pageIDs.allSatisfy({ ["page-selected", "page-weather"].contains($0) }) else { throw FiestaBoardError.rejected(status: 400) }
+        let now = ISO8601DateFormatter().string(from: Date())
+        let value = PageCollection(id: id, name: input.name, pageIDs: input.pageIDs,
+            selectionMode: input.selectionMode.rawValue, time: input.time, variable: input.variable, random: input.random,
+            revision: "demo-" + UUID().uuidString, editProtocol: "collection-revision-v1",
+            createdAt: collections[id]?.createdAt ?? now, updatedAt: request.method == .put ? now : nil)
+        collections[id] = value
+        if mode == .unknown || mode == .partial { throw FiestaBoardError.unknownMutationOutcome }
+        return APIResponse(status: request.method == .post ? 201 : 200, data: try encoder.encode(value))
     }
     private func reply(_ json: String) -> APIResponse { APIResponse(status: 200, data: Data(json.utf8)) }
 }

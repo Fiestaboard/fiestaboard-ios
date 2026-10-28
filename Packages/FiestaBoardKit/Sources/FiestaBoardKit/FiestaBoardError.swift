@@ -9,6 +9,8 @@ public enum FiestaBoardError: Error, Sendable, Equatable, LocalizedError {
     case unknownMutationOutcome, staleSession, writesDisabled
     case stalePageContext, pageConflict, pageWritesDisabled, pageReadbackRequired, previewUnsupported
 
+    case collectionConflict, collectionWritesDisabled, collectionReadbackRequired, collectionInUse, staleCollectionContext
+
     public var errorDescription: String? {
         switch self {
         case .invalidDeployment: "Enter a valid deployment URL without credentials, query, fragment, or escaped path."
@@ -30,6 +32,11 @@ public enum FiestaBoardError: Error, Sendable, Equatable, LocalizedError {
         case .pageWritesDisabled: "Page saving requires page-revision-v1, an original revision, and explicit session opt-in."
         case .pageReadbackRequired: "Read the page again before another save; the previous result may be unknown."
         case .previewUnsupported: "Template preview is unavailable for this server version or request shape."
+        case .collectionConflict: "This collection changed on the server. Keep your draft and compare before saving again."
+        case .collectionWritesDisabled: "Collection saving requires a supported document, its original revision, and explicit session opt-in. Creating requires the audited 10.1.7 server."
+        case .collectionReadbackRequired: "Compare the collection with the server before another write. After an uncertain creation, inspect the list and start a new draft."
+        case .collectionInUse: "This collection is still referenced. Remove its references before deleting it."
+        case .staleCollectionContext: "The collection context changed. Keep your draft and reopen the current collection."
         case .writesDisabled: "Writes require the exact v10.0.0 candidate and explicit draft opt-in."
         }
     }

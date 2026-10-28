@@ -9,6 +9,13 @@ public protocol FiestaBoardService: Sendable {
     func connect(allowCandidateWrites: Bool) async throws -> ConnectionStatus
     func boards() async throws -> [BoardSummary]
     func board(_ target: BoardTarget) async throws -> BoardDetail
+    func collectionAccess() async -> CollectionWriteAccess
+    func collections() async throws -> [PageCollection]
+    func collection(id: String) async throws -> PageCollection
+    func acknowledgeCollectionCreationReview() async throws
+    func createCollection(_ input: CollectionInput) async throws -> PageCollection
+    func updateCollection(id: String, input: CollectionInput, expectedRevision: String) async throws -> PageCollection
+    func deleteCollection(id: String, expectedRevision: String) async throws
     func pages() async throws -> [Page]
     func pageDocumentData(id: String) async throws -> Data
     func page(id: String) async throws -> Page
@@ -26,6 +33,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     public nonisolated let deployment: DeploymentURL
     public nonisolated let isDemo = false
     private let transport: any APITransport
+    private let allowsSimulatedCollectionWrites: Bool
     private var generation: UInt64 = 0
     private var access = DraftAccess.readOnly
     private var pageWritesOptedIn = false
@@ -34,21 +42,40 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     private var savingPages: Set<String> = []
     private var pageReadbacks: Set<String> = []
     private var pageWriteGenerations: [String: UInt64] = [:]
+    private var collectionWritesOptedIn = false
+    private var collectionCreateAudited = false
+    private var collectionOriginalRevisions: [String: Set<String>] = [:]
+    private var savingCollections: Set<String> = []
+    private var collectionReadbacks: Set<String> = []
+    private var collectionWriteGenerations: [String: UInt64] = [:]
+    private var collectionCreationWriteGeneration: UInt64 = 0
+    private var collectionCreationReviewed = false
+    private var creatingCollection = false
+    private var collectionCreateReadbackRequired = false
     private var knownBoards: [String: BoardSummary] = [:]
 
     public init(deployment: DeploymentURL, transport: (any APITransport)? = nil) {
         self.deployment = deployment
         self.transport = transport ?? URLSessionTransport(deployment: deployment)
+        allowsSimulatedCollectionWrites = false
+    }
+
+    /// The Demo wrapper supplies an in-memory transport; this never changes board-control gates.
+    init(demoDeployment: DeploymentURL, transport: any APITransport) {
+        deployment = demoDeployment
+        self.transport = transport
+        allowsSimulatedCollectionWrites = true
     }
 
     public func authStatus() async throws -> AuthStatus {
         let status: AuthStatus = try await fetch(APIRequest(path: ["auth", "status"]))
-        if status.enabled && !status.authenticated { access = .readOnly; pageWritesOptedIn = false; knownPages = [:] }
+        if status.enabled && !status.authenticated { invalidateAuthentication() }
         return status
     }
 
     public func login(username: String, password: String) async throws -> AuthStatus {
         generation &+= 1
+        resetCollectionSession()
         access = .readOnly
         pageWritesOptedIn = false; previewAudited = false; knownPages = [:]
         knownBoards = [:]
@@ -65,6 +92,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
 
     public func logout() async throws {
         generation &+= 1
+        resetCollectionSession()
         let token = generation
         access = .readOnly
         pageWritesOptedIn = false; previewAudited = false; knownPages = [:]
@@ -81,6 +109,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
 
     public func connect(allowCandidateWrites: Bool = false) async throws -> ConnectionStatus {
         generation &+= 1
+        resetCollectionSession()
         let token = generation
         access = .readOnly
         pageWritesOptedIn = false; previewAudited = false; knownPages = [:]
@@ -89,8 +118,10 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         let boards = try await boards()
         guard generation == token else { throw FiestaBoardError.staleSession }
         knownBoards = Dictionary(uniqueKeysWithValues: boards.map { ($0.id, $0) })
+        collectionWritesOptedIn = allowCandidateWrites
+        collectionCreateAudited = allowsSimulatedCollectionWrites || (version.runningVersion == "10.1.7" && !version.isDev)
         pageWritesOptedIn = allowCandidateWrites
-        previewAudited = ["10.0.0", "10.1.2"].contains(version.runningVersion ?? "") && !version.isDev
+        previewAudited = ["10.0.0", "10.1.2", "10.1.7"].contains(version.runningVersion ?? "") && !version.isDev
         if allowCandidateWrites && version.runningVersion == "10.0.0" && !version.isDev { access = .candidateWrites }
         return ConnectionStatus(version: version, access: access, isDemo: false, sessionPersistence: "Memory only")
     }
@@ -268,7 +299,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
             return result
         } catch {
             guard token == generation else { throw FiestaBoardError.staleSession }
-            if (error as? FiestaBoardError) == .unauthenticated { access = .readOnly; pageWritesOptedIn = false; knownPages = [:] }
+            if (error as? FiestaBoardError) == .unauthenticated { invalidateAuthentication() }
             throw (error as? FiestaBoardError) ?? (request.isMutation ? .unknownMutationOutcome : .networkUnavailable)
         }
     }
@@ -276,5 +307,179 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         let response = try await response(request)
         do { return try JSONDecoder().decode(T.self, from: response.data) }
         catch { throw request.isMutation ? FiestaBoardError.unknownMutationOutcome : .invalidResponse }
+    }
+}
+
+
+extension LiveFiestaBoardService {
+    private func resetCollectionSession() {
+        collectionWritesOptedIn = false; collectionCreateAudited = false
+        collectionOriginalRevisions = [:]; savingCollections = []; collectionReadbacks = []
+        collectionWriteGenerations = [:]; creatingCollection = false; collectionCreateReadbackRequired = false
+        collectionCreationWriteGeneration = 0; collectionCreationReviewed = false
+    }
+    private func invalidateAuthentication() {
+        generation &+= 1
+        access = .readOnly; pageWritesOptedIn = false; knownPages = [:]
+        resetCollectionSession()
+    }
+    public func collectionAccess() async -> CollectionWriteAccess {
+        .init(writesOptedIn: collectionWritesOptedIn,
+              canCreate: collectionWritesOptedIn && collectionCreateAudited && !creatingCollection && !collectionCreateReadbackRequired,
+              isSimulated: false)
+    }
+    public func collections() async throws -> [PageCollection] {
+        struct List: Decodable { let collections: [PageCollection]; let total: Int }
+        let creationGeneration = collectionCreationWriteGeneration
+        let startedDuringCreate = creatingCollection
+        let result = try await collectionResponse(APIRequest(path: ["v1", "collections"]))
+        guard result.status == 200, let list = try? JSONDecoder().decode(List.self, from: result.data),
+              list.total == list.collections.count, Set(list.collections.map(\.id)).count == list.collections.count,
+              list.collections.allSatisfy({ Self.validCollectionID($0.id) }) else { throw FiestaBoardError.invalidResponse }
+        // List review alone never unlocks creation. Only explicit acknowledgement may do so.
+        if collectionCreateReadbackRequired, !startedDuringCreate, !creatingCollection,
+           creationGeneration == collectionCreationWriteGeneration { collectionCreationReviewed = true }
+        return list.collections
+    }
+    public func collection(id: String) async throws -> PageCollection {
+        guard Self.validCollectionID(id) else { throw FiestaBoardError.invalidPath }
+        let writeGeneration = collectionWriteGenerations[id, default: 0]
+        let startedDuringWrite = savingCollections.contains(id)
+        let result = try await collectionResponse(APIRequest(path: ["v1", "collections", id]))
+        guard !startedDuringWrite, writeGeneration == collectionWriteGenerations[id, default: 0], !savingCollections.contains(id) else {
+            throw FiestaBoardError.staleCollectionContext
+        }
+        guard result.status == 200, (try? RawJSONObject.members(result.data)) != nil,
+              let value = try? JSONDecoder().decode(PageCollection.self, from: result.data), value.id == id else {
+            throw FiestaBoardError.invalidResponse
+        }
+        authorizeCollection(value)
+        collectionReadbacks.remove(id)
+        return value
+    }
+    /// Allows a new draft after explicit review. It does not authorize replay of the old draft.
+    public func acknowledgeCollectionCreationReview() async throws {
+        guard collectionWritesOptedIn, collectionCreateAudited else { throw FiestaBoardError.collectionWritesDisabled }
+        guard collectionCreateReadbackRequired, collectionCreationReviewed, !creatingCollection else {
+            throw FiestaBoardError.collectionReadbackRequired
+        }
+        collectionCreateReadbackRequired = false; collectionCreationReviewed = false
+    }
+    public func createCollection(_ input: CollectionInput) async throws -> PageCollection {
+        try input.validate()
+        guard collectionWritesOptedIn, collectionCreateAudited else { throw FiestaBoardError.collectionWritesDisabled }
+        guard !creatingCollection, !collectionCreateReadbackRequired else { throw FiestaBoardError.collectionReadbackRequired }
+        let token = generation
+        creatingCollection = true; collectionCreateReadbackRequired = true; collectionCreationReviewed = false
+        collectionCreationWriteGeneration &+= 1
+        defer {
+            if generation == token { creatingCollection = false; collectionCreationWriteGeneration &+= 1 }
+        }
+        do {
+            let result = try await collectionResponse(APIRequest(.post, path: ["v1", "collections"], body: JSONEncoder().encode(input)))
+            let value = try collectionReceipt(result, expectedStatus: 201, expectedID: nil, expectedRevision: nil)
+            authorizeCollection(value); collectionCreateReadbackRequired = false
+            return value
+        } catch {
+            if generation == token, !Self.requiresCollectionReadback(error) { collectionCreateReadbackRequired = false }
+            throw error
+        }
+    }
+    public func updateCollection(id: String, input: CollectionInput, expectedRevision: String) async throws -> PageCollection {
+        try input.validate()
+        try requireCollectionWrite(id: id, expectedRevision: expectedRevision)
+        let token = generation
+        beginCollectionWrite(id)
+        defer { if generation == token { finishCollectionWrite(id) } }
+        do {
+            struct Update: Encodable {
+                let input: CollectionInput; let expectedRevision: String
+                enum CodingKeys: String, CodingKey { case expectedRevision = "expected_revision" }
+                func encode(to encoder: any Encoder) throws {
+                    try input.encode(to: encoder)
+                    var c = encoder.container(keyedBy: CodingKeys.self)
+                    try c.encode(expectedRevision, forKey: .expectedRevision)
+                }
+            }
+            let body = try JSONEncoder().encode(Update(input: input, expectedRevision: expectedRevision))
+            let result = try await collectionResponse(APIRequest(.put, path: ["v1", "collections", id], body: body))
+            let value = try collectionReceipt(result, expectedStatus: 200, expectedID: id, expectedRevision: expectedRevision)
+            authorizeCollection(value); collectionReadbacks.remove(id)
+            return value
+        } catch {
+            if generation == token, !Self.requiresCollectionReadback(error) { collectionReadbacks.remove(id) }
+            throw error
+        }
+    }
+    public func deleteCollection(id: String, expectedRevision: String) async throws {
+        try requireCollectionWrite(id: id, expectedRevision: expectedRevision)
+        let token = generation
+        beginCollectionWrite(id)
+        defer { if generation == token { finishCollectionWrite(id) } }
+        do {
+            let result = try await collectionResponse(APIRequest(.delete, path: ["v1", "collections", id],
+                queryItems: [.init(name: "expected_revision", value: expectedRevision)]))
+            guard result.status == 200, let fields = try? RawJSONObject.members(result.data), let idData = fields["id"],
+                  (try? JSONDecoder().decode(String.self, from: idData)) == id else { throw FiestaBoardError.unknownMutationOutcome }
+            collectionOriginalRevisions.removeValue(forKey: id); collectionReadbacks.remove(id)
+        } catch {
+            if generation == token, !Self.requiresCollectionReadback(error) { collectionReadbacks.remove(id) }
+            throw error
+        }
+    }
+    private static func validCollectionID(_ id: String) -> Bool {
+        id.hasPrefix("collection:") && DeploymentURL.validAPISegment(id)
+    }
+    private func authorizeCollection(_ value: PageCollection) {
+        if value.supportsEditing, value.editProtocol == "collection-revision-v1", let revision = value.revision,
+           !revision.isEmpty, revision.count <= 128 {
+            collectionOriginalRevisions[value.id, default: []].insert(revision)
+        }
+    }
+    private func requireCollectionWrite(id: String, expectedRevision: String) throws {
+        guard Self.validCollectionID(id) else { throw FiestaBoardError.invalidPath }
+        guard collectionWritesOptedIn, collectionOriginalRevisions[id]?.contains(expectedRevision) == true else {
+            throw FiestaBoardError.collectionWritesDisabled
+        }
+        guard !savingCollections.contains(id), !collectionReadbacks.contains(id) else { throw FiestaBoardError.collectionReadbackRequired }
+    }
+    private func beginCollectionWrite(_ id: String) {
+        collectionWriteGenerations[id, default: 0] &+= 1
+        savingCollections.insert(id); collectionReadbacks.insert(id)
+    }
+    private func finishCollectionWrite(_ id: String) {
+        collectionWriteGenerations[id, default: 0] &+= 1
+        savingCollections.remove(id)
+    }
+    private static func requiresCollectionReadback(_ error: any Error) -> Bool {
+        switch error as? FiestaBoardError {
+        case .unknownMutationOutcome, .collectionConflict, .staleSession, .staleCollectionContext: return true
+        default: return false
+        }
+    }
+    private func collectionReceipt(_ result: APIResponse, expectedStatus: Int, expectedID: String?, expectedRevision: String?) throws -> PageCollection {
+        guard result.status == expectedStatus, (try? RawJSONObject.members(result.data)) != nil,
+              let value = try? JSONDecoder().decode(PageCollection.self, from: result.data),
+              Self.validCollectionID(value.id), expectedID.map({ value.id == $0 }) ?? true,
+              value.supportsEditing, value.editProtocol == "collection-revision-v1",
+              let revision = value.revision, !revision.isEmpty, revision.count <= 128,
+              expectedRevision.map({ revision != $0 }) ?? true else { throw FiestaBoardError.unknownMutationOutcome }
+        return value
+    }
+    private func collectionResponse(_ request: APIRequest) async throws -> APIResponse {
+        do {
+            let value = try await response(request)
+            if Task.isCancelled { throw request.isMutation ? FiestaBoardError.unknownMutationOutcome : .staleCollectionContext }
+            switch value.status {
+            case 200..<300: return value
+            case 401: invalidateAuthentication(); throw FiestaBoardError.unauthenticated
+            case 412: throw FiestaBoardError.collectionConflict
+            case 409 where request.method == .delete: throw FiestaBoardError.collectionInUse
+            case 409: throw FiestaBoardError.conflict
+            case 500...599 where request.isMutation: throw FiestaBoardError.unknownMutationOutcome
+            default: throw FiestaBoardError.rejected(status: value.status)
+            }
+        } catch FiestaBoardError.pageConflict { throw FiestaBoardError.collectionConflict }
+        catch FiestaBoardError.conflict where request.method == .delete { throw FiestaBoardError.collectionInUse }
     }
 }
