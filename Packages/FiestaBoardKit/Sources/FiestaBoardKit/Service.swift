@@ -360,9 +360,11 @@ extension LiveFiestaBoardService {
     /// Allows a new draft after explicit review. It does not authorize replay of the old draft.
     public func acknowledgeCollectionCreationReview() async throws {
         guard collectionWritesOptedIn, collectionCreateAudited else { throw FiestaBoardError.collectionWritesDisabled }
-        guard collectionCreateReadbackRequired, collectionCreationReviewed, !creatingCollection else {
-            throw FiestaBoardError.collectionReadbackRequired
-        }
+        guard !creatingCollection else { throw FiestaBoardError.collectionReadbackRequired }
+        // A reconnect clears the SDK barrier while the Store retains its consumed draft context.
+        // Explicit review is then already acknowledged locally; do not block a new Store draft.
+        guard collectionCreateReadbackRequired else { return }
+        guard collectionCreationReviewed else { throw FiestaBoardError.collectionReadbackRequired }
         collectionCreateReadbackRequired = false; collectionCreationReviewed = false
     }
     public func createCollection(_ input: CollectionInput) async throws -> PageCollection {

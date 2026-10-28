@@ -377,3 +377,34 @@ extension CollectionTests {
         await expectCollectionError(.collectionReadbackRequired) { try await s.deleteCollection(id: "collection:c", expectedRevision: "original") }
     }
 }
+
+extension CollectionTests {
+    func testCreationReviewAcknowledgementAfterReconnectIsIdempotent() async throws {
+        let service = try DemoFiestaBoardService()
+        _ = try await service.connect()
+        var input = collectionInput(); input.pageIDs = ["page-selected"]
+        await service.setSimulation(.unknown)
+        await expectCollectionError(.unknownMutationOutcome) { _ = try await service.createCollection(input) }
+        _ = try await service.connect()
+        _ = try await service.collections()
+        try await service.acknowledgeCollectionCreationReview()
+        try await service.acknowledgeCollectionCreationReview()
+        await service.setSimulation(.accepted)
+        _ = try await service.createCollection(input)
+        let values = try await service.collections()
+        XCTAssertEqual(values.count, 2)
+    }
+
+    func testCreationReviewAcknowledgementPreservesOptInAndInFlightGates() async throws {
+        let transport = CollectionTransport(), service = try makeCollectionService(transport)
+        _ = try await service.connect(allowCandidateWrites: false)
+        await expectCollectionError(.collectionWritesDisabled) { try await service.acknowledgeCollectionCreationReview() }
+        _ = try await service.connect(allowCandidateWrites: true)
+        await transport.delayNextMutation()
+        let create = Task { try await service.createCollection(collectionInput()) }
+        await transport.waitForDelay()
+        await expectCollectionError(.collectionReadbackRequired) { try await service.acknowledgeCollectionCreationReview() }
+        await transport.release()
+        _ = try await create.value
+    }
+}
