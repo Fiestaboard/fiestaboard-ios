@@ -1,0 +1,13 @@
+# Native collections milestone
+
+This continues the approved full-parity design and the user's instruction to keep implementing a testable Swift draft. The selected next slice is complete native collection authoring using merged backend PR #2373, followed by independent Astra review. It does not change the first-release parity requirement.
+
+Collections appear inside Library with search/list/empty/error states and a native Form editor. Users choose and reorder member pages, name the collection, select time/variable/random behavior, set durations, and edit/reorder variable expressions and fallback/polling. Server evaluation remains authoritative. Saved changes affect stored collections; hardware selection remains an explicit existing board action.
+
+Read and create use public `/v1/collections`; update/delete retain the generation originally loaded and require `collection-revision-v1`. Creates require explicit session opt-in and the exact audited non-development 10.1.7 source candidate, including empty installations where no resource can advertise a protocol yet. Unsupported servers and unknown modes remain readable with editing disabled. Other version/board-control gates stay independent.
+
+The editor captures connection generation and document identity. Refresh never substitutes a newer token into an old draft. Save/delete freeze competing edits, never replay, and acknowledge storage only. Conflict or unknown outcome keeps the draft and requires explicit server comparison/reload; an uncertain create requires inspecting the collection list before starting another creation. A late response or same-URL reconnect cannot authorize an old editor. Delete-in-use errors remain actionable without forced reference removal. Local draft checkpoints and explicit recovered-draft adoption retain the original baseline and revision.
+
+Approach selected by the coordinator: extend the existing Kit service, AppState connection boundary, and host-testable EditorState package. This follows the established page editor pattern and avoids a second networking/session owner. A raw JSON-only collection editor would not deliver the native form workflow; a combined collection/schedule implementation would enlarge the review boundary before this workflow is accepted. Scheduling remains next in the durable queue.
+
+The merged source candidate is main commit 79edd37d2 (10.1.7), archived read-only under `.reference/FiestaBoard-v10.1.7`. Fixture/backend tests run in disposable Docker only and never contact production boards/providers. This is scoped workflow evidence, not a declaration that all of 10.1.7 is a release-supported app/server pairing.
