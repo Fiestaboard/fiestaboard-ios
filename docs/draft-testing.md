@@ -1,6 +1,6 @@
 # Native draft testing
 
-This is a runnable iOS/iPadOS 26+ SwiftUI draft built with Xcode 27.1 / SDK 27.1 and Swift 6. It covers demo mode, manual server connection, display selection, server-reported output, a page library with local on-device drafts, fixed-slot template editing, explicit validation/text preview and revision-checked page saves, text/page board actions, and pause, schedule-following, fallback-page and restore controls. It is not full web parity or a supported released server/app pairing.
+This is a runnable iOS/iPadOS 26+ SwiftUI draft built with Xcode 27.1 / SDK 27.1 and Swift 6. It covers demo mode, manual server connection, display selection, server-reported output, a page library with local on-device drafts, fixed-slot template editing, explicit validation/text preview and revision-checked page saves, native collection authoring with all three modes, text/page board actions, and pause, schedule-following, fallback-page and restore controls. It is not full web parity or a supported released server/app pairing.
 
 ## Open and run
 
@@ -51,6 +51,16 @@ Regeneration replaces project settings and can reset a Team chosen in Xcode; rec
 10. Disconnect. A new demo starts server simulation from the bundled fixtures; saved on-device drafts remain available for recovery.
 
 Demo Kitchen uses a 6 × 22 split-flap welcome frame with color cells. Simulated text wrapping is simpler than backend layout. Demo board actions, page saves and evaluations are labeled simulated. Demo page changes persist only in memory until disconnect; local recovery files remain on device. The split-flap table is reused from the TV project under its [MIT license](../ThirdPartyNotices/FiestaBoardTV-MIT.txt); this app does not claim TV renderer parity.
+
+## Collection walkthrough
+
+1. Open **Library → Collections**. Demo includes simulated collection data; the list supports name/ID search and refresh.
+2. Choose **Create collection**, name it, add member pages and reorder them. Pick Time, Variable or Random. Variable rules run in order and have a member-page fallback and polling interval. Expressions are server-owned; demo does not claim to evaluate plugins.
+3. Use **Simulate saving collection…** and review the confirmation. Acknowledgement means collection storage, with board selection still separate. Reopen the collection to edit it; deletion also needs confirmation and respects in-use refusals.
+4. Close a changed editor to keep its local checkpoint or explicitly discard it. Recovered work retains its original baseline/revision. Comparing the server does not merge or retoken the draft; adopting a comparison explicitly preserves the previous local copy.
+5. In Settings, the simulated Unknown/Partial outcome can exercise uncertain collection storage. Do not repeatedly save: inspect the collection list. An uncertain create may already exist; close with its draft preserved, review the refreshed list and start a deliberate new draft if necessary. The old draft cannot replay.
+
+On a live deployment, enable **Enable changes on this server** in Settings. New collection creation currently requires the audited non-development 10.1.7 candidate. Existing edits/deletes require collection-revision-v1, supported fields and the original revision. Board controls keep their independent version gate. No live server or board was changed by the automated verification for this milestone.
 
 ## Connect to your server
 

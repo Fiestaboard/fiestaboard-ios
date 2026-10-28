@@ -117,7 +117,7 @@ private typealias CollectionFormState<Value> = SwiftUI.State<Value>
     private var membershipSection: some View {
         Section("Add member pages") {
             TextField("Find pages", text: $pageSearch)
-            if pages.isEmpty { Text("Create a page in Library before adding collection members.").foregroundStyle(.secondary) }
+            if pages.isEmpty { Text("Create a page in FiestaBoard’s web interface, then refresh the library before adding members.").foregroundStyle(.secondary) }
             ForEach(pages.filter { !model.draft.pageIDs.contains($0.id) && (pageSearch.isEmpty || $0.name.localizedStandardContains(pageSearch) || $0.id.localizedStandardContains(pageSearch)) }) { page in
                 Button { model.edit { $0.pageIDs.append(page.id) } } label: { Label(page.name, systemImage: "plus.circle") }
             }

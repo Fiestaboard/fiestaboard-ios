@@ -16,14 +16,16 @@ This is the durable task tracker. Full web-app feature parity is required before
 | C-01 | Per-board pause/resume, schedule enablement/defaults, restore controls and faithful demo outcomes | Complete for bounded scope — Astra approved `be72a11` | Exact pinned API; immutable targets; no automatic write retry; host tests, build, Astra review |
 | E-01 | Lossless page document model, local draft persistence, native editor feasibility | Complete for bounded scope — Astra approved `be72a11` | Preserve unknown fields/numbers/null/markup; no remote save before revision protocol |
 | W1-03 | Integrate C-01/E-01 into the app and review the wave | Complete — built and Astra approved; interactive device checks remain | Preserve user signing edits; device/Simulator compilation; manual UI matrix |
-| P-01 | Server revisions and participating-writer conditional saves | Implemented and Astra-reviewed in single draft PR [#2373](https://github.com/Fiestaboard/FiestaBoard/pull/2373); awaiting merge/deployment | Pages, collections, schedules/defaults, web/AI/MCP original revisions, restore/recovery invalidation; compatible unconditional maintenance remains explicit |
+| P-01 | Server revisions and participating-writer conditional saves | Merged in PR [#2373](https://github.com/Fiestaboard/FiestaBoard/pull/2373); native collection candidate pinned to 10.1.7 | Pages, collections, schedules/defaults, web/AI/MCP original revisions, restore/recovery invalidation; compatible unconditional maintenance remains explicit |
 | P-02 | Native conditional page saves and explicit conflict handling | Complete for bounded template-edit scope — Astra approved `aa03da7` | Consume reviewed backend protocol; audited release and lossless field contract; never retry stale writes automatically |
 | E-02 | Server template validation and render previews | Complete for explicit text/warning scope — Astra approved `aa03da7` | Adapt existing internal endpoints with geometry/charset/canvas fixtures |
-| P-03 | Adopt richer backend contracts in native clients | Queued — backend preparation complete; merge/deployment and native adapters remain | Gate rich editing on page-document-v1 plus page-revision-v1; collection/schedule/default protocols; native OAuth/session flows; device acceptance |
+| P-03 | Adopt richer backend contracts in native clients | In progress — collection adapters/forms implemented; schedule, rich page and auth adapters remain | Gate rich editing on page-document-v1 plus page-revision-v1; collection/schedule/default protocols; native OAuth/session flows; device acceptance |
 | S-01 | Shared schema vocabulary, secret-preserving drafts and native forms | Queued | Required by display configuration and integrations |
 | R-01 | Complete LED/pixel/layer/white-board renderer and geometry fidelity | Queued | Shared golden fixtures; actual visual/device checks |
 
 Backend completion evidence and native followups: [2026-10-26-native-backend-readiness.md](docs/research/2026-10-26-native-backend-readiness.md). Backend verification does not check off native workflow acceptance.
+
+Collection milestone evidence and walkthrough: [2026-10-27-native-collections-verification.md](docs/research/2026-10-27-native-collections-verification.md).
 
 ## Release milestones still open
 
@@ -65,7 +67,7 @@ Partial means a subset exists in the draft; the checkbox stays open until the en
 - [ ] **page_preview** — Remaining. Saved page and batch previews, target geometry/LED spans/icons/cells/layers, availability and rendering errors.
 - [ ] **page_sharing** — Remaining. Export/copy page share string and import pasted/file/shared content; preserve format and validation errors.
 - [ ] **staff_picks** — Remaining. Browse/filter Picks by device, inspect plugin requirements, retrieve share data and import a pick.
-- [ ] **collections** — Remaining. Create/update/delete/list ordered collections with time/variable/random modes, rules, default behavior and per-page durations.
+- [ ] **collections** — Implemented in the draft: native list/search/create/update/delete, ordered members, time/variable/random modes, rule ordering/fallback/polling, intervals, original-revision saves and durable recovery. Device/pose/VoiceOver acceptance and full release pairing remain unverified.
 - [ ] **schedule_entries** — Remaining. Board-scoped schedule CRUD/toggle; weekly/annual/one-off recurrence, day patterns, start/end/sun offsets, page/collection targets and compatibility warnings.
 - [ ] **schedule_validation** — Remaining. Calendar/list active resolution, overlaps and gaps, schedule behavior settings and validation.
 - [ ] **silence_configuration** — Remaining. Global/per-board silence schedule with overnight windows, indicator/freeze/page, indicator placement, queued-on-exit and explicit nullable page fields.
@@ -157,3 +159,5 @@ Partial means a subset exists in the draft; the checkbox stays open until the en
 - Wave 2 accepted at `aa03da7`: Astra P1 recovery overwrite fixed and original reproduction passes unchanged. 117 Swift host tests (42 Kit, 35 AppState, 25 Documents, 15 EditorState), 25 contract-tool tests, final unsigned Simulator/device builds and UI-test compilation pass. Seven UI tests are compiled, none executed. [Wave verification and testing limits](docs/research/2026-10-26-page-editing-verification.md).
 
 - PR creation resolved: at the user's explicit direction, used `gh` instead of the connector. Draft PR [#2373](https://github.com/Fiestaboard/FiestaBoard/pull/2373) is OPEN and draft, targeting `main` from `codex/ios-api-access` at `dadbc191e`. Use this single PR for subsequent backend API work; do not open duplicates. Prefer `gh` for this GitHub workflow. No merge or deployment occurred.
+
+- Native collections: implemented against merged source79edd37d2/version10.1.7. Kit65 +AppState46 +Documents25 +EditorState50 host tests pass;29contract tests/integrity and55fenced backend cases pass. Astra core/editor reviews pass after six findings were fixed. Simulator/device builds and existing UI-test compilation pass; interactive tests remain unexecuted. See the linked collection verification record for commits, source boundaries and remaining acceptance.
