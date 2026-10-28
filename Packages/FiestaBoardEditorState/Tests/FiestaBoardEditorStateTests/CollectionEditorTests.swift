@@ -1,0 +1,224 @@
+import XCTest
+import FiestaBoardKit
+@testable import FiestaBoardEditorState
+
+@MainActor final class CollectionEditorTests: XCTestCase {
+    private var directory: URL!
+    private var archive: CollectionDraftArchive!
+    override func setUp() async throws {
+        directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        archive = CollectionDraftArchive(directory: directory)
+    }
+    override func tearDown() async throws { try? FileManager.default.removeItem(at: directory) }
+    private func collection(_ name: String = "Original", revision: String = "r1", mode: String = "time", protocolValue: String? = "collection-revision-v1") -> PageCollection {
+        PageCollection(id: "c", name: name, pageIDs: ["a", "b"], selectionMode: mode,
+                       time: .init(intervalSeconds: 30), variable: nil, random: nil,
+                       revision: revision, editProtocol: protocolValue, createdAt: nil, updatedAt: nil)
+    }
+    private func model(_ baseline: PageCollection? = nil, actions: CollectionEditorActions? = nil) -> CollectionEditorModel {
+        CollectionEditorModel(deploymentID: "https://example.test", collection: baseline, canSave: true,
+                              archive: archive, actions: actions ?? .init(save: { _, _ in throw FiestaBoardError.networkUnavailable }, delete: { _ in }, compare: { nil }))
+    }
+    func testAllModesPreserveMembershipRuleOrderAndInvalidNumericText() throws {
+        let model = model()
+        model.edit { $0.name = "😀 Morning"; $0.pageIDs = ["b", "a"]; $0.intervalText = "not a number" }
+        XCTAssertNil(model.validatedInput)
+        XCTAssertEqual(model.draft.intervalText, "not a number")
+        model.edit { $0.intervalText = "5" }
+        XCTAssertEqual(model.validatedInput?.pageIDs, ["b", "a"])
+        model.edit { $0.selectionMode = "random"; $0.randomIntervalText = "86400" }
+        XCTAssertEqual(model.validatedInput?.random?.intervalSeconds, 86400)
+        model.edit { $0.selectionMode = "variable"; $0.defaultPageID = "a"; $0.pollText = "2"; $0.rules = [.init(expression: "second", pageID: "b"), .init(expression: "first", pageID: "a")] }
+        XCTAssertEqual(model.validatedInput?.variable?.rules.map(\.expression), ["second", "first"])
+        model.edit { $0.pollText = "1" }
+        XCTAssertFalse(model.canSave)
+    }
+    func testSaveUsesOriginalRevisionAndAcknowledgementClearsArchive() async throws {
+        let receipt = collection("Edited", revision: "r2")
+        let model = model(collection(), actions: .init(save: { input, revision in
+            XCTAssertEqual(revision, "r1"); XCTAssertEqual(input.name, "Edited"); return receipt
+        }, delete: { _ in }, compare: { nil }))
+        model.edit { $0.name = "Edited" }
+        XCTAssertEqual(try archive.load(deploymentID: "https://example.test", collectionID: "c").count, 1)
+        await model.save()
+        XCTAssertEqual(model.originalRevision, "r2")
+        XCTAssertFalse(model.hasChanges)
+        XCTAssertTrue(try archive.load(deploymentID: "https://example.test", collectionID: "c").isEmpty)
+    }
+    func testCompareDoesNotAdoptOrRetokenDirtyDraft() async {
+        let fresh = collection("Server", revision: "r2")
+        let model = model(collection(), actions: .init(save: { _, _ in throw FiestaBoardError.collectionConflict }, delete: { _ in }, compare: { fresh }))
+        model.edit { $0.name = "Edited" }; await model.save(); await model.compare()
+        XCTAssertEqual(model.draft.name, "Edited"); XCTAssertEqual(model.originalRevision, "r1")
+        XCTAssertFalse(model.canSave); XCTAssertEqual(model.comparison?.revision, "r2")
+        model.adoptComparison()
+        XCTAssertEqual(model.draft.name, "Server"); XCTAssertEqual(model.originalRevision, "r2")
+        XCTAssertFalse(model.hasChanges)
+    }
+    func testRecoveryRetainsOriginalBaselineAndInvalidText() async throws {
+        let old = model(collection(revision: "old"))
+        old.edit { $0.name = "Recovered"; $0.intervalText = "-" }
+        let fresh = model(collection("Fresh", revision: "fresh"))
+        fresh.checkRecovery(); XCTAssertTrue(fresh.canRecover)
+        fresh.recoverDraft()
+        XCTAssertEqual(fresh.originalRevision, "old"); XCTAssertEqual(fresh.draft.intervalText, "-")
+        XCTAssertNil(fresh.validatedInput)
+        XCTAssertTrue(try archive.load(deploymentID: "https://another.test", collectionID: "c").isEmpty)
+    }
+    func testUnknownCreateCannotAutomaticallyRetryEvenAfterRecoveryOrComparison() async {
+        var calls = 0
+        let actions = CollectionEditorActions(save: { _, _ in calls += 1; throw FiestaBoardError.unknownMutationOutcome }, delete: { _ in }, compare: { nil })
+        let first = model(actions: actions)
+        first.edit { $0.name = "New"; $0.pageIDs = ["a"] }
+        await first.save(); await first.save(); await first.compare(); await first.save()
+        XCTAssertEqual(calls, 1); XCTAssertFalse(first.canSave)
+        let recovered = model(actions: actions)
+        recovered.checkRecovery(); recovered.recoverDraft(); await recovered.save()
+        XCTAssertEqual(calls, 1); XCTAssertFalse(recovered.canSave)
+    }
+    func testMissingComparisonDisablesOldDraftWritesAndKeepsLocalCopy() async throws {
+        let model = model(collection(), actions: .init(save: { _, _ in throw FiestaBoardError.collectionConflict }, delete: { _ in }, compare: { nil }))
+        model.edit { $0.name = "Keep" }; await model.compare()
+        XCTAssertEqual(model.status, .missing); XCTAssertFalse(model.canSave); XCTAssertFalse(model.canDelete)
+        XCTAssertTrue(model.localCopyText.contains("Keep"))
+        XCTAssertEqual(try archive.load(deploymentID: "https://example.test", collectionID: "c").count, 1)
+    }
+    func testDeleteInUseIsActionableAndDoesNotDiscardDraft() async {
+        let model = model(collection(), actions: .init(save: { _, _ in throw FiestaBoardError.invalidResponse }, delete: { revision in
+            XCTAssertEqual(revision, "r1"); throw FiestaBoardError.collectionInUse
+        }, compare: { nil }))
+        model.edit { $0.name = "Keep" }; await model.delete()
+        XCTAssertEqual(model.status, .idle); XCTAssertTrue(model.hasChanges); XCTAssertTrue(model.canDelete)
+        XCTAssertNotNil(model.message)
+    }
+    func testSaveFreezesOverlappingEditSaveAndDelete() async {
+        var continuation: CheckedContinuation<PageCollection, any Error>?
+        var saves = 0; var deletes = 0
+        let model = model(collection(), actions: .init(save: { _, _ in
+            saves += 1; return try await withCheckedThrowingContinuation { continuation = $0 }
+        }, delete: { _ in deletes += 1 }, compare: { nil }))
+        model.edit { $0.name = "Edited" }
+        let work = Task { await model.save() }
+        while continuation == nil { await Task.yield() }
+        model.edit { $0.name = "Lost" }; await model.save(); await model.delete()
+        XCTAssertEqual(model.draft.name, "Edited"); XCTAssertEqual(saves, 1); XCTAssertEqual(deletes, 0)
+        continuation!.resume(returning: collection("Edited", revision: "r2")); await work.value
+        XCTAssertFalse(model.hasChanges)
+    }
+    func testCancellationAfterDispatchPreservesDraftAndRequiresComparison() async {
+        let model = model(collection(), actions: .init(save: { _, _ in throw CancellationError() }, delete: { _ in }, compare: { nil }))
+        model.edit { $0.name = "Keep" }; await model.save()
+        XCTAssertEqual(model.status, .unknownOutcome); XCTAssertFalse(model.canSave); XCTAssertTrue(model.hasChanges)
+    }
+    func testUnknownModeAndUnsupportedProtocolRemainReadOnlyAndInspectable() {
+        let model = model(collection(mode: "future_mode"))
+        model.edit { $0.name = "Lost" }
+        XCTAssertEqual(model.draft.name, "Original"); XCTAssertFalse(model.canSave); XCTAssertFalse(model.canDelete)
+        XCTAssertTrue(model.localCopyText.contains("future_mode"))
+        let legacy = self.model(collection(protocolValue: "future-protocol"))
+        XCTAssertFalse(legacy.canSave); XCTAssertFalse(legacy.canDelete)
+        legacy.edit { $0.name = "Lost" }; XCTAssertEqual(legacy.draft.name, "Original")
+    }
+    func testDiscardClearsCheckpointAndEndsEditing() throws {
+        let model = model(collection()); model.edit { $0.name = "Discard" }; model.discard()
+        XCTAssertTrue(try archive.load(deploymentID: "https://example.test", collectionID: "c").isEmpty)
+        model.edit { $0.name = "Resurrected" }; XCTAssertEqual(model.status, .ended)
+    }
+    func testUnknownFieldsCannotBecomeWritableThroughLocalArchive() throws {
+        let unknown = try JSONDecoder().decode(PageCollection.self, from: Data(#"{"id":"c","name":"Original","page_ids":["a"],"selection_mode":"time","time":{"interval_seconds":30},"variable":null,"random":null,"revision":"r1","edit_protocol":"collection-revision-v1","future_setting":true}"#.utf8))
+        let original = model(unknown)
+        XCTAssertFalse(original.supportsEditing)
+        original.preserve()
+        let restored = model(collection())
+        restored.checkRecovery(); restored.recoverDraft()
+        XCTAssertFalse(restored.supportsEditing)
+        restored.edit { $0.name = "Must remain read only" }
+        XCTAssertEqual(restored.draft.name, "Original")
+    }
+    func testModeSwitchRetainsConfigurationsUntilExplicitClear() throws {
+        let model = model()
+        model.edit { $0.name = "Modes"; $0.pageIDs = ["a"]; $0.selectionMode = "variable"; $0.defaultPageID = "a"; $0.rules = [.init(expression: "x", pageID: "a")] }
+        model.edit { $0.selectionMode = "random" }
+        XCTAssertEqual(model.validatedInput?.variable?.rules.first?.expression, "x")
+        model.edit { $0.selectionMode = "time" }
+        XCTAssertNotNil(model.validatedInput?.random)
+        model.edit { $0.hasVariableConfig = false; $0.hasRandomConfig = false }
+        XCTAssertNil(model.validatedInput?.variable); XCTAssertNil(model.validatedInput?.random)
+    }
+
+    func testUncertainDeleteAfterAcknowledgedSavePersistsReadbackBarrier() async throws {
+        let receipt = collection("Edited", revision: "r2")
+        let model = model(collection(), actions: .init(save: { _, _ in receipt }, delete: { revision in
+            XCTAssertEqual(revision, "r2"); throw FiestaBoardError.unknownMutationOutcome
+        }, compare: { nil }))
+        model.edit { $0.name = "Edited" }; await model.save(); await model.delete()
+        let checkpoints = try archive.load(deploymentID: "https://example.test", collectionID: "c")
+        XCTAssertEqual(checkpoints.first?.status, .unknownOutcome)
+        let restored = self.model(receipt)
+        restored.checkRecovery(); restored.recoverDraft()
+        XCTAssertFalse(restored.canDelete)
+    }
+    func testDeleteConflictAndMissingRemainDistinct() async {
+        let conflict = model(collection(), actions: .init(save: { _, _ in throw FiestaBoardError.invalidResponse }, delete: { _ in throw FiestaBoardError.collectionConflict }, compare: { nil }))
+        await conflict.delete(); XCTAssertEqual(conflict.status, .conflict); XCTAssertFalse(conflict.canDelete)
+        let missing = model(collection(), actions: .init(save: { _, _ in throw FiestaBoardError.invalidResponse }, delete: { _ in throw FiestaBoardError.rejected(status: 404) }, compare: { nil }))
+        await missing.delete(); XCTAssertEqual(missing.status, .missing); XCTAssertFalse(missing.canDelete)
+    }
+    func testDeleteFreezesOverlappingEditsAndSave() async {
+        var continuation: CheckedContinuation<Void, any Error>?
+        var saves = 0
+        let model = model(collection(), actions: .init(save: { _, _ in saves += 1; throw FiestaBoardError.invalidResponse }, delete: { _ in
+            try await withCheckedThrowingContinuation { continuation = $0 }
+        }, compare: { nil }))
+        let work = Task { await model.delete() }
+        while continuation == nil { await Task.yield() }
+        model.edit { $0.name = "Lost" }; await model.save()
+        XCTAssertEqual(model.draft.name, "Original"); XCTAssertEqual(saves, 0)
+        continuation!.resume(); await work.value
+        XCTAssertEqual(model.status, .ended)
+    }
+    func testAcknowledgedSaveInEachModeUsesExplicitNilConfigsAndOrder() async {
+        for mode in ["time", "variable", "random"] {
+            var saved: CollectionInput?
+            let model = model(actions: .init(save: { input, revision in
+                saved = input; XCTAssertNil(revision)
+                return PageCollection(id: "new", name: input.name, pageIDs: input.pageIDs, selectionMode: input.selectionMode.rawValue,
+                    time: input.time, variable: input.variable, random: input.random, revision: "created", editProtocol: "collection-revision-v1")
+            }, delete: { _ in }, compare: { nil }))
+            model.edit { $0.name = "Create"; $0.pageIDs = ["b", "a"]; $0.selectionMode = mode; $0.defaultPageID = "a" }
+            await model.save()
+            XCTAssertEqual(saved?.selectionMode.rawValue, mode); XCTAssertEqual(saved?.pageIDs, ["b", "a"])
+            XCTAssertEqual(model.originalRevision, "created"); XCTAssertFalse(model.hasChanges)
+            if mode == "time" { XCTAssertNil(saved?.variable); XCTAssertNil(saved?.random) }
+        }
+    }
+    func testComparisonAdoptionPreservesPriorDraftAcrossBackgroundCheckpoint() async throws {
+        let server = collection("Fresh", revision: "r2")
+        let model = model(collection(), actions: .init(save: { _, _ in throw FiestaBoardError.invalidResponse }, delete: { _ in }, compare: { server }))
+        model.edit { $0.name = "Prior local work" }; await model.compare(); model.adoptComparison(); model.preserve()
+        let checkpoints = try archive.load(deploymentID: "https://example.test", collectionID: "c")
+        XCTAssertEqual(checkpoints.first?.draft.name, "Prior local work")
+        XCTAssertEqual(checkpoints.first?.baseline?.revision, "r1")
+    }
+
+    func testClearedInactiveConfigurationsDoNotValidateHiddenInvalidText() {
+        let model = model()
+        model.edit { $0.name = "Valid"; $0.pageIDs = ["a"]; $0.pollText = "-"; $0.randomIntervalText = "invalid" }
+        XCTAssertNotNil(model.validatedInput)
+        XCTAssertNil(model.validatedInput?.variable); XCTAssertNil(model.validatedInput?.random)
+    }
+
+    func testClosingUnchangedEditorDoesNotCreateARecoveryDraft() throws {
+        let model = model(collection())
+        XCTAssertTrue(model.closeKeepingDraft())
+        XCTAssertTrue(try archive.load(deploymentID: "https://example.test", collectionID: "c").isEmpty)
+    }
+
+    func testComparisonSessionLossKeepsDraftAndBlocksStaleWrites() async throws {
+        let model = model(collection(), actions: .init(save: { _, _ in throw FiestaBoardError.invalidResponse }, delete: { _ in }, compare: { throw FiestaBoardError.unauthenticated }))
+        model.edit { $0.name = "Keep on logout" }; await model.compare()
+        XCTAssertFalse(model.canSave); XCTAssertFalse(model.canDelete)
+        XCTAssertEqual(try archive.load(deploymentID: "https://example.test", collectionID: "c").first?.draft.name, "Keep on logout")
+    }
+
+}
