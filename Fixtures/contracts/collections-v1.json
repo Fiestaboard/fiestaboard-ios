@@ -1,0 +1,1983 @@
+{
+  "schema_version": 1,
+  "source": {
+    "commit": "79edd37d2329eaa34f42081a4d48e87bc04bb455",
+    "version": "10.1.7"
+  },
+  "edit_protocol": "collection-revision-v1",
+  "source_evidence": {
+    "src/__init__.py": "744d128ba52a45a4f2fe978640a15948de8d558cfdd7d97deb8ee76f725e3f4a",
+    "src/collections/models.py": "e75d207faa82a19ce2aa560badb32fff1fe69797cbf343500807e2a3cde30215",
+    "src/collections/routes.py": "c45a9d15f1a5569d49b8cedfcaa3b9477f4c0f8b56f88369742c4593549c9574",
+    "src/collections/service.py": "434708fb63f87ba16c5508d8393877e4316ea4b1dbc5e640a73495c0d34fe93e",
+    "src/collections/storage.py": "77869ee4e60ab00cc23ea87cbb1be017f5da7d7b91cf895a9b629e6c74b7e6f3",
+    "src/v1/routes_content.py": "8929209880e3c0039e717511641586a66205dd1594c18fcb955101496754fd03",
+    "src/content_references.py": "e7d6c3f5130f32e351c026400b4c80ad2b1513552d2b2e50c5363d5efca95594",
+    "src/templates/models.py": "4a6e5046033bdd256d11cba2a2ba91e8c127bb3b85e8ed6e260e3bd240de7959",
+    "src/templates/routes.py": "bfb10a9bad28939fb7c43128341a86811b85480386f13f4294016618ef193b6f",
+    "src/templates/engine.py": "3f67854602f18d2348fbc4afb77be6b2f638bb009d1da8ff3fe3fa2d1eec86cd",
+    "src/templates/expressions.py": "ed8b38e673261fc233ddcf139121d9e7a0626ddeb7eed243a82015fe163d474f"
+  },
+  "generator": {
+    "python": "3.14.9",
+    "fastapi": "0.162.0",
+    "pydantic": "2.14.1"
+  },
+  "sanitization": "Opaque ids/revisions and timestamps replaced; runtime model repr in Pydantic error strings redacted. Ordering, user text, nulls and diagnostic messages retained.",
+  "cases": [
+    {
+      "id": "list_empty",
+      "request": {
+        "method": "GET",
+        "path": "/v1/collections"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "collections": [],
+          "total": 0
+        }
+      }
+    },
+    {
+      "id": "create_time",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "collection:contract-1",
+          "revision": "revision-1",
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null,
+          "created_at": "2026-10-27T00:00:00",
+          "updated_at": null,
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "create_variable",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "variable",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": {
+            "rules": [
+              {
+                "expression": "1 = 1",
+                "page_id": "page-b"
+              },
+              {
+                "expression": "2 > 1",
+                "page_id": "page-a"
+              }
+            ],
+            "default_page_id": "page-a",
+            "poll_seconds": 10
+          },
+          "random": null
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "collection:contract-2",
+          "revision": "revision-2",
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "variable",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": {
+            "rules": [
+              {
+                "expression": "1 = 1",
+                "page_id": "page-b"
+              },
+              {
+                "expression": "2 > 1",
+                "page_id": "page-a"
+              }
+            ],
+            "default_page_id": "page-a",
+            "poll_seconds": 10
+          },
+          "random": null,
+          "created_at": "2026-10-27T00:00:00",
+          "updated_at": null,
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "create_random",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "random",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": {
+            "interval_seconds": 30
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "collection:contract-3",
+          "revision": "revision-3",
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "random",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": {
+            "interval_seconds": 30
+          },
+          "created_at": "2026-10-27T00:00:00",
+          "updated_at": null,
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "get",
+      "request": {
+        "method": "GET",
+        "path": "/v1/collections/collection:contract-2"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "collection:contract-2",
+          "revision": "revision-2",
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "variable",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": {
+            "rules": [
+              {
+                "expression": "1 = 1",
+                "page_id": "page-b"
+              },
+              {
+                "expression": "2 > 1",
+                "page_id": "page-a"
+              }
+            ],
+            "default_page_id": "page-a",
+            "poll_seconds": 10
+          },
+          "random": null,
+          "created_at": "2026-10-27T00:00:00",
+          "updated_at": null,
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "list",
+      "request": {
+        "method": "GET",
+        "path": "/v1/collections"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "collections": [
+            {
+              "id": "collection:contract-1",
+              "revision": "revision-1",
+              "name": "Morning ☀️",
+              "page_ids": [
+                "page-b",
+                "page-a"
+              ],
+              "selection_mode": "time",
+              "time": {
+                "interval_seconds": 30
+              },
+              "variable": null,
+              "random": null,
+              "created_at": "2026-10-27T00:00:00",
+              "updated_at": null,
+              "edit_protocol": "collection-revision-v1"
+            },
+            {
+              "id": "collection:contract-2",
+              "revision": "revision-2",
+              "name": "Morning ☀️",
+              "page_ids": [
+                "page-b",
+                "page-a"
+              ],
+              "selection_mode": "variable",
+              "time": {
+                "interval_seconds": 30
+              },
+              "variable": {
+                "rules": [
+                  {
+                    "expression": "1 = 1",
+                    "page_id": "page-b"
+                  },
+                  {
+                    "expression": "2 > 1",
+                    "page_id": "page-a"
+                  }
+                ],
+                "default_page_id": "page-a",
+                "poll_seconds": 10
+              },
+              "random": null,
+              "created_at": "2026-10-27T00:00:00",
+              "updated_at": null,
+              "edit_protocol": "collection-revision-v1"
+            },
+            {
+              "id": "collection:contract-3",
+              "revision": "revision-3",
+              "name": "Morning ☀️",
+              "page_ids": [
+                "page-b",
+                "page-a"
+              ],
+              "selection_mode": "random",
+              "time": {
+                "interval_seconds": 30
+              },
+              "variable": null,
+              "random": {
+                "interval_seconds": 30
+              },
+              "created_at": "2026-10-27T00:00:00",
+              "updated_at": null,
+              "edit_protocol": "collection-revision-v1"
+            }
+          ],
+          "total": 3
+        }
+      }
+    },
+    {
+      "id": "update_clear_configs",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/collections/collection:contract-2",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null,
+          "expected_revision": "revision-2"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "collection:contract-2",
+          "revision": "revision-4",
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null,
+          "created_at": "2026-10-27T00:00:00",
+          "updated_at": "2026-10-27T00:00:00",
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "update_clear_random",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/collections/collection:contract-3",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null,
+          "expected_revision": "revision-3"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "collection:contract-3",
+          "revision": "revision-5",
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null,
+          "created_at": "2026-10-27T00:00:00",
+          "updated_at": "2026-10-27T00:00:00",
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "update_stale",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/collections/collection:contract-2",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null,
+          "expected_revision": "revision-2"
+        }
+      },
+      "response": {
+        "status": 412,
+        "body": {
+          "detail": "Collection changed since it was loaded. Reload the collection before saving or deleting."
+        }
+      }
+    },
+    {
+      "id": "delete_stale",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/collections/collection:contract-2",
+        "query": {
+          "expected_revision": "revision-2"
+        }
+      },
+      "response": {
+        "status": 412,
+        "body": {
+          "detail": "Collection changed since it was loaded. Reload the collection before saving or deleting."
+        }
+      }
+    },
+    {
+      "id": "delete_in_use",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/collections/collection:contract-2",
+        "query": {
+          "expected_revision": "revision-4"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "detail": "Cannot delete collection:contract-2; remove or change these references first: active selection for board primary; active selection for board board-contract"
+        }
+      }
+    },
+    {
+      "id": "delete",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/collections/collection:contract-2",
+        "query": {
+          "expected_revision": "revision-4"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "collection:contract-2"
+        }
+      }
+    },
+    {
+      "id": "get_missing",
+      "request": {
+        "method": "GET",
+        "path": "/v1/collections/collection:contract-2"
+      },
+      "response": {
+        "status": 404,
+        "body": {
+          "detail": "Collection not found: collection:contract-2"
+        }
+      }
+    },
+    {
+      "id": "update_missing",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/collections/collection:contract-2",
+        "body": {
+          "name": "Missing",
+          "expected_revision": "revision-4"
+        }
+      },
+      "response": {
+        "status": 404,
+        "body": {
+          "detail": "Collection not found: collection:contract-2"
+        }
+      }
+    },
+    {
+      "id": "delete_missing",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/collections/collection:contract-2",
+        "query": {
+          "expected_revision": "revision-4"
+        }
+      },
+      "response": {
+        "status": 404,
+        "body": {
+          "detail": "Collection not found: collection:contract-2"
+        }
+      }
+    },
+    {
+      "id": "create_missing_page",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "missing-page"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "detail": "Page not found: missing-page"
+        }
+      }
+    },
+    {
+      "id": "create_duplicate_pages",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-a",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "detail": "Invalid collection configuration: ['Collection contains duplicate pages']"
+        }
+      }
+    },
+    {
+      "id": "create_nested_collection",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "collection:contract-1"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "detail": "Page not found: collection:contract-1"
+        }
+      }
+    },
+    {
+      "id": "create_default_outside_members",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "variable",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": {
+            "rules": [],
+            "default_page_id": "outside",
+            "poll_seconds": 10
+          },
+          "random": null
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "detail": "default_page_id must be one of page_ids"
+        }
+      }
+    },
+    {
+      "id": "create_rule_outside_members",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "variable",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": {
+            "rules": [
+              {
+                "expression": "1",
+                "page_id": "outside"
+              }
+            ],
+            "default_page_id": "page-a"
+          },
+          "random": null
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "detail": "Variable rule 0 page_id not in page_ids"
+        }
+      }
+    },
+    {
+      "id": "create_invalid_expression",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "variable",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": {
+            "rules": [
+              {
+                "expression": "(",
+                "page_id": "page-a"
+              }
+            ],
+            "default_page_id": "page-a"
+          },
+          "random": null
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "detail": "Variable rule 0 expression invalid: #SYNTAX Unexpected token None at position 1"
+        }
+      }
+    },
+    {
+      "id": "name_empty",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": [
+            {
+              "type": "string_too_short",
+              "loc": [
+                "body",
+                "name"
+              ],
+              "msg": "String should have at least 1 character",
+              "input": "",
+              "ctx": {
+                "min_length": 1
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "name_100_scalars",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "collection:contract-4",
+          "revision": "revision-6",
+          "name": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null,
+          "created_at": "2026-10-27T00:00:00",
+          "updated_at": null,
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "name_101_scalars",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": [
+            {
+              "type": "string_too_long",
+              "loc": [
+                "body",
+                "name"
+              ],
+              "msg": "String should have at most 100 characters",
+              "input": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+              "ctx": {
+                "max_length": 100
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "name_combining_100_scalars",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "éééééééééééééééééééééééééééééééééééééééééééééééééé",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "collection:contract-5",
+          "revision": "revision-7",
+          "name": "éééééééééééééééééééééééééééééééééééééééééééééééééé",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null,
+          "created_at": "2026-10-27T00:00:00",
+          "updated_at": null,
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "name_combining_102_scalars",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "ééééééééééééééééééééééééééééééééééééééééééééééééééé",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": [
+            {
+              "type": "string_too_long",
+              "loc": [
+                "body",
+                "name"
+              ],
+              "msg": "String should have at most 100 characters",
+              "input": "ééééééééééééééééééééééééééééééééééééééééééééééééééé",
+              "ctx": {
+                "max_length": 100
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "name_whitespace",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": " ",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "collection:contract-6",
+          "revision": "revision-8",
+          "name": " ",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null,
+          "created_at": "2026-10-27T00:00:00",
+          "updated_at": null,
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "create_unknown_mode",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "future",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": [
+            {
+              "type": "literal_error",
+              "loc": [
+                "body",
+                "selection_mode"
+              ],
+              "msg": "Input should be 'time', 'variable' or 'random'",
+              "input": "future",
+              "ctx": {
+                "expected": "'time', 'variable' or 'random'"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "create_variable_requires_config",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "variable",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "detail": "1 validation error for Collection\n  Value error, selection_mode 'variable' requires a 'variable' config block [type=value_error, input_value=<runtime model>, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/value_error"
+        }
+      }
+    },
+    {
+      "id": "create_random_requires_config",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "random",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "detail": "1 validation error for Collection\n  Value error, selection_mode 'random' requires a 'random' config block [type=value_error, input_value=<runtime model>, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/value_error"
+        }
+      }
+    },
+    {
+      "id": "create_empty_members",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": [
+            {
+              "type": "too_short",
+              "loc": [
+                "body",
+                "page_ids"
+              ],
+              "msg": "List should have at least 1 item after validation, not 0",
+              "input": [],
+              "ctx": {
+                "field_type": "List",
+                "min_length": 1,
+                "actual_length": 0
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "time_min",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 5
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "collection:contract-7",
+          "revision": "revision-9",
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 5
+          },
+          "variable": null,
+          "random": null,
+          "created_at": "2026-10-27T00:00:00",
+          "updated_at": null,
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "time_max",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 86400
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "collection:contract-8",
+          "revision": "revision-10",
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 86400
+          },
+          "variable": null,
+          "random": null,
+          "created_at": "2026-10-27T00:00:00",
+          "updated_at": null,
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "time_below",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 4
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": [
+            {
+              "type": "greater_than_equal",
+              "loc": [
+                "body",
+                "time",
+                "interval_seconds"
+              ],
+              "msg": "Input should be greater than or equal to 5",
+              "input": 4,
+              "ctx": {
+                "ge": 5
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "time_above",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 86401
+          },
+          "variable": null,
+          "random": null
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": [
+            {
+              "type": "less_than_equal",
+              "loc": [
+                "body",
+                "time",
+                "interval_seconds"
+              ],
+              "msg": "Input should be less than or equal to 86400",
+              "input": 86401,
+              "ctx": {
+                "le": 86400
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "random_min",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "random",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": {
+            "interval_seconds": 5
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "collection:contract-9",
+          "revision": "revision-11",
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "random",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": {
+            "interval_seconds": 5
+          },
+          "created_at": "2026-10-27T00:00:00",
+          "updated_at": null,
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "random_max",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "random",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": {
+            "interval_seconds": 86400
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "collection:contract-10",
+          "revision": "revision-12",
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "random",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": {
+            "interval_seconds": 86400
+          },
+          "created_at": "2026-10-27T00:00:00",
+          "updated_at": null,
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "random_below",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "random",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": {
+            "interval_seconds": 4
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": [
+            {
+              "type": "greater_than_equal",
+              "loc": [
+                "body",
+                "random",
+                "interval_seconds"
+              ],
+              "msg": "Input should be greater than or equal to 5",
+              "input": 4,
+              "ctx": {
+                "ge": 5
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "random_above",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "random",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": {
+            "interval_seconds": 86401
+          }
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": [
+            {
+              "type": "less_than_equal",
+              "loc": [
+                "body",
+                "random",
+                "interval_seconds"
+              ],
+              "msg": "Input should be less than or equal to 86400",
+              "input": 86401,
+              "ctx": {
+                "le": 86400
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "poll_min",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "variable",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": {
+            "rules": [
+              {
+                "expression": "1 = 1",
+                "page_id": "page-b"
+              },
+              {
+                "expression": "2 > 1",
+                "page_id": "page-a"
+              }
+            ],
+            "default_page_id": "page-a",
+            "poll_seconds": 2
+          },
+          "random": null
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "collection:contract-11",
+          "revision": "revision-13",
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "variable",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": {
+            "rules": [
+              {
+                "expression": "1 = 1",
+                "page_id": "page-b"
+              },
+              {
+                "expression": "2 > 1",
+                "page_id": "page-a"
+              }
+            ],
+            "default_page_id": "page-a",
+            "poll_seconds": 2
+          },
+          "random": null,
+          "created_at": "2026-10-27T00:00:00",
+          "updated_at": null,
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "poll_max",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "variable",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": {
+            "rules": [
+              {
+                "expression": "1 = 1",
+                "page_id": "page-b"
+              },
+              {
+                "expression": "2 > 1",
+                "page_id": "page-a"
+              }
+            ],
+            "default_page_id": "page-a",
+            "poll_seconds": 600
+          },
+          "random": null
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "collection:contract-12",
+          "revision": "revision-14",
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "variable",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": {
+            "rules": [
+              {
+                "expression": "1 = 1",
+                "page_id": "page-b"
+              },
+              {
+                "expression": "2 > 1",
+                "page_id": "page-a"
+              }
+            ],
+            "default_page_id": "page-a",
+            "poll_seconds": 600
+          },
+          "random": null,
+          "created_at": "2026-10-27T00:00:00",
+          "updated_at": null,
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "poll_below",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "variable",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": {
+            "rules": [
+              {
+                "expression": "1 = 1",
+                "page_id": "page-b"
+              },
+              {
+                "expression": "2 > 1",
+                "page_id": "page-a"
+              }
+            ],
+            "default_page_id": "page-a",
+            "poll_seconds": 1
+          },
+          "random": null
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": [
+            {
+              "type": "greater_than_equal",
+              "loc": [
+                "body",
+                "variable",
+                "poll_seconds"
+              ],
+              "msg": "Input should be greater than or equal to 2",
+              "input": 1,
+              "ctx": {
+                "ge": 2
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "poll_above",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "variable",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": {
+            "rules": [
+              {
+                "expression": "1 = 1",
+                "page_id": "page-b"
+              },
+              {
+                "expression": "2 > 1",
+                "page_id": "page-a"
+              }
+            ],
+            "default_page_id": "page-a",
+            "poll_seconds": 601
+          },
+          "random": null
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": [
+            {
+              "type": "less_than_equal",
+              "loc": [
+                "body",
+                "variable",
+                "poll_seconds"
+              ],
+              "msg": "Input should be less than or equal to 600",
+              "input": 601,
+              "ctx": {
+                "le": 600
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "update_invalid_keeps_revision",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/collections/collection:contract-1",
+        "body": {
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-a",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null,
+          "expected_revision": "revision-1"
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "detail": "Invalid collection configuration: ['Collection contains duplicate pages']"
+        }
+      }
+    },
+    {
+      "id": "get_after_failed_write",
+      "request": {
+        "method": "GET",
+        "path": "/v1/collections/collection:contract-1"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "collection:contract-1",
+          "revision": "revision-1",
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null,
+          "created_at": "2026-10-27T00:00:00",
+          "updated_at": null,
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "get_after_restart",
+      "request": {
+        "method": "GET",
+        "path": "/v1/collections/collection:contract-1"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "collection:contract-1",
+          "revision": "revision-15",
+          "name": "Morning ☀️",
+          "page_ids": [
+            "page-b",
+            "page-a"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null,
+          "created_at": "2026-10-27T00:00:00",
+          "updated_at": null,
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "update_before_restart_revision",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/collections/collection:contract-1",
+        "body": {
+          "name": "Stale",
+          "expected_revision": "revision-1"
+        }
+      },
+      "response": {
+        "status": 412,
+        "body": {
+          "detail": "Collection changed since it was loaded. Reload the collection before saving or deleting."
+        }
+      }
+    },
+    {
+      "id": "update_recreated_old_revision",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/collections/collection:contract-1",
+        "body": {
+          "name": "Stale",
+          "expected_revision": "revision-15"
+        }
+      },
+      "response": {
+        "status": 412,
+        "body": {
+          "detail": "Collection changed since it was loaded. Reload the collection before saving or deleting."
+        }
+      }
+    },
+    {
+      "id": "validate_literal",
+      "request": {
+        "method": "POST",
+        "path": "/templates/validate",
+        "body": {
+          "template": [
+            "HELLO",
+            ""
+          ],
+          "board_id": "contract-unknown"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "valid": true,
+          "errors": []
+        }
+      }
+    },
+    {
+      "id": "validate_invalid",
+      "request": {
+        "method": "POST",
+        "path": "/templates/validate",
+        "body": {
+          "template": "{{= (}}",
+          "board_id": "contract-unknown"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "valid": false,
+          "errors": [
+            {
+              "line": 1,
+              "column": 0,
+              "message": "Formula #SYNTAX: Unexpected token None at position 1"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "validate_known_board",
+      "request": {
+        "method": "POST",
+        "path": "/templates/validate",
+        "body": {
+          "template": "HELLO",
+          "board_id": "board-contract"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "valid": true,
+          "errors": []
+        }
+      }
+    },
+    {
+      "id": "render_known_board",
+      "request": {
+        "method": "POST",
+        "path": "/templates/render",
+        "body": {
+          "template": [
+            "HELLO",
+            ""
+          ],
+          "board_id": "board-contract",
+          "device_type": "flagship"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "HELLO                 \n                      \n                      \n                      \n                      \n                      ",
+          "lines": [
+            "HELLO                 ",
+            "                      ",
+            "                      ",
+            "                      ",
+            "                      ",
+            "                      "
+          ],
+          "line_count": 6,
+          "charset": "vestaboard_v1",
+          "charset_issues": []
+        }
+      }
+    },
+    {
+      "id": "render_literal",
+      "request": {
+        "method": "POST",
+        "path": "/templates/render",
+        "body": {
+          "template": [
+            "HELLO",
+            ""
+          ],
+          "board_id": "contract-unknown",
+          "device_type": "flagship",
+          "line_metadata": [],
+          "canvases": []
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "HELLO                 \n                      \n                      \n                      \n                      \n                      ",
+          "lines": [
+            "HELLO                 ",
+            "                      ",
+            "                      ",
+            "                      ",
+            "                      ",
+            "                      "
+          ],
+          "line_count": 6,
+          "charset": null,
+          "charset_issues": null
+        }
+      }
+    },
+    {
+      "id": "render_note_array",
+      "request": {
+        "method": "POST",
+        "path": "/templates/render",
+        "body": {
+          "template": [],
+          "board_id": "contract-unknown",
+          "device_type": "note_array",
+          "notes_wide": 2,
+          "notes_tall": 2
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "\n\n\n\n\n",
+          "lines": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          "line_count": 6,
+          "charset": null,
+          "charset_issues": null
+        }
+      }
+    },
+    {
+      "id": "render_panel",
+      "request": {
+        "method": "POST",
+        "path": "/templates/render",
+        "body": {
+          "template": [],
+          "board_id": "contract-unknown",
+          "device_type": "panel",
+          "grid_rows": 8,
+          "grid_cols": 16
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "\n\n\n\n\n\n\n",
+          "lines": [
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+          ],
+          "line_count": 8,
+          "charset": null,
+          "charset_issues": null
+        }
+      }
+    }
+  ],
+  "generation_evidence": {
+    "update_changes_revision": true,
+    "restart_changes_revision": true,
+    "runtime_metadata_not_persisted": true,
+    "recreated_id_rejects_old_revision": true,
+    "failed_write_keeps_revision": true
+  },
+  "evaluation_evidence": {
+    "ordered_first_match": "page-b",
+    "empty_rules_default": "page-a",
+    "poll_seconds": 2,
+    "time_order": [
+      "page-b",
+      "page-a",
+      "page-b"
+    ],
+    "random_two_members_alternate": true,
+    "context": "explicit empty fixture context"
+  },
+  "adapter_evidence": {
+    "endpoints": [
+      "/templates/validate",
+      "/templates/render"
+    ],
+    "provider_fetches": 0,
+    "hardware_sends": 0,
+    "limits": "Static content, temporary configured board, unknown-board fallback, geometry and response shapes only; no real board/provider/layer delivery proof."
+  }
+}
