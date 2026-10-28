@@ -221,4 +221,78 @@ import FiestaBoardKit
         XCTAssertEqual(try archive.load(deploymentID: "https://example.test", collectionID: "c").first?.draft.name, "Keep on logout")
     }
 
+    func testRecoveredWindowsOwnIndependentCheckpointsOnDiscardAndAcknowledgement() async throws {
+        let original = model(collection()); original.edit { $0.name = "Source draft" }; XCTAssertTrue(original.closeKeepingDraft())
+        let windowA = model(collection())
+        let receipt = collection("Window B", revision: "r2")
+        let windowB = model(collection(), actions: .init(save: { _, _ in receipt }, delete: { _ in }, compare: { nil }))
+        windowA.checkRecovery(); windowB.checkRecovery(); windowA.recoverDraft(); windowB.recoverDraft()
+        windowA.edit { $0.name = "Window A" }; windowB.edit { $0.name = "Window B" }
+        await windowB.save()
+        var remaining = try archive.load(deploymentID: "https://example.test", collectionID: "c")
+        XCTAssertTrue(remaining.contains { $0.draft.name == "Window A" })
+        let windowC = model(collection()); windowC.checkRecovery(); windowC.recoverDraft()
+        windowC.edit { $0.name = "Window C" }; windowC.discard()
+        remaining = try archive.load(deploymentID: "https://example.test", collectionID: "c")
+        XCTAssertTrue(remaining.contains { $0.draft.name == "Window A" })
+        XCTAssertTrue(remaining.contains { $0.draft.name == "Source draft" })
+    }
+    func testRevertingOwnedDraftRemovesStaleCheckpointWithoutRemovingOtherWindows() throws {
+        let other = model(collection()); other.edit { $0.name = "Other window" }
+        let current = model(collection()); current.edit { $0.name = "Temporary" }; current.edit { $0.name = "Original" }
+        XCTAssertFalse(current.hasChanges); XCTAssertTrue(current.closeKeepingDraft())
+        let remaining = try archive.load(deploymentID: "https://example.test", collectionID: "c")
+        XCTAssertEqual(remaining.count, 1); XCTAssertEqual(remaining.first?.draft.name, "Other window")
+    }
+    func testRevertAfterConflictRetainsWriteBarrier() async throws {
+        let current = model(collection(), actions: .init(save: { _, _ in throw FiestaBoardError.collectionConflict }, delete: { _ in }, compare: { nil }))
+        current.edit { $0.name = "Temporary" }; await current.save(); current.edit { $0.name = "Original" }
+        XCTAssertFalse(current.hasChanges); XCTAssertFalse(current.canSave); XCTAssertFalse(current.canDelete)
+        let remaining = try archive.load(deploymentID: "https://example.test", collectionID: "c")
+        XCTAssertEqual(remaining.first?.draft.name, "Original"); XCTAssertEqual(remaining.first?.status, .conflict)
+    }
+    func testScalarDistinctNamesAndRuleExpressionsRemainDirtyAndRecoverExactly() throws {
+        let baseline = PageCollection(id: "c", name: "Caf\u{00e9}", pageIDs: ["a"], selectionMode: "variable", variable: .init(rules: [.init(expression: "Caf\u{00e9}", pageID: "a")], defaultPageID: "a"), revision: "r1", editProtocol: "collection-revision-v1")
+        let current = model(baseline)
+        current.edit { $0.name = "Cafe\u{0301}"; $0.rules[0].expression = "Cafe\u{0301}" }
+        XCTAssertTrue(current.hasChanges); XCTAssertTrue(current.canSave)
+        let restored = model(baseline); restored.checkRecovery(); restored.recoverDraft()
+        XCTAssertEqual(Array(restored.draft.name.unicodeScalars).map(\.value), [67, 97, 102, 101, 769])
+        XCTAssertEqual(Array(restored.draft.rules[0].expression.unicodeScalars).map(\.value), [67, 97, 102, 101, 769])
+        XCTAssertTrue(restored.hasChanges)
+    }
+    func testEveryPersistedDraftTextFieldUsesScalarExactEquality() {
+        let first = CollectionDraft(collection: collection())
+        let changes: [(inout CollectionDraft) -> Void] = [
+            { $0.name = "Cafe\u{0301}" }, { $0.pageIDs = ["Cafe\u{0301}"] }, { $0.selectionMode = "Cafe\u{0301}" },
+            { $0.intervalText = "Cafe\u{0301}" }, { $0.randomIntervalText = "Cafe\u{0301}" },
+            { $0.defaultPageID = "Cafe\u{0301}" }, { $0.pollText = "Cafe\u{0301}" },
+            { $0.rules = [.init(expression: "Cafe\u{0301}", pageID: "x")] },
+            { $0.rules = [.init(expression: "x", pageID: "Cafe\u{0301}")] }
+        ]
+        for change in changes {
+            var decomposed = first; change(&decomposed)
+            var composed = decomposed
+            composed.name = composed.name.precomposedStringWithCanonicalMapping
+            composed.pageIDs = composed.pageIDs.map { $0.precomposedStringWithCanonicalMapping }
+            composed.selectionMode = composed.selectionMode.precomposedStringWithCanonicalMapping
+            composed.intervalText = composed.intervalText.precomposedStringWithCanonicalMapping
+            composed.randomIntervalText = composed.randomIntervalText.precomposedStringWithCanonicalMapping
+            composed.defaultPageID = composed.defaultPageID.precomposedStringWithCanonicalMapping
+            composed.pollText = composed.pollText.precomposedStringWithCanonicalMapping
+            composed.rules = composed.rules.map { .init(expression: $0.expression.precomposedStringWithCanonicalMapping, pageID: $0.pageID.precomposedStringWithCanonicalMapping) }
+            XCTAssertNotEqual(decomposed, composed)
+        }
+    }
+    func testScalarDistinctEditAfterAdoptionCrossesPreservationBarrier() async throws {
+        let fresh = collection("Caf\u{00e9}", revision: "r2")
+        let current = model(collection(), actions: .init(save: { _, _ in throw FiestaBoardError.invalidResponse }, delete: { _ in }, compare: { fresh }))
+        current.edit { $0.name = "Prior local work" }; await current.compare(); current.adoptComparison()
+        current.edit { $0.name = "Cafe\u{0301}" }
+        XCTAssertTrue(current.hasChanges)
+        let stored = try archive.load(deploymentID: "https://example.test", collectionID: "c")
+        XCTAssertEqual(stored.first?.baseline?.revision, "r2")
+        XCTAssertEqual(stored.first.map { Array($0.draft.name.unicodeScalars).map(\.value) }, [67, 97, 102, 101, 769])
+    }
+
 }

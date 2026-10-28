@@ -26,6 +26,20 @@ public struct CollectionDraft: Codable, Equatable, Sendable {
         defaultPageID = collection?.variable?.defaultPageID ?? ""
         pollText = String(collection?.variable?.pollSeconds ?? 5)
     }
+    /// Swift String equality treats canonical Unicode equivalents as equal. Drafts retain
+    /// the exact entered representation, so dirtiness and preservation use UTF-8 equality.
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        func sameText(_ a: String, _ b: String) -> Bool { a.utf8.elementsEqual(b.utf8) }
+        return sameText(lhs.name, rhs.name) &&
+            lhs.pageIDs.elementsEqual(rhs.pageIDs, by: sameText) &&
+            sameText(lhs.selectionMode, rhs.selectionMode) &&
+            sameText(lhs.intervalText, rhs.intervalText) &&
+            sameText(lhs.randomIntervalText, rhs.randomIntervalText) &&
+            lhs.hasVariableConfig == rhs.hasVariableConfig && lhs.hasRandomConfig == rhs.hasRandomConfig &&
+            lhs.rules.elementsEqual(rhs.rules, by: { sameText($0.expression, $1.expression) && sameText($0.pageID, $1.pageID) }) &&
+            sameText(lhs.defaultPageID, rhs.defaultPageID) && sameText(lhs.pollText, rhs.pollText)
+    }
+
     public func input() throws -> CollectionInput {
         guard let mode = CollectionSelectionMode(rawValue: selectionMode), let interval = Int(intervalText) else { throw FiestaBoardError.invalidResponse }
         var variable: CollectionVariableConfig?
@@ -64,7 +78,8 @@ public struct CollectionDraftCheckpoint: Codable, Sendable, Identifiable {
     }
 }
 
-/// Each editor owns a separate file. A late editor cannot erase another window's checkpoint.
+/// Each editor owns a separate file, including after recovery. A late editor cannot
+/// erase another window's checkpoint; recovery sources remain separate preserved copies.
 /// Deployment identity lives inside the archive and is checked before offering explicit recovery.
 @MainActor public final class CollectionDraftArchive {
     public let directory: URL

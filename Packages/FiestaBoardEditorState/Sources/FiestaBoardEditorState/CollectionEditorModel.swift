@@ -81,7 +81,16 @@ public struct CollectionEditorActions: Sendable {
         if previousMode == "variable" || draft.selectionMode == "variable" { draft.hasVariableConfig = true }
         if previousMode == "random" || draft.selectionMode == "random" { draft.hasRandomConfig = true }
         message = nil
-        if hasChanges { preservationBarrier = nil; _ = preserve() }
+        // A no-op after explicit server adoption must retain the pre-adoption copy.
+        guard preservationBarrier != draft else { return }
+        preservationBarrier = nil
+        if hasChanges || status != .idle { _ = preserve() }
+        else {
+            // A deliberate full revert must not resurrect an earlier intermediate edit.
+            // Only this editor's file is removed; recovered sources and other windows remain.
+            do { try archive.remove(checkpointID) }
+            catch { message = "Could not reconcile the reverted local draft: \(error.localizedDescription)" }
+        }
     }
     public func checkRecovery() {
         guard !recoveryChecked else { return }
@@ -92,12 +101,15 @@ public struct CollectionEditorActions: Sendable {
     }
     public func recoverDraft(id: UUID? = nil) {
         guard !editingFrozen, !hasChanges, let value = recovery.first(where: { id == nil || $0.id == id }) else { return }
-        baseline = value.baseline; sourceSupportsEditing = value.sourceSupportsEditing; draft = value.draft; checkpointID = value.id
+        baseline = value.baseline; sourceSupportsEditing = value.sourceSupportsEditing; draft = value.draft; checkpointID = UUID()
         // Interrupted dispatched mutations remain uncertain after app termination.
         status = [.saving, .deleting, .reading].contains(value.status) ? .unknownOutcome : value.status
         comparison = nil; recovery.removeAll { $0.id == value.id }
         preservationBarrier = nil
         message = "Recovered the original local draft and revision. Nothing was sent."
+        // Recovery copies content into an independently owned file. Saving or discarding
+        // this window must never remove the recovery source or another window's work.
+        _ = preserve()
     }
     public func dismissRecovery() { recovery = [] }
     @discardableResult public func preserve() -> Bool {
