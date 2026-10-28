@@ -408,3 +408,34 @@ extension CollectionTests {
         _ = try await create.value
     }
 }
+
+extension TransportTests {
+    func testBoardShapedPartial502KeepsEveryCollectionMutationBarrier() async throws {
+        for method in [APIRequest.Method.post, .put, .delete] {
+            let log = RequestLog()
+            FixtureURLProtocol.handler = { request in
+                log.append(request)
+                if request.url!.path.hasSuffix("/version") { return (200, [:], Data(#"{"package_version":"10.1.7","build_version":"10.1.7","running_version":"10.1.7","is_dev":false}"#.utf8)) }
+                if request.url!.path.hasSuffix("/boards") { return (200, [:], Data(#"{"boards":[],"total":0}"#.utf8)) }
+                if request.httpMethod == "GET" { return (200, [:], Data(#"{"id":"collection:c","name":"Test","page_ids":["p"],"selection_mode":"time","time":{"interval_seconds":30},"revision":"original","edit_protocol":"collection-revision-v1"}"#.utf8)) }
+                return (502, [:], Data(#"{"detail":{"partial":true,"failed_regions":[]}}"#.utf8))
+            }
+            let deployment = try DeploymentURL("https://fixture.test")
+            let service = LiveFiestaBoardService(deployment: deployment, transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self]))
+            _ = try await service.connect(allowCandidateWrites: true)
+            if method != .post { _ = try await service.collection(id: "collection:c") }
+            for expected in [FiestaBoardError.unknownMutationOutcome, .collectionReadbackRequired] {
+                do {
+                    switch method {
+                    case .post: _ = try await service.createCollection(collectionInput())
+                    case .put: _ = try await service.updateCollection(id: "collection:c", input: collectionInput(), expectedRevision: "original")
+                    case .delete: try await service.deleteCollection(id: "collection:c", expectedRevision: "original")
+                    default: XCTFail("Unexpected method")
+                    }
+                    XCTFail("Expected \(expected)")
+                } catch { XCTAssertEqual(error as? FiestaBoardError, expected) }
+            }
+            XCTAssertEqual(log.requests.filter { $0.httpMethod == method.rawValue }.count, 1)
+        }
+    }
+}

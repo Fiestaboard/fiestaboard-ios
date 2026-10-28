@@ -481,6 +481,9 @@ extension LiveFiestaBoardService {
             case 500...599 where request.isMutation: throw FiestaBoardError.unknownMutationOutcome
             default: throw FiestaBoardError.rejected(status: value.status)
             }
+        } catch FiestaBoardError.partialWrite where request.isMutation {
+            // Collection storage has no board-region partial-write contract.
+            throw FiestaBoardError.unknownMutationOutcome
         } catch FiestaBoardError.pageConflict { throw FiestaBoardError.collectionConflict }
         catch FiestaBoardError.conflict where request.method == .delete { throw FiestaBoardError.collectionInUse }
     }
