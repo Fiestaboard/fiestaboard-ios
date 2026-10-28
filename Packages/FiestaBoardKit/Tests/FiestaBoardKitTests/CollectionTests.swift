@@ -58,11 +58,12 @@ final class CollectionTests: XCTestCase, @unchecked Sendable {
             let access = await s.collectionAccess(); XCTAssertEqual(access.canCreate, canCreate)
             if !canCreate { await expectCollectionError(.collectionWritesDisabled) { _ = try await s.createCollection(collectionInput()) } }
         }
-        for (mode, proto, revision) in [("future", "collection-revision-v1", "original"), ("time", "future", "original"), ("time", "", "original"), ("time", "collection-revision-v1", "")] {
+        let refusedReads: [(String, String?, String?)] = [("future", "collection-revision-v1", "original"), ("time", "future", "original"), ("time", "", "original"), ("time", nil, "original"), ("time", "collection-revision-v1", nil), ("time", "collection-revision-v1", "")]
+        for (mode, proto, revision) in refusedReads {
             let t = CollectionTransport(mode: mode, proto: proto, revision: revision), s = try makeCollectionService(t)
             _ = try await s.connect(allowCandidateWrites: true)
             let read = try await s.collection(id: "collection:c"); XCTAssertEqual(read.selectionMode, mode)
-            await expectCollectionError(.collectionWritesDisabled) { _ = try await s.updateCollection(id: read.id, input: collectionInput(), expectedRevision: revision) }
+            await expectCollectionError(.collectionWritesDisabled) { _ = try await s.updateCollection(id: read.id, input: collectionInput(), expectedRevision: revision ?? "original") }
         }
         let t = CollectionTransport(), s = try makeCollectionService(t)
         _ = try await s.connect(allowCandidateWrites: true)
@@ -177,11 +178,11 @@ private func expectCollectionError(_ expected: FiestaBoardError, operation: () a
 private actor CollectionTransport: APITransport {
     var requests: [APIRequest] = []
     let version: String; let dev: Bool
-    var mode: String; var proto: String; var revision: String
+    var mode: String; var proto: String?; var revision: String?
     var mutationStatus: Int?; var defect: String?; var authLost = false
     var delayRead = false; var delayMutation = false
     var gate: CheckedContinuation<Void, Never>?; var observers: [CheckedContinuation<Void, Never>] = []
-    init(version: String = "10.1.7", dev: Bool = false, mode: String = "time", proto: String = "collection-revision-v1", revision: String = "original") { self.version = version; self.dev = dev; self.mode = mode; self.proto = proto; self.revision = revision }
+    init(version: String = "10.1.7", dev: Bool = false, mode: String = "time", proto: String? = "collection-revision-v1", revision: String? = "original") { self.version = version; self.dev = dev; self.mode = mode; self.proto = proto; self.revision = revision }
     func resetSession() {}
     func setRevision(_ value: String) { revision = value }
     func setMutationStatus(_ value: Int) { mutationStatus = value }
@@ -197,7 +198,8 @@ private actor CollectionTransport: APITransport {
         if request.path == ["v1", "boards"] { return APIResponse(status: 200, data: Data(#"{"boards":[],"total":0}"#.utf8)) }
         if request.path == ["auth", "logout"] { return APIResponse(status: 200, data: Data(#"{"status":"ok"}"#.utf8)) }
         if request.path == ["auth", "status"] { return APIResponse(status: 200, data: Data((authLost ? #"{"enabled":true,"setup_required":false,"authenticated":false}"# : #"{"enabled":false,"setup_required":false,"authenticated":false}"#).utf8)) }
-        var record: [String: Any] = ["id": "collection:c", "name": "Test 🛰️", "page_ids": ["p"], "selection_mode": mode, "time": ["interval_seconds": 30], "variable": NSNull(), "random": NSNull(), "revision": revision, "edit_protocol": proto]
+        var record: [String: Any] = ["id": "collection:c", "name": "Test 🛰️", "page_ids": ["p"], "selection_mode": mode, "time": ["interval_seconds": 30], "variable": NSNull(), "random": NSNull()]
+        record["revision"] = revision; record["edit_protocol"] = proto
         if request.isMutation {
             record["id"] = request.method == .post ? "collection:created" : "collection:c"
             record["revision"] = "updated"
@@ -208,7 +210,7 @@ private actor CollectionTransport: APITransport {
             if defect == "mode" { record["selection_mode"] = "future" }
         }
         let object: [String: Any]
-        if request.method == .delete { object = ["id": "collection:c"] }
+        if request.method == .delete { object = ["id": defect == "id" ? "collection:wrong" : "collection:c"] }
         else if request.path == ["v1", "collections"] && !request.isMutation { object = ["collections": [record], "total": 1] }
         else { object = record }
         let bytes = try JSONSerialization.data(withJSONObject: object)
@@ -359,5 +361,19 @@ extension CollectionTests {
         _ = try await s.createCollection(collectionInput())
         let requests = await t.requests
         XCTAssertEqual(requests.filter { $0.method == .post }.count, 2)
+    }
+}
+
+
+extension CollectionTests {
+    func testCreateRequires201AndDeleteRequiresExactReceiptIdentity() async throws {
+        let t = CollectionTransport(), s = try makeCollectionService(t)
+        _ = try await s.connect(allowCandidateWrites: true)
+        await t.setMutationStatus(200)
+        await expectCollectionError(.unknownMutationOutcome) { _ = try await s.createCollection(collectionInput()) }
+        _ = try await s.collection(id: "collection:c")
+        await t.setDefect("id")
+        await expectCollectionError(.unknownMutationOutcome) { try await s.deleteCollection(id: "collection:c", expectedRevision: "original") }
+        await expectCollectionError(.collectionReadbackRequired) { try await s.deleteCollection(id: "collection:c", expectedRevision: "original") }
     }
 }
