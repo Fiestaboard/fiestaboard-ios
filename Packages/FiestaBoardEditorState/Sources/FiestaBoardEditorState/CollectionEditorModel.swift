@@ -27,6 +27,7 @@ public struct CollectionEditorActions: Sendable {
     private let writeAccess: Bool
     private var sourceSupportsEditing: Bool
     private var checkpointID = UUID()
+    private var sourceVersions: [CollectionDraftVersion] = []
     private var recoveryChecked = false
     private var preservationBarrier: CollectionDraft?
     public init(deploymentID: String, collection: PageCollection?, canSave: Bool, isSimulated: Bool = false,
@@ -102,6 +103,8 @@ public struct CollectionEditorActions: Sendable {
     public func recoverDraft(id: UUID? = nil) {
         guard !editingFrozen, !hasChanges, let value = recovery.first(where: { id == nil || $0.id == id }) else { return }
         baseline = value.baseline; sourceSupportsEditing = value.sourceSupportsEditing; draft = value.draft; checkpointID = UUID()
+        sourceVersions = value.sourceVersions ?? []
+        if let version = value.archiveVersion, !sourceVersions.contains(version) { sourceVersions.append(version) }
         // Interrupted dispatched mutations remain uncertain after app termination.
         status = [.saving, .deleting, .reading].contains(value.status) ? .unknownOutcome : value.status
         comparison = nil; recovery.removeAll { $0.id == value.id }
@@ -114,14 +117,15 @@ public struct CollectionEditorActions: Sendable {
     public func dismissRecovery() { recovery = [] }
     @discardableResult public func preserve() -> Bool {
         guard status != .ended else { return true }
-        // Explicit adoption leaves the prior local copy intact until deliberate new editing.
+        // Explicit adoption retains the prior checkpoint under a separate identity.
+        // An unchanged adopted baseline needs no replacement checkpoint.
         guard preservationBarrier != draft else { return true }
         do { try archive.save(checkpoint()); return true }
         catch { message = "Could not preserve this draft. Copy its text before closing. \(error.localizedDescription)"; return false }
     }
     public func discard() {
         guard !editingFrozen else { return }
-        do { try archive.remove(checkpointID); status = .ended }
+        do { try cleanupAcknowledgedDraft(); status = .ended }
         catch { message = "Could not remove the local draft: \(error.localizedDescription)" }
     }
     public func closeKeepingDraft() -> Bool {
@@ -138,10 +142,10 @@ public struct CollectionEditorActions: Sendable {
             let receipt = try await actions.save(input, originalRevision)
             guard receipt.editProtocol == "collection-revision-v1", !(receipt.revision ?? "").isEmpty,
                   CollectionSelectionMode(rawValue: receipt.selectionMode) != nil else { throw FiestaBoardError.unknownMutationOutcome }
-            try archive.remove(checkpointID)
             baseline = receipt; sourceSupportsEditing = receipt.supportsEditing; draft = CollectionDraft(collection: receipt); comparison = nil; status = .idle
             preservationBarrier = draft
             message = (isSimulated ? "Simulated: " : "") + "Collection storage acknowledged. Display output is not confirmed; board selection remains a separate action."
+            finishAcknowledgedCleanup()
         } catch { handle(error, operation: "save") }
     }
     public func delete() async {
@@ -150,8 +154,9 @@ public struct CollectionEditorActions: Sendable {
         guard preserve() else { status = .idle; return }
         do {
             try await actions.delete(revision)
-            try archive.remove(checkpointID); status = .ended
+            status = .ended
             message = isSimulated ? "Simulated collection deletion acknowledged." : "Collection deletion acknowledged."
+            finishAcknowledgedCleanup()
         } catch { handle(error, operation: "delete") }
     }
     public func compare() async {
@@ -181,11 +186,27 @@ public struct CollectionEditorActions: Sendable {
     public func adoptComparison() {
         guard status == .comparison, let comparison, preserve() else { return }
         baseline = comparison; sourceSupportsEditing = comparison.supportsEditing; draft = CollectionDraft(collection: comparison); self.comparison = nil; status = .idle
+        // The pre-adoption checkpoint is an explicitly retained independent copy.
+        // New edits and acknowledgements must own and retire a different lineage.
+        checkpointID = UUID(); sourceVersions = []
         preservationBarrier = draft
         message = "Adopted the compared server revision. Your prior local draft remains preserved."
     }
     private func checkpoint() -> CollectionDraftCheckpoint {
-        .init(id: checkpointID, deploymentID: deploymentID, collectionID: collectionID, baseline: baseline, draft: draft, sourceSupportsEditing: sourceSupportsEditing, status: status)
+        .init(id: checkpointID, deploymentID: deploymentID, collectionID: collectionID, baseline: baseline, draft: draft, sourceSupportsEditing: sourceSupportsEditing, status: status, sourceVersions: sourceVersions)
+    }
+    private func cleanupAcknowledgedDraft() throws {
+        try archive.retire(sourceVersions)
+        try archive.remove(checkpointID)
+        sourceVersions = []
+    }
+    private func finishAcknowledgedCleanup() {
+        do { try cleanupAcknowledgedDraft() }
+        catch {
+            // The server acknowledgement has already advanced the baseline or ended
+            // deletion. Local cleanup failure must never turn it into an uncertain write.
+            message = (message ?? "Storage acknowledged.") + " Local draft cleanup failed. The acknowledged action will not be retried. " + error.localizedDescription
+        }
     }
     private func handle(_ error: any Error, operation: String) {
         switch error {
