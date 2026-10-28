@@ -49,6 +49,19 @@ public struct PreparedAction: Identifiable, Sendable {
     @Published public private(set) var status: ConnectionStatus?
     @Published public private(set) var boards: [BoardSummary] = []
     @Published public private(set) var pages: [Page] = []
+    @Published public private(set) var collections: [PageCollection] = []
+    @Published public private(set) var collectionsLoading = false
+    @Published public private(set) var collectionMessage: String?
+    private var collectionListTask: Task<Void, Never>?
+    private var collectionListRequest = UUID()
+    private var collectionContexts: [UUID: CollectionEditingContext] = [:]
+    private var collectionDocumentTokens: [String: UUID] = [:]
+    private var collectionMutating: Set<CollectionIdentity> = []
+    private var collectionReadbacks: Set<CollectionIdentity> = []
+    private var consumedCollectionCreations: Set<UUID> = []
+    private var collectionCreationReviews: Set<DeploymentURL> = []
+    private var collectionWriteGenerations: [CollectionIdentity: UInt64] = [:]
+    private var collectionListGenerations: [DeploymentURL: UInt64] = [:]
     @Published public private(set) var board: BoardDetail?
     @Published public private(set) var selectedBoardID: String?
     @Published public private(set) var message: String?
@@ -130,11 +143,14 @@ public struct PreparedAction: Identifiable, Sendable {
 
     public func disconnect() {
         generation &+= 1
-        connectionTask?.cancel(); refreshTask?.cancel(); commandTask?.cancel()
+        connectionTask?.cancel(); refreshTask?.cancel(); commandTask?.cancel(); collectionListTask?.cancel()
         connectionTask = nil; refreshTask = nil; commandTask = nil
         service = nil; status = nil; boards = []; pages = []; board = nil; selectedBoardID = nil
         connecting = false; refreshing = false; message = nil; remoteLogoutState = nil
         connectionLabel = "Disconnected"; usedActions = []; pageContexts = [:]; pageSessionOptedIn = false
+        collections = []; collectionMessage = nil; collectionsLoading = false
+        collectionContexts = [:]; collectionDocumentTokens = [:]
+        collectionListTask = nil; collectionListRequest = UUID()
     }
 
     /// Drops the local session immediately; the captured old service revokes its session separately.
@@ -406,4 +422,211 @@ public struct PreparedAction: Identifiable, Sendable {
 private enum StoreError: LocalizedError {
     case setupRequired
     var errorDescription: String? { "This server requires first-run setup. Complete setup in its web interface, then connect again." }
+}
+
+@MainActor extension BoardStore {
+    @discardableResult public func refreshCollections() -> Task<Void, Never> {
+        collectionListTask?.cancel()
+        guard let service, status != nil, !connecting else { return Task {} }
+        let session = generation
+        let deployment = service.deployment
+        let epoch = collectionListGenerations[deployment, default: 0]
+        let request = UUID()
+        collectionListRequest = request; collectionsLoading = true; collectionMessage = nil
+        let task = Task { [weak self] in
+            guard let self else { return }
+            defer { if collectionListRequest == request { collectionsLoading = false } }
+            do {
+                let values = try await service.collections()
+                guard valid(session), self.service?.deployment == deployment else { return }
+                guard epoch == collectionListGenerations[deployment, default: 0],
+                      !collectionMutating.contains(where: { $0.deployment == deployment }) else {
+                    throw FiestaBoardError.staleCollectionContext
+                }
+                collections = values
+                // This is review evidence, never permission to replay the old POST.
+                if collectionReadbacks.contains(.creation(on: deployment)) {
+                    collectionCreationReviews.insert(deployment)
+                }
+            } catch {
+                guard valid(session) else { return }
+                if !handleAuthenticationLoss(error) { collectionMessage = safeDescription(error) }
+            }
+        }
+        collectionListTask = task
+        return task
+    }
+
+    public func beginCollectionEditor(id: String?) async throws -> CollectionEditorSnapshot {
+        guard let service, status != nil, !connecting else { throw FiestaBoardError.staleSession }
+        let session = generation
+        let deployment = service.deployment
+        let identity = id.map { CollectionIdentity(deployment: deployment, id: $0) } ?? .creation(on: deployment)
+        guard !collectionMutating.contains(identity) else { throw FiestaBoardError.collectionReadbackRequired }
+        if id == nil, collectionReadbacks.contains(identity) {
+            guard collectionCreationReviews.contains(deployment) else { throw FiestaBoardError.collectionReadbackRequired }
+            try await service.acknowledgeCollectionCreationReview()
+            guard valid(session) else { throw FiestaBoardError.staleSession }
+            collectionReadbacks.remove(identity); collectionCreationReviews.remove(deployment)
+        }
+        let epoch = collectionWriteGenerations[identity, default: 0]
+        do {
+            let library = try await service.pages()
+            let value: PageCollection?
+            if let id { value = try await service.collection(id: id) } else { value = nil }
+            let access = await service.collectionAccess()
+            guard session == generation, self.service?.deployment == deployment, status != nil else { throw FiestaBoardError.staleSession }
+            try Task.checkCancellation()
+            guard epoch == collectionWriteGenerations[identity, default: 0], !collectionMutating.contains(identity) else {
+                throw FiestaBoardError.staleCollectionContext
+            }
+            if let id, value?.id != id { throw FiestaBoardError.invalidResponse }
+            collectionReadbacks.remove(identity)
+            pages = library
+            return acceptCollection(value, deployment: deployment, pages: library, access: access)
+        } catch {
+            guard session == generation else { throw FiestaBoardError.staleSession }
+            _ = handleAuthenticationLoss(error)
+            throw error
+        }
+    }
+
+    public func readbackCollection(context: CollectionEditingContext) async throws -> CollectionEditorSnapshot {
+        try requireCollectionContext(context, permitConsumedCreate: true)
+        guard let id = context.collectionID else {
+            // A list can help a person inspect an uncertain create; it cannot
+            // determine which new resource, if any, came from that POST.
+            await refreshCollections().value
+            throw FiestaBoardError.collectionReadbackRequired
+        }
+        do { return try await beginCollectionEditor(id: id) }
+        catch FiestaBoardError.rejected(status: 404) {
+            collectionDocumentTokens[id] = nil; collectionContexts[context.documentToken] = nil
+            collections.removeAll { $0.id == id }
+            collectionReadbacks.remove(CollectionIdentity(deployment: context.deployment, id: id))
+            throw FiestaBoardError.rejected(status: 404)
+        }
+    }
+
+    public func saveCollection(_ input: CollectionInput, expectedRevision: String?, context: CollectionEditingContext) async throws -> CollectionEditorSnapshot {
+        try requireCollectionContext(context)
+        guard expectedRevision == context.originalRevision else { throw FiestaBoardError.staleCollectionContext }
+        guard context.writeAllowed, pageSessionOptedIn, let service else { throw FiestaBoardError.collectionWritesDisabled }
+        try input.validate()
+        guard input.pageIDs.allSatisfy({ member in pages.contains { $0.id == member } }) else { throw FiestaBoardError.collectionWritesDisabled }
+        let identity = collectionIdentity(context)
+        guard !collectionMutating.contains(identity), !collectionReadbacks.contains(identity) else {
+            throw FiestaBoardError.collectionReadbackRequired
+        }
+        collectionMutating.insert(identity); collectionReadbacks.insert(identity)
+        collectionCreationReviews.remove(context.deployment)
+        bumpCollectionWrite(identity)
+        if context.collectionID == nil { consumedCollectionCreations.insert(context.documentToken) }
+        defer { collectionMutating.remove(identity); bumpCollectionWrite(identity) }
+        do {
+            let result: PageCollection
+            if let id = context.collectionID {
+                guard let expectedRevision, !expectedRevision.isEmpty else { throw FiestaBoardError.collectionWritesDisabled }
+                result = try await service.updateCollection(id: id, input: input, expectedRevision: expectedRevision)
+            } else {
+                result = try await service.createCollection(input)
+            }
+            try requireCollectionContext(context, permitConsumedCreate: true)
+            guard result.editProtocol == "collection-revision-v1", result.revision?.isEmpty == false,
+                  result.revision != expectedRevision,
+                  context.collectionID == nil || result.id == context.collectionID,
+                  result.name == input.name, result.pageIDs == input.pageIDs,
+                  result.selectionMode == input.selectionMode.rawValue,
+                  result.time == input.time, result.variable == input.variable, result.random == input.random else {
+                throw FiestaBoardError.unknownMutationOutcome
+            }
+            let access = await service.collectionAccess()
+            try requireCollectionContext(context, permitConsumedCreate: true)
+            collectionReadbacks.remove(identity)
+            collectionContexts[context.documentToken] = nil
+            return acceptCollection(result, deployment: context.deployment, pages: pages, access: access)
+        } catch {
+            guard context.generation == generation else { throw FiestaBoardError.staleSession }
+            _ = handleAuthenticationLoss(error)
+            if collectionKnownRefusal(error) {
+                collectionReadbacks.remove(identity)
+                consumedCollectionCreations.remove(context.documentToken)
+            }
+            throw error
+        }
+    }
+
+    public func deleteCollection(expectedRevision: String, context: CollectionEditingContext) async throws {
+        try requireCollectionContext(context)
+        guard expectedRevision == context.originalRevision else { throw FiestaBoardError.staleCollectionContext }
+        guard context.writeAllowed, pageSessionOptedIn, let service, let id = context.collectionID else {
+            throw FiestaBoardError.collectionWritesDisabled
+        }
+        let identity = collectionIdentity(context)
+        guard !collectionMutating.contains(identity), !collectionReadbacks.contains(identity) else {
+            throw FiestaBoardError.collectionReadbackRequired
+        }
+        collectionMutating.insert(identity); collectionReadbacks.insert(identity); bumpCollectionWrite(identity)
+        defer { collectionMutating.remove(identity); bumpCollectionWrite(identity) }
+        do {
+            try await service.deleteCollection(id: id, expectedRevision: expectedRevision)
+            try requireCollectionContext(context)
+            collectionReadbacks.remove(identity)
+            collectionDocumentTokens[id] = nil; collectionContexts[context.documentToken] = nil
+            collections.removeAll { $0.id == id }
+        } catch {
+            guard context.generation == generation else { throw FiestaBoardError.staleSession }
+            _ = handleAuthenticationLoss(error)
+            if collectionKnownRefusal(error) { collectionReadbacks.remove(identity) }
+            throw error
+        }
+    }
+
+    private func acceptCollection(_ value: PageCollection?, deployment: DeploymentURL, pages: [Page], access: CollectionWriteAccess) -> CollectionEditorSnapshot {
+        let context = CollectionEditingContext(deployment: deployment, generation: generation,
+            documentToken: UUID(), collectionID: value?.id, originalRevision: value?.revision,
+            writeAllowed: pageSessionOptedIn && access.writesOptedIn && (value.map {
+                $0.supportsEditing && $0.editProtocol == "collection-revision-v1"
+                    && $0.revision?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+            } ?? access.canCreate))
+        collectionContexts[context.documentToken] = context
+        if let value {
+            if let previous = collectionDocumentTokens[value.id] { collectionContexts[previous] = nil }
+            collectionDocumentTokens[value.id] = context.documentToken
+            if let index = collections.firstIndex(where: { $0.id == value.id }) { collections[index] = value }
+            else { collections.append(value) }
+        }
+        return CollectionEditorSnapshot(context: context, collection: value, pages: pages,
+                                        canSave: context.writeAllowed, isDemo: status?.isDemo == true)
+    }
+
+    private func requireCollectionSession(_ context: CollectionEditingContext) throws {
+        guard context.generation == generation, !connecting, status != nil,
+              service?.deployment == context.deployment else { throw FiestaBoardError.staleSession }
+        try Task.checkCancellation()
+    }
+    private func requireCollectionContext(_ context: CollectionEditingContext, permitConsumedCreate: Bool = false) throws {
+        try requireCollectionSession(context)
+        guard collectionContexts[context.documentToken] == context,
+              context.collectionID.map({ collectionDocumentTokens[$0] == context.documentToken }) ?? true else {
+            throw FiestaBoardError.staleCollectionContext
+        }
+        if !permitConsumedCreate, consumedCollectionCreations.contains(context.documentToken) {
+            throw FiestaBoardError.collectionReadbackRequired
+        }
+    }
+    private func collectionIdentity(_ context: CollectionEditingContext) -> CollectionIdentity {
+        context.collectionID.map { CollectionIdentity(deployment: context.deployment, id: $0) } ?? .creation(on: context.deployment)
+    }
+    private func bumpCollectionWrite(_ identity: CollectionIdentity) {
+        collectionWriteGenerations[identity, default: 0] &+= 1
+        collectionListGenerations[identity.deployment, default: 0] &+= 1
+    }
+    private func collectionKnownRefusal(_ error: any Error) -> Bool {
+        switch error as? FiestaBoardError {
+        case .collectionInUse, .collectionWritesDisabled, .rejected(status: 400), .rejected(status: 403),
+             .rejected(status: 422), .rateLimited: true
+        default: false
+        }
+    }
 }

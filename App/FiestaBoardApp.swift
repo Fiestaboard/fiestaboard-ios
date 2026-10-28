@@ -106,7 +106,7 @@ struct DraftScene: View {
         VStack(alignment: .leading, spacing: 8) {
             Label(store.connectionLabel, systemImage: store.status?.isDemo == true ? "sparkles" : "network")
                 .font(.subheadline.weight(.semibold)).textSelection(.enabled)
-            Text(store.status?.isDemo == true ? "Demo · page saves, previews and board actions are simulated" : "\(store.status?.version.displayedVersion ?? "Unknown version") · \(store.status?.access == .candidateWrites ? "Board controls enabled" : "Board controls read-only") · Page save access checked per document")
+            Text(store.status?.isDemo == true ? "Demo · page saves, previews and board actions are simulated" : "\(store.status?.version.displayedVersion ?? "Unknown version") · \(store.status?.access == .candidateWrites ? "Board controls enabled" : "Board controls read-only") · Page and collection editing checked separately")
                 .font(.caption).foregroundStyle(.secondary)
             if let message = store.message {
                 Text(message).font(.callout).accessibilityIdentifier("actionOutcome")
@@ -210,6 +210,12 @@ struct DraftScene: View {
         NavigationStack {
             List {
                 Section { connectionBanner }
+                Section {
+                    NavigationLink { CollectionsView(store: store) } label: {
+                        Label("Collections", systemImage: "rectangle.stack.fill")
+                    }
+                    .accessibilityIdentifier("openCollections")
+                }
                 Section("Pages · local drafts available") {
                     ForEach(store.pages.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }) { page in
                         NavigationLink { PageDetailView(page: page, store: store, prepare: { pending = store.prepare(.page(page.id)) }) } label: {
@@ -275,7 +281,7 @@ struct DraftScene: View {
                 } else {
                     Section("Server changes") {
                         Toggle("Enable changes on this server", isOn: $candidateWrites)
-                        Text("Applying reconnects. With this setting enabled, this session opts into supported page saves and board controls. Page saves require the exact page-revision-v1 protocol and a loaded revision; each save needs confirmation. Board controls separately require the exact non-development FiestaBoard 10.0.0 version and can change the chosen board. Other versions may support page saves while board controls remain read-only. This draft has no supported release pairing.").font(.footnote)
+                        Text("Applying reconnects. With this setting enabled, this session opts into supported page saves, collection editing and board controls. Collection creation supports the audited 10.1.7 candidate; editing existing collections requires collection-revision-v1 and the original revision. Page saves require the exact page-revision-v1 protocol and a loaded revision; each save needs confirmation. Board controls separately require the exact non-development FiestaBoard 10.0.0 version and can change the chosen board. Other versions may support page saves while board controls remain read-only. This draft has no supported release pairing.").font(.footnote)
                         Button("Apply change setting") { store.reconnect(allowCandidateWrites: candidateWrites) }.disabled(store.commandBusy || store.connecting)
                     }
                 }
