@@ -26,6 +26,8 @@ jobs:
           python3 -m unittest discover -s Tests/Tooling -v
           python3 -m unittest discover -s Tests/Contracts -v
           python3 scripts/check-contracts.py
+          python3 Fixtures/contracts/10.1.20/verify.py
+          python3 Fixtures/contracts/10.1.20-pages/verify.py
       - name: Download pinned source, clean-build image and run isolated HTTP tests
         run: |
           set -o pipefail
@@ -153,14 +155,18 @@ jobs:
               output.write('udid=' + udid + '\n')
           print('Disposable Simulator: ' + family + ' / ' + runtime['version'] + ' / ' + udid)
           PY
-      - name: Boot and run actual demo UI tests
+      - name: Boot and run native onboarding and demo UI tests
         env:
           SIMULATOR_UDID: ${{ steps.simulator.outputs.udid }}
         run: |
           set -o pipefail
+          python3 Tests/UITests/fixture_server.py &
+          fixture_pid=$!
+          trap 'kill "$fixture_pid" 2>/dev/null || true' EXIT
+          curl --fail --retry 5 --retry-connrefused --retry-delay 1 http://127.0.0.1:18442/ready
           xcrun simctl boot "$SIMULATOR_UDID"
           xcrun simctl bootstatus "$SIMULATOR_UDID" -b
-          xcodebuild -project FiestaBoard.xcodeproj -scheme 'FiestaBoard Demo' -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" -derivedDataPath "$RUNNER_TEMP/ui-derived" -resultBundlePath "$RUNNER_TEMP/ui.xcresult" -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test 2>&1 | tee "$RUNNER_TEMP/ui-runtime.log"
+          xcodebuild -project FiestaBoard.xcodeproj -scheme FiestaBoard -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" -derivedDataPath "$RUNNER_TEMP/ui-derived" -resultBundlePath "$RUNNER_TEMP/ui.xcresult" -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test 2>&1 | tee "$RUNNER_TEMP/ui-runtime.log"
       - name: Remove only this job's Simulator
         if: always() && steps.simulator.outputs.udid != ''
         env:

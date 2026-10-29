@@ -163,7 +163,7 @@ struct DraftScene: View {
                                 Label("Make room for a little joy.", systemImage: "sun.max").font(.title2.bold())
                                 Button { composing = true } label: { Label("Compose text", systemImage: "square.and.pencil").frame(maxWidth: .infinity, minHeight: 36) }
                                     .buttonStyle(.borderedProminent).disabled(!store.canWrite)
-                                if store.status?.access == .readOnly { Text("Board controls are read-only. Settings explains their exact version gate; page saves have a separate protocol check.").font(.callout).foregroundStyle(.secondary) }
+                                if store.status?.access == .readOnly { Text("Board controls are read-only. Enable supported changes in Settings to control this display.").font(.callout).foregroundStyle(.secondary) }
                                 if store.needsReadback { Text("Refresh output before another action.").font(.callout).foregroundStyle(.orange) }
                                 if let board = store.board {
                                     selectionDetails(board)
@@ -189,7 +189,7 @@ struct DraftScene: View {
             Section("Connection & action status") {
                 connectionBanner
                 if store.status?.access == .readOnly {
-                    Text("Board controls are read-only. Settings explains their exact server version gate and session opt-in. Supported page saves are checked separately.")
+                    Text("Board controls are read-only. Enable supported changes in Settings to control this display.")
                         .font(.callout).foregroundStyle(.secondary)
                 }
             }
@@ -312,7 +312,7 @@ struct DraftScene: View {
                 } else {
                     Section("Server changes") {
                         Toggle("Enable changes on this server", isOn: $candidateWrites)
-                        DisclosureGroup("Compatibility details") { Text("Applying reconnects. With this setting enabled, this session opts into supported page saves, collection editing and board controls. Collection creation supports the audited 10.1.7 candidate; editing existing collections requires collection-revision-v1 and the original revision. Page saves require the exact page-revision-v1 protocol and a loaded revision; each save needs confirmation. Board controls separately require the exact non-development FiestaBoard 10.0.0 version and can change the chosen board. Other versions may support page saves while board controls remain read-only. This draft has no supported release pairing.").font(.footnote) }
+                        DisclosureGroup("Compatibility details") { Text("Allow this app to change the selected display and save supported pages and collections. Applying this setting reconnects to the server. Board controls are tested with FiestaBoard 10.0.0, 10.1.17 and 10.1.20; other features check their own server support. Changes require confirmation. This is a test draft.").font(.footnote) }
                         Button("Apply change setting") { store.reconnect(allowCandidateWrites: candidateWrites) }.disabled(store.commandBusy || store.connecting)
                     }
                 }

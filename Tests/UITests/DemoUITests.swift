@@ -1,11 +1,20 @@
 import XCTest
 final class DemoUITests: XCTestCase {
     @MainActor
+    private func dismissConfirmation(_ app: XCUIApplication, cancel: String = "Cancel") {
+        let button = app.buttons[cancel]
+        if button.exists && button.isHittable { button.tap() }
+        else {
+            // Native popovers omit cancel actions. Tapping outside dismisses them.
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.02, dy: 0.5)).tap()
+        }
+    }
+    @MainActor
     func testDemoNavigationAndCompose() throws {
         let app = XCUIApplication()
         app.launchArguments = ["--demo"]
         app.launch()
-        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
         app.buttons["Compose text"].tap()
         XCTAssertTrue(app.textViews["Message text"].waitForExistence(timeout: 3))
         app.textViews["Message text"].tap()
@@ -29,7 +38,7 @@ extension DemoUITests {
         let app = XCUIApplication()
         app.launchArguments = ["--demo"]
         app.launch()
-        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
         app.tabBars.buttons["Library"].tap()
         app.staticTexts["Welcome"].tap()
         app.buttons["editLocalDraft"].tap()
@@ -39,8 +48,8 @@ extension DemoUITests {
         name.tap()
         name.typeText(" local UI draft")
         app.buttons["Close"].tap()
-        XCTAssertTrue(app.buttons["Keep editing"].waitForExistence(timeout: 3))
-        app.buttons["Keep editing"].tap()
+        XCTAssertTrue(app.buttons["Discard unsaved changes"].waitForExistence(timeout: 3))
+        dismissConfirmation(app, cancel: "Keep editing")
         XCTAssertTrue(name.exists)
         app.buttons["Close"].tap()
         app.buttons["Discard unsaved changes"].tap()
@@ -60,7 +69,7 @@ extension DemoUITests {
         XCTAssertTrue(app.buttons["Pause updates"].waitForExistence(timeout: 3))
         app.buttons["Pause updates"].tap()
         XCTAssertTrue(app.buttons["Confirm"].waitForExistence(timeout: 3))
-        app.buttons["Cancel"].tap()
+        dismissConfirmation(app)
         XCTAssertTrue(app.buttons["Pause updates"].exists)
         app.buttons["Pause updates"].tap()
         app.buttons["Confirm"].tap()
@@ -74,7 +83,7 @@ extension DemoUITests {
         let app = XCUIApplication()
         app.launchArguments = ["--demo"]
         app.launch()
-        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
         app.tabBars.buttons["Settings"].tap()
         app.buttons["demoOutcomePicker"].tap()
         app.buttons["Unknown"].tap()
@@ -155,13 +164,13 @@ extension DemoUITests {
         name.tap()
         name.typeText(" UI save")
         app.navigationBars.buttons["Close"].tap()
-        app.buttons["Keep editing"].tap()
+        dismissConfirmation(app, cancel: "Keep editing")
         let save = app.buttons["savePageOnServer"]
         scrollTo(save, in: app)
         XCTAssertTrue(save.isEnabled)
         save.tap()
         XCTAssertTrue(app.buttons["Simulate save"].waitForExistence(timeout: 3))
-        app.buttons["Cancel"].tap()
+        dismissConfirmation(app)
         XCTAssertTrue(save.isEnabled, "Cancelling confirmation must leave the edit pending.")
         save.tap()
         app.buttons["Simulate save"].tap()
@@ -178,7 +187,7 @@ extension DemoUITests {
         let app = XCUIApplication()
         app.launchArguments = ["--demo"]
         app.launch()
-        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
         app.tabBars.buttons["Settings"].tap()
         app.buttons["demoOutcomePicker"].tap()
         app.buttons["Rejected"].tap()
@@ -188,7 +197,7 @@ extension DemoUITests {
         name.tap()
         name.typeText(" conflict work")
         app.navigationBars.buttons["Close"].tap()
-        app.buttons["Keep editing"].tap()
+        dismissConfirmation(app, cancel: "Keep editing")
         let save = app.buttons["savePageOnServer"]
         scrollTo(save, in: app)
         save.tap()
@@ -207,7 +216,7 @@ extension DemoUITests {
         XCTAssertTrue((name.value as? String)?.contains("conflict work") == true)
         scrollTo(reload, in: app)
         reload.tap()
-        app.buttons["Keep local work"].tap()
+        dismissConfirmation(app, cancel: "Keep local work")
         XCTAssertTrue(reload.exists)
         reload.tap()
         app.buttons["Preserve local draft and reload"].tap()
@@ -233,7 +242,10 @@ extension DemoUITests {
     @MainActor
     private func scrollTo(_ element: XCUIElement, in app: XCUIApplication, upwards: Bool = true) {
         for _ in 0..<10 {
-            if element.exists && element.isHittable { return }
+            // A field partly under the sheet's navigation bar may report
+            // hittable although a tap lands on the bar and never focuses it.
+            let navigationBottom = app.navigationBars.allElementsBoundByIndex.map { $0.frame.maxY }.max() ?? 0
+            if element.exists && element.isHittable && element.frame.midY > navigationBottom + 12 { return }
             if upwards { app.swipeUp() } else { app.swipeDown() }
         }
     }
@@ -245,12 +257,166 @@ extension DemoUITests {
         let app = XCUIApplication()
         app.launchArguments = ["--demo"]
         app.launch()
-        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
         app.tabBars.buttons["Settings"].tap()
         app.buttons["Disconnect"].tap()
         XCTAssertTrue(app.buttons["findFiestaBoard"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.textFields["connectionAddress"].exists)
         XCTAssertTrue(app.buttons["exploreDemo"].exists)
         XCTAssertFalse(app.secureTextFields["connectionPassword"].exists)
+    }
+}
+
+/// These scenarios use a loopback fixture process, never the user's server.
+/// Start with: python3 Tests/UITests/fixture_server.py
+final class ConnectionUITests: XCTestCase {
+    override func setUp() { super.setUp(); continueAfterFailure = false }
+    @MainActor
+    func testFirstRunCreatesAdministratorAndLoadsShell() async throws {
+        try await requireFixture()
+        let app = XCUIApplication()
+        app.launchArguments = []
+        app.launch()
+        let alias = connect(app, scenario: "setup")
+        let requireSignIn = app.buttons["Require sign-in"]
+        XCTAssertTrue(requireSignIn.waitForExistence(timeout: 8), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
+        reveal(requireSignIn, app)
+        requireSignIn.tap()
+        let username = app.textFields["Administrator username"]
+        XCTAssertTrue(username.waitForExistence(timeout: 5))
+        reveal(username, app); username.tap(); username.typeText("fixture_admin")
+        let password = app.secureTextFields["connectionNewPassword"]
+        reveal(password, app); password.tap()
+        if app.buttons["Fill Strong Password"].waitForExistence(timeout: 2) {
+            app.buttons["Close"].firstMatch.tap()
+        }
+        password.typeText("fixture-password")
+        let create = app.buttons["Create administrator"]
+        reveal(create, app); create.tap()
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
+        XCTAssertFalse(app.buttons["Compose text"].isEnabled, "Setup must not implicitly enable board changes.")
+        app.tabBars.buttons["Library"].tap()
+        XCTAssertTrue(app.staticTexts["Document"].waitForExistence(timeout: 5))
+        app.tabBars.buttons["Settings"].tap()
+        let logout = app.buttons["Log out & disconnect"]
+        reveal(logout, app); logout.tap()
+        XCTAssertTrue(app.buttons["exploreDemo"].waitForExistence(timeout: 5))
+        removeSaved(alias, app)
+    }
+
+    @MainActor
+    func testWrongPasswordRotationRememberedReopenAndLogout() async throws {
+        try await requireFixture()
+        let app = XCUIApplication()
+        app.launchArguments = []
+        app.launch()
+        let alias = connect(app, scenario: "signin")
+        let username = app.textFields["Username"]
+        XCTAssertTrue(username.waitForExistence(timeout: 8), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
+        reveal(username, app); username.tap(); username.typeText("fixture_admin")
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertEqual(username.value as? String, "fixture_admin")
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let password = app.secureTextFields["connectionPassword"]
+        reveal(password, app); password.tap(); password.typeText("wrong-fixture-password")
+        let signIn = app.buttons["connectionSignIn"]
+        reveal(signIn, app); signIn.tap()
+        let error = app.staticTexts["connectionMessage"]
+        XCTAssertTrue(error.waitForExistence(timeout: 5))
+        XCTAssertEqual(error.label, "The username or password is incorrect.")
+        XCTAssertEqual(username.value as? String, "fixture_admin")
+        reveal(password, app); password.tap(); password.typeText("fixture-password")
+        let remember = app.switches["Remember sign-in"]
+        reveal(remember, app); remember.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+        XCTAssertEqual(remember.value as? String, "1")
+        reveal(signIn, app); signIn.tap()
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
+        app.tabBars.buttons["Settings"].tap()
+        XCTAssertFalse(app.staticTexts["Remembered sign-in needs attention. Sign in again or forget the saved session."].exists,
+                       "The active login must have persisted successfully before testing relaunch.")
+        app.terminate(); app.launch()
+        let saved = app.buttons.containing(.staticText, identifier: alias).firstMatch
+        XCTAssertTrue(saved.waitForExistence(timeout: 8))
+        reveal(saved, app); saved.tap()
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10), "Remembered sign-in must survive process relaunch.")
+        app.tabBars.buttons["Settings"].tap()
+        let logout = app.buttons["Log out & disconnect"]
+        reveal(logout, app); logout.tap()
+        XCTAssertTrue(saved.waitForExistence(timeout: 5))
+        reveal(saved, app); saved.tap()
+        XCTAssertTrue(password.waitForExistence(timeout: 8), "Logging out must forget the remembered session.")
+        let choose = app.buttons["Choose another server"]
+        reveal(choose, app); choose.tap()
+        removeSaved(alias, app)
+    }
+
+    @MainActor
+    func testFirstRunWithoutAuthenticationAtLargeTextSize() async throws {
+        try await requireFixture()
+        let app = XCUIApplication()
+        app.launchArguments = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        let alias = connect(app, scenario: "setup")
+        let skip = app.buttons["Continue without sign-in"]
+        reveal(skip, app)
+        XCTAssertTrue(skip.waitForExistence(timeout: 8))
+        skip.tap()
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
+        XCTAssertFalse(app.buttons["Compose text"].isEnabled)
+        app.tabBars.buttons["Settings"].tap()
+        let disconnect = app.buttons["Disconnect"]
+        reveal(disconnect, app); disconnect.tap()
+        removeSaved(alias, app)
+    }
+
+    @MainActor private func removeSaved(_ alias: String, _ app: XCUIApplication) {
+        let row = app.cells.containing(.staticText, identifier: alias).firstMatch
+        reveal(row, app)
+        let remove = row.buttons["Remove"]
+        XCTAssertTrue(remove.exists)
+        remove.tap()
+        let confirm = app.buttons["Remove server & forget sign-in"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 3))
+        confirm.tap()
+        XCTAssertTrue(row.waitForNonExistence(timeout: 5))
+    }
+
+    @MainActor @discardableResult
+    private func connect(_ app: XCUIApplication, scenario: String) -> String {
+        let alias = scenario + "-" + UUID().uuidString.prefix(8).lowercased()
+        let address = app.textFields["connectionAddress"]
+        XCTAssertTrue(app.buttons["exploreDemo"].waitForExistence(timeout: 8))
+        reveal(address, app)
+        XCTAssertTrue(address.exists)
+        address.tap(); address.typeText("http://127.0.0.1:18442/" + alias)
+        let name = app.textFields["Server name (optional)"]
+        reveal(name, app); name.tap(); name.typeText(alias)
+        let localHTTP = app.switches["connectionLocalHTTP"]
+        reveal(localHTTP, app); localHTTP.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+        XCTAssertEqual(localHTTP.value as? String, "1")
+        let connect = app.buttons["connectionConnect"]
+        reveal(connect, app); connect.tap()
+        return alias
+    }
+
+    @MainActor private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
+        for _ in 0..<8 {
+            if element.exists && element.isHittable { return }
+            app.swipeUp()
+        }
+        for _ in 0..<12 {
+            if element.exists && element.isHittable { return }
+            app.swipeDown()
+        }
+    }
+
+    @MainActor private func requireFixture() async throws {
+        var request = URLRequest(url: URL(string: "http://127.0.0.1:18442/ready")!)
+        request.timeoutInterval = 3
+        let (data, response) = try await URLSession.shared.data(for: request)
+        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
+        XCTAssertTrue(String(decoding: data, as: UTF8.self).contains("native-onboarding"),
+                      "Start Tests/UITests/fixture_server.py before the UI suite.")
     }
 }

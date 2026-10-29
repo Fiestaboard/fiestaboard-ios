@@ -10,7 +10,8 @@ struct ConnectionView: View {
     @ConnectionState private var removing: SavedServer?
     @ConnectionState private var renaming: SavedServer?
     @ConnectionState private var newAlias = ""
-    @FocusState private var addressFocused: Bool
+    @FocusState private var focusedField: Field?
+    private enum Field { case address, alias }
     var body: some View {
         NavigationStack {
             Form {
@@ -18,9 +19,9 @@ struct ConnectionView: View {
                     Section {
                         VStack(alignment: .leading, spacing: 12) {
                             Image(systemName: "rectangle.split.3x3.fill").font(.largeTitle).foregroundStyle(.orange).accessibilityHidden(true)
-                            Text("A little more Fiesta, everywhere.").font(.largeTitle.bold())
+                            Text("Connect your FiestaBoard").font(.title.bold())
                             Text("Connect to your FiestaBoard server or explore with simulated displays.").foregroundStyle(.secondary)
-                            Button("Explore Demo") { model.startDemo() }.buttonStyle(.borderedProminent)
+                            Button("Explore Demo") { model.startDemo() }.buttonStyle(.bordered)
                                 .accessibilityIdentifier("exploreDemo")
                         }.padding(.vertical, 8)
                     }
@@ -28,7 +29,7 @@ struct ConnectionView: View {
                         Section("Saved servers") {
                             ForEach(model.savedServers) { server in
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Button { addressFocused = false; model.selectSaved(server) } label: {
+                                    Button { focusedField = nil; model.selectSaved(server) } label: {
                                         VStack(alignment: .leading) {
                                             Text(server.alias.isEmpty ? "FiestaBoard" : server.alias).font(.headline)
                                             Text(server.deployment.description).font(.caption).foregroundStyle(.secondary)
@@ -43,7 +44,7 @@ struct ConnectionView: View {
                         }.disabled(model.busy)
                     }
                     Section("Find FiestaBoard") {
-                        Button("Find FiestaBoard") { addressFocused = false; model.findServers() }
+                        Button("Find FiestaBoard") { focusedField = nil; model.findServers() }
                             .accessibilityIdentifier("findFiestaBoard").disabled(model.searching || model.busy)
                         if model.searching {
                             ProgressView("Searching local network…")
@@ -63,12 +64,13 @@ struct ConnectionView: View {
                     Section("Manual server connection") {
                         TextField("Server address", text: $model.address)
                             .textContentType(.URL).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
-                            .focused($addressFocused).submitLabel(.go).onSubmit { connect() }
+                            .focused($focusedField, equals: .address).submitLabel(.go).onSubmit { connect() }
                             .accessibilityIdentifier("connectionAddress")
                         TextField("Server name (optional)", text: $model.alias)
+                            .focused($focusedField, equals: .alias)
                         Toggle("Allow HTTP on my local network", isOn: $model.allowLocalHTTP)
                             .accessibilityIdentifier("connectionLocalHTTP")
-                        Text("Try fiestapi.local:4420 with local HTTP enabled. HTTP sends credentials and content without transport encryption. Public servers require HTTPS.")
+                        Text("Use the address you open in your browser. For a local HTTP address, enable the switch above. HTTP does not encrypt your connection.")
                             .font(.footnote).foregroundStyle(.secondary)
                         Button("Connect", action: connect).disabled(model.address.isEmpty || model.busy)
                             .accessibilityIdentifier("connectionConnect")
@@ -80,7 +82,7 @@ struct ConnectionView: View {
                 }
                 if let snapshot = model.snapshot {
                     Section("Server") {
-                        LabeledContent("Name", value: snapshot.identity.name)
+                        LabeledContent("Name", value: snapshot.identity.name.isEmpty ? "FiestaBoard" : snapshot.identity.name)
                         LabeledContent("Address", value: snapshot.deployment.description).textSelection(.enabled)
                         LabeledContent("Transport", value: snapshot.deployment.description.hasPrefix("https:") ? "HTTPS" : "Local HTTP · unencrypted")
                         DisclosureGroup("Identity & compatibility") {
@@ -136,5 +138,5 @@ struct ConnectionView: View {
             }
         }
     }
-    private func connect() { addressFocused = false; model.connectAddress() }
+    private func connect() { focusedField = nil; model.connectAddress() }
 }

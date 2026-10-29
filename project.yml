@@ -78,7 +78,9 @@ targets:
   FiestaBoardUITests:
     type: bundle.ui-testing
     platform: iOS
-    sources: [Tests/UITests]
+    sources:
+      - path: Tests/UITests
+        excludes: [fixture_server.py]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft.uitests
