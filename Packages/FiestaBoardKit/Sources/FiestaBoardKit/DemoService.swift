@@ -139,6 +139,7 @@ private actor DemoTransport: APITransport {
                 let page = try JSONSerialization.jsonObject(with: fixture) as! [String: Any]
                 guard request.queryItems.first(where: { $0.name == "expected_revision" })?.value == page["revision"] as? String else { throw FiestaBoardError.pageConflict }
                 // Explicit demo refusal for configured defaults/collections; no hardware behavior is simulated.
+                guard !collections.values.contains(where: { $0.pageIDs.contains(path[2]) }) else { throw FiestaBoardError.pageInUse }
                 for key in ["board", "board-led"] {
                     let board = try JSONSerialization.jsonObject(with: data[key]!) as! [String: Any]
                     if board["default_page_id"] as? String == path[2] || board["scheduled_page_id"] as? String == path[2] { throw FiestaBoardError.pageInUse }
@@ -297,7 +298,7 @@ private actor DemoTransport: APITransport {
         }
         let input = try JSONDecoder().decode(CollectionInput.self, from: request.body!)
         try input.validate()
-        guard input.pageIDs.allSatisfy({ ["page-selected", "page-weather"].contains($0) }) else { throw FiestaBoardError.rejected(status: 400) }
+        guard input.pageIDs.allSatisfy({ pageKeys.contains($0 == "page-selected" ? "page" : $0) }) else { throw FiestaBoardError.rejected(status: 400) }
         let now = ISO8601DateFormatter().string(from: Date())
         let value = PageCollection(id: id, name: input.name, pageIDs: input.pageIDs,
             selectionMode: input.selectionMode.rawValue, time: input.time, variable: input.variable, random: input.random,

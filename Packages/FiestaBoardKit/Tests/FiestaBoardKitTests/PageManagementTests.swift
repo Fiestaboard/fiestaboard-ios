@@ -51,11 +51,11 @@ private actor ManagementTransport: APITransport {
     var mutationData: Data?
     var failure: FiestaBoardError?
     private var hold = false
-    private var pending: CheckedContinuation<Void, Never>?
-    private var observers: [CheckedContinuation<Void, Never>] = []
+    private var pending: [CheckedContinuation<Void, Never>] = []
+    private var observers: [(Int, CheckedContinuation<Void, Never>)] = []
     func holdNextMutation() { hold = true }
-    func waitForMutation() async { if pending != nil { return }; await withCheckedContinuation { observers.append($0) } }
-    func releaseMutation() { pending?.resume(); pending = nil }
+    func waitForMutation(count: Int = 1) async { if pending.count >= count { return }; await withCheckedContinuation { observers.append((count, $0)) } }
+    func releaseMutation() { if !pending.isEmpty { pending.removeFirst().resume() } }
     func set(version: String, dev: Bool = false) { self.version = version; self.dev = dev }
     func outcome(status: Int? = nil, data: Data? = nil, error: FiestaBoardError? = nil) { mutationStatus = status; mutationData = data; failure = error }
     func lastRequest() -> APIRequest? { requests.last }
@@ -67,7 +67,7 @@ private actor ManagementTransport: APITransport {
         if r.isMutation {
             if hold {
                 hold = false
-                await withCheckedContinuation { pending = $0; observers.forEach { $0.resume() }; observers = [] }
+                await withCheckedContinuation { pending.append($0); let ready = observers.filter { $0.0 <= pending.count }; observers.removeAll { $0.0 <= pending.count }; ready.forEach { $0.1.resume() } }
             }
             if let failure { throw failure }
             return APIResponse(status: mutationStatus ?? (r.method == .post ? 201 : 200), data: mutationData ?? (r.method == .post ? Self.document : Data(#"{"id":"created","message":"Deleted","default_page_created":false,"new_page_id":null,"active_page_updated":false,"new_active_page_id":null}"#.utf8)))
@@ -209,5 +209,53 @@ extension PageManagementTests {
         write.cancel(); await t.releaseMutation()
         do { _ = try await write.value; XCTFail() } catch { XCTAssertEqual(error as? FiestaBoardError, .unknownMutationOutcome) }
         do { _ = try await s.deletePage(context: c); XCTFail() } catch { XCTAssertEqual(error as? FiestaBoardError, .invalidRequestContext) }
+    }
+}
+
+
+extension PageManagementTests {
+    func testReconnectReleasesOldDeleteLockAndLateCompletionCannotReleaseNewLock() async throws {
+        try await verifyOldSessionLockRetires(editorSave: false)
+    }
+    func testOldEditorCompletionCannotReleaseNewSessionDeleteLock() async throws {
+        try await verifyOldSessionLockRetires(editorSave: true)
+    }
+    private func verifyOldSessionLockRetires(editorSave: Bool) async throws {
+        let t = ManagementTransport(); let s = try service(t)
+        _ = try await s.connect(allowCandidateWrites: true)
+        let original = try await s.readPageForDeletion(id: "created")
+        await t.holdNextMutation()
+        _ = try await s.page(id: "created")
+        let old = Task {
+            if editorSave { _ = try await s.savePage(id: "created", patch: .init(name: "x", expectedRevision: "original")) }
+            else { _ = try await s.deletePage(context: original) }
+        }
+        await t.waitForMutation()
+        _ = try await s.connect(allowCandidateWrites: true)
+        let fresh: PageDeletionContext
+        do { fresh = try await s.readPageForDeletion(id: "created") }
+        catch {
+            await t.releaseMutation(); _ = try? await old.value
+            XCTFail("Reconnect must retire old session locks: \(error)"); return
+        }
+        await t.holdNextMutation()
+        let current = Task { try await s.deletePage(context: fresh) }
+        await t.waitForMutation(count: 2)
+        await t.releaseMutation()
+        do { _ = try await old.value; XCTFail() } catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+        do { _ = try await s.readPageForDeletion(id: "created"); XCTFail("Old completion must not clear current lock") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .pageReadbackRequired) }
+        await t.releaseMutation(); _ = try await current.value
+    }
+    func testDemoCollectionReferenceRefusesDeletionAndRetainsPage() async throws {
+        let s = try DemoFiestaBoardService(); _ = try await s.connect()
+        let creation = try await s.preparePageCreation(.init(name: "Referenced", family: .flagship))
+        let page = try await s.createPage(context: creation)
+        _ = try await s.createCollection(.init(name: "Reference", pageIDs: [page.page.id]))
+        let deletion = try await s.readPageForDeletion(id: page.page.id)
+        do { _ = try await s.deletePage(context: deletion); XCTFail("Referenced page must remain") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .pageInUse) }
+        let retained = try await s.pageDocumentData(id: page.page.id)
+        XCTAssertEqual(retained, page.pageData)
     }
 }

@@ -164,6 +164,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     private func beginAuthenticationTransition() async throws -> UInt64 {
         generation &+= 1
         creationContexts = [:]; deletionContexts = [:]; creatingPage = false
+        savingPages = []; pageReadbacks = []; pageWriteGenerations = [:]
         controlVersion = nil; controlOptIn = false
         resetCollectionSession()
         access = .readOnly
@@ -246,6 +247,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     public func logout() async throws {
         generation &+= 1
         creationContexts = [:]; deletionContexts = [:]; creatingPage = false
+        savingPages = []; pageReadbacks = []; pageWriteGenerations = [:]
         controlVersion = nil; controlOptIn = false
         resetCollectionSession()
         let token = generation
@@ -271,6 +273,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     public func connect(allowCandidateWrites: Bool = false) async throws -> ConnectionStatus {
         generation &+= 1
         creationContexts = [:]; deletionContexts = [:]; creatingPage = false
+        savingPages = []; pageReadbacks = []; pageWriteGenerations = [:]
         controlVersion = nil; controlOptIn = false
         resetCollectionSession()
         let token = generation
@@ -352,7 +355,8 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         pageWriteGenerations[id, default: 0] &+= 1
         deletionContexts = deletionContexts.filter { $0.value.page.id != id }
         savingPages.insert(id); pageReadbacks.insert(id)
-        defer { savingPages.remove(id) }
+        let session = generation
+        defer { if session == generation { savingPages.remove(id) } }
         do {
             let response = try await response(APIRequest(.put, path: ["v1", "pages", id], body: JSONEncoder().encode(patch)))
             if response.status == 412 { throw FiestaBoardError.pageConflict }
@@ -535,6 +539,7 @@ extension LiveFiestaBoardService {
     private func invalidateAuthentication() {
         generation &+= 1
         creationContexts = [:]; deletionContexts = [:]; creatingPage = false
+        savingPages = []; pageReadbacks = []; pageWriteGenerations = [:]
         controlVersion = nil; controlOptIn = false
         access = .readOnly; pageWritesOptedIn = false; knownPages = [:]
         resetCollectionSession()
