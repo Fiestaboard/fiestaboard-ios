@@ -1,5 +1,6 @@
 name: FiestaBoard
 options:
+  minimumXcodeGenVersion: '2.46.0'
   deploymentTarget:
     iOS: '26.0'
   xcodeVersion: '27.1'
@@ -92,6 +93,28 @@ schemes:
         FiestaBoardUITests: [test]
     run:
       commandLineArguments:
+        '--demo': false
+    test:
+      targets: [FiestaBoardUITests]
+    profile:
+      config: Release
+      commandLineArguments:
+        '--demo': false
+    archive:
+      config: Release
+  FiestaBoard Demo:
+    build:
+      targets:
+        FiestaBoard: all
+        FiestaBoardUITests: [test]
+    run:
+      commandLineArguments:
         '--demo': true
     test:
       targets: [FiestaBoardUITests]
+    profile:
+      config: Release
+      commandLineArguments:
+        '--demo': false
+    archive:
+      config: Release
