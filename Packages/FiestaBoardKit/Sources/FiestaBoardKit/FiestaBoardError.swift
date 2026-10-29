@@ -2,6 +2,10 @@ import Foundation
 
 /// Deliberately contains no server error text, response bodies, URLs, or credentials.
 public enum FiestaBoardError: Error, Sendable, Equatable, LocalizedError {
+    case unsupportedOperation, invalidRequestContext, wrongProduct
+    case setupRequired(firstRun: Bool), onboardingConflict(OnboardingConflictReason)
+    case invalidCredentials, setupProofRequired, csrfRequired, forbidden
+    case validation(fields: [ValidationField]), startupUnavailable, gatewayUnavailable
     case invalidDeployment, insecureDeployment, invalidPath, invalidTarget
     case unauthenticated, conflict, rateLimited(retryAfterSeconds: Int?)
     case partialWrite(failedRegions: [FailedRegion])
@@ -13,6 +17,18 @@ public enum FiestaBoardError: Error, Sendable, Equatable, LocalizedError {
 
     public var errorDescription: String? {
         switch self {
+        case .unsupportedOperation: "This operation is unavailable for this connection."
+        case .invalidRequestContext: "The request proof or browser context is invalid for this action."
+        case .wrongProduct: "This address does not identify a FiestaBoard deployment."
+        case .setupRequired: "Choose authentication and finish administrator setup for this deployment."
+        case .onboardingConflict(let reason): reason.message
+        case .invalidCredentials: "The username or password is incorrect."
+        case .setupProofRequired: "This install has a stored MCP token. Supply that token to enable login or create the administrator."
+        case .csrfRequired: "Refresh the browser session proof before trying this action again."
+        case .forbidden: "This session is not permitted to perform this action."
+        case .validation: "Check the highlighted request fields."
+        case .startupUnavailable: "The deployment is starting or temporarily unavailable. Try connecting again."
+        case .gatewayUnavailable: "A gateway returned an unexpected response. Check the deployment address and try again."
         case .invalidDeployment: "Enter a valid deployment URL without credentials, query, fragment, or escaped path."
         case .insecureDeployment: "HTTP requires explicit permission and a local network address."
         case .invalidPath: "The API path is invalid."
@@ -48,3 +64,15 @@ public struct FailedRegion: Codable, Sendable, Equatable {
     public let rows: Int
     public let cols: Int
 }
+
+/// Bounded source-backed reasons; never retain the server's arbitrary detail text.
+public enum OnboardingConflictReason: Sendable, Equatable {
+    case alreadySetUp, modePinned
+    var message: String {
+        switch self {
+        case .alreadySetUp: "An administrator already exists. Refresh and sign in."
+        case .modePinned: "Authentication is controlled by the server environment. Refresh its authentication status."
+        }
+    }
+}
+public enum ValidationField: String, Sendable, Equatable { case username, password, enabled }

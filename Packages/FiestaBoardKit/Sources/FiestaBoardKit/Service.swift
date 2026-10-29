@@ -3,6 +3,10 @@ import Foundation
 public protocol FiestaBoardService: Sendable {
     var deployment: DeploymentURL { get }
     var isDemo: Bool { get }
+    func bootstrap() async throws -> BootstrapSnapshot
+    func setAuthenticationPreference(enabled: Bool, setupToken: String?) async throws -> AuthStatus
+    func setupAdministrator(username: String, password: String, setupToken: String?) async throws -> AuthStatus
+    func login(username: String, password: String, rememberMe: Bool) async throws -> AuthStatus
     func authStatus() async throws -> AuthStatus
     func login(username: String, password: String) async throws -> AuthStatus
     func logout() async throws
@@ -67,13 +71,68 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         allowsSimulatedCollectionWrites = true
     }
 
+    public func bootstrap() async throws -> BootstrapSnapshot {
+        let token = generation
+        try Task.checkCancellation()
+        let health: ServerHealth = try await fetch(APIRequest(path: ["health"], cachePolicy: .noStore))
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        try Task.checkCancellation()
+        let identity: ServerIdentity = try await fetch(APIRequest(path: ["discover"], cachePolicy: .noStore))
+        guard identity.product == "FiestaBoard" else { throw FiestaBoardError.wrongProduct }
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        let auth: AuthStatus = try await fetch(APIRequest(path: ["auth", "status"], cachePolicy: .noStore))
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        try Task.checkCancellation()
+        if auth.enabled && !auth.authenticated { invalidateAuthentication() }
+        return BootstrapSnapshot(deployment: deployment, health: health, identity: identity, auth: auth)
+    }
+
+    public func setAuthenticationPreference(enabled: Bool, setupToken: String? = nil) async throws -> AuthStatus {
+        guard enabled || setupToken == nil else { throw FiestaBoardError.invalidRequestContext }
+        struct Body: Encodable { let enabled: Bool }
+        let token = generation
+        try await onboardingAcknowledgement(APIRequest(.post, path: ["auth", "preference"],
+            body: JSONEncoder().encode(Body(enabled: enabled)), context: setupToken.map(APIRequestContext.onboardingToken) ?? .standard, cachePolicy: .noStore), expectedStatus: 200)
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        let status = try await verifiedAuthReadback()
+        guard status.enabled == enabled, status.mode == (enabled ? "enabled" : "disabled"), status.firstRun != true else { throw FiestaBoardError.unknownMutationOutcome }
+        return status
+    }
+
+    public func setupAdministrator(username: String, password: String, setupToken: String? = nil) async throws -> AuthStatus {
+        struct Body: Encodable { let username: String; let password: String }
+        let token = generation
+        try await onboardingAcknowledgement(APIRequest(.post, path: ["auth", "setup"],
+            body: JSONEncoder().encode(Body(username: username, password: password)), context: setupToken.map(APIRequestContext.onboardingToken) ?? .standard, cachePolicy: .noStore), expectedStatus: 201)
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        let status = try await verifiedAuthReadback()
+        guard status.enabled, status.bootstrapPhase == .ready, status.authenticated, status.username == username else { throw FiestaBoardError.unknownMutationOutcome }
+        return status
+    }
+
+    private func onboardingAcknowledgement(_ request: APIRequest, expectedStatus: Int) async throws {
+        struct Reply: Decodable { let status: String }
+        let value = try await response(request)
+        guard value.status == expectedStatus, (try? JSONDecoder().decode(Reply.self, from: value.data).status) == "ok" else { throw FiestaBoardError.unknownMutationOutcome }
+    }
+
+    private func verifiedAuthReadback() async throws -> AuthStatus {
+        do { return try await authStatus() }
+        catch FiestaBoardError.staleSession { throw FiestaBoardError.staleSession }
+        catch { throw FiestaBoardError.unknownMutationOutcome }
+    }
+
     public func authStatus() async throws -> AuthStatus {
-        let status: AuthStatus = try await fetch(APIRequest(path: ["auth", "status"]))
+        let status: AuthStatus = try await fetch(APIRequest(path: ["auth", "status"], cachePolicy: .noStore))
         if status.enabled && !status.authenticated { invalidateAuthentication() }
         return status
     }
 
     public func login(username: String, password: String) async throws -> AuthStatus {
+        try await login(username: username, password: password, rememberMe: false)
+    }
+
+    public func login(username: String, password: String, rememberMe: Bool) async throws -> AuthStatus {
         generation &+= 1
         resetCollectionSession()
         access = .readOnly
@@ -82,12 +141,15 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         let token = generation
         await transport.resetSession()
         guard token == generation else { throw FiestaBoardError.staleSession }
-        struct Login: Encodable { let username: String; let password: String; let remember_me = false }
+        struct Login: Encodable { let username: String; let password: String; let remember_me: Bool }
         struct Reply: Decodable { let status: String }
         let reply: Reply = try await fetch(APIRequest(.post, path: ["auth", "login"],
-                              body: JSONEncoder().encode(Login(username: username, password: password))))
-        guard reply.status == "ok" else { throw FiestaBoardError.invalidResponse }
-        return try await authStatus()
+                              body: JSONEncoder().encode(Login(username: username, password: password, remember_me: rememberMe)), cachePolicy: .noStore))
+        guard reply.status == "ok" else { throw FiestaBoardError.unknownMutationOutcome }
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        let status = try await verifiedAuthReadback()
+        guard status.authenticated, status.bootstrapPhase == .ready, status.username == username else { throw FiestaBoardError.unknownMutationOutcome }
+        return status
     }
 
     public func logout() async throws {
@@ -300,12 +362,14 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         } catch {
             guard token == generation else { throw FiestaBoardError.staleSession }
             if (error as? FiestaBoardError) == .unauthenticated { invalidateAuthentication() }
+            if error is CancellationError && !request.isMutation { throw error }
             throw (error as? FiestaBoardError) ?? (request.isMutation ? .unknownMutationOutcome : .networkUnavailable)
         }
     }
     private func fetch<T: Decodable & Sendable>(_ request: APIRequest) async throws -> T {
         let response = try await response(request)
         do { return try JSONDecoder().decode(T.self, from: response.data) }
+        catch let error as FiestaBoardError where !request.isMutation { throw error }
         catch { throw request.isMutation ? FiestaBoardError.unknownMutationOutcome : .invalidResponse }
     }
 }

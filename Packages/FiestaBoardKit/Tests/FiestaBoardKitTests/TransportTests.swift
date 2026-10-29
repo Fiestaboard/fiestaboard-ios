@@ -183,3 +183,75 @@ extension TransportTests {
         XCTAssertEqual(log.requests.count, 1)
     }
 }
+
+extension TransportTests {
+    func testBoundedHeadersPreserveExactOriginAndNeverCarryProofToOtherEndpoints() async throws {
+        let log = RequestLog()
+        FixtureURLProtocol.handler = { request in log.append(request); return (200, [:], Data("{}".utf8)) }
+        let transport = try transport()
+        _ = try await transport.send(APIRequest(.post, path: ["auth", "setup"], context: .onboardingToken("setup-proof"), cachePolicy: .noStore))
+        _ = try await transport.send(APIRequest(.post, path: ["auth", "sessions", "revoke"], context: .browserSession(origin: "https://external.test:8443", csrfToken: "fresh-proof")))
+        _ = try await transport.send(APIRequest(path: ["auth", "status"]))
+        XCTAssertEqual(log.requests[0].value(forHTTPHeaderField: "Authorization"), "Bearer setup-proof")
+        XCTAssertEqual(log.requests[0].value(forHTTPHeaderField: "Cache-Control"), "no-store")
+        XCTAssertEqual(log.requests[1].value(forHTTPHeaderField: "Origin"), "https://external.test:8443")
+        XCTAssertEqual(log.requests[1].value(forHTTPHeaderField: "X-CSRF-Token"), "fresh-proof")
+        XCTAssertNil(log.requests[1].value(forHTTPHeaderField: "Authorization"))
+        XCTAssertNil(log.requests[2].value(forHTTPHeaderField: "Authorization"))
+        let bad: [APIRequest] = [
+            APIRequest(.post, path: ["auth", "sessions"], context: .onboardingToken("proof")),
+            APIRequest(.post, path: ["auth", "preference"], body: Data(#"{"enabled":false}"#.utf8), context: .onboardingToken("proof")),
+            APIRequest(.post, path: ["auth", "setup"], context: .onboardingToken("secret\r\nCookie: x")),
+            APIRequest(.post, path: ["auth", "sessions"], context: .browserSession(origin: "https://external.test/path", csrfToken: "proof")),
+            APIRequest(.post, path: ["auth", "sessions"], context: .browserSession(origin: "https://external.test", csrfToken: "proof\n"))
+        ]
+        for request in bad {
+            do { _ = try await transport.send(request); XCTFail("Expected context refusal") }
+            catch { XCTAssertEqual(error as? FiestaBoardError, .invalidRequestContext) }
+        }
+        XCTAssertEqual(log.requests.count, 3)
+    }
+    func testOnboardingAndSafeValidationErrorsAreTypedWithoutRawSecrets() async throws {
+        let cases: [(Int, [String], String, FiestaBoardError)] = [
+            (401, ["auth", "login"], #"{"detail":"Invalid username or password"}"#, .invalidCredentials),
+            (409, ["v1", "boards"], #"{"detail":"Setup required","setup_required":true,"first_run":true}"#, .setupRequired(firstRun: true)),
+            (409, ["auth", "setup"], #"{"detail":"Already set up"}"#, .onboardingConflict(.alreadySetUp)),
+            (409, ["auth", "preference"], #"{"detail":"Auth mode is pinned by FIESTABOARD_AUTH_ENABLED."}"#, .onboardingConflict(.modePinned)),
+            (403, ["auth", "setup"], #"{"detail":"This install has a stored MCP token. Present it as a Bearer token to enable login, or clear the token first."}"#, .setupProofRequired),
+            (403, ["auth", "sessions"], #"{"error":"forbidden","detail":"Refresh this page and try again."}"#, .csrfRequired),
+            (403, ["auth", "setup"], #"{"detail":"secret arbitrary error"}"#, .forbidden),
+            (422, ["auth", "setup"], #"{"detail":[{"loc":["body","password"],"type":"string_too_short","input":"secret","msg":"secret"},{"loc":["body","secret"],"type":"secret"}]}"#, .validation(fields: [.password])),
+            (503, ["health"], #"{"detail":"secret startup internals"}"#, .startupUnavailable),
+            (503, ["health"], "<html>secret proxy page</html>", .gatewayUnavailable)
+        ]
+        for (status, path, body, expected) in cases {
+            FixtureURLProtocol.handler = { _ in (status, [:], Data(body.utf8)) }
+            do { _ = try await transport().send(APIRequest(path == ["health"] || path == ["v1", "boards"] ? .get : .post, path: path)); XCTFail("Expected error") }
+            catch {
+                XCTAssertEqual(error as? FiestaBoardError, expected)
+                XCTAssertFalse(String(describing: error).contains("secret"))
+                XCTAssertFalse(error.localizedDescription.contains("secret"))
+            }
+        }
+    }
+}
+
+extension TransportTests {
+    func testHTMLNeverHidesAuthenticationLossOrRedirectRefusal() async throws {
+        for (status, expected) in [(401, FiestaBoardError.unauthenticated), (302, .redirectRefused)] {
+            FixtureURLProtocol.handler = { _ in (status, ["Content-Type": "text/html"], Data("<html>private gateway detail</html>".utf8)) }
+            do { _ = try await transport().send(APIRequest(path: ["auth", "status"])); XCTFail("Expected HTTP refusal") }
+            catch { XCTAssertEqual(error as? FiestaBoardError, expected) }
+        }
+    }
+    func testGatewayReadAndMutationRemainDistinctWithoutReplay() async throws {
+        let log = RequestLog()
+        FixtureURLProtocol.handler = { request in log.append(request); return (200, ["Content-Type": "text/html"], Data("<html>private</html>".utf8)) }
+        let transport = try transport()
+        do { _ = try await transport.send(APIRequest(path: ["health"])); XCTFail("Expected gateway") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .gatewayUnavailable) }
+        do { _ = try await transport.send(APIRequest(.post, path: ["auth", "setup"])); XCTFail("Expected unknown mutation") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .unknownMutationOutcome) }
+        XCTAssertEqual(log.requests.count, 2)
+    }
+}

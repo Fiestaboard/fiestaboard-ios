@@ -187,3 +187,64 @@ extension ServiceTests {
         XCTAssertNil(results.first?.autoRestore)
     }
 }
+
+extension ServiceTests {
+    func testOnboardingUsesExactBodiesScopedProofAndPublicReadback() async throws {
+        let log = RequestLog()
+        FixtureURLProtocol.handler = { request in
+            log.append(request)
+            if request.httpMethod == "POST" {
+                return (request.url!.lastPathComponent == "setup" ? 201 : 200, [:], Data(#"{"status":"ok","username":"contract_admin"}"#.utf8))
+            }
+            let name = log.requests.contains { $0.url!.lastPathComponent == "setup" } ? "auth_authenticated" : "auth_enabled"
+            return (200, [:], try BootstrapTests.body(name))
+        }
+        let service = LiveFiestaBoardService(deployment: deployment, transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self]))
+        let chosen = try await service.setAuthenticationPreference(enabled: true, setupToken: "fixture-proof")
+        XCTAssertEqual(chosen.bootstrapPhase, .setupAdministrator)
+        let setup = try await service.setupAdministrator(username: "contract_admin", password: "fixture-password", setupToken: "fixture-proof")
+        XCTAssertEqual(setup.bootstrapPhase, .ready)
+        XCTAssertEqual(log.requests.map { $0.url!.lastPathComponent }, ["preference", "status", "setup", "status"])
+        let preference = try JSONSerialization.jsonObject(with: XCTUnwrap(log.requests[0].httpBody)) as! [String: Bool]
+        XCTAssertEqual(preference, ["enabled": true])
+        let body = try JSONSerialization.jsonObject(with: XCTUnwrap(log.requests[2].httpBody)) as! [String: String]
+        XCTAssertEqual(body, ["username": "contract_admin", "password": "fixture-password"])
+        for index in [0, 2] { XCTAssertEqual(log.requests[index].value(forHTTPHeaderField: "Authorization"), "Bearer fixture-proof") }
+        for index in [1, 3] { XCTAssertNil(log.requests[index].value(forHTTPHeaderField: "Authorization")) }
+        XCTAssertTrue(log.requests.allSatisfy { $0.value(forHTTPHeaderField: "Cache-Control") == "no-store" })
+    }
+    func testRememberMeIsExplicitAndNoOptionalLibraryReadFollowsLogin() async throws {
+        let log = RequestLog()
+        FixtureURLProtocol.handler = { request in
+            log.append(request)
+            if request.httpMethod == "POST" { return (200, [:], Data(#"{"status":"ok"}"#.utf8)) }
+            return (200, [:], try BootstrapTests.body("auth_authenticated"))
+        }
+        let service = LiveFiestaBoardService(deployment: deployment, transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self]))
+        let status = try await service.login(username: "contract_admin", password: "fixture-password", rememberMe: true)
+        XCTAssertEqual(status.bootstrapPhase, .ready)
+        let body = try JSONSerialization.jsonObject(with: XCTUnwrap(log.requests[0].httpBody)) as! [String: Any]
+        XCTAssertEqual(body["remember_me"] as? Bool, true)
+        XCTAssertEqual(log.requests.map { $0.url!.lastPathComponent }, ["login", "status"])
+    }
+    func testAcknowledgedSetupWithFailedReadbackIsUnknownAndNeverReplayed() async throws {
+        let log = RequestLog()
+        FixtureURLProtocol.handler = { request in
+            log.append(request)
+            if request.httpMethod == "POST" { return (201, [:], Data(#"{"status":"ok"}"#.utf8)) }
+            throw URLError(.networkConnectionLost)
+        }
+        let service = LiveFiestaBoardService(deployment: deployment, transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self]))
+        do { _ = try await service.setupAdministrator(username: "contract_admin", password: "fixture-password"); XCTFail("Expected unverified readback") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .unknownMutationOutcome) }
+        XCTAssertEqual(log.requests.map { $0.httpMethod }, ["POST", "GET"])
+    }
+    func testMalformedMutationAcknowledgementDiffersFromMalformedRead() async throws {
+        FixtureURLProtocol.handler = { _ in (200, [:], Data("{}".utf8)) }
+        let service = LiveFiestaBoardService(deployment: deployment, transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self]))
+        do { _ = try await service.login(username: "demo", password: "fixture-password"); XCTFail("Expected unknown mutation") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .unknownMutationOutcome) }
+        do { _ = try await service.bootstrap(); XCTFail("Expected invalid read") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .invalidResponse) }
+    }
+}

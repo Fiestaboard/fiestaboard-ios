@@ -15,8 +15,17 @@ public struct AuthStatus: Codable, Sendable, Equatable {
     public let username: String?
     public let mode: String?
     public let firstRun: Bool?
+    public let sessionManagementSupported: Bool?
+    public let authKind: String?
+    public let tvSignIn: TVSignInStatus?
+    public init(enabled: Bool, setupRequired: Bool, authenticated: Bool, username: String? = nil, mode: String? = nil, firstRun: Bool? = nil, sessionManagementSupported: Bool? = nil, authKind: String? = nil, tvSignIn: TVSignInStatus? = nil) {
+        self.enabled = enabled; self.setupRequired = setupRequired; self.authenticated = authenticated
+        self.username = username; self.mode = mode; self.firstRun = firstRun
+        self.sessionManagementSupported = sessionManagementSupported; self.authKind = authKind; self.tvSignIn = tvSignIn
+    }
     enum CodingKeys: String, CodingKey {
         case enabled, authenticated, username, mode
+        case sessionManagementSupported = "session_management_supported", authKind = "auth_kind", tvSignIn = "tv_sign_in"
         case setupRequired = "setup_required", firstRun = "first_run"
     }
 }

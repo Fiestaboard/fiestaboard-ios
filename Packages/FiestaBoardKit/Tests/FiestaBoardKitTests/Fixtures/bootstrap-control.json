@@ -1,0 +1,1726 @@
+{
+  "schema_version": 1,
+  "source": {
+    "commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+    "version": "10.1.17"
+  },
+  "source_evidence": {
+    "src/auth/routes.py": "40cbcdf5db7d9cd80bf2a615dd18a2cfa28dbe039ee427417e7b3018267e045e",
+    "src/auth/middleware.py": "0bab9ea722402837f57042a7d8d10646246cde6c60440178d4d382c463baeaf4",
+    "src/auth/service.py": "6373a26409a6f71f774a6dff72800665c9750c7cdbfc617b8b49a57bfc6d788d",
+    "src/service_api/routes.py": "920782c2de786f6ee80ccceb2221e6379fa16ac8728a8ddccc30e9b0bded1dcd",
+    "src/service_api/models.py": "c7381666f6b5582771f1db93db98c8d17b21839ff846bc8466293580beafb925",
+    "src/system/routes.py": "7b01fcdce673661684937a181fbb7a01ca5f5a2ad6cfcf63c03a4320200922cf",
+    "src/v1/routes_boards.py": "12a893845973109a062376ad33fbae7d04f377c6b44c038a9a3efdeb1e058baf",
+    "src/pages/models.py": "3647f36779b7a76323589e525822256079001c85ca328e5ed9a4a5c1789e9ab4",
+    "src/pages/storage.py": "315c1221f07296a9c54b84b86620104913544e6c130f1298bdf6c5d25604a6fa",
+    "src/collections/storage.py": "77869ee4e60ab00cc23ea87cbb1be017f5da7d7b91cf895a9b629e6c74b7e6f3",
+    "src/schedules/storage.py": "4056e11fcedd0207bb09b250e1f99bf5c31e9309bf0ec8dc8c904e32c68d5b03",
+    "src/templates/routes.py": "bfb10a9bad28939fb7c43128341a86811b85480386f13f4294016618ef193b6f"
+  },
+  "limits": "Isolated Docker, network none, no lifespan. UI-only output. Lazy runtime getter stubbed to None to prevent hardware initialization. Message preview substitutes only runtime service/client; never executes hardware/provider writes. Hardware model deliberately null. Discovery IDs, generated IDs, revisions and timestamps aliased; test passwords redacted. No deployment compatibility claim.",
+  "cases": [
+    {
+      "id": "health",
+      "request": {
+        "method": "GET",
+        "path": "/health"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "service_running": false,
+          "version": "10.1.17"
+        }
+      }
+    },
+    {
+      "id": "auth_enabled",
+      "request": {
+        "method": "GET",
+        "path": "/auth/status"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "enabled": true,
+          "setup_required": true,
+          "authenticated": false,
+          "username": null,
+          "mode": "enabled",
+          "first_run": false,
+          "session_management_supported": true,
+          "auth_kind": null,
+          "tv_sign_in": {
+            "supported": true,
+            "enabled": false,
+            "protocol_version": 1
+          }
+        },
+        "headers": {
+          "cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "id": "discover_enabled",
+      "request": {
+        "method": "GET",
+        "path": "/discover"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "product": "FiestaBoard",
+          "version": "10.1.17",
+          "id": "id-1",
+          "name": ""
+        },
+        "headers": {
+          "cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "id": "auth_disabled",
+      "request": {
+        "method": "GET",
+        "path": "/auth/status"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "enabled": false,
+          "setup_required": false,
+          "authenticated": false,
+          "username": null,
+          "mode": "disabled",
+          "first_run": false,
+          "session_management_supported": true,
+          "auth_kind": null,
+          "tv_sign_in": {
+            "supported": true,
+            "enabled": false,
+            "protocol_version": 1
+          }
+        },
+        "headers": {
+          "cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "id": "discover_disabled",
+      "request": {
+        "method": "GET",
+        "path": "/discover"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "product": "FiestaBoard",
+          "version": "10.1.17",
+          "id": "id-1",
+          "name": "Fixture room"
+        },
+        "headers": {
+          "cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "id": "auth_undecided",
+      "request": {
+        "method": "GET",
+        "path": "/auth/status"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "enabled": true,
+          "setup_required": true,
+          "authenticated": false,
+          "username": null,
+          "mode": "undecided",
+          "first_run": true,
+          "session_management_supported": true,
+          "auth_kind": null,
+          "tv_sign_in": {
+            "supported": true,
+            "enabled": false,
+            "protocol_version": 1
+          }
+        },
+        "headers": {
+          "cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "id": "discover_undecided",
+      "request": {
+        "method": "GET",
+        "path": "/discover"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "product": "FiestaBoard",
+          "version": "10.1.17",
+          "id": "id-1",
+          "name": ""
+        },
+        "headers": {
+          "cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "id": "setup_required",
+      "request": {
+        "method": "GET",
+        "path": "/v1/boards"
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "detail": "Setup required",
+          "setup_required": true,
+          "first_run": false
+        }
+      }
+    },
+    {
+      "id": "login_before_setup",
+      "request": {
+        "method": "POST",
+        "path": "/auth/login",
+        "body": {
+          "username": "contract_admin",
+          "password": "<redacted-fixture-password>"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "detail": "No user has been created. Call /auth/setup first."
+        },
+        "headers": {
+          "cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "id": "setup_validation",
+      "request": {
+        "method": "POST",
+        "path": "/auth/setup",
+        "body": {
+          "username": "contract_admin",
+          "password": "<redacted-fixture-password>"
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": [
+            {
+              "type": "string_too_short",
+              "loc": [
+                "body",
+                "password"
+              ],
+              "msg": "String should have at least 8 characters",
+              "input": "short",
+              "ctx": {
+                "min_length": 8
+              }
+            }
+          ]
+        },
+        "headers": {
+          "cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "id": "setup",
+      "request": {
+        "method": "POST",
+        "path": "/auth/setup",
+        "body": {
+          "username": "contract_admin",
+          "password": "<redacted-fixture-password>"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "status": "ok",
+          "username": "contract_admin"
+        },
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "cookie": {
+          "name": "fiestaboard_session",
+          "attributes": [
+            "HttpOnly",
+            "Max-Age=2592000",
+            "Path=/",
+            "SameSite=lax"
+          ]
+        }
+      }
+    },
+    {
+      "id": "setup_duplicate",
+      "request": {
+        "method": "POST",
+        "path": "/auth/setup",
+        "body": {
+          "username": "contract_admin",
+          "password": "<redacted-fixture-password>"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "detail": "A user has already been created. Use /auth/login."
+        },
+        "headers": {
+          "cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "id": "logout",
+      "request": {
+        "method": "POST",
+        "path": "/auth/logout"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "username": null
+        },
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "cookie": {
+          "name": "fiestaboard_session",
+          "attributes": [
+            "Max-Age=0",
+            "Path=/",
+            "SameSite=lax"
+          ]
+        }
+      }
+    },
+    {
+      "id": "protected_unauthenticated",
+      "request": {
+        "method": "GET",
+        "path": "/v1/boards"
+      },
+      "response": {
+        "status": 401,
+        "body": {
+          "detail": "Not authenticated"
+        }
+      }
+    },
+    {
+      "id": "login_wrong",
+      "request": {
+        "method": "POST",
+        "path": "/auth/login",
+        "body": {
+          "username": "contract_admin",
+          "password": "<redacted-fixture-password>"
+        }
+      },
+      "response": {
+        "status": 401,
+        "body": {
+          "detail": "Invalid username or password"
+        },
+        "headers": {
+          "cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "id": "login_session",
+      "request": {
+        "method": "POST",
+        "path": "/auth/login",
+        "body": {
+          "username": "contract_admin",
+          "password": "<redacted-fixture-password>"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "username": "contract_admin"
+        },
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "cookie": {
+          "name": "fiestaboard_session",
+          "attributes": [
+            "HttpOnly",
+            "Path=/",
+            "SameSite=lax"
+          ]
+        }
+      }
+    },
+    {
+      "id": "auth_authenticated",
+      "request": {
+        "method": "GET",
+        "path": "/auth/status"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "enabled": true,
+          "setup_required": false,
+          "authenticated": true,
+          "username": "contract_admin",
+          "mode": "enabled",
+          "first_run": false,
+          "session_management_supported": true,
+          "auth_kind": "browser",
+          "tv_sign_in": {
+            "supported": true,
+            "enabled": true,
+            "protocol_version": 1
+          }
+        },
+        "headers": {
+          "cache-control": "no-store"
+        }
+      }
+    },
+    {
+      "id": "logout_again",
+      "request": {
+        "method": "POST",
+        "path": "/auth/logout"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "username": null
+        },
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "cookie": {
+          "name": "fiestaboard_session",
+          "attributes": [
+            "Max-Age=0",
+            "Path=/",
+            "SameSite=lax"
+          ]
+        }
+      }
+    },
+    {
+      "id": "login_persistent",
+      "request": {
+        "method": "POST",
+        "path": "/auth/login",
+        "body": {
+          "username": "contract_admin",
+          "password": "<redacted-fixture-password>",
+          "remember_me": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "username": "contract_admin"
+        },
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "cookie": {
+          "name": "fiestaboard_session",
+          "attributes": [
+            "HttpOnly",
+            "Max-Age=2592000",
+            "Path=/",
+            "SameSite=lax"
+          ]
+        }
+      }
+    },
+    {
+      "id": "login_https_cookie",
+      "request": {
+        "method": "POST",
+        "path": "/auth/login",
+        "body": {
+          "username": "contract_admin",
+          "password": "<redacted-fixture-password>"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "username": "contract_admin"
+        },
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "cookie": {
+          "name": "fiestaboard_session",
+          "attributes": [
+            "HttpOnly",
+            "Path=/",
+            "SameSite=lax",
+            "Secure"
+          ]
+        }
+      }
+    },
+    {
+      "id": "login_http_after_https",
+      "request": {
+        "method": "POST",
+        "path": "/auth/login",
+        "body": {
+          "username": "contract_admin",
+          "password": "<redacted-fixture-password>"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "status": "ok",
+          "username": "contract_admin"
+        },
+        "headers": {
+          "cache-control": "no-store"
+        },
+        "cookie": {
+          "name": "fiestaboard_session",
+          "attributes": [
+            "HttpOnly",
+            "Path=/",
+            "SameSite=lax"
+          ]
+        }
+      }
+    },
+    {
+      "id": "version",
+      "request": {
+        "method": "GET",
+        "path": "/version"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "package_version": "10.1.17",
+          "build_version": "dev",
+          "running_version": "10.1.17",
+          "is_dev": true,
+          "hardware_model": null
+        }
+      }
+    },
+    {
+      "id": "boards_list",
+      "request": {
+        "method": "GET",
+        "path": "/v1/boards"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "boards": [
+            {
+              "id": "contract-board",
+              "name": "Contract board",
+              "device_type": "flagship",
+              "rows": 6,
+              "cols": 22,
+              "is_primary": true,
+              "paused": false,
+              "schedule_enabled": false,
+              "auto_restore": true,
+              "output": "vestaboard",
+              "device_model": "vestaboard_flagship",
+              "charset": "vestaboard_v1"
+            }
+          ],
+          "total": 1
+        }
+      }
+    },
+    {
+      "id": "boards_detail",
+      "request": {
+        "method": "GET",
+        "path": "/v1/boards/primary"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "contract-board",
+          "name": "Contract board",
+          "device_type": "flagship",
+          "rows": 6,
+          "cols": 22,
+          "is_primary": true,
+          "paused": false,
+          "schedule_enabled": false,
+          "auto_restore": true,
+          "output": "vestaboard",
+          "device_model": "vestaboard_flagship",
+          "charset": "vestaboard_v1",
+          "characters": null,
+          "text": null,
+          "expected_characters": null,
+          "read_at": null,
+          "active_page_id": null,
+          "scheduled_page_id": null,
+          "resolved_page_id": null,
+          "resolved_next_check_seconds": null,
+          "source": "none",
+          "default_page_id": null,
+          "override_expires_at": null,
+          "layers": null
+        }
+      }
+    },
+    {
+      "id": "board_missing",
+      "request": {
+        "method": "GET",
+        "path": "/v1/boards/missing"
+      },
+      "response": {
+        "status": 404,
+        "body": {
+          "detail": "Board not found: missing"
+        }
+      }
+    },
+    {
+      "id": "board_patch_name",
+      "request": {
+        "method": "PATCH",
+        "path": "/v1/boards/primary",
+        "body": {
+          "name": "Renamed"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "contract-board",
+          "name": "Renamed",
+          "device_type": "flagship",
+          "rows": 6,
+          "cols": 22,
+          "is_primary": true,
+          "paused": false,
+          "schedule_enabled": false,
+          "auto_restore": true,
+          "output": "vestaboard",
+          "device_model": "vestaboard_flagship",
+          "charset": "vestaboard_v1",
+          "characters": null,
+          "text": null,
+          "expected_characters": null,
+          "read_at": null,
+          "active_page_id": null,
+          "scheduled_page_id": null,
+          "resolved_page_id": null,
+          "resolved_next_check_seconds": null,
+          "source": "none",
+          "default_page_id": null,
+          "override_expires_at": null,
+          "layers": null
+        }
+      }
+    },
+    {
+      "id": "board_patch_null_noop",
+      "request": {
+        "method": "PATCH",
+        "path": "/v1/boards/primary",
+        "body": {
+          "name": null,
+          "paused": null
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "contract-board",
+          "name": "Renamed",
+          "device_type": "flagship",
+          "rows": 6,
+          "cols": 22,
+          "is_primary": true,
+          "paused": false,
+          "schedule_enabled": false,
+          "auto_restore": true,
+          "output": "vestaboard",
+          "device_model": "vestaboard_flagship",
+          "charset": "vestaboard_v1",
+          "characters": null,
+          "text": null,
+          "expected_characters": null,
+          "read_at": null,
+          "active_page_id": null,
+          "scheduled_page_id": null,
+          "resolved_page_id": null,
+          "resolved_next_check_seconds": null,
+          "source": "none",
+          "default_page_id": null,
+          "override_expires_at": null,
+          "layers": null
+        }
+      }
+    },
+    {
+      "id": "board_restore_ui",
+      "request": {
+        "method": "POST",
+        "path": "/v1/boards/primary/restore"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "board_id": "contract-board",
+          "page_id": null,
+          "sent": false,
+          "reason": "The install's output target is UI only, so nothing was written to the board.",
+          "device_observed": false
+        }
+      }
+    },
+    {
+      "id": "board_patch_paused",
+      "request": {
+        "method": "PATCH",
+        "path": "/v1/boards/primary",
+        "body": {
+          "paused": true
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "contract-board",
+          "name": "Renamed",
+          "device_type": "flagship",
+          "rows": 6,
+          "cols": 22,
+          "is_primary": true,
+          "paused": true,
+          "schedule_enabled": false,
+          "auto_restore": true,
+          "output": "vestaboard",
+          "device_model": "vestaboard_flagship",
+          "charset": "vestaboard_v1",
+          "characters": null,
+          "text": null,
+          "expected_characters": null,
+          "read_at": null,
+          "active_page_id": null,
+          "scheduled_page_id": null,
+          "resolved_page_id": null,
+          "resolved_next_check_seconds": null,
+          "source": "none",
+          "default_page_id": null,
+          "override_expires_at": null,
+          "layers": null
+        }
+      }
+    },
+    {
+      "id": "board_restore_paused",
+      "request": {
+        "method": "POST",
+        "path": "/v1/boards/primary/restore"
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "detail": "Board is paused — sends are blocked until it is resumed."
+        }
+      }
+    },
+    {
+      "id": "board_message_paused_preview",
+      "request": {
+        "method": "POST",
+        "path": "/v1/boards/primary/message",
+        "body": {
+          "text": "HELLO",
+          "if_paused": "preview",
+          "duration_minutes": 5
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "sent": false,
+          "board_id": "contract-board",
+          "characters": [
+            [
+              8,
+              5,
+              12,
+              12,
+              15,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "text": "HELLO",
+          "expires_at": null,
+          "reason": "The board is paused, so nothing was written. This is what it would have shown.",
+          "silenced": false,
+          "held": false
+        }
+      }
+    },
+    {
+      "id": "board_patch_resume",
+      "request": {
+        "method": "PATCH",
+        "path": "/v1/boards/primary",
+        "body": {
+          "paused": false
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "contract-board",
+          "name": "Renamed",
+          "device_type": "flagship",
+          "rows": 6,
+          "cols": 22,
+          "is_primary": true,
+          "paused": false,
+          "schedule_enabled": false,
+          "auto_restore": true,
+          "output": "vestaboard",
+          "device_model": "vestaboard_flagship",
+          "charset": "vestaboard_v1",
+          "characters": null,
+          "text": null,
+          "expected_characters": null,
+          "read_at": null,
+          "active_page_id": null,
+          "scheduled_page_id": null,
+          "resolved_page_id": null,
+          "resolved_next_check_seconds": null,
+          "source": "none",
+          "default_page_id": null,
+          "override_expires_at": null,
+          "layers": null
+        }
+      }
+    },
+    {
+      "id": "board_message_uninitialized",
+      "request": {
+        "method": "POST",
+        "path": "/v1/boards/primary/message",
+        "body": {
+          "text": "HELLO"
+        }
+      },
+      "response": {
+        "status": 503,
+        "body": {
+          "detail": "Service not initialized"
+        }
+      }
+    },
+    {
+      "id": "board_message_invalid",
+      "request": {
+        "method": "POST",
+        "path": "/v1/boards/primary/message",
+        "body": {
+          "text": "HELLO",
+          "characters": [
+            [
+              0
+            ]
+          ]
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": [
+            {
+              "type": "value_error",
+              "loc": [
+                "body"
+              ],
+              "msg": "Value error, Supply exactly one of text, lines, characters, page_id, fill, plugin_id or template (got text, characters)",
+              "input": {
+                "text": "HELLO",
+                "characters": [
+                  [
+                    0
+                  ]
+                ]
+              },
+              "ctx": {
+                "error": {}
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "page_create",
+      "request": {
+        "method": "POST",
+        "path": "/v1/pages",
+        "body": {
+          "name": "Document",
+          "type": "template",
+          "template": [
+            "Mixed Case {{red:HOT}} {{black/white:OPEN}} {{icon:sun}}"
+          ],
+          "future_page": {
+            "nullable": null
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "id-2",
+          "revision": "revision-1",
+          "name": "Document",
+          "type": "template",
+          "device_type": "flagship",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "Mixed Case {{red:HOT}} {{black/white:OPEN}} {{icon:sun}}"
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": null,
+          "grid_cols": null,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "future_page": {
+            "nullable": null
+          },
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "page_get",
+      "request": {
+        "method": "GET",
+        "path": "/v1/pages/id-2"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-2",
+          "revision": "revision-1",
+          "name": "Document",
+          "type": "template",
+          "device_type": "flagship",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "Mixed Case {{red:HOT}} {{black/white:OPEN}} {{icon:sun}}"
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": null,
+          "grid_cols": null,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "future_page": {
+            "nullable": null
+          },
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "page_sparse_update",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/pages/id-2",
+        "body": {
+          "name": "Renamed document",
+          "expected_revision": "revision-1"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "page": {
+            "id": "id-2",
+            "revision": "revision-2",
+            "name": "Renamed document",
+            "type": "template",
+            "device_type": "flagship",
+            "display_type": null,
+            "rows": null,
+            "template": [
+              "Mixed Case {{red:HOT}} {{black/white:OPEN}} {{icon:sun}}"
+            ],
+            "line_metadata": null,
+            "duration_seconds": 300,
+            "transition_strategy": null,
+            "transition_interval_ms": null,
+            "transition_step_size": null,
+            "demo_plugin_id": null,
+            "notes_wide": 1,
+            "notes_tall": 1,
+            "grid_rows": null,
+            "grid_cols": null,
+            "canvases": null,
+            "created_at": "<timestamp>",
+            "updated_at": "<timestamp>",
+            "future_page": {
+              "nullable": null
+            },
+            "edit_protocol": "page-revision-v1",
+            "document_protocol": "page-document-v1"
+          },
+          "incompatible_references": []
+        }
+      }
+    },
+    {
+      "id": "page_stale_update",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/pages/id-2",
+        "body": {
+          "name": "Stale",
+          "expected_revision": "revision-1"
+        }
+      },
+      "response": {
+        "status": 412,
+        "body": {
+          "detail": "Page changed since it was loaded. Reload the page before saving or deleting."
+        }
+      }
+    },
+    {
+      "id": "page_stale_delete",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/pages/id-2?expected_revision=revision-1"
+      },
+      "response": {
+        "status": 412,
+        "body": {
+          "detail": "Page changed since it was loaded. Reload the page before saving or deleting."
+        }
+      }
+    },
+    {
+      "id": "page_clear_canvas",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/pages/id-2",
+        "body": {
+          "canvases": null,
+          "expected_revision": "revision-2"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "page": {
+            "id": "id-2",
+            "revision": "revision-3",
+            "name": "Renamed document",
+            "type": "template",
+            "device_type": "flagship",
+            "display_type": null,
+            "rows": null,
+            "template": [
+              "Mixed Case {{red:HOT}} {{black/white:OPEN}} {{icon:sun}}"
+            ],
+            "line_metadata": null,
+            "duration_seconds": 300,
+            "transition_strategy": null,
+            "transition_interval_ms": null,
+            "transition_step_size": null,
+            "demo_plugin_id": null,
+            "notes_wide": 1,
+            "notes_tall": 1,
+            "grid_rows": null,
+            "grid_cols": null,
+            "canvases": null,
+            "created_at": "<timestamp>",
+            "updated_at": "<timestamp>",
+            "future_page": {
+              "nullable": null
+            },
+            "edit_protocol": "page-revision-v1",
+            "document_protocol": "page-document-v1"
+          },
+          "incompatible_references": []
+        }
+      }
+    },
+    {
+      "id": "collection_create",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "body": {
+          "name": "Collection",
+          "page_ids": [
+            "id-2"
+          ]
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "collection-1",
+          "revision": "revision-4",
+          "name": "Collection",
+          "page_ids": [
+            "id-2"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "collection_update",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/collections/collection-1",
+        "body": {
+          "name": "Changed",
+          "expected_revision": "revision-4"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "collection-1",
+          "revision": "revision-5",
+          "name": "Changed",
+          "page_ids": [
+            "id-2"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null,
+          "created_at": "<timestamp>",
+          "updated_at": "<timestamp>",
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "collection_stale_update",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/collections/collection-1",
+        "body": {
+          "name": "Stale",
+          "expected_revision": "revision-4"
+        }
+      },
+      "response": {
+        "status": 412,
+        "body": {
+          "detail": "Collection changed since it was loaded. Reload the collection before saving or deleting."
+        }
+      }
+    },
+    {
+      "id": "schedule_create",
+      "request": {
+        "method": "POST",
+        "path": "/v1/schedules",
+        "body": {
+          "page_id": "id-2",
+          "start_time": "10:00",
+          "end_time": "11:00"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "id-3",
+          "revision": "revision-6",
+          "board_id": "",
+          "page_id": "id-2",
+          "start_time": "10:00",
+          "end_time": "11:00",
+          "day_pattern": "all",
+          "custom_days": null,
+          "enabled": true,
+          "recurrence_type": "weekly",
+          "annual_date": null,
+          "annual_end_date": null,
+          "one_off_date": null,
+          "one_off_end_date": null,
+          "start_type": "fixed",
+          "start_sun_offset": 0,
+          "end_type": "fixed",
+          "end_sun_offset": 0,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "resolved_start_time": "10:00",
+          "resolved_end_time": "11:00",
+          "warnings": [],
+          "edit_protocol": "schedule-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "schedule_omission_preserves",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/schedules/id-3",
+        "body": {
+          "enabled": false,
+          "expected_revision": "revision-6"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-3",
+          "revision": "revision-7",
+          "board_id": "",
+          "page_id": "id-2",
+          "start_time": "10:00",
+          "end_time": "11:00",
+          "day_pattern": "all",
+          "custom_days": null,
+          "enabled": false,
+          "recurrence_type": "weekly",
+          "annual_date": null,
+          "annual_end_date": null,
+          "one_off_date": null,
+          "one_off_end_date": null,
+          "start_type": "fixed",
+          "start_sun_offset": 0,
+          "end_type": "fixed",
+          "end_sun_offset": 0,
+          "created_at": "<timestamp>",
+          "updated_at": "<timestamp>",
+          "resolved_start_time": "10:00",
+          "resolved_end_time": "11:00",
+          "warnings": [],
+          "edit_protocol": "schedule-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "schedule_null_clears",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/schedules/id-3",
+        "body": {
+          "end_time": null,
+          "expected_revision": "revision-7"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-3",
+          "revision": "revision-8",
+          "board_id": "",
+          "page_id": "id-2",
+          "start_time": "10:00",
+          "end_time": null,
+          "day_pattern": "all",
+          "custom_days": null,
+          "enabled": false,
+          "recurrence_type": "weekly",
+          "annual_date": null,
+          "annual_end_date": null,
+          "one_off_date": null,
+          "one_off_end_date": null,
+          "start_type": "fixed",
+          "start_sun_offset": 0,
+          "end_type": "fixed",
+          "end_sun_offset": 0,
+          "created_at": "<timestamp>",
+          "updated_at": "<timestamp>",
+          "resolved_start_time": "10:00",
+          "resolved_end_time": null,
+          "warnings": [],
+          "edit_protocol": "schedule-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "schedule_stale_update",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/schedules/id-3",
+        "body": {
+          "enabled": true,
+          "expected_revision": "revision-6"
+        }
+      },
+      "response": {
+        "status": 412,
+        "body": {
+          "detail": "Schedule changed since it was loaded. Reload the schedule before saving or deleting."
+        }
+      }
+    },
+    {
+      "id": "default_get",
+      "request": {
+        "method": "GET",
+        "path": "/schedules/default-page"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "revision": "revision-9",
+          "edit_protocol": "schedule-default-revision-v1",
+          "default_page_id": null
+        }
+      }
+    },
+    {
+      "id": "default_set",
+      "request": {
+        "method": "PUT",
+        "path": "/schedules/default-page",
+        "body": {
+          "page_id": "id-2",
+          "expected_revision": "revision-9"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "revision": "revision-10",
+          "edit_protocol": "schedule-default-revision-v1",
+          "default_page_id": "id-2"
+        }
+      }
+    },
+    {
+      "id": "default_stale",
+      "request": {
+        "method": "PUT",
+        "path": "/schedules/default-page",
+        "body": {
+          "page_id": null,
+          "expected_revision": "revision-9"
+        }
+      },
+      "response": {
+        "status": 412,
+        "body": {
+          "detail": "Default page or board settings changed since they were loaded. Reload before changing the default page."
+        }
+      }
+    },
+    {
+      "id": "board_patch_missing_default",
+      "request": {
+        "method": "PATCH",
+        "path": "/v1/boards/primary",
+        "body": {
+          "default_page_id": "missing"
+        }
+      },
+      "response": {
+        "status": 404,
+        "body": {
+          "detail": "Page not found: missing"
+        }
+      }
+    },
+    {
+      "id": "board_patch_default_clear",
+      "request": {
+        "method": "PATCH",
+        "path": "/v1/boards/primary",
+        "body": {
+          "default_page_id": null
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "contract-board",
+          "name": "Renamed",
+          "device_type": "flagship",
+          "rows": 6,
+          "cols": 22,
+          "is_primary": true,
+          "paused": false,
+          "schedule_enabled": false,
+          "auto_restore": true,
+          "output": "vestaboard",
+          "device_model": "vestaboard_flagship",
+          "charset": "vestaboard_v1",
+          "characters": null,
+          "text": null,
+          "expected_characters": null,
+          "read_at": null,
+          "active_page_id": null,
+          "scheduled_page_id": null,
+          "resolved_page_id": null,
+          "resolved_next_check_seconds": null,
+          "source": "none",
+          "default_page_id": null,
+          "override_expires_at": null,
+          "layers": null
+        }
+      }
+    },
+    {
+      "id": "render_flagship",
+      "request": {
+        "method": "POST",
+        "path": "/templates/render",
+        "body": {
+          "template": [
+            "HELLO"
+          ],
+          "board_id": "unknown-contract",
+          "device_type": "flagship"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "HELLO                 \n                      \n                      \n                      \n                      \n                      ",
+          "lines": [
+            "HELLO                 ",
+            "                      ",
+            "                      ",
+            "                      ",
+            "                      ",
+            "                      "
+          ],
+          "line_count": 6,
+          "charset": null,
+          "charset_issues": null
+        }
+      }
+    },
+    {
+      "id": "render_note_array",
+      "request": {
+        "method": "POST",
+        "path": "/templates/render",
+        "body": {
+          "template": [
+            "HELLO"
+          ],
+          "board_id": "unknown-contract",
+          "device_type": "note_array",
+          "notes_wide": 2,
+          "notes_tall": 2
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "HELLO                         \n                              \n                              \n                              \n                              \n                              ",
+          "lines": [
+            "HELLO                         ",
+            "                              ",
+            "                              ",
+            "                              ",
+            "                              ",
+            "                              "
+          ],
+          "line_count": 6,
+          "charset": null,
+          "charset_issues": null
+        }
+      }
+    },
+    {
+      "id": "render_panel",
+      "request": {
+        "method": "POST",
+        "path": "/templates/render",
+        "body": {
+          "template": [
+            "HELLO"
+          ],
+          "board_id": "unknown-contract",
+          "device_type": "panel",
+          "grid_rows": 8,
+          "grid_cols": 16
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "HELLO           \n                \n                \n                \n                \n                \n                \n                ",
+          "lines": [
+            "HELLO           ",
+            "                ",
+            "                ",
+            "                ",
+            "                ",
+            "                ",
+            "                ",
+            "                "
+          ],
+          "line_count": 8,
+          "charset": null,
+          "charset_issues": null
+        }
+      }
+    },
+    {
+      "id": "render_filled_71",
+      "request": {
+        "method": "POST",
+        "path": "/templates/render",
+        "body": {
+          "template": [
+            "{{filled}}"
+          ],
+          "device_type": "flagship",
+          "board_id": "unknown-contract"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "{71}                     \n                      \n                      \n                      \n                      \n                      ",
+          "lines": [
+            "{71}                     ",
+            "                      ",
+            "                      ",
+            "                      ",
+            "                      ",
+            "                      "
+          ],
+          "line_count": 6,
+          "charset": null,
+          "charset_issues": null
+        }
+      }
+    },
+    {
+      "id": "login_lockout",
+      "request": {
+        "method": "POST",
+        "path": "/auth/login",
+        "body": {
+          "username": "contract_admin",
+          "password": "<redacted-fixture-password>"
+        }
+      },
+      "response": {
+        "status": 429,
+        "body": {
+          "detail": "Too many failed login attempts. Try again later."
+        },
+        "headers": {
+          "cache-control": "no-store",
+          "retry-after": "60"
+        }
+      }
+    }
+  ]
+}

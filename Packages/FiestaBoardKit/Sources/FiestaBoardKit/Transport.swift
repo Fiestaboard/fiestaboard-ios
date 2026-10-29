@@ -1,5 +1,13 @@
 import Foundation
 
+/// Proof is scoped to a single request and is never stored or logged.
+public enum APIRequestContext: Sendable {
+    case standard
+    case onboardingToken(String)
+    case browserSession(origin: String, csrfToken: String)
+}
+public enum APIRequestCachePolicy: Sendable { case `default`, noStore }
+
 public struct APIRequest: Sendable {
     public enum Method: String, Sendable { case get = "GET", post = "POST", put = "PUT", patch = "PATCH", delete = "DELETE" }
     public let method: Method
@@ -7,12 +15,15 @@ public struct APIRequest: Sendable {
     public let body: Data?
     public let queryItems: [URLQueryItem]
     public let timeout: TimeInterval
+    public let context: APIRequestContext
+    public let cachePolicy: APIRequestCachePolicy
     /// The two bounded evaluation POSTs never write a page or send to hardware.
     public var isMutation: Bool {
         method != .get && !(method == .post && (path == ["templates", "validate"] || path == ["templates", "render"]))
     }
-    public init(_ method: Method = .get, path: [String], body: Data? = nil, timeout: TimeInterval = 20, queryItems: [URLQueryItem] = []) {
+    public init(_ method: Method = .get, path: [String], body: Data? = nil, timeout: TimeInterval = 20, queryItems: [URLQueryItem] = [], context: APIRequestContext = .standard, cachePolicy: APIRequestCachePolicy = .default) {
         self.method = method; self.path = path; self.body = body; self.timeout = timeout; self.queryItems = queryItems
+        self.context = context; self.cachePolicy = cachePolicy
     }
 }
 public struct APIResponse: Sendable {
@@ -53,6 +64,8 @@ public actor URLSessionTransport: APITransport {
     }
 
     public func send(_ request: APIRequest) async throws -> APIResponse {
+        try Task.checkCancellation()
+        let headers = try request.boundedHeaders()
         let currentGeneration = generation
         let baseURL = try deployment.apiURL(request.path)
         guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else { throw FiestaBoardError.invalidPath }
@@ -67,6 +80,11 @@ public actor URLSessionTransport: APITransport {
         wire.httpMethod = request.method.rawValue
         wire.httpBody = request.body
         wire.httpShouldHandleCookies = false
+        for (name, value) in headers { wire.setValue(value, forHTTPHeaderField: name) }
+        if request.cachePolicy == .noStore {
+            wire.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+            wire.setValue("no-store", forHTTPHeaderField: "Cache-Control")
+        }
         wire.setValue("application/json", forHTTPHeaderField: "Accept")
         if request.body != nil { wire.setValue("application/json", forHTTPHeaderField: "Content-Type") }
         wire.setValue(cookies.header(for: url), forHTTPHeaderField: "Cookie")
@@ -77,6 +95,7 @@ public actor URLSessionTransport: APITransport {
             (data, response) = try await session.data(for: wire)
         } catch {
             guard currentGeneration == generation else { throw FiestaBoardError.staleSession }
+            if !request.isMutation && (Task.isCancelled || (error as? URLError)?.code == .cancelled) { throw CancellationError() }
             throw request.isMutation ? FiestaBoardError.unknownMutationOutcome : .networkUnavailable
         }
         guard currentGeneration == generation else { throw FiestaBoardError.staleSession }
@@ -84,6 +103,12 @@ public actor URLSessionTransport: APITransport {
             throw request.isMutation ? FiestaBoardError.unknownMutationOutcome : .invalidResponse
         }
         if let header = http.value(forHTTPHeaderField: "Set-Cookie") { cookies.receive(header, from: url) }
+        let canBeGateway = (200..<300).contains(http.statusCode) || (500..<600).contains(http.statusCode)
+        if canBeGateway && (http.value(forHTTPHeaderField: "Content-Type")?.lowercased().contains("text/html") == true ||
+            data.first(where: { ![9, 10, 13, 32].contains($0) }) == 60) {
+            throw request.isMutation ? FiestaBoardError.unknownMutationOutcome : .gatewayUnavailable
+        }
+        if let error = request.safeError(status: http.statusCode, data: data) { throw error }
         switch http.statusCode {
         case 200..<300: return APIResponse(status: http.statusCode, data: data)
         case 300..<400: throw request.isMutation ? FiestaBoardError.unknownMutationOutcome : .redirectRefused
@@ -191,5 +216,60 @@ struct SessionCookieJar: Sendable {
                 (cookie.expires.map { $0 > now } ?? true)
         }.sorted { $0.path.count > $1.path.count }
         return matching.isEmpty ? nil : matching.map { "fiestaboard_session=" + $0.value }.joined(separator: "; ")
+    }
+}
+
+
+extension APIRequest {
+    private func headerValueIsSafe(_ value: String) -> Bool {
+        !value.isEmpty && value.utf8.allSatisfy { $0 >= 33 && $0 <= 126 }
+    }
+    func boundedHeaders() throws -> [String: String] {
+        switch context {
+        case .standard: return [:]
+        case .onboardingToken(let token):
+            let setup = method == .post && path == ["auth", "setup"]
+            let preference = method == .post && path == ["auth", "preference"] &&
+                body.flatMap { try? JSONDecoder().decode(EnabledPreference.self, from: $0).enabled } == true
+            guard (setup || preference), headerValueIsSafe(token) else { throw FiestaBoardError.invalidRequestContext }
+            return ["Authorization": "Bearer " + token]
+        case .browserSession(let origin, let csrfToken):
+            guard isMutation, headerValueIsSafe(origin), headerValueIsSafe(csrfToken),
+                  let parts = URLComponents(string: origin), ["http", "https"].contains(parts.scheme),
+                  parts.host?.isEmpty == false, parts.user == nil, parts.password == nil,
+                  parts.path.isEmpty, parts.query == nil, parts.fragment == nil else { throw FiestaBoardError.invalidRequestContext }
+            return ["Origin": origin, "X-CSRF-Token": csrfToken]
+        }
+    }
+    private struct EnabledPreference: Decodable { let enabled: Bool }
+    func safeError(status: Int, data: Data) -> FiestaBoardError? {
+        guard status >= 400 else { return nil }
+        let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+        let detail = object?["detail"] as? String
+        let authEndpoint = path.count == 2 && path.first == "auth"
+        if status == 401 && path == ["auth", "login"] && detail == "Invalid username or password" { return .invalidCredentials }
+        if status == 403 {
+            if [ ["auth", "setup"], ["auth", "preference"] ].contains(path),
+               detail == "This install has a stored MCP token. Present it as a Bearer token to enable login, or clear the token first." { return .setupProofRequired }
+            if object?["error"] as? String == "forbidden" && detail == "Refresh this page and try again." { return .csrfRequired }
+            return .forbidden
+        }
+        if status == 409 {
+            if object?["setup_required"] as? Bool == true || (path == ["auth", "login"] && detail == "No user has been created. Call /auth/setup first.") {
+                return .setupRequired(firstRun: object?["first_run"] as? Bool ?? false)
+            }
+            if authEndpoint && detail == "Auth mode is pinned by FIESTABOARD_AUTH_ENABLED." { return .onboardingConflict(.modePinned) }
+            if authEndpoint && ["Already set up", "A user has already been created. Use /auth/login.", "A user already exists. Sign in and use the account settings to change preferences."].contains(detail ?? "") { return .onboardingConflict(.alreadySetUp) }
+        }
+        if status == 422 {
+            let entries = object?["detail"] as? [[String: Any]] ?? []
+            let fields = entries.compactMap { entry -> ValidationField? in
+                guard let location = entry["loc"] as? [String], location.count == 2, location[0] == "body" else { return nil }
+                return ValidationField(rawValue: location[1])
+            }
+            return .validation(fields: Array(Set(fields)).sorted { $0.rawValue < $1.rawValue })
+        }
+        if status == 503 && !isMutation { return .startupUnavailable }
+        return nil
     }
 }

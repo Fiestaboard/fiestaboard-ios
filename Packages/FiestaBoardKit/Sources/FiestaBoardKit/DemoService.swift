@@ -14,6 +14,13 @@ public actor DemoFiestaBoardService: FiestaBoardService {
         simulation = try DemoTransport()
         service = LiveFiestaBoardService(demoDeployment: deployment, transport: simulation)
     }
+    public func bootstrap() async throws -> BootstrapSnapshot {
+        try BootstrapSnapshot(deployment: deployment,
+            health: ServerHealth(status: "ok", serviceRunning: true, version: "10.0.0"),
+            identity: ServerIdentity(product: "FiestaBoard", version: "10.0.0", installationID: "demo", name: "Demo"),
+            auth: AuthStatus(enabled: false, setupRequired: false, authenticated: false, mode: "disabled", firstRun: false))
+    }
+    public func login(username: String, password: String, rememberMe: Bool) async throws -> AuthStatus { try await authStatus() }
     public func setSimulation(_ mode: DemoSimulation) async { await simulation.setMode(mode) }
     public func authStatus() async throws -> AuthStatus { try await service.authStatus() }
     public func login(username: String, password: String) async throws -> AuthStatus { try await service.authStatus() }
