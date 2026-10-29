@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "status": "candidate-additive-evidence",
+  "source": {
+    "commit": "ff2415c4a646b55510f6f633c78915cdc9c333f2",
+    "version": "10.1.20"
+  },
+  "comparison_source": {
+    "commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+    "version": "10.1.17"
+  },
+  "image": "sha256:79ecc5613dec30c8d46ce5533083e1093a85b2295556e7de3111bf63032ef530",
+  "artifacts": {
+    "test_current_board_controls.py": "8d01c56be0fb090e245837c272662f927c3ad7dd4367ad2d730b5ec142b1d96e",
+    "board-control.json": "5f21832a4e0b69151b4d1d3fc2f075f99704e663989a04b01b5472ab0b841398",
+    "bootstrap-control.json": "516876fe9cbb1395a78ac7974b41c45cb595971f6bc0ae0cb030325d572128a6",
+    "test_current_contracts.py": "f98aa6a1f6e38738b4d4136e381daa09f7025191ade6fa21013aeee2a7b3b470"
+  },
+  "source_comparison": {
+    "requirements.txt": {
+      "10.1.17": "edb63edc3019a9f96e68ddeddf53b9dcf918143235894b0726a50ee8227eaa4b",
+      "10.1.20": "edb63edc3019a9f96e68ddeddf53b9dcf918143235894b0726a50ee8227eaa4b"
+    },
+    "outputs.lock.json": {
+      "10.1.17": "9f13429fa3b22a4415ab54923b9b9d209a4c37f5eb7b03c094044656ee13de0f",
+      "10.1.20": "9f13429fa3b22a4415ab54923b9b9d209a4c37f5eb7b03c094044656ee13de0f"
+    },
+    "src/__init__.py": {
+      "10.1.17": "e1abbfc8e499c7e3f3b89abe30e7ed505055c17e602d40ee5b18260b0a61cdb7",
+      "10.1.20": "5a867dff2357cdc76ecb380347aa5996308e05e087ac43af2afefadbd8bee5c4"
+    },
+    "src/main.py": {
+      "10.1.17": "2df701f3a80387d1e9a643bb57349c6410b0853e73231e1905d3c241fc58b1c9",
+      "10.1.20": "e4cc026668f0cd8f9c2c92aeb520acce4a005aa6d652d0b4a0974b3f8eae4a64"
+    },
+    "src/pages/service.py": {
+      "10.1.17": "c50e7ff0d3f4f487a6da51beab9619ab1703ecbc78297377e7ee5280eb90171f",
+      "10.1.20": "dde8ad33eeca30b648b890e975d167aec175ec39d0cfdbee60944bad0ade0e74"
+    },
+    "src/plugins/base.py": {
+      "10.1.17": "a825994cd885d8df95ba24eeef7243c455ee4f24394472c65400fdb5c14ed4e9",
+      "10.1.20": "8c882de6afb5929248785e5f0c9619d976edaeaec91c390a451a271e6e1a3e35"
+    },
+    "src/plugins/registry.py": {
+      "10.1.17": "c8c296358af98ec36ec4756a7d8c1bde71102ef0938ba956af786fe156b701b6",
+      "10.1.20": "5a6af9195ab20b3751813acb972a6417cf05f6e56b80011c5a0e4f8f05e57b03"
+    }
+  },
+  "case_counts": {
+    "board-control.json": 72,
+    "bootstrap-control.json": 57
+  },
+  "changed_case_ids": {
+    "board-control.json": [],
+    "bootstrap-control.json": [
+      "health",
+      "discover_enabled",
+      "discover_disabled",
+      "discover_undecided",
+      "version"
+    ]
+  },
+  "limits": "No current registry replacement or adapter enablement. No hardware, providers, user configuration, credentials, lifespan, ingress or deployment compatibility proof. Output acknowledgement is simulated final boundary acceptance; device_observed remains false."
+}
