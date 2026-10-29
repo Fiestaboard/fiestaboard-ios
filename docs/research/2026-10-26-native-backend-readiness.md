@@ -1,5 +1,7 @@
 # Native backend preparation handoff
 
+**Historical status, updated October28:** PR #2373 subsequently merged. This document records the pre-merge backend wave and its tests, not the current deployment status. Native Collections was subsequently implemented and reviewed; [its evidence](2026-10-27-native-collections-verification.md) remains scoped. The [complete native checklist](../native-parity-checklist.md) tracks current remaining work and source refresh; the user's deployed server is not yet reachable/verified from this environment.
+
 All identified backend preparation is in the single draft [FiestaBoard PR #2373](https://github.com/Fiestaboard/FiestaBoard/pull/2373), implemented by Sol 6.1 and independently reviewed by Astra. The branch includes upstream 10.1.4. It remains unmerged and has not been deployed to the user's server or hardware.
 
 Completed server scope:

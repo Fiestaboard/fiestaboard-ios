@@ -1,8 +1,28 @@
 # FiestaBoard iOS remaining work
 
-This is the durable task tracker. Full web-app feature parity is required before the first App Store release. Checkboxes mean the whole listed deliverable is accepted, not that a draft screen exists. `Contracts/parity.json` remains the release inventory; source/fixture tests alone do not make a workflow release-verified.
+This is the short current queue and durable milestone history. Full web-app feature parity is required before the first App Store release. Checkboxes mean the whole listed deliverable is accepted, not that a draft screen exists. `Contracts/parity.json` remains the source-bound release inventory; source/fixture tests alone do not make a workflow release-verified.
 
-## Current baseline
+## Current status — October 28, 2026
+
+The [complete end-to-end checklist](docs/native-parity-checklist.md) is now the authoritative detailed human acceptance list. It expands all 81 original workflow IDs into 355 checks covering product behavior, first-controller journeys, source/clone/CI, device acceptance and release. The [completion design](docs/superpowers/specs/2026-10-28-native-parity-completion-design.md) and [wave/task execution plan](docs/superpowers/plans/2026-10-28-native-parity-completion.md) describe architecture, dependencies, ownership and the preserved Sol 6.1 implementation/Astra review method. This is a planning draft for user review; no product implementation or release acceptance is claimed by creating it.
+
+- Native baseline: `116b075`, with Collections integrated into the main Xcode project and all 21 user project/signing changes preserved.
+- Latest completed verification (October 27): 186 Swift host tests, 29 contract-tool tests, 55 isolated backend fixture cases, unsigned Simulator/device builds and seven UI tests compiled/zero executed. These are dated results, not fresh tests of the plan. [Evidence](docs/research/2026-10-27-native-collections-verification.md).
+- Backend PR #2373 is merged. Proposed current-web parity target is upstream 10.1.17 at `b5eac069dce10945eac61e1fdadf6ee4a903ba08`; the committed contract inventory is still the original 10.0.0 snapshot, with separate scoped 10.1.7 collection evidence. Full source/schema/runtime reconciliation is first in the queue.
+- The immediate usability gap is discovery/remembered sign-in plus consistent current-server control support. Board commands still require exact non-development 10.0.0; collection creation/preview have distinct candidate gates. Do not widen them without the relevant fixtures/review.
+- User test target: `http://fiestapi.local:4420`. Read-only health/discover/auth-status probes returned No route to host from this environment. Credentials are not stored in the repository. Installed version, actual login and physical control remain unverified.
+
+| Next work | State | Concrete result |
+| --- | --- | --- |
+| Plan review | Draft for user review | Complete checklist/order and identified interaction points; preserve full parity requirement |
+| W0-A source/contracts | Queued | Current exact-source inventory, runtime fixtures, checker/evidence migration and per-operation policies |
+| W0-B clone/CI | Queued; independent track | Reproducible clean clone/build/tests, normal/demo schemes, signing-preserving project validation |
+| W0-C ingress | Owned early investigation/integration; actual upstream access may need operator | Prove authorized native route or build required browser-auth bridge; path-only fixture is insufficient; direct-LAN work continues independently |
+| W1-A through W1-F | Highest implementation priority after plan review | Find server → sign in/setup → select/read/control → secure reopen/logout → real iPhone evidence |
+| Reach test instance | Needs network/device interaction | Working LAN/VPN/IP path and installed version; isolated development continues meanwhile |
+| Remaining waves W2–W13 | Fully enumerated in master checklist | Home, outputs, rendering, pages/editors/canvases, schedules, integrations/OAuth, accounts/AI/admin, native quality and release |
+
+## Initial baseline — historical
 
 - [x] Audited 81 web workflows and 198 web API calls; pinned public/internal schemas and integrity/readiness gates.
 - [x] Native draft: manual connection/login, isolated memory sessions, Home/Library/Displays/Settings, flap preview, simulated demo, text/page controls.
@@ -109,7 +129,7 @@ Partial means a subset exists in the draft; the checkbox stays open until the en
 - [ ] **canvas_shapes** — Remaining. Shapes parameters, order and dynamic expressions
 - [ ] **canvas_source** — Remaining. Canvas plugin source variable or arbitrary expression
 - [ ] **calendar_interaction** — Remaining. Calendar/list views, recurrence/timezone-aware drag and resize, accessible entry form
-- [ ] **collection_rules_editor** — Remaining. Collection page ordering, rule modes/expressions, durations and default controls
+- [ ] **collection_rules_editor** — Implemented draft for member order, modes/expressions, intervals, fallback and polling. Reconcile any per-page-duration wording with the current source contract; complete device/pose/VoiceOver and supported-pairing acceptance.
 - [ ] **oauth_relay_flow** — Remaining. Relay browser start, signed local/prefixed callback, refusal/expiry and manual URL/code rescue
 - [ ] **oauth_device_flow** — Remaining. Device verification URL/code, server polling and pending/expired/denied/failed statuses
 - [ ] **oauth_key_exchange_flow** — Remaining. Key exchange callback or explicit headless pasted provider code
@@ -119,9 +139,9 @@ Partial means a subset exists in the draft; the checkbox stays open until the en
 - [ ] **appearance_theme** — Partial draft. Light/dark/system appearance
 - [ ] **localization** — Remaining. Fourteen locales and language persistence, locale-aware formatting/output labels
 - [ ] **accessibility** — Partial draft. Skip/focus/labels, motion preferences, keyboard and form error announcements
-- [ ] **pwa_installation** — Remaining. Browser install prompt, manifest/service worker and installed-app lifecycle
+- [ ] **pwa_installation** — Remaining native equivalent: installation, onboarding/update and foreground/background/relaunch lifecycle; no browser service worker is required in SwiftUI.
 - [ ] **offline_recovery** — Partial draft. Offline page and health retry; cache/offline/read/write distinction
-- [ ] **geolocation_permission** — Remaining. Use browser location to fill server latitude/longitude
+- [ ] **geolocation_permission** — Remaining native equivalent: user-initiated Core Location permission, denied/restricted/no-fix/manual fallback and server latitude/longitude save.
 - [ ] **external_plugin_documents** — Remaining. Fetch repository README and manifest-derived preview images/relative links
 - [ ] **mcp_connector_instructions** — Remaining. Generate/copy MCP client instructions and endpoint/token config
 - [ ] **removed_debug_monitor** — Remaining. Legacy /debug monitor route explains removed monitoring and docker logs command
@@ -130,7 +150,7 @@ Partial means a subset exists in the draft; the checkbox stays open until the en
 ## Working rules
 
 - Keep this file current in every integrated milestone; record tested commits and reviewer verdicts below.
-- Run bounded independent tracks with explicit file ownership. User authorized Claude Opus CLI and parallel subagents; Sol coordinates/tests, Opus contributes implementation, Astra independently reviews integrated work. Do not report Opus work unless an actual call succeeds.
+- Run bounded independent tracks with explicit file ownership. User authorized parallel subagents and Claude Opus CLI: Sol 6.1 implements/tests; Astra independently reviews integrated work. Opus may contribute when authenticated; its expired login does not block Sol progress. Do not report Opus work unless an actual call succeeds.
 - Keep user signing changes and dirty backend work untouched. Build scripts must not silently regenerate the Xcode project.
 - Use fixtures/disposable backends for automated tests. Do not exercise production boards.
 - Distinguish implemented, built, host-tested, simulator-tested and physically verified. Keep unsupported writes disabled.
