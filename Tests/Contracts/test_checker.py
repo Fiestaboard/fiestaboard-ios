@@ -93,6 +93,46 @@ class CheckerTests(unittest.TestCase):
         self.docs['snapshot.json']['artifacts'] = [{'source_commit': SHA, 'path': 'capabilities.json', 'sha256': hashlib.sha256(content).hexdigest()}]
         self.assertNotEqual(self.run_check().returncode, 0)
 
+    def test_existing_known_companions_cannot_be_omitted(self):
+        for relative in ['Contracts/current-source-ledger.json', 'Contracts/current-capabilities.json',
+                         'Fixtures/contracts/current/bootstrap-control.json']:
+            for commit in [SHA, 'e' * 40]:
+                with self.subTest(path=relative, commit=commit):
+                    path = self.root / relative
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text(json.dumps({'source_commit': commit}))
+                    self.docs['snapshot.json']['artifacts'] = []
+                    result = self.run_check()
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn('existing companion missing artifact registration', result.stderr)
+                    path.unlink()
+
+    def test_capability_embedded_declarations_match_selected_operation(self):
+        selected = self.schema['paths']['/thing']['get']
+        original = copy.deepcopy(self.docs['operations.json']['operations'][0])
+        original.update(schema_sha256=self.docs['snapshot.json']['schemas']['public']['sha256'],
+                        schema_operation_id=selected['operationId'], request_body=None,
+                        parameters=[], responses=selected['responses'], declared_response_statuses=['200'])
+        def register(candidate):
+            artifact = {'source_commit': SHA, 'kind': 'current-capabilities', 'operations': [candidate]}
+            content = json.dumps(artifact).encode()
+            (self.root / 'capabilities.json').write_bytes(content)
+            self.docs['snapshot.json']['artifacts'] = [{'source_commit': SHA, 'path': 'capabilities.json', 'sha256': hashlib.sha256(content).hexdigest()}]
+        register(original)
+        valid = self.run_check()
+        self.assertEqual(valid.returncode, 0, valid.stderr)
+        mutations = {'schema_operation_id': 'staleOperation', 'request_body': {'required': True},
+                     'parameters': [{'name': 'stale', 'in': 'query'}],
+                     'responses': {'204': {'description': 'stale'}}, 'declared_response_statuses': ['204']}
+        for key, value in mutations.items():
+            with self.subTest(field=key):
+                changed = copy.deepcopy(original)
+                changed[key] = value
+                register(changed)  # Rehashing must not bless stale declarations.
+                result = self.run_check()
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(f'schema {key} mismatch', result.stderr)
+
     def test_valid_candidate_passes_integrity(self):
         result = self.run_check()
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

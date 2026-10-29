@@ -72,6 +72,11 @@ def check(root, release_ready=False):
     artifact_docs = []
     artifacts = snap.get('artifacts', [])
     require(isinstance(artifacts, list), 'snapshot artifacts must be a list')
+    registered_paths = {item.get('path') for item in artifacts if isinstance(item, dict) and isinstance(item.get('path'), str)} if isinstance(artifacts, list) else set()
+    for relative in ('Contracts/current-source-ledger.json', 'Contracts/current-capabilities.json',
+                     'Fixtures/contracts/current/bootstrap-control.json'):
+        if (root / relative).exists():
+            require(relative in registered_paths, f'{relative}: existing companion missing artifact registration')
     for item in artifacts if isinstance(artifacts, list) else []:
         require(valid_evidence(item), 'current artifact requires source-matching hashed evidence')
         if not valid_evidence(item):
@@ -192,6 +197,16 @@ def check(root, release_ready=False):
                 require(candidate.get(key) == op.get(key), f"capability {candidate.get('id')}: inventory {key} mismatch")
             surface = candidate.get('surface')
             require(candidate.get('schema_sha256') == snap.get('schemas', {}).get(surface, {}).get('sha256'), f"capability {candidate.get('id')}: schema hash mismatch")
+            selected = schemas.get(op.get('surface'), {}).get('paths', {}).get(op.get('path'), {}).get(str(op.get('method', '')).lower(), {})
+            declarations = {
+                'schema_operation_id': selected.get('operationId'),
+                'request_body': selected.get('requestBody'),
+                'parameters': selected.get('parameters', []),
+                'responses': selected.get('responses', {}),
+                'declared_response_statuses': sorted(selected.get('responses', {})),
+            }
+            for key, expected in declarations.items():
+                require(candidate.get(key) == expected, f"capability {candidate.get('id')}: schema {key} mismatch")
     blockers = []
     for label, doc in [('snapshot',snap),('supported-servers',support)]:
         require(isinstance(doc.get('blockers'), list) and all(isinstance(x,str) and x for x in doc.get('blockers', [])), f'{label}: blockers list required')
