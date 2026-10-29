@@ -32,6 +32,8 @@ public protocol FiestaBoardService: Sendable {
     func validatePage(requestData: Data, target: BoardTarget) async throws -> TemplateValidationResult
     func previewPage(requestData: Data, target: BoardTarget) async throws -> TemplatePreviewResult
     func updateBoard(_ patch: BoardPatch, on target: BoardTarget) async throws -> BoardConfigurationReceipt
+    func readDefaultPage(on target: BoardTarget) async throws -> BoardDefaultContext
+    func updateDefaultPage(_ change: DefaultPageChange, context: BoardDefaultContext) async throws -> BoardDefaultSnapshot
     func restoreBoard(_ target: BoardTarget) async throws -> BoardRestoreReceipt
     func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult
     func selectPage(id: String, on target: BoardTarget) async throws -> MutationResult
@@ -63,6 +65,11 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     private var collectionCreationReviewed = false
     private var creatingCollection = false
     private var collectionCreateReadbackRequired = false
+    private var controlVersion: VersionInfo?
+    private var controlOptIn = false
+    private var defaultWriteGeneration: UInt64 = 0
+    private var defaultWriting = false
+    private var defaultContexts: [UUID: BoardDefaultContext] = [:]
     private var knownBoards: [String: BoardSummary] = [:]
 
     public init(deployment: DeploymentURL, transport: (any APITransport)? = nil, vault: (any SessionVault)? = nil) {
@@ -255,6 +262,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         access = .readOnly
         pageWritesOptedIn = false; previewAudited = false; knownPages = [:]
         knownBoards = [:]
+        controlVersion = nil; controlOptIn = false; defaultContexts = [:]; defaultWriting = false; defaultWriteGeneration &+= 1
         let version: VersionInfo = try await fetch(APIRequest(path: ["version"]))
         let boards = try await boards()
         guard generation == token else { throw FiestaBoardError.staleSession }
@@ -263,7 +271,8 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         collectionCreateAudited = allowsSimulatedCollectionWrites || (version.runningVersion == "10.1.7" && !version.isDev)
         pageWritesOptedIn = allowCandidateWrites
         previewAudited = ["10.0.0", "10.1.2", "10.1.7"].contains(version.runningVersion ?? "") && !version.isDev
-        if allowCandidateWrites && version.runningVersion == "10.0.0" && !version.isDev { access = .candidateWrites }
+        controlVersion = version; controlOptIn = allowCandidateWrites
+        if CapabilityPolicy.allows(.scalarControls, version: version.runningVersion, isDev: version.isDev, optedIn: allowCandidateWrites) { access = .candidateWrites }
         return ConnectionStatus(version: version, access: access, isDemo: false, sessionPersistence: "Memory only")
     }
 
@@ -370,7 +379,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     }
 
     public func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult {
-        try requireWrites(target)
+        try requireWrites(target, operation: .sendText)
         struct Body: Encodable { let text: String }
         struct Reply: Decodable {
             let sent: Bool; let board_id: String; let characters: [[Int]]; let text: String
@@ -390,7 +399,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     }
 
     public func selectPage(id: String, on target: BoardTarget) async throws -> MutationResult {
-        try requireWrites(target)
+        try requireWrites(target, operation: .selectPage)
         guard DeploymentURL.validSegment(id) else { throw FiestaBoardError.invalidPath }
         struct Body: Encodable { let page_id: String }
         struct Reply: Decodable {
@@ -406,7 +415,8 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     }
 
     public func updateBoard(_ patch: BoardPatch, on target: BoardTarget) async throws -> BoardConfigurationReceipt {
-        try requireWrites(target)
+        try requireWrites(target, operation: .scalarControls)
+        if controlVersion?.runningVersion != "10.0.0", patch.defaultPage != .omit { throw FiestaBoardError.invalidRequestContext }
         try patch.validate()
         let detail: BoardDetail = try await fetch(APIRequest(.patch, path: ["v1", "boards", target.boardID],
                                                             body: JSONEncoder().encode(patch)))
@@ -416,7 +426,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     }
 
     public func restoreBoard(_ target: BoardTarget) async throws -> BoardRestoreReceipt {
-        try requireWrites(target)
+        try requireWrites(target, operation: .restore)
         // The pinned send executor can wait behind a 120-second transition, then run another.
         let receipt: BoardRestoreReceipt = try await fetch(APIRequest(.post, path: ["v1", "boards", target.boardID, "restore"], timeout: 300))
         guard receipt.boardID == target.boardID, !receipt.deviceObserved,
@@ -424,12 +434,51 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         return receipt
     }
 
+    public func readDefaultPage(on target: BoardTarget) async throws -> BoardDefaultContext {
+        try requireWrites(target, operation: .conditionalDefault)
+        let token = generation
+        let writeGeneration = defaultWriteGeneration
+        let startedDuringWrite = defaultWriting
+        let snapshot: BoardDefaultSnapshot = try await fetch(APIRequest(path: ["schedules", "default-page"], queryItems: [.init(name: "board_id", value: target.boardID)], cachePolicy: .noStore))
+        try snapshot.validate()
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        guard !startedDuringWrite, !defaultWriting, writeGeneration == defaultWriteGeneration else { throw FiestaBoardError.invalidRequestContext }
+        let context = BoardDefaultContext(target: target, snapshot: snapshot, generation: token, token: UUID())
+        defaultContexts[context.token] = context
+        return context
+    }
+    public func updateDefaultPage(_ change: DefaultPageChange, context: BoardDefaultContext) async throws -> BoardDefaultSnapshot {
+        try requireWrites(context.target, operation: .conditionalDefault)
+        guard context.generation == generation, defaultContexts[context.token] == context, change != .omit else { throw FiestaBoardError.invalidRequestContext }
+        if case .set(let id) = change, !DeploymentURL.validSegment(id) { throw FiestaBoardError.invalidPath }
+        defaultContexts = [:]
+        defaultWriteGeneration &+= 1; defaultWriting = true
+        let session = generation
+        defer { if session == generation { defaultWriting = false; defaultWriteGeneration &+= 1 } }
+        struct Body: Encodable {
+            let board_id: String; let expected_revision: String; let page_id: String?
+            func encode(to encoder: any Encoder) throws {
+                var c = encoder.container(keyedBy: Keys.self)
+                try c.encode(board_id, forKey: .board_id); try c.encode(expected_revision, forKey: .expected_revision)
+                if let page_id { try c.encode(page_id, forKey: .page_id) } else { try c.encodeNil(forKey: .page_id) }
+            }
+            enum Keys: String, CodingKey { case board_id, expected_revision, page_id }
+        }
+        let id: String? = if case .set(let id) = change { id } else { nil }
+        let result = try await response(APIRequest(.put, path: ["schedules", "default-page"], body: JSONEncoder().encode(Body(board_id: context.target.boardID, expected_revision: context.snapshot.revision, page_id: id))))
+        if result.status == 412 { throw FiestaBoardError.pageConflict }
+        guard result.status == 200, let snapshot = try? JSONDecoder().decode(BoardDefaultSnapshot.self, from: result.data),
+              (try? snapshot.validate()) != nil, snapshot.defaultPageID == id else { throw FiestaBoardError.unknownMutationOutcome }
+        return snapshot
+    }
+
     private func validateTarget(_ target: BoardTarget) throws {
         guard target.deployment == deployment else { throw FiestaBoardError.invalidTarget }
     }
-    private func requireWrites(_ target: BoardTarget) throws {
+    private func requireWrites(_ target: BoardTarget, operation: BoardOperation) throws {
         try validateTarget(target)
-        guard access == .candidateWrites else { throw FiestaBoardError.writesDisabled }
+        guard access == .candidateWrites, let version = controlVersion,
+              CapabilityPolicy.allows(operation, version: version.runningVersion, isDev: version.isDev, optedIn: controlOptIn) else { throw FiestaBoardError.writesDisabled }
         guard knownBoards[target.boardID] != nil else { throw FiestaBoardError.invalidTarget }
     }
     private func response(_ request: APIRequest, invalidateUnauthenticated: Bool = true) async throws -> APIResponse {

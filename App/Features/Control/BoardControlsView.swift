@@ -36,8 +36,9 @@ private typealias ControlState<Value> = SwiftUI.State<Value>
                         }
                     }
                 } label: {
-                    LabeledContent("Fallback page", value: defaultPageName(detail.defaultPageID))
+                    LabeledContent("Fallback page", value: defaultPageName(store.defaultPageContext.map { $0.snapshot.defaultPageID } ?? detail.defaultPageID))
                 }
+                .disabled(!store.canChangeDefaultPage)
                 Button("Restore board content") { pending = store.prepare(.restore) }
                 Text("Restore follows the current schedule, timed message or pinned page. It keeps the pinned selection and respects pause and silence settings.")
                     .font(.footnote).foregroundStyle(.secondary)

@@ -56,6 +56,7 @@ public struct PreparedAction: Identifiable, Sendable {
     public let boardName: String
     public let isDemo: Bool
     let generation: UInt64
+    let defaultContext: BoardDefaultContext?
 }
 
 // Combine keeps this draft buildable where compiler macro sandbox execution is unavailable.
@@ -76,6 +77,8 @@ public struct PreparedAction: Identifiable, Sendable {
     private var collectionCreationReviews: Set<DeploymentURL> = []
     private var collectionWriteGenerations: [CollectionIdentity: UInt64] = [:]
     private var collectionListGenerations: [DeploymentURL: UInt64] = [:]
+    @Published public private(set) var defaultPageContext: BoardDefaultContext?
+    public var canChangeDefaultPage: Bool { canWrite && defaultPageContext?.target == target }
     @Published public private(set) var board: BoardDetail?
     @Published public private(set) var selectedBoardID: String?
     @Published public private(set) var message: String?
@@ -153,6 +156,7 @@ public struct PreparedAction: Identifiable, Sendable {
                         let detail = try await next.board(target)
                         guard valid(token) else { return }
                         board = detail
+                        await loadDefaultContext(next, target: target, token: token)
                         // An ambiguous command barrier survives reconnect; only explicit refresh clears it.
                     } catch {
                         guard valid(token) else { return }
@@ -195,7 +199,7 @@ public struct PreparedAction: Identifiable, Sendable {
         generation &+= 1
         connectionTask?.cancel(); refreshTask?.cancel(); commandTask?.cancel(); collectionListTask?.cancel()
         connectionTask = nil; refreshTask = nil; commandTask = nil
-        service = nil; status = nil; boards = []; pages = []; board = nil; selectedBoardID = nil
+        service = nil; status = nil; boards = []; pages = []; board = nil; defaultPageContext = nil; selectedBoardID = nil
         connecting = false; refreshing = false; message = nil; remoteLogoutState = nil
         connectionLabel = "Disconnected"; usedActions = []; pageContexts = [:]; pageSessionOptedIn = false
         collections = []; collectionMessage = nil; collectionsLoading = false
@@ -243,7 +247,7 @@ public struct PreparedAction: Identifiable, Sendable {
         guard boards.contains(where: { $0.id == id }), !connecting else { return Task {} }
         generation &+= 1
         refreshTask?.cancel(); commandTask?.cancel()
-        selectedBoardID = id; board = nil; message = nil; usedActions = []
+        selectedBoardID = id; board = nil; defaultPageContext = nil; message = nil; usedActions = []
         return refresh()
     }
 
@@ -252,12 +256,14 @@ public struct PreparedAction: Identifiable, Sendable {
         refreshTask?.cancel()
         let token = generation
         refreshing = true
+        defaultPageContext = nil
         let task = Task { [weak self] in
             guard let self else { return }
             do {
                 let detail = try await service.board(target)
                 guard valid(token) else { return }
                 acceptSnapshot(detail); readbackTargets.remove(target)
+                await loadDefaultContext(service, target: target, token: token)
             } catch {
                 guard valid(token) else { return }
                 if !handleAuthenticationLoss(error) { message = safeDescription(error) }
@@ -266,6 +272,18 @@ public struct PreparedAction: Identifiable, Sendable {
         }
         refreshTask = task
         return task
+    }
+
+    private func loadDefaultContext(_ service: any FiestaBoardService, target: BoardTarget, token: UInt64) async {
+        do {
+            let context = try await service.readDefaultPage(on: target)
+            guard valid(token), self.target == target else { return }
+            defaultPageContext = context
+        } catch {
+            guard valid(token) else { return }
+            defaultPageContext = nil
+            _ = handleAuthenticationLoss(error)
+        }
     }
 
     /// A failed optional library read can be retried without replacing authentication or document contexts.
@@ -400,11 +418,14 @@ public struct PreparedAction: Identifiable, Sendable {
         case .page(let id): guard pages.contains(where: { $0.id == id }) else { return nil }
         case .configuration(let patch):
             guard (try? patch.validate()) != nil else { return nil }
+            if patch.defaultPage != .omit {
+                guard canChangeDefaultPage, patch.paused == nil, patch.scheduleEnabled == nil, patch.autoRestore == nil else { return nil }
+            }
             if case .set(let id) = patch.defaultPage, !pages.contains(where: { $0.id == id }) { return nil }
         case .restore: break
         }
         return PreparedAction(target: target, payload: payload, boardName: summary.name,
-                              isDemo: status?.isDemo == true, generation: generation)
+                              isDemo: status?.isDemo == true, generation: generation, defaultContext: defaultPageContext)
     }
 
     @discardableResult public func confirm(_ action: PreparedAction) -> Task<Void, Never> {
@@ -423,7 +444,13 @@ public struct PreparedAction: Identifiable, Sendable {
                 case .text(let value): receipt = Self.describe(try await service.sendText(value, to: action.target), simulated: action.isDemo)
                 case .page(let id): receipt = Self.describe(try await service.selectPage(id: id, on: action.target), simulated: action.isDemo)
                 case .configuration(let patch):
-                    _ = try await service.updateBoard(patch, on: action.target)
+                    if patch.defaultPage != .omit {
+                        guard let context = action.defaultContext else { throw FiestaBoardError.invalidRequestContext }
+                        defaultPageContext = nil
+                        _ = try await service.updateDefaultPage(patch.defaultPage, context: context)
+                    } else {
+                        _ = try await service.updateBoard(patch, on: action.target)
+                    }
                     receipt = (action.isDemo ? "Simulated — " : "") + "Board settings updated. Physical output is not verified."
                 case .restore:
                     let result = try await service.restoreBoard(action.target)

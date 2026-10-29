@@ -126,3 +126,85 @@ extension BoardControlTests {
         }
     }
 }
+
+extension BoardControlTests {
+    func testConditionalDefaultUsesOriginalContextAndConsumesBeforeTransport() async throws {
+        let deployment = try DeploymentURL("https://board.test/prefix")
+        let log = RequestLog()
+        FixtureURLProtocol.handler = { request in
+            log.append(request)
+            if request.url!.path.hasSuffix("version") { return (200, [:], Data(#"{"package_version":"10.1.17","build_version":"fixture","running_version":"10.1.17","is_dev":false}"#.utf8)) }
+            if request.url!.path.hasSuffix("boards") { return (200, [:], fixture("boards")) }
+            return (200, [:], Data(#"{"revision":"original","edit_protocol":"schedule-default-revision-v1","default_page_id":null}"#.utf8))
+        }
+        let service = LiveFiestaBoardService(deployment: deployment, transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self]))
+        _ = try await service.connect(allowCandidateWrites: true)
+        let target = try BoardTarget(deployment: deployment, boardID: "board-2")
+        let context = try await service.readDefaultPage(on: target)
+        XCTAssertEqual(log.requests.last?.url?.query, "board_id=board-2")
+        _ = try await service.updateDefaultPage(.clear, context: context)
+        let write = log.requests.last!
+        XCTAssertEqual(write.httpMethod, "PUT")
+        XCTAssertEqual(write.url?.path, "/prefix/api/schedules/default-page")
+        let body = try JSONSerialization.jsonObject(with: write.httpBody!) as! [String: Any]
+        XCTAssertEqual(body["expected_revision"] as? String, "original")
+        XCTAssertEqual(body["board_id"] as? String, "board-2")
+        XCTAssertTrue(body["page_id"] is NSNull)
+        do { _ = try await service.updateDefaultPage(.clear, context: context); XCTFail("Consumed context") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .invalidRequestContext) }
+        XCTAssertEqual(log.requests.filter { $0.httpMethod == "PUT" }.count, 1)
+        do { _ = try await service.updateBoard(BoardPatch(paused: true, defaultPage: .clear), on: target); XCTFail("Mixed default patch") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .invalidRequestContext) }
+        XCTAssertEqual(log.requests.filter { $0.httpMethod == "PATCH" }.count, 0)
+        let stale = try await service.readDefaultPage(on: target)
+        _ = try await service.connect(allowCandidateWrites: true)
+        do { _ = try await service.updateDefaultPage(.clear, context: stale); XCTFail("Stale context") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .invalidRequestContext) }
+    }
+}
+
+extension BoardControlTests {
+    func testLateDefaultReadCannotAuthorizeAfterAWriteAndConflictRequiresReload() async throws {
+        let deployment = try DeploymentURL("https://board.test")
+        let transport = DefaultRaceTransport()
+        let service = LiveFiestaBoardService(deployment: deployment, transport: transport)
+        _ = try await service.connect(allowCandidateWrites: true)
+        let target = try BoardTarget(deployment: deployment, boardID: "board-2")
+        let original = try await service.readDefaultPage(on: target)
+        await transport.blockNextRead()
+        let lateRead = Task { try await service.readDefaultPage(on: target) }
+        await transport.waitForRead()
+        do { _ = try await service.updateDefaultPage(.clear, context: original); XCTFail("Conflict") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .pageConflict) }
+        await transport.releaseRead()
+        do { _ = try await lateRead.value; XCTFail("Stale read") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .invalidRequestContext) }
+        do { _ = try await service.updateDefaultPage(.clear, context: original); XCTFail("No replay") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .invalidRequestContext) }
+        let writes = await transport.writes
+        XCTAssertEqual(writes, 1)
+    }
+}
+private actor DefaultRaceTransport: APITransport {
+    var writes = 0
+    private var block = false
+    private var continuation: CheckedContinuation<Void, Never>?
+    private var waiter: CheckedContinuation<Void, Never>?
+    func resetSession() {}
+    func blockNextRead() { block = true }
+    func waitForRead() async { if continuation == nil { await withCheckedContinuation { waiter = $0 } } }
+    func releaseRead() { continuation?.resume(); continuation = nil }
+    func send(_ request: APIRequest) async throws -> APIResponse {
+        if request.path == ["version"] { return APIResponse(status: 200, data: Data(#"{"package_version":"10.1.17","build_version":"test","running_version":"10.1.17","is_dev":false}"#.utf8)) }
+        if request.path == ["v1", "boards"] { return APIResponse(status: 200, data: fixture("boards")) }
+        if request.method == .put { writes += 1; return APIResponse(status: 412, data: Data()) }
+        if block { block = false; await withCheckedContinuation { continuation = $0; waiter?.resume(); waiter = nil } }
+        return APIResponse(status: 200, data: Data(#"{"revision":"original","edit_protocol":"schedule-default-revision-v1","default_page_id":null}"#.utf8))
+    }
+}
+
+extension BoardControlTests {
+    func testDefaultSnapshotRequiresExplicitNullableValue() throws {
+        XCTAssertThrowsError(try JSONDecoder().decode(BoardDefaultSnapshot.self, from: Data(#"{"revision":"r","edit_protocol":"schedule-default-revision-v1"}"#.utf8)))
+    }
+}

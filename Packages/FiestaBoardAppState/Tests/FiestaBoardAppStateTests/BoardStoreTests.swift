@@ -827,3 +827,64 @@ extension BoardStoreTests {
         }
     }
 }
+
+extension BoardStoreTests {
+    func testMissingDefaultContextDisablesOnlyFallback() async throws {
+        let store = BoardStore()
+        await store.connect(try DemoFiestaBoardService()).value
+        XCTAssertTrue(store.canWrite)
+        XCTAssertFalse(store.canChangeDefaultPage)
+        XCTAssertNil(store.prepare(.configuration(BoardPatch(defaultPage: .clear))))
+        XCTAssertNotNil(store.prepare(.configuration(BoardPatch(paused: true))))
+    }
+}
+
+extension BoardStoreTests {
+    func testDefaultConfirmationRetainsOriginalRevisionAcrossExplicitRefreshAndRequiresReloadAfterConflict() async throws {
+        let transport = try StoreDefaultTransport()
+        let deployment = try DeploymentURL("https://board.test")
+        let service = LiveFiestaBoardService(deployment: deployment, transport: transport)
+        let store = BoardStore()
+        await store.connect(service, allowCandidateWrites: true).value
+        XCTAssertTrue(store.canChangeDefaultPage)
+        let prepared = try XCTUnwrap(store.prepare(.configuration(BoardPatch(defaultPage: .clear))))
+        await store.refresh().value
+        await store.confirm(prepared).value
+        let revision = await transport.submittedRevision
+        XCTAssertEqual(revision, "read-1")
+        XCTAssertTrue(store.needsReadback)
+        XCTAssertFalse(store.canChangeDefaultPage)
+        XCTAssertTrue(store.message?.contains("changed") == true)
+        await store.confirm(prepared).value
+        let count = await transport.writes
+        XCTAssertEqual(count, 1)
+        await store.refresh().value
+        XCTAssertTrue(store.canChangeDefaultPage)
+    }
+}
+private actor StoreDefaultTransport: APITransport {
+    private let fixtures: [String: Data]
+    private var reads = 0
+    var writes = 0
+    var submittedRevision: String?
+    init() throws {
+        let packageRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let directory = packageRoot.appendingPathComponent("FiestaBoardKit/Tests/FiestaBoardKitTests/Fixtures")
+        fixtures = try Dictionary(uniqueKeysWithValues: ["auth", "boards", "board", "pages"].map { ($0, try Data(contentsOf: directory.appendingPathComponent($0 + ".json"))) })
+    }
+    func resetSession() {}
+    func send(_ request: APIRequest) async throws -> APIResponse {
+        if request.path == ["version"] { return APIResponse(status: 200, data: Data(#"{"package_version":"10.1.17","build_version":"test","running_version":"10.1.17","is_dev":false}"#.utf8)) }
+        if request.path == ["schedules", "default-page"] {
+            if request.method == .put {
+                writes += 1
+                submittedRevision = (try JSONSerialization.jsonObject(with: request.body!) as? [String: Any])?["expected_revision"] as? String
+                return APIResponse(status: 412, data: Data())
+            }
+            reads += 1
+            return APIResponse(status: 200, data: Data("{\"revision\":\"read-\(reads)\",\"edit_protocol\":\"schedule-default-revision-v1\",\"default_page_id\":null}".utf8))
+        }
+        let name = request.path == ["auth", "status"] ? "auth" : (request.path.last == "boards" ? "boards" : (request.path.last == "pages" ? "pages" : "board"))
+        return APIResponse(status: 200, data: fixtures[name]!)
+    }
+}
