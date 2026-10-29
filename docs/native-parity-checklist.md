@@ -524,6 +524,8 @@ Wave: **W4**. Current: **Missing**.
 
 ### page_library_navigation
 
+Implementation checkpoint: native template creation for split-flap/LED and conditional deletion are reviewed; phone/tablet create→editor→delete journeys passed. Import/export, compatibility browsing and the full acceptance checks below remain open. [Evidence](research/2026-10-28-native-page-lifecycle-verification.md).
+
 Wave: **W5**. Current: **Partial**.
 
 - [ ] page_library_navigation.1 Implement search/filter/sort/grid-list and device/geometry compatibility indicators across pages and Picks.

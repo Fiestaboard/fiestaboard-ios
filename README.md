@@ -4,7 +4,7 @@ Native SwiftUI controller for FiestaBoard on iPhone and iPad, with layouts drive
 
 A native development draft is available with Home, Library, Displays, Settings, a simulated demo, manual connection/sign-in, board previews, text/page actions, board configuration/restore controls, on-device page drafts with recovery and undo, conditional page saves on compatible servers, explicit template validation/previews, and native Collections editing with durable recovery. It uses adaptive SwiftUI navigation and system Liquid Glass. Full web-app parity remains the first-release requirement; this draft is not a release candidate. Automatic discovery, remembered sign-in and consistent current-server board-control support are the next end-to-end milestone.
 
-Open [FiestaBoard.xcodeproj](FiestaBoard.xcodeproj), choose the **FiestaBoard** scheme and an iPhone or iPad simulator, then Run. The shared scheme starts in demo mode. See the [testing guide](docs/draft-testing.md) for live connection, device signing, resizing checks, and current limits.
+Open [FiestaBoard.xcodeproj](FiestaBoard.xcodeproj). For normal iPhone testing, choose **FiestaBoard Device Test** and press ⌘R; it launches without an attached debugger. **FiestaBoard** enables normal debugging, and **FiestaBoard Demo** starts with simulated displays. See the [testing guide](docs/draft-testing.md) for live connection, device signing, resizing checks, and current limits.
 
 ```sh
 scripts/build-draft.sh simulator

@@ -2,6 +2,7 @@ import XCTest
 
 @MainActor
 private func selectTab(_ name: String, in app: XCUIApplication) {
+    XCTAssertTrue(app.descendants(matching: .any).matching(identifier: name).firstMatch.waitForExistence(timeout: 10))
     let phoneTab = app.tabBars.buttons[name]
     if phoneTab.exists { phoneTab.tap(); return }
     // iPad floating tabs expose cells on current SDKs; sidebars can expose buttons.
@@ -30,10 +31,13 @@ final class DemoUITests: XCTestCase {
         app.textViews["Message text"].tap()
         app.textViews["Message text"].typeText("HELLO")
         let review = app.buttons["Review action"]
-        if app.buttons["Hide keyboard"].exists { app.buttons["Hide keyboard"].tap() }
+        let hideKeyboard = app.buttons["Hide keyboard"]
+        if hideKeyboard.waitForExistence(timeout: 3) {
+            hideKeyboard.tap()
+            XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5))
+        }
         XCTAssertTrue(review.isEnabled)
-        let frame = review.frame
-        app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: frame.midX, dy: frame.midY)).tap()
+        review.tap()
         XCTAssertTrue(app.buttons["Confirm simulated action"].waitForExistence(timeout: 3))
         app.buttons["Confirm simulated action"].tap()
         XCTAssertTrue(app.staticTexts["Simulated — server acknowledged a send. Physical output is not verified."].waitForExistence(timeout: 5))
@@ -245,8 +249,8 @@ extension DemoUITests {
 
     @MainActor
     private func openPageEditor(_ app: XCUIApplication) {
-        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
         selectTab("Library", in: app)
+        XCTAssertTrue(app.staticTexts["Welcome"].waitForExistence(timeout: 5))
         app.staticTexts["Welcome"].tap()
         app.buttons["editLocalDraft"].tap()
         XCTAssertTrue(app.navigationBars["Page editor"].waitForExistence(timeout: 5))
@@ -255,12 +259,30 @@ extension DemoUITests {
 
     @MainActor
     private func scrollTo(_ element: XCUIElement, in app: XCUIApplication, upwards: Bool = true) {
-        for _ in 0..<10 {
-            // A field partly under the sheet's navigation bar may report
-            // hittable although a tap lands on the bar and never focuses it.
+        for _ in 0..<12 {
             let navigationBottom = app.navigationBars.allElementsBoundByIndex.map { $0.frame.maxY }.max() ?? 0
-            if element.exists && element.isHittable && element.frame.midY > navigationBottom + 12 { return }
-            if upwards { app.swipeUp() } else { app.swipeDown() }
+            let container = app.collectionViews.allElementsBoundByIndex.last(where: { $0.isHittable })
+            let frame = container?.frame.intersection(app.frame) ?? app.frame
+            let top = max(frame.minY, navigationBottom) + 20
+            var bottom = frame.maxY - 20
+            if app.keyboards.firstMatch.exists { bottom = min(bottom, app.keyboards.firstMatch.frame.minY - 12) }
+            guard bottom > top + 40 else { return }
+            var moveUp = upwards
+            if element.exists {
+                let y = element.frame.midY
+                if element.isHittable && y >= top && y <= bottom { return }
+                if y < top { moveUp = false }
+                else if y > bottom { moveUp = true }
+            }
+            // Short drags keep a field from jumping across an iPad sheet's viewport.
+            let middle = (top + bottom) / 2
+            let distance = min(160, (bottom - top) * 0.45)
+            let startY = middle + (moveUp ? distance / 2 : -distance / 2)
+            let endY = middle + (moveUp ? -distance / 2 : distance / 2)
+            let origin = app.coordinate(withNormalizedOffset: .zero)
+            let start = origin.withOffset(CGVector(dx: frame.midX - app.frame.minX, dy: startY - app.frame.minY))
+            let end = origin.withOffset(CGVector(dx: frame.midX - app.frame.minX, dy: endY - app.frame.minY))
+            start.press(forDuration: 0.1, thenDragTo: end)
         }
     }
 }
@@ -445,6 +467,10 @@ final class ConnectionUITests: XCTestCase {
         XCTAssertTrue(create.waitForExistence(timeout: 3)); create.tap()
         let name = app.textFields["New page name"]
         XCTAssertTrue(name.waitForExistence(timeout: 3)); name.tap(); name.typeText("Native LED test")
+        if app.buttons["Hide keyboard"].waitForExistence(timeout: 3) {
+            app.buttons["Hide keyboard"].tap()
+            XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5))
+        }
         app.buttons["pageFamilyPicker"].tap(); app.buttons["LED panel"].tap()
         app.buttons["createLibraryPage"].tap()
         XCTAssertTrue(app.navigationBars["Page editor"].waitForExistence(timeout: 8))

@@ -16,11 +16,13 @@ Astra accepted Kit and state/UI scope after regression fixes. No new product Cri
 - AppState84 tests passed, including8 library cases. Three reviewer regressions were observed failing before fixes: unknown-delete recovery, refresh during create, and acknowledgement arriving before dependent readback.
 - Actual iPhone Simulator create LED page → editor → close → original-revision delete → library passed23.570s. Test first failed because the creation UI did not exist.
 - Project/schemes match XcodeGen, diff whitespace check passes, and48 source-bound page contract records verify.
-- Integrated phone/tablet suites remain in progress at this checkpoint. Tablet tab controls, confirmation dismissal and keyboard-driven sheet movement required test automation corrections. No app behavior was changed merely to suppress those failures.
+- Ten iPad scenarios passed across seven initial successes and three focused reruns. Focused results: compose30.763s, conflict recovery107.193s, LED create/editor/delete27.688s. Initial iPad failures were tab lookup, popover dismissal, keyboard movement and editor overscroll in test automation. Two tablet authentication scenarios remain pending; no full tablet acceptance is claimed.
+- All12 iPhone scenarios passed across the earlier11/12 full run and the final four-scenario correction run. Final rerun: compose28.517s, conflict recovery98.491s, preview/save63.394s, LED create/editor/delete28.676s; `TEST SUCCEEDED`. This is aggregate evidence, not a single all-green12-test run.
+- The Device Test scheme passed an unsigned iPhone SDK build; project generation integrity and15 tooling tests passed.
 
-Main checkout is integrated through1891aca. Its21 user project/signing settings remain intact; backup is outside the repository. Command-line physical-device signing is blocked by macOS private-key interaction denial. Unsigned compilation and signed Simulator execution do not prove physical installation.
+Main checkout includes the reviewed1891aca page implementation and43bd613 Device Test scheme. Its21 user project/signing settings remain intact; backup is outside the repository. Command-line physical-device signing remains blocked by macOS private-key interaction denial. The user subsequently ran the app from Xcode and tested its connection performance on the physical phone; full device workflow acceptance remains open.
 
-Logs: `/tmp/page-management-review-kit.log`, `/tmp/page-state-review-{red,green}.log`, `/tmp/page-ui-{red,green}.log`, `/tmp/native-ui-{iphone,ipad}-current.log`. Detailed review reports are in the ignored plan ledger. No new live content or physical display mutations were performed.
+Logs: `/tmp/page-management-review-kit.log`, `/tmp/page-state-review-{red,green}.log`, `/tmp/page-ui-{red,green}.log`, `/tmp/native-ui-{iphone,ipad}-current.log` and `/tmp/native-ui-{iphone,ipad}-final-corrections.log`. Detailed review reports are in the ignored plan ledger. No new live content or physical display mutations were performed.
 
 ## iPhone performance investigation
 
