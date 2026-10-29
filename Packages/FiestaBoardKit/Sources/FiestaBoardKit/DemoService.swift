@@ -43,6 +43,12 @@ public actor DemoFiestaBoardService: FiestaBoardService {
         try await service.updateCollection(id: id, input: input, expectedRevision: expectedRevision)
     }
     public func deleteCollection(id: String, expectedRevision: String) async throws { try await service.deleteCollection(id: id, expectedRevision: expectedRevision) }
+    public func pageManagementCapability() async -> PageManagementCapability { await service.pageManagementCapability() }
+    public func preparePageCreation(_ input: PageCreationInput) async throws -> PageCreationContext { try await service.preparePageCreation(input) }
+    public func createPage(context: PageCreationContext) async throws -> PageCreationReceipt { try await service.createPage(context: context) }
+    public func readPageForDeletion(id: String) async throws -> PageDeletionContext { try await service.readPageForDeletion(id: id) }
+    public func deletePage(context: PageDeletionContext) async throws -> PageDeletionReceipt { try await service.deletePage(context: context) }
+    public func disconnect() async { await service.disconnect() }
     public func pages() async throws -> [Page] { try await service.pages() }
     public func pageDocumentData(id: String) async throws -> Data { try await service.pageDocumentData(id: id) }
     public func page(id: String) async throws -> Page { try await service.page(id: id) }
@@ -64,6 +70,7 @@ public actor DemoFiestaBoardService: FiestaBoardService {
 
 private actor DemoTransport: APITransport {
     private var data: [String: Data] = [:]
+    private var pageKeys: Set<String> = ["page", "page-weather"]
     private var mode = DemoSimulation.accepted
     private var collections: [String: PageCollection] = [:]
 
@@ -76,6 +83,7 @@ private actor DemoTransport: APITransport {
         }
         for name in ["page", "page-weather"] {
             var page = try JSONSerialization.jsonObject(with: data[name]!) as! [String: Any]
+            page["document_protocol"] = "page-document-v1"
             page["revision"] = "demo-original-" + name; page["edit_protocol"] = "page-revision-v1"
             data[name] = try JSONSerialization.data(withJSONObject: page)
         }
@@ -108,12 +116,65 @@ private actor DemoTransport: APITransport {
             ]))
         }
         if path == ["v1", "pages"] {
-            let pages = try ["page", "page-weather"].map { try JSONSerialization.jsonObject(with: data[$0]!) }
+            if request.method == .post {
+                if mode == .rejected { throw FiestaBoardError.rejected(status: 422) }
+                var page = try JSONSerialization.jsonObject(with: request.body!) as! [String: Any]
+                let id = "demo-page-" + UUID().uuidString
+                page["id"] = id; page["revision"] = "demo-" + UUID().uuidString
+                page["edit_protocol"] = "page-revision-v1"; page["document_protocol"] = "page-document-v1"
+                let bytes = try JSONSerialization.data(withJSONObject: page)
+                data[id] = bytes; pageKeys.insert(id)
+                if mode == .unknown || mode == .partial { throw FiestaBoardError.unknownMutationOutcome }
+                return APIResponse(status: 201, data: bytes)
+            }
+            let orderedKeys = ["page", "page-weather"].filter { pageKeys.contains($0) } + pageKeys.subtracting(["page", "page-weather"]).sorted()
+            let pages = try orderedKeys.map { try JSONSerialization.jsonObject(with: data[$0]!) }
             return APIResponse(status: 200, data: try JSONSerialization.data(withJSONObject: ["pages": pages, "total": pages.count]))
         }
         if path.count == 3 && path.prefix(2) == ["v1", "pages"] {
             let name = path[2] == "page-selected" ? "page" : path[2]
             guard let fixture = data[name] else { throw FiestaBoardError.rejected(status: 404) }
+            if request.method == .delete {
+                if mode == .rejected { throw FiestaBoardError.pageInUse }
+                let page = try JSONSerialization.jsonObject(with: fixture) as! [String: Any]
+                guard request.queryItems.first(where: { $0.name == "expected_revision" })?.value == page["revision"] as? String else { throw FiestaBoardError.pageConflict }
+                // Explicit demo refusal for configured defaults/collections; no hardware behavior is simulated.
+                for key in ["board", "board-led"] {
+                    let board = try JSONSerialization.jsonObject(with: data[key]!) as! [String: Any]
+                    if board["default_page_id"] as? String == path[2] || board["scheduled_page_id"] as? String == path[2] { throw FiestaBoardError.pageInUse }
+                }
+                pageKeys.remove(name); data.removeValue(forKey: name)
+                var replacementID: String?
+                var activeID: String?
+                var compatible: [[String: Any]] = []
+                for key in pageKeys.sorted() {
+                    let other = try JSONSerialization.jsonObject(with: data[key]!) as! [String: Any]
+                    if other["device_type"] as? String == page["device_type"] as? String,
+                       other["grid_rows"] as? Int == page["grid_rows"] as? Int,
+                       other["grid_cols"] as? Int == page["grid_cols"] as? Int { compatible.append(other) }
+                }
+                var hasActiveReference = false
+                for key in ["board", "board-led"] {
+                    let board = try JSONSerialization.jsonObject(with: data[key]!) as! [String: Any]
+                    if board["active_page_id"] as? String == path[2] { hasActiveReference = true }
+                }
+                if pageKeys.isEmpty || (hasActiveReference && compatible.isEmpty) {
+                    var welcome = page; let id = "demo-welcome-" + UUID().uuidString
+                    welcome["id"] = id; welcome["name"] = "Welcome"; welcome["template"] = ["WELCOME"]
+                    welcome["revision"] = "demo-" + UUID().uuidString
+                    data[id] = try JSONSerialization.data(withJSONObject: welcome); pageKeys.insert(id); replacementID = id
+                }
+                for key in ["board", "board-led"] {
+                    var board = try JSONSerialization.jsonObject(with: data[key]!) as! [String: Any]
+                    if board["active_page_id"] as? String == path[2] {
+                        let id = replacementID ?? compatible.first!["id"] as! String
+                        board["active_page_id"] = id; board["resolved_page_id"] = id; activeID = id
+                        data[key] = try JSONSerialization.data(withJSONObject: board)
+                    }
+                }
+                if mode == .unknown || mode == .partial { throw FiestaBoardError.unknownMutationOutcome }
+                return APIResponse(status: 200, data: try JSONSerialization.data(withJSONObject: ["id": path[2], "message": "Simulated deletion", "default_page_created": replacementID != nil, "new_page_id": replacementID as Any? ?? NSNull(), "active_page_updated": activeID != nil, "new_active_page_id": activeID as Any? ?? NSNull()]))
+            }
             if request.method == .put {
                 var page = try JSONSerialization.jsonObject(with: fixture) as! [String: Any]
                 let body = try JSONSerialization.jsonObject(with: request.body!) as! [String: Any]

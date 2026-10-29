@@ -25,6 +25,11 @@ public protocol FiestaBoardService: Sendable {
     func createCollection(_ input: CollectionInput) async throws -> PageCollection
     func updateCollection(id: String, input: CollectionInput, expectedRevision: String) async throws -> PageCollection
     func deleteCollection(id: String, expectedRevision: String) async throws
+    func pageManagementCapability() async -> PageManagementCapability
+    func preparePageCreation(_ input: PageCreationInput) async throws -> PageCreationContext
+    func createPage(context: PageCreationContext) async throws -> PageCreationReceipt
+    func readPageForDeletion(id: String) async throws -> PageDeletionContext
+    func deletePage(context: PageDeletionContext) async throws -> PageDeletionReceipt
     func pages() async throws -> [Page]
     func pageDocumentData(id: String) async throws -> Data
     func page(id: String) async throws -> Page
@@ -71,6 +76,9 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     private var defaultWriteGeneration: UInt64 = 0
     private var defaultWriting = false
     private var defaultContexts: [UUID: BoardDefaultContext] = [:]
+    private var creationContexts: [UUID: PageCreationContext] = [:]
+    private var deletionContexts: [UUID: PageDeletionContext] = [:]
+    private var creatingPage = false
     private var knownBoards: [String: BoardSummary] = [:]
 
     public init(deployment: DeploymentURL, transport: (any APITransport)? = nil, vault: (any SessionVault)? = nil) {
@@ -155,6 +163,8 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     /// Retire old reads/mutations before dispatch and clear their cookie generation before accepting a replacement session.
     private func beginAuthenticationTransition() async throws -> UInt64 {
         generation &+= 1
+        creationContexts = [:]; deletionContexts = [:]; creatingPage = false
+        controlVersion = nil; controlOptIn = false
         resetCollectionSession()
         access = .readOnly
         pageWritesOptedIn = false; previewAudited = false; knownPages = [:]
@@ -235,6 +245,8 @@ public actor LiveFiestaBoardService: FiestaBoardService {
 
     public func logout() async throws {
         generation &+= 1
+        creationContexts = [:]; deletionContexts = [:]; creatingPage = false
+        controlVersion = nil; controlOptIn = false
         resetCollectionSession()
         let token = generation
         access = .readOnly
@@ -258,6 +270,8 @@ public actor LiveFiestaBoardService: FiestaBoardService {
 
     public func connect(allowCandidateWrites: Bool = false) async throws -> ConnectionStatus {
         generation &+= 1
+        creationContexts = [:]; deletionContexts = [:]; creatingPage = false
+        controlVersion = nil; controlOptIn = false
         resetCollectionSession()
         let token = generation
         access = .readOnly
@@ -336,6 +350,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
               baseline.revision?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false, baseline.type == "template" else { throw FiestaBoardError.pageWritesDisabled }
         guard !savingPages.contains(id), !pageReadbacks.contains(id) else { throw FiestaBoardError.pageReadbackRequired }
         pageWriteGenerations[id, default: 0] &+= 1
+        deletionContexts = deletionContexts.filter { $0.value.page.id != id }
         savingPages.insert(id); pageReadbacks.insert(id)
         defer { savingPages.remove(id) }
         do {
@@ -519,6 +534,8 @@ extension LiveFiestaBoardService {
     }
     private func invalidateAuthentication() {
         generation &+= 1
+        creationContexts = [:]; deletionContexts = [:]; creatingPage = false
+        controlVersion = nil; controlOptIn = false
         access = .readOnly; pageWritesOptedIn = false; knownPages = [:]
         resetCollectionSession()
     }
@@ -685,5 +702,83 @@ extension LiveFiestaBoardService {
             throw FiestaBoardError.unknownMutationOutcome
         } catch FiestaBoardError.pageConflict { throw FiestaBoardError.collectionConflict }
         catch FiestaBoardError.conflict where request.method == .delete { throw FiestaBoardError.collectionInUse }
+    }
+}
+
+
+extension LiveFiestaBoardService {
+    public func pageManagementCapability() async -> PageManagementCapability {
+        let create = allowsSimulatedCollectionWrites || CapabilityPolicy.allowsPageManagement(.create, version: controlVersion?.runningVersion, isDev: controlVersion?.isDev ?? true, optedIn: controlOptIn)
+        let delete = allowsSimulatedCollectionWrites || CapabilityPolicy.allowsPageManagement(.delete, version: controlVersion?.runningVersion, isDev: controlVersion?.isDev ?? true, optedIn: controlOptIn)
+        return .init(canCreate: create, canDelete: delete, isSimulated: allowsSimulatedCollectionWrites)
+    }
+    public func preparePageCreation(_ input: PageCreationInput) async throws -> PageCreationContext {
+        try input.validate()
+        guard await pageManagementCapability().canCreate else { throw FiestaBoardError.pageWritesDisabled }
+        guard !creatingPage else { throw FiestaBoardError.pageReadbackRequired }
+        let context = PageCreationContext(deployment: deployment, input: input, generation: generation, token: UUID())
+        creationContexts[context.token] = context
+        return context
+    }
+    public func createPage(context: PageCreationContext) async throws -> PageCreationReceipt {
+        guard await pageManagementCapability().canCreate else { throw FiestaBoardError.pageWritesDisabled }
+        guard context.generation == generation, creationContexts[context.token] == context else { throw FiestaBoardError.invalidRequestContext }
+        guard !creatingPage else { throw FiestaBoardError.pageReadbackRequired }
+        creationContexts = [:]
+        creatingPage = true
+        let session = generation
+        defer { if session == generation { creatingPage = false } }
+        let result = try await pageManagementResponse(APIRequest(.post, path: ["v1", "pages"], body: JSONEncoder().encode(context.input)))
+        guard result.status == 201 else { throw FiestaBoardError.unknownMutationOutcome }
+        let receipt = try PageCreationReceipt(pageData: result.data, input: context.input)
+        knownPages[receipt.page.id] = receipt.page
+        return receipt
+    }
+    public func readPageForDeletion(id: String) async throws -> PageDeletionContext {
+        guard await pageManagementCapability().canDelete else { throw FiestaBoardError.pageWritesDisabled }
+        guard DeploymentURL.validSegment(id) else { throw FiestaBoardError.invalidPath }
+        let session = generation
+        let write = pageWriteGenerations[id, default: 0]
+        guard !savingPages.contains(id) else { throw FiestaBoardError.pageReadbackRequired }
+        let result = try await pageManagementResponse(APIRequest(path: ["v1", "pages", id], cachePolicy: .noStore))
+        guard session == generation else { throw FiestaBoardError.staleSession }
+        guard write == pageWriteGenerations[id, default: 0], !savingPages.contains(id) else { throw FiestaBoardError.stalePageContext }
+        guard result.status == 200, (try? RawJSONObject.members(result.data)) != nil,
+              let page = try? JSONDecoder().decode(Page.self, from: result.data), page.id == id,
+              PageCreationReceipt.validPage(page) else { throw FiestaBoardError.invalidResponse }
+        let context = PageDeletionContext(deployment: deployment, page: page, pageData: result.data, generation: session, token: UUID())
+        pageReadbacks.remove(id)
+        deletionContexts[context.token] = context
+        return context
+    }
+    public func deletePage(context: PageDeletionContext) async throws -> PageDeletionReceipt {
+        guard await pageManagementCapability().canDelete else { throw FiestaBoardError.pageWritesDisabled }
+        guard context.generation == generation, deletionContexts[context.token] == context else { throw FiestaBoardError.invalidRequestContext }
+        let id = context.page.id
+        guard !savingPages.contains(id), !pageReadbacks.contains(id) else { throw FiestaBoardError.pageReadbackRequired }
+        deletionContexts = deletionContexts.filter { $0.value.page.id != id }
+        pageWriteGenerations[id, default: 0] &+= 1
+        savingPages.insert(id); pageReadbacks.insert(id); knownPages.removeValue(forKey: id)
+        let session = generation
+        defer { if session == generation { savingPages.remove(id); pageWriteGenerations[id, default: 0] &+= 1 } }
+        let result = try await pageManagementResponse(APIRequest(.delete, path: ["v1", "pages", id], queryItems: [.init(name: "expected_revision", value: context.page.revision!)]))
+        guard result.status == 200 else { throw FiestaBoardError.unknownMutationOutcome }
+        return try PageDeletionReceipt(rawData: result.data, expectedPageID: id)
+    }
+    private func pageManagementResponse(_ request: APIRequest) async throws -> APIResponse {
+        do {
+            let result = try await response(request)
+            if Task.isCancelled { throw request.isMutation ? FiestaBoardError.unknownMutationOutcome : .stalePageContext }
+            switch result.status {
+            case 200..<300: return result
+            case 401: invalidateAuthentication(); throw FiestaBoardError.unauthenticated
+            case 412: throw FiestaBoardError.pageConflict
+            case 409 where request.method == .delete: throw FiestaBoardError.pageInUse
+            case 400, 403, 404, 409, 422: throw FiestaBoardError.rejected(status: result.status)
+            default: throw request.isMutation ? FiestaBoardError.unknownMutationOutcome : .invalidResponse
+            }
+        } catch FiestaBoardError.conflict where request.method == .delete { throw FiestaBoardError.pageInUse }
+        catch FiestaBoardError.partialWrite where request.isMutation { throw FiestaBoardError.unknownMutationOutcome }
+        catch FiestaBoardError.rejected(let status) where request.isMutation && ![400, 403, 404, 409, 412, 422].contains(status) { throw FiestaBoardError.unknownMutationOutcome }
     }
 }

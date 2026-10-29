@@ -9,3 +9,11 @@ public enum CapabilityPolicy {
         }
     }
 }
+
+public enum PageManagementOperation: Sendable, CaseIterable { case create, delete }
+public extension CapabilityPolicy {
+    static func allowsPageManagement(_ operation: PageManagementOperation, version: String?, isDev: Bool, optedIn: Bool) -> Bool {
+        guard optedIn, !isDev else { return false }
+        switch operation { case .create: return version == "10.1.20"; case .delete: return version == "10.1.20" }
+    }
+}
