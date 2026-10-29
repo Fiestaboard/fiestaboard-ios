@@ -10,7 +10,7 @@ From the repository root:
 open FiestaBoard.xcodeproj
 ```
 
-Select the shared **FiestaBoard** scheme, choose an installed iPhone or iPad simulator, and press Run. The scheme includes `--demo`, which creates a memory-only demo without a network session. Remove `--demo` under Product → Scheme → Edit Scheme → Run → Arguments to see Welcome and enter a server. The app never restores or automatically connects to a live deployment on launch.
+Select the shared **FiestaBoard** scheme, choose an installed iPhone or iPad simulator, and press Run. The normal **FiestaBoard** scheme opens Welcome for a real connection. The separate **FiestaBoard Demo** scheme includes `--demo` and creates a simulated demo without a network session. The app never restores or automatically connects to a live deployment on launch.
 
 The committed project is ready to build. The helper uses the existing project and preserves signing choices made in Xcode:
 
@@ -64,16 +64,16 @@ On a live deployment, enable **Enable changes on this server** in Settings. New 
 
 ## Connect to your server
 
-Remove `--demo` from the scheme and use **Manual server connection**. Enter the deployment root with scheme, port and any reverse-proxy prefix, for example `https://board.example.com/fiesta`. Do not append `/api`; the app adds `/api` after the deployment prefix. URL credentials, query strings, fragments, path traversal and percent-escaped prefixes are refused.
+Use the normal **FiestaBoard** scheme and choose a saved/discovered server or **Manual server connection**. Enter the deployment root with scheme, port and any reverse-proxy prefix, for example `https://board.example.com/fiesta`. Do not append `/api`; the app adds `/api` after the deployment prefix. URL credentials, query strings, fragments, path traversal and percent-escaped prefixes are refused.
 
-HTTPS uses normal system trust and is required for public hosts. For a local HTTP server, explicitly enable **Allow HTTP on my local network** and enter a permitted local address such as `http://fiestaboard.local:5000`. The app declares a local-network purpose and allows local networking only; it has no arbitrary-load ATS exemption. On a phone, `localhost` refers to that phone, not your Mac. Use the server’s LAN address and grant the system local-network prompt when appropriate. No Bonjour discovery, server setup or OAuth flow is implemented.
+HTTPS uses normal system trust and is required for public hosts. For a local HTTP server, explicitly enable **Allow HTTP on my local network** and enter a permitted local address such as `http://fiestaboard.local:5000`. The app declares a local-network purpose and allows local networking only; it has no arbitrary-load ATS exemption. On a phone, `localhost` refers to that phone, not your Mac. Use the server’s LAN address and grant the system local-network prompt when appropriate. Bonjour discovery and initial server setup are available. OAuth remains pending.
 
-Enter username/password if the server requires login. Passwords are removed from the form immediately after starting an attempt and are never persisted. Cookies use an isolated, ephemeral, memory-only session scoped to the complete deployment identity, including port and proxy prefix. Each app window owns a separate store/session. **Disconnect** drops the local session; **Log out & disconnect** also attempts to revoke the old server session. Welcome shows whether that sign-out is pending, confirmed or could not be confirmed; failed sign-out may leave the server session active. A late result from the old server does not replace a newer connection. If any read or action discovers expired authentication, the app disables controls and returns to the connection form to sign in again. An acknowledged send remains acknowledged if its later readback loses authentication, and is never replayed. No session restoration or Keychain storage is implemented.
+Enter username/password if the server requires login. Passwords are removed from the form immediately after starting an attempt and are never persisted. Active cookies use an isolated session scoped to the complete deployment identity, including port and proxy prefix; remembered material is stored separately only after consent. Each app window owns a separate store/session. **Disconnect** drops the local session; **Log out & disconnect** also attempts to revoke the old server session. Welcome shows whether that sign-out is pending, confirmed or could not be confirmed; failed sign-out may leave the server session active. A late result from the old server does not replace a newer connection. If any read or action discovers expired authentication, the app disables controls and returns to the connection form to sign in again. An acknowledged send remains acknowledged if its later readback loses authentication, and is never replayed. When explicitly selected, **Remember sign-in** saves the server-issued persistent session in this device’s Keychain. On reopen, select the saved server; the app verifies the installation and session before restoring. Passwords are never saved.
 
 Every new manual connection starts with server changes disabled. Settings → **Server changes** exposes an explicit **Enable changes on this server** opt-in and **Apply change setting**. Applying reconnects, creates a new connection generation and enables only the capabilities that pass their independent checks:
 
 - Page saves require the fetched page to advertise the exact `edit_protocol: "page-revision-v1"`, a nonempty original revision and the session opt-in. The native editor sends only changed supported `name`/`template` fields with that expected revision. Unknown or absent protocols remain unable to receive page saves. Server storage acknowledgement is distinct from board delivery; displays may later use the stored content.
-- Board controls require the separate exact non-development `running_version` of `10.0.0`. Other versions, including the observed 9.14.9 read-shape server, keep board controls read-only even with opt-in. A known page protocol can permit page saves on such a server without enabling board controls. The version string is a draft schema gate, not proof of backend commit identity or release support.
+- Board controls require exact nondevelopment `running_version`10.0.0,10.1.17 or10.1.20 and explicit session opt-in. Current fallback-page changes retain the original schedule-default revision; conflicts require explicit refresh. Other versions remain read-only for board controls even with opt-in. A known page protocol can permit page saves on such a server without enabling board controls. The version string is a draft schema gate, not proof of backend commit identity or release support.
 
 Each server save and board action needs its own confirmation. Review the captured deployment, page or board, and content before confirming. A page conflict or uncertain outcome preserves local work and requires explicit server comparison; fetching never silently adopts a new baseline or resubmits edits. Disconnecting, reconnecting to the same URL, authentication loss or switching deployments invalidates old editor contexts. Validation and preview use the existing evaluation endpoints with an explicit board target; they do not use live rendering or send board content.
 
@@ -132,3 +132,22 @@ The agent environment cannot access CoreSimulatorService. An unsigned generic Si
 Refresh is manual, with no foreground/background polling task. Navigation and the text draft live in the scene outside geometry-dependent layouts. Content surfaces remain opaque/readable; native tabs, sidebar and toolbars provide system Liquid Glass. Local editors fetch the full raw page response, capture its deployment/page identity, and keep edits outside geometry-dependent layouts. Disconnect, authentication loss or changing connections closes the editor; stale fetches cannot open a document for a new connection. Local drafts use atomic on-device files, not server persistence. Unsupported content remains read-only; template expressions stay raw. Supported server saves use the loaded original revision and exact protocol. Rich visual content remains read-only; the text preview reports visual layers and warnings rather than drawing an approximate canvas. There is no schedule editor.
 
 Missing release work includes discovery, setup, OAuth, full page/layout editors, schedule editing, plugins, administration, pixel rendering and exhaustive hardware acceptance.
+
+## Automated native UI verification
+
+The onboarding tests use a loopback-only fixture with synthetic accounts and no hardware/content-write endpoints. Start it before the suite:
+
+```sh
+python3 Tests/UITests/fixture_server.py
+```
+
+In another terminal, use a booted Simulator UDID:
+
+```sh
+xcodebuild -project FiestaBoard.xcodeproj -scheme FiestaBoard \
+  -destination 'platform=iOS Simulator,id=YOUR_SIMULATOR_UDID' \
+  -derivedDataPath .build/ui-tests -parallel-testing-enabled NO \
+  CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test
+```
+
+Local Simulator signing is required for real Keychain access. `CODE_SIGNING_ALLOWED=NO` is useful for compile checks, but cannot establish remembered-session runtime acceptance. The CI UI job starts/stops its fixture process and runs phone/tablet jobs. Test-generated saved servers are removed by completed onboarding scenarios.

@@ -1,6 +1,8 @@
 # Native client pause / model-switch handoff
 
-**Paused at the user's explicit request on October 28, 2026.** Do not resume implementation until the user resumes with the new model. The running UI implementer was interrupted; no new work was dispatched after the pause. Do not discard or reset the uncommitted fixes.
+**Historical pause checkpoint — resumed by the user later on October 28, 2026. See TASKS.md for current status.**
+
+Original pause record: Do not resume implementation until the user resumes with the new model. The running UI implementer was interrupted; no new work was dispatched after the pause. Do not discard or reset the uncommitted fixes.
 
 ## Progress chart
 

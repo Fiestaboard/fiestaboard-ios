@@ -1,6 +1,6 @@
 # Native FiestaBoard end-to-end parity checklist
 
-Planning baseline: October 28, 2026. This is the authoritative human acceptance checklist linked from TASKS.md. It expands all **81 original workflow IDs**, plus repository, compatibility, journey and release requirements. It is a working plan for review, not a claim that the app is complete.
+Planning baseline: October 28, 2026. This is the authoritative human acceptance checklist linked from TASKS.md. It expands all **81 original workflow IDs plus three explicit current-source workflows**, with repository, compatibility, journey and release requirements. It is a working plan for review, not a claim that the app is complete.
 
 The native draft is at `116b075`. Proposed current-web target: FiestaBoard **10.1.17**, `b5eac069dce10945eac61e1fdadf6ee4a903ba08`. Original Contracts inventory remains independently pinned to 10.0.0 until its audited migration. Scoped 10.1.7 collection evidence remains separate.
 
@@ -80,7 +80,7 @@ Future upstream deltas go into a dated intake list and must be reconciled before
 
 ## Complete original workflow acceptance
 
-Each heading retains its original Contracts/parity.json ID. Wave and current status describe sequencing and partial code, not acceptance. The acceptance contract above applies to **every** item.
+The first81 headings retain their original Contracts/parity.json IDs; the following current-source section adds three separately inventoried IDs. Wave and current status describe sequencing and partial code, not acceptance. The acceptance contract above applies to **every** item.
 
 ### connection_boot
 
@@ -738,6 +738,34 @@ Wave: **W12**. Current: **Partial**.
 - [ ] adaptive_device_poses.2 Verify iPad split/resizable/multiple scenes and available open/part-folded/seated/tent geometry without hard-coded device/hinge assumptions.
 - [ ] adaptive_device_poses.3 Preserve route/server/board/draft/selection/undo/focus/scroll/pending target/AI-OAuth context through geometry changes.
 - [ ] adaptive_device_poses.4 Test touch/keyboard/pointer/Pencil as supported, safe-area asymmetry, keyboard-reduced height and large text; record real device/OS/window evidence.
+
+## Explicit current-source workflows added during W0-A
+
+The current-source inventory separates three capabilities that were previously buried in broad rows. These acceptance IDs supplement the original81 headings; parent-row evidence may be reused where it proves the same behavior. No duplicate suite is required merely because two ledger rows reference one capability.
+
+### plugin_color_rules
+
+Wave: **W7**. Current: **Missing**.
+
+- [ ] plugin_color_rules.1 Add/remove per-instance color fields and ordered first-match conditions with current-source numeric/string operators and empty/fallback behavior.
+- [ ] plugin_color_rules.2 Edit the supported palette and reorder/remove conditions; display/copy generated field_color variables and verify their rendered use.
+- [ ] plugin_color_rules.3 Save/read back through plugin configuration with masked-secret preservation, actionable errors and unknown-outcome reconciliation without automatic retry.
+
+### plugin_json_mapper
+
+Wave: **W7**. Current: **Missing**.
+
+- [ ] plugin_json_mapper.1 Probe the schema-declared JSON endpoint/request fields through server helper contracts with preserved authorized secret context and typed JSON/text/error results.
+- [ ] plugin_json_mapper.2 Inspect nested objects/arrays and select paths using the actual server-supported grammar; handle missing/null/empty/unsupported values without inventing a local query evaluator.
+- [ ] plugin_json_mapper.3 Add/reorder/delete variable/path/default mapping rows and support both json-path-mapper and generic-data-mapping-helper aliases with stale-result cancellation.
+
+### schema_widgets
+
+Wave: **W3 shared primitives; W7 integration-specific extensions**. Current: **Missing**.
+
+- [ ] schema_widgets.1 Cover sections/visible_when, secret/password preservation, textarea/timezone/page pickers, typed enum/remote-option/nested-object/array fields, explicit null and unknown fields.
+- [ ] schema_widgets.2 Provide mode-cards/device-picker/tile-grid native equivalents in draft/saved-board contexts with action results, coordinates/uniqueness, nested fields and geometry binding before output setup is accepted.
+- [ ] schema_widgets.3 Verify dependent search/pagination/current labels, validation/focus/accessibility, loading/error/empty states and late-result rejection for every current schema widget family.
 
 ## Q0 — Cross-cutting physical, layout and recovery acceptance (W12)
 

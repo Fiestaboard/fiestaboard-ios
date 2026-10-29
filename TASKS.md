@@ -2,25 +2,26 @@
 
 This is the short current queue and durable milestone history. Full web-app feature parity is required before the first App Store release. Checkboxes mean the whole listed deliverable is accepted, not that a draft screen exists. `Contracts/parity.json` remains the source-bound release inventory; source/fixture tests alone do not make a workflow release-verified.
 
-## Current status — October 28, 2026
+## Current status — October 28, 2026 (resumed)
 
-The [complete end-to-end checklist](docs/native-parity-checklist.md) is now the authoritative detailed human acceptance list. It expands all 81 original workflow IDs into 355 checks covering product behavior, first-controller journeys, source/clone/CI, device acceptance and release. The [completion design](docs/superpowers/specs/2026-10-28-native-parity-completion-design.md) and [wave/task execution plan](docs/superpowers/plans/2026-10-28-native-parity-completion.md) describe architecture, dependencies, ownership and the preserved Sol 6.1 implementation/Astra review method. The user approved continuous execution on October 28, explicitly requiring rich editing for both split-flap and LED. Isolated Sol implementation tracks are active; the plan itself does not establish release acceptance.
+The user resumed execution with a quality-first order: **setup/sign-in → board switching and page management → settings → rich content editing for both split-flap and LED**. Root drives implementation with bounded Sol 6.1 assistance and independent Astra review. Full web parity remains the release requirement.
 
-- Native baseline: `116b075`, with Collections integrated into the main Xcode project and all 21 user project/signing changes preserved.
-- Latest completed verification (October 27): 186 Swift host tests, 29 contract-tool tests, 55 isolated backend fixture cases, unsigned Simulator/device builds and seven UI tests compiled/zero executed. These are dated results, not fresh tests of the plan. [Evidence](docs/research/2026-10-27-native-collections-verification.md).
-- Backend PR #2373 is merged. Proposed current-web parity target is upstream 10.1.17 at `b5eac069dce10945eac61e1fdadf6ee4a903ba08`; the committed contract inventory is still the original 10.0.0 snapshot, with separate scoped 10.1.7 collection evidence. Full source/schema/runtime reconciliation is first in the queue.
-- The immediate usability gap is discovery/remembered sign-in plus consistent current-server control support. Board commands still require exact non-development 10.0.0; collection creation/preview have distinct candidate gates. Do not widen them without the relevant fixtures/review.
-- User test target: `http://fiestapi.local:4420`. Read-only health/discover/auth-status probes returned No route to host from this environment. Credentials are not stored in the repository. Installed version, actual login and physical control remain unverified.
+- Working branch: `codex/ios-foundation` in `.worktrees/foundation`. Main's existing signing/project overlay is preserved; integration of this wave is pending final UI validation.
+- Source-bound bootstrap/discovery/catalog/session work and native onboarding corrections are reviewed. Current controls support exact nondevelopment10.0.0/10.1.17/10.1.20 with explicit session opt-in. Current fallback-page changes use the original revision and concrete board; Demo/legacy paths are explicit.
+- Test server discover now reports10.1.20. CLI curl and Simulator services are available again. A standalone macOS URLSession probe gets network-unavailable; this is not evidence of successful native live login. Credentials remain out of repository/logs.
+- Fresh source evidence:72 current control cases plus57 bootstrap cases replayed against10.1.20; Astra accepted bounded compatibility. Kit124 and AppState76 tests pass after review corrections. No physical send or supported release pairing is claimed.
+- Actual iPhone Simulator first-run administrator setup passed. Wrong-password recovery, rotation, Keychain-backed remembered sign-in across process restart and logout passed with a locally signed Simulator build. Unsigned Simulator builds cannot access Keychain; UI CI now signs locally. Full iPhone/iPad UI runs and large-text setup acceptance are in progress.
 
-| Next work | State | Concrete result |
+| Priority | Scope | Remaining acceptance |
 | --- | --- | --- |
-| Plan review | User approved October 28 | Execute continuously; separate split-flap and LED rich-editor acceptance |
-| W0-A source/contracts | Implementing — Sol | Current exact-source inventory, runtime fixtures, checker/evidence migration and per-operation policies |
-| W0-B clone/CI | Implementing — Sol; independent track | Reproducible clean clone/build/tests, normal/demo schemes, signing-preserving project validation |
-| W0-C ingress | Owned early investigation/integration; actual upstream access may need operator | Prove authorized native route or build required browser-auth bridge; path-only fixture is insufficient; direct-LAN work continues independently |
-| W1-A through W1-F | Highest implementation priority after plan review | Find server → sign in/setup → select/read/control → secure reopen/logout → real iPhone evidence |
-| Reach test instance | iPhone Safari confirmed by user; Mac route blocked | DNS resolves IPv4/IPv6, both direct health requests return No route to host here; installed version/native login still unverified |
-| Remaining waves W2–W13 | Fully enumerated in master checklist | Home, outputs, rendering, pages/editors/canvases, schedules, integrations/OAuth, accounts/AI/admin, native quality and release |
+| 1 — Setup | Find/manual/saved server, setup choice/admin, sign-in, remember/reopen/logout | Full phone/tablet UI run, LAN discovery permissions, actual iPhone walkthrough and live server connection |
+| 2 — Board control | Select/read board, current-version send/page choice, pause/schedule/restore, revision-safe fallback | Integrated UI checks, live target selection/send with physical observation, full output rendering |
+| 3 — Page management | Existing read/search/name/template save; add create/delete/import/export/compatibility | [Current source gap audit](docs/research/2026-10-28-page-management-gap-audit.md); next bounded slice is create + conditional delete + library lifecycle |
+| 4 — Settings | Server/preferences, accounts/sessions, integrations, display configuration and administration | Implement source-backed settings flows and their complete acceptance matrix |
+| 5 — Rich content editing | Native rich editing for **both split-flap and LED** | Rich/plain round trips, selection/IME/paste/undo, server preview, revision-safe save/conflicts/recovery and adaptive accessible UI |
+| Remaining full parity | Schedules, collections completion, canvas/rendering, OAuth/plugins/AI/HA and release | All84 workflows/199 operations and364 human checks remain tracked in the master checklist |
+
+The [complete checklist](docs/native-parity-checklist.md), [design](docs/superpowers/specs/2026-10-28-native-parity-completion-design.md) and [execution plan](docs/superpowers/plans/2026-10-28-native-parity-completion.md) retain the full scope. [The prior pause handoff](docs/NATIVE_CLIENT_HANDOFF.md) is historical; its paused instruction was lifted by the user's resume request.
 
 ## Initial baseline — historical
 
