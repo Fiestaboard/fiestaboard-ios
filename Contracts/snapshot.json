@@ -14,6 +14,11 @@
       "path": "Fixtures/contracts/current/bootstrap-control.json",
       "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
       "sha256": "465d7ead0d757023aa68ee8e345ea56c263a94af757d66c825b781a00b1dbbfd"
+    },
+    {
+      "path": "Fixtures/contracts/current/board-control.json",
+      "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "sha256": "0d2400cf846e771f92bffa4fdf46f36e32f11a5e929f14e4ecbed8e1cc3dca50"
     }
   ],
   "baseline": {

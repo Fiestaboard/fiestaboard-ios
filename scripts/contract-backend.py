@@ -57,7 +57,10 @@ def main():
     parser.add_argument('--bootstrap',action='store_true',help='optimize build using verified local dependency substrate')
     parser.add_argument('--tag',default='fiestaboard-ios-contract:v10')
     parser.add_argument('--upstream',action='store_true',help='also run selected upstream auth cases (no bypass fixtures)')
+    parser.add_argument('--current-controls',action='store_true',help='run only current-source board-control replay tests')
     args = parser.parse_args()
+    if args.current_controls and (args.action != 'test' or args.upstream):
+        parser.error('--current-controls requires test without --upstream')
     if args.action == 'prepare':
         if not args.destination:
             parser.error('prepare requires --destination')
@@ -94,6 +97,8 @@ def main():
             extra = ['--mount',f'type=bind,src={args.root.resolve() / "Tests/Integration"},dst=/contract-tests,readonly',
                      '--mount',f'type=bind,src={args.root.resolve() / "Fixtures/contracts"},dst=/contract-fixtures,readonly']
             command = ['-m','pytest','-c','/dev/null','-p','no:cacheprovider','--tb=short','-q','/contract-tests']
+            if args.current_controls:
+                command[-1] = '/contract-tests/test_current_board_controls.py'
             if args.upstream:
                 # The upstream conftest auth bypass is not loaded into our proof.
                 command = ['-m','pytest','-p','no:cacheprovider','--tb=short','-q',

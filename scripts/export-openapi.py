@@ -24,6 +24,7 @@ def collect_artifacts(expected_source_commit, out, fixture_root):
         ('Contracts/current-source-ledger.json', out/'current-source-ledger.json'),
         ('Contracts/current-capabilities.json', out/'current-capabilities.json'),
         ('Fixtures/contracts/current/bootstrap-control.json', fixture_root/'current/bootstrap-control.json'),
+        ('Fixtures/contracts/current/board-control.json', fixture_root/'current/board-control.json'),
     ]:
         if local.is_file():
             data = local.read_bytes()

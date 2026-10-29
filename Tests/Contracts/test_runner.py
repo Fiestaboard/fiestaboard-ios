@@ -48,6 +48,22 @@ class RunnerTests(unittest.TestCase):
                 runner.main()
             self.assertTrue((output / 'Contracts').is_dir())
 
+
+    def test_current_controls_select_fenced_replay(self):
+        spec = importlib.util.spec_from_file_location('contract_runner', ROOT / 'scripts/contract-backend.py')
+        runner = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(runner)
+        with tempfile.TemporaryDirectory() as tmp:
+            def prepare(_repo, _commit, destination):
+                destination.mkdir(parents=True)
+            with patch.object(runner, 'prepare', side_effect=prepare), patch.object(runner.subprocess, 'run') as run, patch('sys.argv', ['contract-backend.py','test','--repo',tmp,'--commit','a'*40,'--current-controls']):
+                runner.main()
+            command=run.call_args[0][0]
+            self.assertIn('/contract-tests/test_current_board_controls.py',command)
+            for value in ['--read-only','none','--cap-drop','ALL','no-new-privileges']:
+                self.assertIn(value,command)
+            self.assertTrue(any('dst=/app,readonly' in value for value in command))
+
     def test_refusing_mutable_commit_expression(self):
         result = subprocess.run(['python3',str(ROOT/'scripts/contract-backend.py'),'prepare','--repo','.', '--commit','HEAD','--destination','/tmp/not-created-contract'],cwd=ROOT,capture_output=True)
         self.assertNotEqual(result.returncode,0)

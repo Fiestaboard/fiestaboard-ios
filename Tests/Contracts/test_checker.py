@@ -84,6 +84,33 @@ class CheckerTests(unittest.TestCase):
         self.docs['snapshot.json']['artifacts'] = [{'source_commit': SHA, 'path': 'fixture.json', 'sha256': hashlib.sha256(content).hexdigest()}]
         self.assertNotEqual(self.run_check().returncode, 0)
 
+    def test_board_control_companion_rehash_cannot_bless_stale_source(self):
+        relative='Fixtures/contracts/current/board-control.json'
+        path=self.root/relative
+        path.parent.mkdir(parents=True)
+        original={'source':{'commit':SHA},'source_evidence':{'web/app.ts':'d'*64}}
+        def register(artifact, registration_source=SHA):
+            content=json.dumps(artifact).encode()
+            path.write_bytes(content)
+            self.docs['snapshot.json']['artifacts']=[{'source_commit':registration_source,'path':relative,'sha256':hashlib.sha256(content).hexdigest()}]
+        register(original)
+        self.assertEqual(self.run_check().returncode,0)
+        path.write_text('{}')  # Exact bytes change without snapshot rebinding.
+        self.assertIn('current artifact requires source-matching hashed evidence',self.run_check().stderr)
+        for changed, registration_source, diagnostic in [
+            ({'source':{'commit':'e'*40}},SHA,'artifact source commit mismatch'),
+            ({'source':{'commit':SHA},'source_evidence':{'web/app.ts':'e'*64}},SHA,'fixture source hash mismatch'),
+            (original,'e'*40,'current artifact requires source-matching hashed evidence'),
+        ]:
+            with self.subTest(diagnostic=diagnostic):
+                register(changed,registration_source)
+                result=self.run_check()
+                self.assertNotEqual(result.returncode,0)
+                self.assertIn(diagnostic,result.stderr)
+        register(original)
+        path.unlink()
+        self.assertNotEqual(self.run_check().returncode,0)
+
     def test_capability_schema_hash_mismatch_fails(self):
         artifact = {'source_commit': SHA, 'kind': 'current-capabilities', 'operations': [
             {'id': 'readThing', 'method': 'GET', 'path': '/thing', 'surface': 'public', 'schema_sha256': 'e' * 64}
@@ -95,7 +122,7 @@ class CheckerTests(unittest.TestCase):
 
     def test_existing_known_companions_cannot_be_omitted(self):
         for relative in ['Contracts/current-source-ledger.json', 'Contracts/current-capabilities.json',
-                         'Fixtures/contracts/current/bootstrap-control.json']:
+                         'Fixtures/contracts/current/bootstrap-control.json', 'Fixtures/contracts/current/board-control.json']:
             for commit in [SHA, 'e' * 40]:
                 with self.subTest(path=relative, commit=commit):
                     path = self.root / relative

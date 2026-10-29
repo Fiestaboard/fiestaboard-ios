@@ -23,7 +23,7 @@ class ExporterTests(unittest.TestCase):
 
     def test_existing_wrong_source_companions_fail_instead_of_disappearing(self):
         for relative in ['Contracts/current-source-ledger.json', 'Contracts/current-capabilities.json',
-                         'Fixtures/contracts/current/bootstrap-control.json']:
+                         'Fixtures/contracts/current/bootstrap-control.json', 'Fixtures/contracts/current/board-control.json']:
             with self.subTest(path=relative):
                 path = self.root / relative
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -37,10 +37,10 @@ class ExporterTests(unittest.TestCase):
 
     def test_current_companions_are_all_registered(self):
         for relative in ['Contracts/current-source-ledger.json', 'Contracts/current-capabilities.json',
-                         'Fixtures/contracts/current/bootstrap-control.json']:
+                         'Fixtures/contracts/current/bootstrap-control.json', 'Fixtures/contracts/current/board-control.json']:
             path = self.root / relative
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(json.dumps({'source_commit': SHA}))
         artifacts = self.exporter.collect_artifacts(SHA, self.out, self.fixtures)
-        self.assertEqual(len(artifacts), 3)
+        self.assertEqual(len(artifacts), 4)
         self.assertTrue(all(item['source_commit'] == SHA and len(item['sha256']) == 64 for item in artifacts))

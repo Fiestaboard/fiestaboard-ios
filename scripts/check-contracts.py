@@ -74,7 +74,7 @@ def check(root, release_ready=False):
     require(isinstance(artifacts, list), 'snapshot artifacts must be a list')
     registered_paths = {item.get('path') for item in artifacts if isinstance(item, dict) and isinstance(item.get('path'), str)} if isinstance(artifacts, list) else set()
     for relative in ('Contracts/current-source-ledger.json', 'Contracts/current-capabilities.json',
-                     'Fixtures/contracts/current/bootstrap-control.json'):
+                     'Fixtures/contracts/current/bootstrap-control.json', 'Fixtures/contracts/current/board-control.json'):
         if (root / relative).exists():
             require(relative in registered_paths, f'{relative}: existing companion missing artifact registration')
     for item in artifacts if isinstance(artifacts, list) else []:
