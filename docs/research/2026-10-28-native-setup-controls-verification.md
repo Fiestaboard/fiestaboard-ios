@@ -1,5 +1,7 @@
 # Setup and current controls — October 28 quality checkpoint
 
+Later page implementation and iPhone performance findings are recorded in [the page lifecycle checkpoint](2026-10-28-native-page-lifecycle-verification.md); its results supersede pending items in this earlier snapshot.
+
 This is a testable draft milestone, not full web parity or release acceptance. User priority: setup/sign-in, board switching and page management, settings, then native rich editing for **both split-flap and LED**.
 
 ## Changes accepted

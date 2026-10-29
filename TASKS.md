@@ -6,22 +6,28 @@ This is the short current queue and durable milestone history. Full web-app feat
 
 The user resumed execution with a quality-first order: **setup/sign-in → board switching and page management → settings → rich content editing for both split-flap and LED**. Root drives implementation with bounded Sol 6.1 assistance and independent Astra review. Full web parity remains the release requirement.
 
-- Working branch: `codex/ios-foundation` in `.worktrees/foundation`. Main's existing signing/project overlay is preserved; integration of this wave is pending final UI validation.
+- Working branch: `codex/ios-foundation` in `.worktrees/foundation`. Main is integrated through `1891aca`; all21 existing signing/project changes were preserved by a checked three-way merge. Further test-only corrections are in progress.
 - Source-bound bootstrap/discovery/catalog/session work and native onboarding corrections are reviewed. Current controls support exact nondevelopment10.0.0/10.1.17/10.1.20 with explicit session opt-in. Current fallback-page changes use the original revision and concrete board; Demo/legacy paths are explicit.
 - Test server discover now reports10.1.20. CLI curl and Simulator services are available again. A standalone macOS URLSession probe gets network-unavailable; this is not evidence of successful native live login. Credentials remain out of repository/logs.
 - Fresh source evidence:72 current control cases plus57 bootstrap cases replayed against10.1.20; Astra accepted bounded compatibility. Kit124 and AppState76 tests pass after review corrections. No physical send or supported release pairing is claimed.
-- Actual iPhone Simulator first-run administrator setup passed. Wrong-password recovery, rotation, Keychain-backed remembered sign-in across process restart and logout passed with a locally signed Simulator build. Unsigned Simulator builds cannot access Keychain; UI CI now signs locally. Full iPhone/iPad UI runs and large-text setup acceptance are in progress.
+- Actual iPhone Simulator first-run administrator setup passed. Wrong-password recovery, rotation, Keychain-backed remembered sign-in across process restart and logout passed with a locally signed Simulator build. Unsigned Simulator builds cannot access Keychain; UI CI now signs locally. AccessibilityXXXL setup now passes on phone and iPad. The iPhone create-LED → editor → delete journey passes. Full integrated suites are in progress; iPad automation geometry corrections do not establish device acceptance.
 
 | Priority | Scope | Remaining acceptance |
 | --- | --- | --- |
 | 1 — Setup | Find/manual/saved server, setup choice/admin, sign-in, remember/reopen/logout | Full phone/tablet UI run, LAN discovery permissions, actual iPhone walkthrough and live server connection |
 | 2 — Board control | Select/read board, current-version send/page choice, pause/schedule/restore, revision-safe fallback | Integrated UI checks, live target selection/send with physical observation, full output rendering |
-| 3 — Page management | Existing read/search/name/template save; add create/delete/import/export/compatibility | [Current source gap audit](docs/research/2026-10-28-page-management-gap-audit.md); next bounded slice is create + conditional delete + library lifecycle |
+| 3 — Page management | Create split-flap/LED templates, open editor, revision-safe delete and retained recovery are implemented/reviewed | Phone journey passed; complete tablet acceptance, actual-server walkthrough, import/export/compatibility browsing remain. [Gap audit](docs/research/2026-10-28-page-management-gap-audit.md) |
 | 4 — Settings | Server/preferences, accounts/sessions, integrations, display configuration and administration | Implement source-backed settings flows and their complete acceptance matrix |
 | 5 — Rich content editing | Native rich editing for **both split-flap and LED** | Rich/plain round trips, selection/IME/paste/undo, server preview, revision-safe save/conflicts/recovery and adaptive accessible UI |
 | Remaining full parity | Schedules, collections completion, canvas/rendering, OAuth/plugins/AI/HA and release | All84 workflows/199 operations and364 human checks remain tracked in the master checklist |
 
 The [complete checklist](docs/native-parity-checklist.md), [design](docs/superpowers/specs/2026-10-28-native-parity-completion-design.md) and [execution plan](docs/superpowers/plans/2026-10-28-native-parity-completion.md) retain the full scope. [The prior pause handoff](docs/NATIVE_CLIENT_HANDOFF.md) is historical; its paused instruction was lifted by the user's resume request.
+
+The latest page slice (`4c14eb8`, `7569cec`, `1891aca`) passed138 Kit and84 AppState tests. Astra accepted the Kit and state/UI fixes. Exact10.1.20 create/delete support is independent of other feature capabilities. Unknown writes retain their input and require explicit readback plus a new user intent; no automatic replay. [Page milestone](docs/research/2026-10-28-native-page-lifecycle-verification.md).
+
+The user ran the app on their iPhone and confirmed connecting/sign-in is much faster when launched directly from the Home Screen instead of through the attached Xcode debugger. Added **FiestaBoard Device Test**, which runs without debugger attachment; regular debugging remains available in the original scheme. Mac API profiling measured login245ms, pages55ms and board reads29–110ms. CLI signing remains unavailable to the agent; this is separate from the user's successful Xcode deployment. Full physical-device workflow/output acceptance is still open.
+
+- [ ] Reduce measured connection overhead without weakening session safety: current unauthenticated selection repeats bootstrap before checking the saved-session vault; remembered restoration repeats it again; initial board listing is fetched twice. Preserve installation identity checks, stale-response exclusion and original-revision guarantees. User-observed debugger slowdown is addressed separately; these redundancies are not claimed as its cause.
 
 ## Initial baseline — historical
 

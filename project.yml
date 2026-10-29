@@ -120,3 +120,16 @@ schemes:
         '--demo': false
     archive:
       config: Release
+  FiestaBoard Device Test:
+    build:
+      targets:
+        FiestaBoard: all
+    run:
+      config: Debug
+      debugEnabled: false
+      commandLineArguments:
+        '--demo': false
+    profile:
+      config: Release
+    archive:
+      config: Release
