@@ -57,6 +57,7 @@ public struct PreparedAction: Identifiable, Sendable {
     public let isDemo: Bool
     let generation: UInt64
     let defaultContext: BoardDefaultContext?
+    let defaultCapability: DefaultPageWriteCapability
 }
 
 // Combine keeps this draft buildable where compiler macro sandbox execution is unavailable.
@@ -78,7 +79,15 @@ public struct PreparedAction: Identifiable, Sendable {
     private var collectionWriteGenerations: [CollectionIdentity: UInt64] = [:]
     private var collectionListGenerations: [DeploymentURL: UInt64] = [:]
     @Published public private(set) var defaultPageContext: BoardDefaultContext?
-    public var canChangeDefaultPage: Bool { canWrite && defaultPageContext?.target == target }
+    @Published public private(set) var defaultPageCapability: DefaultPageWriteCapability = .unavailable
+    public var canChangeDefaultPage: Bool {
+        guard canWrite else { return false }
+        switch defaultPageCapability {
+        case .conditional: return defaultPageContext?.target == target
+        case .legacyUnconditioned, .simulated: return true
+        case .unavailable: return false
+        }
+    }
     @Published public private(set) var board: BoardDetail?
     @Published public private(set) var selectedBoardID: String?
     @Published public private(set) var message: String?
@@ -199,7 +208,7 @@ public struct PreparedAction: Identifiable, Sendable {
         generation &+= 1
         connectionTask?.cancel(); refreshTask?.cancel(); commandTask?.cancel(); collectionListTask?.cancel()
         connectionTask = nil; refreshTask = nil; commandTask = nil
-        service = nil; status = nil; boards = []; pages = []; board = nil; defaultPageContext = nil; selectedBoardID = nil
+        service = nil; status = nil; boards = []; pages = []; board = nil; defaultPageContext = nil; defaultPageCapability = .unavailable; selectedBoardID = nil
         connecting = false; refreshing = false; message = nil; remoteLogoutState = nil
         connectionLabel = "Disconnected"; usedActions = []; pageContexts = [:]; pageSessionOptedIn = false
         collections = []; collectionMessage = nil; collectionsLoading = false
@@ -275,6 +284,10 @@ public struct PreparedAction: Identifiable, Sendable {
     }
 
     private func loadDefaultContext(_ service: any FiestaBoardService, target: BoardTarget, token: UInt64) async {
+        let capability = await service.defaultPageWriteCapability()
+        guard valid(token), self.target == target else { return }
+        defaultPageCapability = capability
+        guard capability == .conditional else { defaultPageContext = nil; return }
         do {
             let context = try await service.readDefaultPage(on: target)
             guard valid(token), self.target == target else { return }
@@ -425,7 +438,7 @@ public struct PreparedAction: Identifiable, Sendable {
         case .restore: break
         }
         return PreparedAction(target: target, payload: payload, boardName: summary.name,
-                              isDemo: status?.isDemo == true, generation: generation, defaultContext: defaultPageContext)
+                              isDemo: status?.isDemo == true, generation: generation, defaultContext: defaultPageContext, defaultCapability: defaultPageCapability)
     }
 
     @discardableResult public func confirm(_ action: PreparedAction) -> Task<Void, Never> {
@@ -445,9 +458,15 @@ public struct PreparedAction: Identifiable, Sendable {
                 case .page(let id): receipt = Self.describe(try await service.selectPage(id: id, on: action.target), simulated: action.isDemo)
                 case .configuration(let patch):
                     if patch.defaultPage != .omit {
-                        guard let context = action.defaultContext else { throw FiestaBoardError.invalidRequestContext }
-                        defaultPageContext = nil
-                        _ = try await service.updateDefaultPage(patch.defaultPage, context: context)
+                        switch action.defaultCapability {
+                        case .conditional:
+                            guard let context = action.defaultContext else { throw FiestaBoardError.invalidRequestContext }
+                            defaultPageContext = nil
+                            _ = try await service.updateDefaultPage(patch.defaultPage, context: context)
+                        case .legacyUnconditioned, .simulated:
+                            _ = try await service.updateBoard(patch, on: action.target)
+                        case .unavailable: throw FiestaBoardError.writesDisabled
+                        }
                     } else {
                         _ = try await service.updateBoard(patch, on: action.target)
                     }

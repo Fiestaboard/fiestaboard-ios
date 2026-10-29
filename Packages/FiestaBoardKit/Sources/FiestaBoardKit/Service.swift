@@ -32,6 +32,7 @@ public protocol FiestaBoardService: Sendable {
     func validatePage(requestData: Data, target: BoardTarget) async throws -> TemplateValidationResult
     func previewPage(requestData: Data, target: BoardTarget) async throws -> TemplatePreviewResult
     func updateBoard(_ patch: BoardPatch, on target: BoardTarget) async throws -> BoardConfigurationReceipt
+    func defaultPageWriteCapability() async -> DefaultPageWriteCapability
     func readDefaultPage(on target: BoardTarget) async throws -> BoardDefaultContext
     func updateDefaultPage(_ change: DefaultPageChange, context: BoardDefaultContext) async throws -> BoardDefaultSnapshot
     func restoreBoard(_ target: BoardTarget) async throws -> BoardRestoreReceipt
@@ -434,6 +435,12 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         return receipt
     }
 
+    public func defaultPageWriteCapability() async -> DefaultPageWriteCapability {
+        guard access == .candidateWrites, let version = controlVersion, controlOptIn, !version.isDev else { return .unavailable }
+        if CapabilityPolicy.allows(.conditionalDefault, version: version.runningVersion, isDev: version.isDev, optedIn: controlOptIn) { return .conditional }
+        // Preserve the original audited 10.0.0 PATCH adapter explicitly.
+        return version.runningVersion == "10.0.0" ? .legacyUnconditioned : .unavailable
+    }
     public func readDefaultPage(on target: BoardTarget) async throws -> BoardDefaultContext {
         try requireWrites(target, operation: .conditionalDefault)
         let token = generation

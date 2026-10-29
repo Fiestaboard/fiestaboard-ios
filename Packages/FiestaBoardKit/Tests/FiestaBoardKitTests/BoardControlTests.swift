@@ -26,6 +26,8 @@ import XCTest
         }
         let service = LiveFiestaBoardService(deployment: deployment, transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self]))
         _ = try await service.connect(allowCandidateWrites: true)
+        let capability = await service.defaultPageWriteCapability()
+        XCTAssertEqual(capability, .legacyUnconditioned)
         let target = try BoardTarget(deployment: deployment, boardID: "board-2")
         let updated = try await service.updateBoard(BoardPatch(paused: true), on: target)
         XCTAssertEqual(updated.board.summary.id, "board-2")
@@ -140,6 +142,8 @@ extension BoardControlTests {
         let service = LiveFiestaBoardService(deployment: deployment, transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self]))
         _ = try await service.connect(allowCandidateWrites: true)
         let target = try BoardTarget(deployment: deployment, boardID: "board-2")
+        let capability = await service.defaultPageWriteCapability()
+        XCTAssertEqual(capability, .conditional)
         let context = try await service.readDefaultPage(on: target)
         XCTAssertEqual(log.requests.last?.url?.query, "board_id=board-2")
         _ = try await service.updateDefaultPage(.clear, context: context)

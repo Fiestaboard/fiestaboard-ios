@@ -831,7 +831,9 @@ extension BoardStoreTests {
 extension BoardStoreTests {
     func testMissingDefaultContextDisablesOnlyFallback() async throws {
         let store = BoardStore()
-        await store.connect(try DemoFiestaBoardService()).value
+        let deployment = try DeploymentURL("https://board.test")
+        let transport = try StoreDefaultTransport(failDefaultReads: true)
+        await store.connect(LiveFiestaBoardService(deployment: deployment, transport: transport), allowCandidateWrites: true).value
         XCTAssertTrue(store.canWrite)
         XCTAssertFalse(store.canChangeDefaultPage)
         XCTAssertNil(store.prepare(.configuration(BoardPatch(defaultPage: .clear))))
@@ -865,9 +867,11 @@ extension BoardStoreTests {
 private actor StoreDefaultTransport: APITransport {
     private let fixtures: [String: Data]
     private var reads = 0
+    private let failDefaultReads: Bool
     var writes = 0
     var submittedRevision: String?
-    init() throws {
+    init(failDefaultReads: Bool = false) throws {
+        self.failDefaultReads = failDefaultReads
         let packageRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let directory = packageRoot.appendingPathComponent("FiestaBoardKit/Tests/FiestaBoardKitTests/Fixtures")
         fixtures = try Dictionary(uniqueKeysWithValues: ["auth", "boards", "board", "pages"].map { ($0, try Data(contentsOf: directory.appendingPathComponent($0 + ".json"))) })
@@ -881,10 +885,30 @@ private actor StoreDefaultTransport: APITransport {
                 submittedRevision = (try JSONSerialization.jsonObject(with: request.body!) as? [String: Any])?["expected_revision"] as? String
                 return APIResponse(status: 412, data: Data())
             }
+            if failDefaultReads { throw FiestaBoardError.networkUnavailable }
             reads += 1
             return APIResponse(status: 200, data: Data("{\"revision\":\"read-\(reads)\",\"edit_protocol\":\"schedule-default-revision-v1\",\"default_page_id\":null}".utf8))
         }
         let name = request.path == ["auth", "status"] ? "auth" : (request.path.last == "boards" ? "boards" : (request.path.last == "pages" ? "pages" : "board"))
         return APIResponse(status: 200, data: fixtures[name]!)
+    }
+}
+
+
+extension BoardStoreTests {
+    func testDemoFallbackSetAndClearThroughPreparedActions() async throws {
+        let store = BoardStore()
+        await store.connect(try DemoFiestaBoardService()).value
+        XCTAssertTrue(store.canChangeDefaultPage)
+        let selection = store.board?.activePageID
+        let set = try XCTUnwrap(store.prepare(.configuration(BoardPatch(defaultPage: .set("page-weather")))))
+        await store.confirm(set).value
+        XCTAssertEqual(store.board?.defaultPageID, "page-weather")
+        XCTAssertTrue(store.message?.contains("Simulated") == true)
+        let clear = try XCTUnwrap(store.prepare(.configuration(BoardPatch(defaultPage: .clear))))
+        await store.confirm(clear).value
+        XCTAssertNil(store.board?.defaultPageID)
+        XCTAssertEqual(store.board?.activePageID, selection)
+        XCTAssertFalse(store.needsReadback)
     }
 }

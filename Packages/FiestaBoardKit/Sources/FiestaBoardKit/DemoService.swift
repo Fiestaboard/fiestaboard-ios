@@ -55,6 +55,7 @@ public actor DemoFiestaBoardService: FiestaBoardService {
         let result = try await service.previewPage(requestData: requestData, target: target)
         return try TemplatePreviewResult(rawData: result.rawData, isSimulated: true)
     }
+    public func defaultPageWriteCapability() async -> DefaultPageWriteCapability { .simulated }
     public func updateBoard(_ patch: BoardPatch, on target: BoardTarget) async throws -> BoardConfigurationReceipt { try await service.updateBoard(patch, on: target) }
     public func restoreBoard(_ target: BoardTarget) async throws -> BoardRestoreReceipt { try await service.restoreBoard(target) }
     public func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult { try await service.sendText(text, to: target) }

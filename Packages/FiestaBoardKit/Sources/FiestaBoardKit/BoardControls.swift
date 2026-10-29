@@ -74,6 +74,12 @@ public struct BoardDefaultContext: Sendable, Equatable {
     let token: UUID
 }
 public extension FiestaBoardService {
+    func defaultPageWriteCapability() async -> DefaultPageWriteCapability { .unavailable }
     func readDefaultPage(on target: BoardTarget) async throws -> BoardDefaultContext { throw FiestaBoardError.writesDisabled }
     func updateDefaultPage(_ change: DefaultPageChange, context: BoardDefaultContext) async throws -> BoardDefaultSnapshot { throw FiestaBoardError.writesDisabled }
+}
+
+/// Advertised explicitly; a failed conditional read never grants legacy access.
+public enum DefaultPageWriteCapability: Sendable, Equatable {
+    case unavailable, conditional, legacyUnconditioned, simulated
 }
