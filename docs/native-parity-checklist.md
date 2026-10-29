@@ -4,7 +4,7 @@ Planning baseline: October 28, 2026. This is the authoritative human acceptance 
 
 The native draft is at `116b075`. Proposed current-web target: FiestaBoard **10.1.17**, `b5eac069dce10945eac61e1fdadf6ee4a903ba08`. Original Contracts inventory remains independently pinned to 10.0.0 until its audited migration. Scoped 10.1.7 collection evidence remains separate.
 
-User's first test target: `http://fiestapi.local:4420`. Credentials are deliberately absent. Read-only requests to health/discover/auth-status on October 28 returned **No route to host** from this environment. This is a reachability blocker, not evidence of a bad password or stopped server; installed version and actual native login remain unverified. Continue isolated implementation while resolving access.
+User's first test target: `http://fiestapi.local:4420`. Credentials are deliberately absent. Read-only requests to health/discover/auth-status on October 28 returned **No route to host** from this environment. This is a reachability blocker, not evidence of a bad password or stopped server; installed version and actual native login remain unverified. The user subsequently confirmed the same URL opens in iPhone Safari on the same Wi-Fi; Mac-side resolved IPv4/IPv6 health probes still fail. Continue isolated implementation while resolving development-side access.
 
 Read alongside [design](superpowers/specs/2026-10-28-native-parity-completion-design.md), [execution plan](superpowers/plans/2026-10-28-native-parity-completion.md), [original source inventory](parity.md), [contracts policy](contracts.md), and [latest completed milestone](research/2026-10-27-native-collections-verification.md).
 
@@ -534,7 +534,7 @@ Wave: **W5**. Current: **Partial**.
 
 Wave: **W5**. Current: **Partial**.
 
-- [ ] editor_document.1 Prove the TextKit/document boundary for rich/plain templates, tokens/formulas/colors/icons, line insertion/removal/order/alignment/wrap and cell edits.
+- [ ] editor_document.1 Prove rich/plain templates for both split-flap and LED, including their supported tokens/formulas/colors/icons/formatting, line insertion/removal/order/alignment/wrap and cell edits; raw-only LED does not satisfy acceptance.
 - [ ] editor_document.2 Support every single/composite/template document shape and unsupported extension preservation under current document/revision protocols.
 - [ ] editor_document.3 Preserve IME marked text/caret/selection/dictation/paste/Unicode across validation, rich/plain changes, resizing and server comparison.
 
@@ -794,7 +794,7 @@ Wave: **W12**. Current: **Partial**.
 
 ## Interaction queue — unblock one item without stopping everything
 
-- [ ] I0-01 Test-instance reachability: user/developer/device operator confirms local network path to fiestapi.local:4420 or provides reachable IP/VPN route. Current environment error: No route to host.
+- [x] I0-01 User confirmed fiestapi.local:4420 opens in iPhone Safari on the same Wi-Fi. The Mac-side route still fails for resolved IPv4/IPv6; installed version, native permission/login and physical output proof remain open.
 - [ ] I0-02 Observe real iPhone local-network prompt, discovery result, login and selected board; user keeps credential entry local where possible.
 - [ ] I0-03 Authorize/run concrete physical-board send/restore/diagnostic and disposable-host destructive acceptance steps when their runbooks/builds are ready.
 - [ ] I0-04 Provider/account owner completes real OAuth browser authorization for each supported flow when native UI/test fixtures are ready.
@@ -802,7 +802,7 @@ Wave: **W12**. Current: **Partial**.
 - [ ] I0-06 Confirm organization/repository visibility and production Apple ownership/bundle identity when remote/distribution setup is ready.
 - [ ] I0-07 Provide actual iPad/Pencil/additional posture hardware or record the unexecuted acceptance requirement; do not replace it with a claim.
 - [ ] I0-08 Refresh Claude CLI authentication only if Opus participation is wanted; independent Sol work continues while unavailable.
-- [ ] I0-09 Approve the completed plan/order, then execute successive Sol/Astra milestones; no repeated approval for routine reversible implementation.
+- [x] I0-09 User approved the completed plan/order on October 28 and requested continuous Sol/Astra execution, explicitly including split-flap and LED rich editing; no repeated approval for routine reversible implementation.
 - [ ] I0-10 Final release/distribution action remains explicit after the complete artifact is reviewable.
 
 ## Evidence record template

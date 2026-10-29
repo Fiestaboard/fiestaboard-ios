@@ -21,7 +21,8 @@
 - Per-operation capabilities; no blanket version >= authorization. Original revisions, omitted/null semantics and unsupported-field protection remain mandatory.
 - No automatic replay of ambiguous mutations, device effects, OAuth enrollments or AI turns. Server acknowledgement is not physically observed output.
 - Follow [master checklist](../../native-parity-checklist.md); each accepted item gets commit/source/test/runtime/reviewer evidence. Do not mark old test results as fresh.
-- This turn produces/reviews the plan. Begin product implementation only after the user's review of this plan; retain the already chosen Sol/Astra execution method.
+- The user approved this plan on October 28 for continuous end-to-end execution. Retain the chosen Sol/Astra execution method; do not pause between routine implementation tasks.
+- Rich editing must support both split-flap and LED with separate source-backed rich/plain/IME/undo/preview/save/conflict/recovery/resize acceptance. Raw-only LED is not accepted.
 
 ## Review Focus
 
@@ -207,7 +208,7 @@ Each package below gets a bounded wave task brief, exact current DTOs and tests 
 | W4-A Renderer models/flap | BoardTables/BoardOutputView; renderer fixtures/tests | server-render output/charset → faithful model-specific draw data | glyph 62/filled 71, Note arrays, pigments, blank/unknown/malformed/oversize frames; screenshot/golden comparison |
 | W4-B LED/canvas/white-board | renderer units/resources; panel viewer UI | W4-A normalized target data → spans/icons/fonts/pixel-layer composition | page_preview/panel_viewer/panel_presentation/panel_link_sharing; layers/scale/bleed, external viewer prefix, thumbnail and fullscreen |
 | W5-A Page library/lifecycle | Kit page repository, Documents, Library/Picks/share UI | revision/document adapters → create/delete/duplicate/import/export/share/Picks | pages_crud/page_sharing/staff_picks/page_library_navigation; missing dependencies and ambiguous create/import |
-| W5-B Rich editor feasibility | Documents/EditorState; UIKit bridge tests/view | lossless docs → proven rich/plain/token/IME/caret/undo boundary | editor_document/editor_undo/template_authoring; canonical round trips, token-adjacent/multiline/CJK/resize; choose alternative only if prototype fails |
+| W5-B Rich editor feasibility | Documents/EditorState; UIKit bridge tests/view | lossless split-flap and LED docs → proven rich/plain/token/IME/caret/undo boundary for both | editor_document/editor_undo/template_authoring; separate split-flap/LED canonical round trips, supported output-specific formatting, token-adjacent/multiline/CJK/resize; choose alternative only if prototype fails |
 | W5-C Full template/cell editor | EditorState + focused editor controls | accepted bridge, charsets → every text/cell/line editing action | editor_charset/template_authoring/editor_drafts; field preservation, geometry warnings, accessibility, interruption recovery |
 | W5-D Canvas tools | canvas state/tests; Draw/Shapes/Source/management views | W4 rendering + W5 documents → eight-canvas authoring | canvas_management/canvas_draw/canvas_shapes/canvas_source; Pencil/touch/accessible cursor, undo and exact clear semantics |
 | W5-E Preview/live/save integration | preview coordinator, conditional save/conflict UI | all editors → explicit preview/live mode and complete conditional save | page_preview/template_live_output; out-of-order renders, no silent live send, server-compare no retokening, local cleanup failure after ack |
@@ -252,6 +253,6 @@ At each accepted wave update TASKS.md with current commit, checked evidence, exa
 - [x] All five review-focus conditions have named task tests; source-only/UI-compiled evidence cannot close runtime requirements.
 - [x] File ownership prevents concurrent edits to transport/Store/root/project; interfaces freeze before parallel delegation.
 - [x] Astra builder check and independent completeness review resolve substantive planning gaps; user-only inputs are listed with an unblocked next task.
-- [ ] User reviews the plan/order, then Sol/Astra executes W0/W1; later wave-specific task briefs refine how, not the full-parity scope.
+- [x] User approved the plan/order on October 28 and explicitly required split-flap plus LED rich editing. Sol/Astra executes continuously; later task briefs refine how, not full-parity scope.
 
 Independent planning review: [Astra initial findings and final PASS](../../research/2026-10-28-parity-plan-review.md). No product implementation is accepted by these self-review checks.

@@ -4,7 +4,7 @@ This is the short current queue and durable milestone history. Full web-app feat
 
 ## Current status — October 28, 2026
 
-The [complete end-to-end checklist](docs/native-parity-checklist.md) is now the authoritative detailed human acceptance list. It expands all 81 original workflow IDs into 355 checks covering product behavior, first-controller journeys, source/clone/CI, device acceptance and release. The [completion design](docs/superpowers/specs/2026-10-28-native-parity-completion-design.md) and [wave/task execution plan](docs/superpowers/plans/2026-10-28-native-parity-completion.md) describe architecture, dependencies, ownership and the preserved Sol 6.1 implementation/Astra review method. This is a planning draft for user review; no product implementation or release acceptance is claimed by creating it.
+The [complete end-to-end checklist](docs/native-parity-checklist.md) is now the authoritative detailed human acceptance list. It expands all 81 original workflow IDs into 355 checks covering product behavior, first-controller journeys, source/clone/CI, device acceptance and release. The [completion design](docs/superpowers/specs/2026-10-28-native-parity-completion-design.md) and [wave/task execution plan](docs/superpowers/plans/2026-10-28-native-parity-completion.md) describe architecture, dependencies, ownership and the preserved Sol 6.1 implementation/Astra review method. The user approved continuous execution on October 28, explicitly requiring rich editing for both split-flap and LED. Isolated Sol implementation tracks are active; the plan itself does not establish release acceptance.
 
 - Native baseline: `116b075`, with Collections integrated into the main Xcode project and all 21 user project/signing changes preserved.
 - Latest completed verification (October 27): 186 Swift host tests, 29 contract-tool tests, 55 isolated backend fixture cases, unsigned Simulator/device builds and seven UI tests compiled/zero executed. These are dated results, not fresh tests of the plan. [Evidence](docs/research/2026-10-27-native-collections-verification.md).
@@ -14,12 +14,12 @@ The [complete end-to-end checklist](docs/native-parity-checklist.md) is now the 
 
 | Next work | State | Concrete result |
 | --- | --- | --- |
-| Plan review | Draft for user review | Complete checklist/order and identified interaction points; preserve full parity requirement |
-| W0-A source/contracts | Queued | Current exact-source inventory, runtime fixtures, checker/evidence migration and per-operation policies |
-| W0-B clone/CI | Queued; independent track | Reproducible clean clone/build/tests, normal/demo schemes, signing-preserving project validation |
+| Plan review | User approved October 28 | Execute continuously; separate split-flap and LED rich-editor acceptance |
+| W0-A source/contracts | Implementing — Sol | Current exact-source inventory, runtime fixtures, checker/evidence migration and per-operation policies |
+| W0-B clone/CI | Implementing — Sol; independent track | Reproducible clean clone/build/tests, normal/demo schemes, signing-preserving project validation |
 | W0-C ingress | Owned early investigation/integration; actual upstream access may need operator | Prove authorized native route or build required browser-auth bridge; path-only fixture is insufficient; direct-LAN work continues independently |
 | W1-A through W1-F | Highest implementation priority after plan review | Find server → sign in/setup → select/read/control → secure reopen/logout → real iPhone evidence |
-| Reach test instance | Needs network/device interaction | Working LAN/VPN/IP path and installed version; isolated development continues meanwhile |
+| Reach test instance | iPhone Safari confirmed by user; Mac route blocked | DNS resolves IPv4/IPv6, both direct health requests return No route to host here; installed version/native login still unverified |
 | Remaining waves W2–W13 | Fully enumerated in master checklist | Home, outputs, rendering, pages/editors/canvases, schedules, integrations/OAuth, accounts/AI/admin, native quality and release |
 
 ## Initial baseline — historical
@@ -181,3 +181,5 @@ Partial means a subset exists in the draft; the checkbox stays open until the en
 - PR creation resolved: at the user's explicit direction, used `gh` instead of the connector. Draft PR [#2373](https://github.com/Fiestaboard/FiestaBoard/pull/2373) is OPEN and draft, targeting `main` from `codex/ios-api-access` at `dadbc191e`. Use this single PR for subsequent backend API work; do not open duplicates. Prefer `gh` for this GitHub workflow. No merge or deployment occurred.
 
 - Native collections: implemented against merged source79edd37d2/version10.1.7. Kit65 +AppState46 +Documents25 +EditorState50 host tests pass;29contract tests/integrity and55fenced backend cases pass. Astra core/editor reviews pass after six findings were fixed. Simulator/device builds and existing UI-test compilation pass; interactive tests remain unexecuted. See the linked collection verification record for commits, source boundaries and remaining acceptance.
+
+- October28 user approved continuous parity implementation and explicitly required rich editing for split-flap and LED. [Separate acceptance matrix](docs/research/2026-10-28-rich-editor-requirements.md); [early HA access decision/proof limits](docs/research/2026-10-28-ingress-access-decision.md). Fresh baseline186Swift/29contract tests passed before implementation. User confirmed test endpoint opens in iPhone Safari; native device/auth/output proof remains open.

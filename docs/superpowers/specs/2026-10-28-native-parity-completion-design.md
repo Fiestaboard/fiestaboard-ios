@@ -1,6 +1,6 @@
 # Native parity completion design
 
-Status: planning draft for user review. This extends the user-approved October 25 native design; it does not authorize publishing or claim release readiness. No product implementation occurs in this planning milestone.
+Status: approved by the user on October 28, 2026 for continuous end-to-end implementation. This extends the user-approved October 25 native design; it does not authorize publishing or claim release readiness. The user explicitly reaffirmed rich editing for both split-flap and LED.
 
 ## Outcome
 
@@ -59,6 +59,12 @@ Each workflow needs equivalent reachable native UI, typed request/result behavio
 Unknown write outcomes never authorize automatic replay. Loaded original revisions remain attached to drafts across comparison; reconnect or a fresh GET cannot retoken an old edit. Unsupported content is preserved or edit-blocked. A storage acknowledgement, a selected page and a physically observed frame are separate facts. Provider browser success is separate from native status refresh. Local cleanup failure must not turn an acknowledged write into a replayable write.
 
 Complete all fourteen web locales (en/es/fr/de/it/pt/nl/pl/ru/sv/tr/ja/ko/zh), accessible alternatives to drag/draw/calendar actions, and correct split-flap/Note-array/panel/LED/white-board output including filled token 71. Prove TextKit/token/IME/undo/canonical round trips before building the full editor around it.
+
+### Required rich-editor proof for both output families
+
+Rich authoring is required for split-flap and LED, including the upstream-supported text/token/expression/color/formatting controls for each family. LED must not fall back permanently to a raw-template-only editor. Split-flap's glyph/color/cell constraints must not be flattened into LED semantics, and LED formatting must not be silently lost when switching target or rich/plain presentation. Derive exact supported controls from current web/server fixtures, including configured charsets, spans/icons/visual layers where supported. Preserve unsupported document content or block unsafe changes with a reason.
+
+Run the full rich/plain/IME/paste/selection/undo/preview/conditional-save/conflict/recovery/resize matrix separately for split-flap and LED documents. Both have to round-trip faithfully and produce server-validated previews before this editor milestone can be accepted. Record separate visual/device evidence and source-backed differences; a successful split-flap editor does not accept LED by inference.
 
 ## Layout and Apple alignment
 
