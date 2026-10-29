@@ -88,7 +88,14 @@ public actor KeychainSessionVault: SessionVault {
 /// Process-wide owner leases and an I/O queue shared by all windows and vault wrappers.
 /// A lease changes before I/O awaits. Every enqueued operation follows the preceding
 /// operation to completion, so a suspended old save cannot finish after a newer clear.
-actor SessionVaultCoordinator {
+protocol SessionVaultCoordinating: Sendable {
+    func claim(_ vault: any SessionVault, for deployment: DeploymentURL, replacing: Bool) async -> SessionVaultCoordinator.Lease
+    func retire(_ lease: SessionVaultCoordinator.Lease) async -> SessionVaultCoordinator.Lease?
+    func isCurrent(_ lease: SessionVaultCoordinator.Lease) async -> Bool
+    func perform(_ lease: SessionVaultCoordinator.Lease, operation: @escaping @Sendable () async throws -> Data?) async throws -> Data?
+}
+
+actor SessionVaultCoordinator: SessionVaultCoordinating {
     static let shared = SessionVaultCoordinator()
     struct Lease: Sendable, Equatable { let key: String; let owner: UUID }
     private struct Slot {

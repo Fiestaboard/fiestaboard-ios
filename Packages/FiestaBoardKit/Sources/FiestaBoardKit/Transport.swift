@@ -52,6 +52,7 @@ public actor URLSessionTransport: APITransport {
     private var cookies = SessionCookieJar()
     private var generation: UInt64 = 0
     private let vault: (any SessionVault)?
+    private let coordinator: any SessionVaultCoordinating
     private var lease: SessionVaultCoordinator.Lease?
     private var persistence = SessionPersistenceState()
     private var persistenceEpoch: UInt64 = 0
@@ -60,6 +61,18 @@ public actor URLSessionTransport: APITransport {
     public init(deployment: DeploymentURL, protocolClasses: [AnyClass] = [], vault: (any SessionVault)? = nil) {
         self.deployment = deployment
         self.vault = vault
+        coordinator = SessionVaultCoordinator.shared
+        session = Self.makeSession(protocolClasses: protocolClasses)
+    }
+
+    init(deployment: DeploymentURL, protocolClasses: [AnyClass], vault: any SessionVault, coordinator: any SessionVaultCoordinating) {
+        self.deployment = deployment
+        self.vault = vault
+        self.coordinator = coordinator
+        session = Self.makeSession(protocolClasses: protocolClasses)
+    }
+
+    private nonisolated static func makeSession(protocolClasses: [AnyClass]) -> URLSession {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.httpCookieStorage = nil
         configuration.httpShouldSetCookies = false
@@ -69,7 +82,7 @@ public actor URLSessionTransport: APITransport {
         configuration.timeoutIntervalForRequest = 20
         configuration.timeoutIntervalForResource = 300
         if !protocolClasses.isEmpty { configuration.protocolClasses = protocolClasses }
-        session = URLSession(configuration: configuration, delegate: RefuseRedirectDelegate(), delegateQueue: nil)
+        return URLSession(configuration: configuration, delegate: RefuseRedirectDelegate(), delegateQueue: nil)
     }
 
     deinit { session.invalidateAndCancel() }
@@ -91,10 +104,10 @@ public actor URLSessionTransport: APITransport {
             return
         }
         let token = generation
-        let newLease = await SessionVaultCoordinator.shared.claim(vault, for: deployment, replacing: true)
+        let newLease = await coordinator.claim(vault, for: deployment, replacing: true)
         guard token == generation, epoch == persistenceEpoch else { return }
         lease = newLease
-        do { _ = try await SessionVaultCoordinator.shared.perform(newLease) { try await vault.remove(for: self.deployment); return nil } }
+        do { _ = try await coordinator.perform(newLease) { try await vault.remove(for: self.deployment); return nil } }
         catch { if token == generation && epoch == persistenceEpoch { persistence.warning = .unavailable; persistence.cleanupPending = true } }
     }
 
@@ -108,12 +121,15 @@ public actor URLSessionTransport: APITransport {
             persistence.warning = .identityRequired; return false
         }
         guard let vault else { return false }
-        let newLease = await SessionVaultCoordinator.shared.claim(vault, for: deployment, replacing: false)
+        let newLease = await coordinator.claim(vault, for: deployment, replacing: false)
         guard token == generation, epoch == persistenceEpoch else { return false }
         lease = newLease
         do {
-            let data = try await SessionVaultCoordinator.shared.perform(newLease) { try await vault.load(for: self.deployment) }
-            guard token == generation, epoch == persistenceEpoch, await SessionVaultCoordinator.shared.isCurrent(newLease) else { return false }
+            let data = try await coordinator.perform(newLease) { try await vault.load(for: self.deployment) }
+            let currentOwner = await coordinator.isCurrent(newLease)
+            // The ownership query is an actor hop: local logout/forget/reset may
+            // run after its result is computed and before this actor resumes.
+            guard token == generation, epoch == persistenceEpoch, currentOwner else { return false }
             guard let data else { return false }
             guard let restored = SessionCookieJar.restore(data, deployment: deployment, installationID: identity) else {
                 persistence.warning = .invalidStoredSession; return false
@@ -136,11 +152,11 @@ public actor URLSessionTransport: APITransport {
         guard let vault else { return }
         let owner: SessionVaultCoordinator.Lease
         if let lease { owner = lease }
-        else { owner = await SessionVaultCoordinator.shared.claim(vault, for: deployment, replacing: false) }
+        else { owner = await coordinator.claim(vault, for: deployment, replacing: false) }
         // Retire this owner's pending writes without stealing a newer window's credential.
-        guard let replacement = await SessionVaultCoordinator.shared.retire(owner), epoch == persistenceEpoch else { return }
+        guard let replacement = await coordinator.retire(owner), epoch == persistenceEpoch else { return }
         lease = replacement
-        do { _ = try await SessionVaultCoordinator.shared.perform(replacement) { try await vault.remove(for: self.deployment); return nil } }
+        do { _ = try await coordinator.perform(replacement) { try await vault.remove(for: self.deployment); return nil } }
         catch { if token == generation && epoch == persistenceEpoch { persistence.warning = .unavailable; persistence.cleanupPending = true } }
     }
 
@@ -156,14 +172,14 @@ public actor URLSessionTransport: APITransport {
         guard let vault, let lease else { persistence.warning = .unavailable; return }
         guard let data = cookies.persisted(deployment: deployment, installationID: installationID) else {
             persistence.warning = .noPersistentCookie
-            do { _ = try await SessionVaultCoordinator.shared.perform(lease) { try await vault.remove(for: self.deployment); return nil } }
+            do { _ = try await coordinator.perform(lease) { try await vault.remove(for: self.deployment); return nil } }
             catch { if token == generation && epoch == persistenceEpoch { persistence.warning = .unavailable; persistence.cleanupPending = true } }
             return
         }
         do {
-            _ = try await SessionVaultCoordinator.shared.perform(lease) { try await vault.save(data, for: self.deployment); return nil }
+            _ = try await coordinator.perform(lease) { try await vault.save(data, for: self.deployment); return nil }
             if token == generation && epoch == persistenceEpoch {
-                let current = await SessionVaultCoordinator.shared.isCurrent(lease)
+                let current = await coordinator.isCurrent(lease)
                 if current && token == generation && epoch == persistenceEpoch { persistence.cleanupPending = false }
             }
         }

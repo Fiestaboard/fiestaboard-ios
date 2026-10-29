@@ -435,3 +435,132 @@ extension SessionPersistenceTests {
         }
     }
 }
+
+/// Uses the real coordinator for every operation, but suspends the final ownership
+/// result after it has been computed. This models a delayed cross-actor return.
+private actor RestoreOwnershipGate: SessionVaultCoordinating {
+    private let base = SessionVaultCoordinator()
+    private var waiting: CheckedContinuation<Void, Never>?
+    private var blocked: CheckedContinuation<Void, Never>?
+    func claim(_ vault: any SessionVault, for deployment: DeploymentURL, replacing: Bool) async -> SessionVaultCoordinator.Lease {
+        await base.claim(vault, for: deployment, replacing: replacing)
+    }
+    func retire(_ lease: SessionVaultCoordinator.Lease) async -> SessionVaultCoordinator.Lease? { await base.retire(lease) }
+    func perform(_ lease: SessionVaultCoordinator.Lease, operation: @escaping @Sendable () async throws -> Data?) async throws -> Data? {
+        try await base.perform(lease, operation: operation)
+    }
+    func isCurrent(_ lease: SessionVaultCoordinator.Lease) async -> Bool {
+        let result = await base.isCurrent(lease)
+        await withCheckedContinuation { blocked = $0; waiting?.resume(); waiting = nil }
+        return result
+    }
+    func waitForOwnershipResult() async {
+        if blocked != nil { return }
+        await withCheckedContinuation { waiting = $0 }
+    }
+    func releaseOwnershipResult() { blocked?.resume(); blocked = nil }
+}
+
+/// All requests, cookies, and storage remain real; only return from rejected
+/// restore's local cleanup is held while a new authentication transition runs.
+private actor RejectedRestoreCleanupTransport: APITransport {
+    let base: URLSessionTransport
+    private var waiting: CheckedContinuation<Void, Never>?
+    private var blocked: CheckedContinuation<Void, Never>?
+    private var pauseNextForget = true
+    init(base: URLSessionTransport) { self.base = base }
+    func send(_ request: APIRequest) async throws -> APIResponse { try await base.send(request) }
+    func resetSession() async { await base.resetSession() }
+    func configureSessionPersistence(rememberMe: Bool, installationID: String?) async {
+        await base.configureSessionPersistence(rememberMe: rememberMe, installationID: installationID)
+    }
+    func restoreRememberedSession(observedInstallationID: String) async -> Bool {
+        await base.restoreRememberedSession(observedInstallationID: observedInstallationID)
+    }
+    func sessionPersistenceState() async -> SessionPersistenceState { await base.sessionPersistenceState() }
+    func forgetRememberedSession() async {
+        await base.forgetRememberedSession()
+        guard pauseNextForget else { return }
+        pauseNextForget = false
+        await withCheckedContinuation { blocked = $0; waiting?.resume(); waiting = nil }
+    }
+    func waitForCleanup() async {
+        if blocked != nil { return }
+        await withCheckedContinuation { waiting = $0 }
+    }
+    func releaseCleanup() { blocked?.resume(); blocked = nil }
+}
+
+extension SessionPersistenceTests {
+    func testFinalRestoreOwnershipResultCannotOutliveForgetResetOrLogout() async throws {
+        for action in ["forget", "reset", "logout"] {
+            let vault = MemorySessionVault(); let seed = transport(vault); fixture()
+            await seed.configureSessionPersistence(rememberMe: true, installationID: "id-1"); try await login(seed)
+            let gate = RestoreOwnershipGate()
+            let t = URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self], vault: vault, coordinator: gate)
+            let restoring = Task { await t.restoreRememberedSession(observedInstallationID: "id-1") }
+            await gate.waitForOwnershipResult()
+            if action == "forget" { await t.forgetRememberedSession() }
+            else if action == "reset" { await t.resetSession() }
+            else {
+                FixtureURLProtocol.handler = { _ in (200, [:], Data(#"{"status":"ok"}"#.utf8)) }
+                try await LiveFiestaBoardService(deployment: deployment, transport: t).logout()
+            }
+            await gate.releaseOwnershipResult()
+            let restored = await restoring.value
+            XCTAssertFalse(restored, action)
+            let state = await t.sessionPersistenceState()
+            XCTAssertFalse(state.rememberMe, action); XCTAssertFalse(state.restored, action)
+            let log = RequestLog()
+            FixtureURLProtocol.handler = { request in log.append(request); return (200, [:], Data("{}".utf8)) }
+            _ = try await t.send(APIRequest(path: ["auth", "status"]))
+            XCTAssertNil(log.requests.last?.value(forHTTPHeaderField: "Cookie"), action)
+        }
+    }
+
+    func testRejectedRestoreCleanupCannotResetNewLoginForAnyRejectionReason() async throws {
+        for reason in ["unauthenticated", "identityMismatch", "notReady"] {
+            let vault = MemorySessionVault(); let seed = transport(vault); fixture()
+            await seed.configureSessionPersistence(rememberMe: true, installationID: "id-1"); try await login(seed)
+            let log = RequestLog()
+            FixtureURLProtocol.handler = { request in
+                log.append(request)
+                let path = request.url!.lastPathComponent
+                if path == "health" { return (200, [:], try BootstrapTests.body("health")) }
+                if path == "login" {
+                    return (200, ["Set-Cookie": "fiestaboard_session=new; Path=/; Secure; Max-Age=3600"], Data(#"{"status":"ok"}"#.utf8))
+                }
+                if path == "discover" {
+                    var identity = try JSONSerialization.jsonObject(with: BootstrapTests.body("discover_disabled")) as! [String: Any]
+                    if reason == "identityMismatch", log.requests.filter({ $0.url!.lastPathComponent == "discover" }).count == 2 {
+                        identity["id"] = "changed-installation"
+                    }
+                    return (200, [:], try JSONSerialization.data(withJSONObject: identity))
+                }
+                let replacement = request.value(forHTTPHeaderField: "Cookie") == "fiestaboard_session=new"
+                if replacement { return (200, [:], try BootstrapTests.body("auth_authenticated")) }
+                if reason == "identityMismatch" { return (200, [:], try BootstrapTests.body("auth_authenticated")) }
+                if reason == "notReady" {
+                    var status = try JSONSerialization.jsonObject(with: BootstrapTests.body("auth_authenticated")) as! [String: Any]
+                    status["setup_required"] = true
+                    return (200, [:], try JSONSerialization.data(withJSONObject: status))
+                }
+                return (200, [:], try BootstrapTests.body("auth_enabled"))
+            }
+            let base = transport(vault)
+            let gated = RejectedRestoreCleanupTransport(base: base)
+            let service = LiveFiestaBoardService(deployment: deployment, transport: gated)
+            let restoring = Task { try await service.restoreRememberedSession(observedInstallationID: "id-1") }
+            await gated.waitForCleanup()
+            let replacement = try await service.login(username: "contract_admin", password: "fixture-password", rememberMe: true)
+            XCTAssertTrue(replacement.authenticated, reason)
+            await gated.releaseCleanup()
+            do { _ = try await restoring.value; XCTFail("Expected superseded restore: \(reason)") }
+            catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession, reason) }
+            let current = try await service.authStatus()
+            XCTAssertTrue(current.authenticated, reason)
+            XCTAssertEqual(log.requests.last?.value(forHTTPHeaderField: "Cookie"), "fiestaboard_session=new", reason)
+            let stored = try await vault.load(for: deployment); XCTAssertNotNil(stored, reason)
+        }
+    }
+}

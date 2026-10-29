@@ -198,7 +198,10 @@ public actor LiveFiestaBoardService: FiestaBoardService {
             guard token == generation else { throw FiestaBoardError.staleSession }
             guard verified.identity.installationID == observedInstallationID, verified.auth.authenticated,
                   verified.auth.bootstrapPhase == .ready else {
-                await transport.forgetRememberedSession(); await transport.resetSession(); return false
+                await transport.forgetRememberedSession()
+                guard token == generation else { throw FiestaBoardError.staleSession }
+                await transport.resetSession()
+                return false
             }
             return true
         } catch {
