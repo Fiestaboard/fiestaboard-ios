@@ -1,0 +1,5184 @@
+{
+  "schema_version": 1,
+  "source_commit": "2ced809c8fe20d4ac6e5dc6603d691c8cb4e475a",
+  "operations": [
+    {
+      "id": "delete_ai_conversations",
+      "method": "DELETE",
+      "path": "/ai/conversations",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 228
+        }
+      ],
+      "parity_ids": [
+        "ai_history",
+        "ai_staging"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: clearConversations. Backend source: src/ai/conversations/routes.py:78. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_ai_conversations",
+      "method": "GET",
+      "path": "/ai/conversations",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 210
+        }
+      ],
+      "parity_ids": [
+        "ai_history",
+        "ai_staging"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: listConversations. Backend source: src/ai/conversations/routes.py:62. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "delete_ai_conversations_conversation_id",
+      "method": "DELETE",
+      "path": "/ai/conversations/{conversation_id}",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 226
+        }
+      ],
+      "parity_ids": [
+        "ai_history",
+        "ai_staging"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: deleteConversation. Backend source: src/ai/conversations/routes.py:135. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_ai_conversations_conversation_id",
+      "method": "GET",
+      "path": "/ai/conversations/{conversation_id}",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 212
+        }
+      ],
+      "parity_ids": [
+        "ai_history",
+        "ai_staging"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getConversation. Backend source: src/ai/conversations/routes.py:89. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "patch_ai_conversations_conversation_id",
+      "method": "PATCH",
+      "path": "/ai/conversations/{conversation_id}",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 221
+        }
+      ],
+      "parity_ids": [
+        "ai_history",
+        "ai_staging"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: renameConversation. Backend source: src/ai/conversations/routes.py:122. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "put_ai_conversations_conversation_id",
+      "method": "PUT",
+      "path": "/ai/conversations/{conversation_id}",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 215
+        }
+      ],
+      "parity_ids": [
+        "ai_history",
+        "ai_staging"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: saveConversation. Backend source: src/ai/conversations/routes.py:102. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_ai_conversations_conversation_id_export",
+      "method": "GET",
+      "path": "/ai/conversations/{conversation_id}/export",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 231
+        }
+      ],
+      "parity_ids": [
+        "ai_history",
+        "ai_staging"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: exportConversationUrl. Backend source: src/ai/conversations/routes.py:147. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_auth_change_password",
+      "method": "POST",
+      "path": "/auth/change-password",
+      "surface": "internal",
+      "auth": [
+        "endpoint_specific_admin_gate",
+        "current_password_in_body"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 51
+        }
+      ],
+      "parity_ids": [
+        "account_credentials"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: changePassword. Backend source: src/auth/routes.py:382. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_auth_change_username",
+      "method": "POST",
+      "path": "/auth/change-username",
+      "surface": "internal",
+      "auth": [
+        "endpoint_specific_admin_gate",
+        "current_password_in_body"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 77
+        }
+      ],
+      "parity_ids": [
+        "account_credentials"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: changeUsername. Backend source: src/auth/routes.py:407. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_auth_device_approve",
+      "method": "POST",
+      "path": "/auth/device/approve",
+      "surface": "internal",
+      "auth": [
+        "browser_session_cookie",
+        "authorization_header_forbidden",
+        "portal_origin",
+        "x_csrf_token",
+        "application_json_except_delete"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 64
+        }
+      ],
+      "parity_ids": [
+        "device_activation"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: approveDevice. Backend source: src/auth/device_routes.py:77. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_auth_device_deny",
+      "method": "POST",
+      "path": "/auth/device/deny",
+      "surface": "internal",
+      "auth": [
+        "browser_session_cookie",
+        "authorization_header_forbidden",
+        "portal_origin",
+        "x_csrf_token",
+        "application_json_except_delete"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 65
+        }
+      ],
+      "parity_ids": [
+        "device_activation"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: denyDevice. Backend source: src/auth/device_routes.py:84. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_auth_device_inspect",
+      "method": "POST",
+      "path": "/auth/device/inspect",
+      "surface": "internal",
+      "auth": [
+        "browser_session_cookie",
+        "authorization_header_forbidden",
+        "portal_origin",
+        "x_csrf_token",
+        "application_json_except_delete"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 63
+        }
+      ],
+      "parity_ids": [
+        "device_activation"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: inspectDevice. Backend source: src/auth/device_service.py:104; src/auth/device_routes.py:71. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_auth_device_settings",
+      "method": "GET",
+      "path": "/auth/device/settings",
+      "surface": "internal",
+      "auth": [
+        "browser_session_cookie",
+        "authorization_header_forbidden"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 70
+        }
+      ],
+      "parity_ids": [
+        "device_activation"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getDeviceSettings. Backend source: src/auth/device_routes.py:91. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "put_auth_device_settings",
+      "method": "PUT",
+      "path": "/auth/device/settings",
+      "surface": "internal",
+      "auth": [
+        "browser_session_cookie",
+        "authorization_header_forbidden",
+        "portal_origin",
+        "x_csrf_token",
+        "application_json_except_delete"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 71
+        }
+      ],
+      "parity_ids": [
+        "device_activation"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updateDeviceSettings. Backend source: src/auth/device_routes.py:97. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_auth_disable",
+      "method": "POST",
+      "path": "/auth/disable",
+      "surface": "internal",
+      "auth": [
+        "endpoint_specific_admin_gate",
+        "current_password_in_body"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 138
+        }
+      ],
+      "parity_ids": [
+        "account_credentials"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: disableAuth. Backend source: src/auth/routes.py:431. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_auth_login",
+      "method": "POST",
+      "path": "/auth/login",
+      "surface": "internal",
+      "auth": [
+        "username_password",
+        "ip_lockout_and_auth_mode_gate"
+      ],
+      "scope": "public",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/app/routes/login.tsx",
+          "line": 165
+        }
+      ],
+      "parity_ids": [
+        "auth_onboarding"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: postJson login. Backend source: src/auth/routes.py:347. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_auth_logout",
+      "method": "POST",
+      "path": "/auth/logout",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 43
+        }
+      ],
+      "parity_ids": [
+        "auth_onboarding"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: logout. Backend source: src/auth/routes.py:371. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "delete_auth_mcp_token",
+      "method": "DELETE",
+      "path": "/auth/mcp-token",
+      "surface": "internal",
+      "auth": [
+        "browser_admin_when_auth_enabled",
+        "current_mcp_bearer_when_auth_disabled_and_token_exists",
+        "anonymous_only_when_auth_disabled_and_no_token"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 188
+        }
+      ],
+      "parity_ids": [
+        "mcp_credentials"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: clearMcpToken. Backend source: src/auth/routes.py:561. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_auth_mcp_token",
+      "method": "GET",
+      "path": "/auth/mcp-token",
+      "surface": "internal",
+      "auth": [
+        "browser_admin_when_auth_enabled",
+        "current_mcp_bearer_when_auth_disabled_and_token_exists",
+        "anonymous_only_when_auth_disabled_and_no_token"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 170
+        }
+      ],
+      "parity_ids": [
+        "mcp_credentials"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getMcpTokenStatus. Backend source: src/auth/routes.py:525. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_auth_mcp_token",
+      "method": "POST",
+      "path": "/auth/mcp-token",
+      "surface": "internal",
+      "auth": [
+        "browser_admin_when_auth_enabled",
+        "current_mcp_bearer_when_auth_disabled_and_token_exists",
+        "anonymous_only_when_auth_disabled_and_no_token"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 181
+        }
+      ],
+      "parity_ids": [
+        "mcp_credentials"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: rotateMcpToken. Backend source: src/auth/routes.py:538. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_auth_preference",
+      "method": "POST",
+      "path": "/auth/preference",
+      "surface": "internal",
+      "auth": [
+        "no_existing_admin",
+        "auth_mode_not_env_pinned",
+        "stored_mcp_token_possession_when_enabling_if_configured"
+      ],
+      "scope": "public",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 109
+        },
+        {
+          "path": "web/app/routes/login.tsx",
+          "line": 236
+        }
+      ],
+      "parity_ids": [
+        "auth_onboarding"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: setAuthPreference, postJson preference. Backend source: src/auth/routes.py:283. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78). Stored MCP token adoption protection applies when enabling; src/auth/routes.py:211\u2013242."
+    },
+    {
+      "id": "get_auth_sessions",
+      "method": "GET",
+      "path": "/auth/sessions",
+      "surface": "internal",
+      "auth": [
+        "browser_session_cookie",
+        "authorization_header_forbidden"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 66
+        }
+      ],
+      "parity_ids": [
+        "session_management"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: listSessions. Backend source: src/auth/session_routes.py:22. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78). Listing calls SessionStore.cleanup and deletes expired session, CSRF, challenge and rate-limit records before selecting rows; persisted maintenance, not a pure read. src/auth/session_store.py:82\u201388,141\u2013148."
+    },
+    {
+      "id": "get_auth_sessions_context",
+      "method": "GET",
+      "path": "/auth/sessions/context",
+      "surface": "internal",
+      "auth": [
+        "browser_session_cookie",
+        "authorization_header_forbidden"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 50
+        }
+      ],
+      "parity_ids": [
+        "session_management"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: csrfContext. Backend source: src/auth/session_routes.py:17. GET issues stored CSRF context: src/auth/session_routes.py:17. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_auth_sessions_revoke",
+      "method": "POST",
+      "path": "/auth/sessions/revoke",
+      "surface": "internal",
+      "auth": [
+        "browser_session_cookie",
+        "authorization_header_forbidden",
+        "portal_origin",
+        "x_csrf_token",
+        "application_json_except_delete"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 69
+        }
+      ],
+      "parity_ids": [
+        "session_management"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: revokeSessions. Backend source: src/auth/session_routes.py:42. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "delete_auth_sessions_session_id",
+      "method": "DELETE",
+      "path": "/auth/sessions/{session_id}",
+      "surface": "internal",
+      "auth": [
+        "browser_session_cookie",
+        "authorization_header_forbidden",
+        "portal_origin",
+        "x_csrf_token",
+        "application_json_except_delete"
+      ],
+      "scope": "resource",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "line": 67
+        }
+      ],
+      "parity_ids": [
+        "session_management"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: revokeSession. Backend source: src/auth/session_routes.py:33. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_auth_setup",
+      "method": "POST",
+      "path": "/auth/setup",
+      "surface": "internal",
+      "auth": [
+        "no_existing_admin",
+        "auth_mode_setup_gate",
+        "stored_mcp_token_possession_when_configured_for_adoption"
+      ],
+      "scope": "public",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/app/routes/login.tsx",
+          "line": 212
+        }
+      ],
+      "parity_ids": [
+        "auth_onboarding"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: postJson setup. Backend source: src/auth/routes.py:318. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78). Stored MCP token adoption protection applies; src/auth/routes.py:211\u2013242. Env-pinned token differs and cannot be rotated through UI."
+    },
+    {
+      "id": "get_auth_status",
+      "method": "GET",
+      "path": "/auth/status",
+      "surface": "internal",
+      "auth": [
+        "endpoint_specific_bootstrap_or_login_gate"
+      ],
+      "scope": "public",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "line": 41
+        },
+        {
+          "path": "web/app/routes/login.tsx",
+          "line": 59
+        }
+      ],
+      "parity_ids": [
+        "auth_onboarding"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getAuthStatus, fetchAuthStatus. Backend source: src/auth/routes.py:260. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_backup_export",
+      "method": "GET",
+      "path": "/backup/export",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 356
+        }
+      ],
+      "parity_ids": [
+        "backup_restore"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: exportBackupUrl. Backend source: src/mcp_server.py:3171; src/backup/routes.py:35. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_backup_import",
+      "method": "POST",
+      "path": "/backup/import",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 376
+        }
+      ],
+      "parity_ids": [
+        "backup_restore"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: importBackup. Backend source: src/backup/routes.py:59. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_baywheels_stations",
+      "method": "GET",
+      "path": "/baywheels/stations",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 85
+        }
+      ],
+      "parity_ids": [
+        "integration_helpers"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: listBayWheelsStations. Backend source: src/api_server.py:1308. Read/probe may contact providers or update transient caches; conservative explicit replay until runtime proof. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_baywheels_stations_nearby",
+      "method": "GET",
+      "path": "/baywheels/stations/nearby",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 98
+        }
+      ],
+      "parity_ids": [
+        "integration_helpers"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: findNearbyBayWheelsStations. Backend source: src/api_server.py:1373. Read/probe may contact providers or update transient caches; conservative explicit replay until runtime proof. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_baywheels_stations_search",
+      "method": "GET",
+      "path": "/baywheels/stations/search",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 112
+        }
+      ],
+      "parity_ids": [
+        "integration_helpers"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: searchBayWheelsStationsByAddress. Backend source: src/api_server.py:1446. Read/probe may contact providers or update transient caches; conservative explicit replay until runtime proof. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_board_current_message",
+      "method": "GET",
+      "path": "/board/current-message",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "board",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 590
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 591
+        }
+      ],
+      "parity_ids": [
+        "home_state",
+        "collection_rules_editor"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getBoardCurrentMessage. Backend source: src/board_api/routes.py:130. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78). Primary board can read live/poll state; secondary boards use runtime last-sent/polled cache. force query is primary-only; paused board stays hands-off (src/board_api/routes.py:129). Do not equate last-send acknowledgement with physical output verification."
+    },
+    {
+      "id": "delete_board_external_frame",
+      "method": "DELETE",
+      "path": "/board/external-frame",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "board",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 597
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 598
+        }
+      ],
+      "parity_ids": [
+        "home_commands"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: dismissExternalFrame. Backend source: src/board_api/routes.py:251. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_boards_board_id_actions_action",
+      "method": "POST",
+      "path": "/boards/{board_id}/actions/{action}",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "board",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 203
+        }
+      ],
+      "parity_ids": [
+        "output_actions"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: runBoardAction. Backend source: src/outputs/routes.py:208. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_config",
+      "method": "GET",
+      "path": "/config",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 290
+        }
+      ],
+      "parity_ids": [
+        "connection_boot"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getConfig. Backend source: src/config_api/routes.py:88. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_config_board",
+      "method": "GET",
+      "path": "/config/board",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 603
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 610
+        }
+      ],
+      "parity_ids": [
+        "board_configuration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getBoardConfig, getFiestaboardConfig. Backend source: src/config_api/routes.py:158. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "put_config_board",
+      "method": "PUT",
+      "path": "/config/board",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 605
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 612
+        }
+      ],
+      "parity_ids": [
+        "board_configuration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updateBoardConfig, updateFiestaboardConfig. Backend source: src/config_api/routes.py:180. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_config_board_enable_local_api",
+      "method": "POST",
+      "path": "/config/board/enable-local-api",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/setup.ts",
+          "line": 79
+        }
+      ],
+      "parity_ids": [
+        "board_setup"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: enableLocalApi. Backend source: src/config_api/routes.py:335. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_config_board_scan",
+      "method": "POST",
+      "path": "/config/board/scan",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/setup.ts",
+          "line": 85
+        }
+      ],
+      "parity_ids": [
+        "board_setup"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: scanForBoards. Backend source: src/config_api/routes.py:366. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_config_board_test",
+      "method": "POST",
+      "path": "/config/board/test",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/setup.ts",
+          "line": 66
+        }
+      ],
+      "parity_ids": [
+        "board_setup"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: testBoardConnection. Backend source: src/config_api/routes.py:293. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_config_full",
+      "method": "GET",
+      "path": "/config/full",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 602
+        }
+      ],
+      "parity_ids": [
+        "board_configuration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getFullConfig. Backend source: src/config_api/routes.py:99. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_config_general",
+      "method": "GET",
+      "path": "/config/general",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 138
+        }
+      ],
+      "parity_ids": [
+        "general_settings"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getGeneralConfig. Backend source: src/config_api/routes.py:393. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "put_config_general",
+      "method": "PUT",
+      "path": "/config/general",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 143
+        }
+      ],
+      "parity_ids": [
+        "general_settings"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updateGeneralConfig. Backend source: src/config_api/routes.py:400. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_config_validate",
+      "method": "GET",
+      "path": "/config/validate",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 616
+        },
+        {
+          "path": "web/src/lib/api/setup.ts",
+          "line": 63
+        }
+      ],
+      "parity_ids": [
+        "board_setup"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: validateConfig, validateSetup. Backend source: src/config_api/routes.py:271; src/plugins/base.py:605; src/plugins/base.py:1234; src/schedules/models.py:73; src/collections/models.py:132; src/pages/models.py:214; src/outputs/plugin_registration.py:71. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_debug_blank",
+      "method": "POST",
+      "path": "/debug/blank",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 325
+        }
+      ],
+      "parity_ids": [
+        "diagnostics"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: blankBoard. Backend source: src/debug/routes.py:141. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_debug_cache_status",
+      "method": "GET",
+      "path": "/debug/cache-status",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 339
+        }
+      ],
+      "parity_ids": [
+        "diagnostics"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getBoardCacheStatus. Backend source: src/debug/routes.py:294. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_debug_clear_cache",
+      "method": "POST",
+      "path": "/debug/clear-cache",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 337
+        }
+      ],
+      "parity_ids": [
+        "diagnostics"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: clearBoardCache. Backend source: src/debug/routes.py:278. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_debug_fill",
+      "method": "POST",
+      "path": "/debug/fill",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 328
+        }
+      ],
+      "parity_ids": [
+        "diagnostics"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: fillBoard. Backend source: src/debug/routes.py:164. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_debug_info",
+      "method": "POST",
+      "path": "/debug/info",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 333
+        }
+      ],
+      "parity_ids": [
+        "diagnostics"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: showDebugInfo. Backend source: src/debug/routes.py:216. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_debug_network_diagnostics",
+      "method": "GET",
+      "path": "/debug/network-diagnostics",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 343
+        }
+      ],
+      "parity_ids": [
+        "diagnostics"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getNetworkDiagnostics. Backend source: src/debug/routes.py:430. Read/probe may contact providers or update transient caches; conservative explicit replay until runtime proof. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_debug_system_info",
+      "method": "GET",
+      "path": "/debug/system-info",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 341
+        }
+      ],
+      "parity_ids": [
+        "diagnostics"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getDebugSystemInfo. Backend source: src/debug/routes.py:390. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_debug_test_connection",
+      "method": "POST",
+      "path": "/debug/test-connection",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 335
+        }
+      ],
+      "parity_ids": [
+        "diagnostics"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: testDebugConnection. Backend source: src/debug/routes.py:242. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_displays_raw_batch",
+      "method": "POST",
+      "path": "/displays/raw/batch",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 77
+        }
+      ],
+      "parity_ids": [
+        "plugins_configuration",
+        "oauth_app_registration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getDisplaysRawBatch. Backend source: src/displays/routes.py:158. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_force_refresh",
+      "method": "POST",
+      "path": "/force-refresh",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "board",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 295
+        }
+      ],
+      "parity_ids": [
+        "home_commands"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: forceRefresh. Backend source: src/mcp_server.py:2749; src/ops/executors.py:1930; src/debug/routes.py:337. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_generic_data_test_fetch",
+      "method": "POST",
+      "path": "/generic-data/test-fetch",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 193
+        }
+      ],
+      "parity_ids": [
+        "integration_helpers"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: genericDataTestFetch. Backend source: src/plugin_support/routes.py:100. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_health",
+      "method": "GET",
+      "path": "/health",
+      "surface": "internal",
+      "auth": [
+        "endpoint_specific_bootstrap_or_login_gate"
+      ],
+      "scope": "public",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/components/boot-gate.tsx",
+          "line": 54
+        }
+      ],
+      "parity_ids": [
+        "connection_boot"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: BootGate health. Backend source: src/v1/routes_meta.py:150; src/service_api/routes.py:104. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_home_assistant_entities",
+      "method": "GET",
+      "path": "/home-assistant/entities",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "line": 225
+        }
+      ],
+      "parity_ids": [
+        "integration_helpers"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getHomeAssistantEntities. Backend source: src/plugin_support/routes.py:54. Read/probe may contact providers or update transient caches; conservative explicit replay until runtime proof. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_mqtt_status",
+      "method": "GET",
+      "path": "/mqtt/status",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 353
+        }
+      ],
+      "parity_ids": [
+        "mqtt_settings"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getMqttStatus. Backend source: src/mqtt/routes.py:34. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_muni_stops",
+      "method": "GET",
+      "path": "/muni/stops",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 116
+        }
+      ],
+      "parity_ids": [
+        "integration_helpers"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: listMuniStops. Backend source: src/api_server.py:1549. Read/probe may contact providers or update transient caches; conservative explicit replay until runtime proof. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_muni_stops_nearby",
+      "method": "GET",
+      "path": "/muni/stops/nearby",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 129
+        }
+      ],
+      "parity_ids": [
+        "integration_helpers"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: findNearbyMuniStops. Backend source: src/api_server.py:1640. Read/probe may contact providers or update transient caches; conservative explicit replay until runtime proof. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_muni_stops_search",
+      "method": "GET",
+      "path": "/muni/stops/search",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 143
+        }
+      ],
+      "parity_ids": [
+        "integration_helpers"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: searchMuniStopsByAddress. Backend source: src/api_server.py:1755. Read/probe may contact providers or update transient caches; conservative explicit replay until runtime proof. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_network_wifi_capability",
+      "method": "GET",
+      "path": "/network/wifi/capability",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 381
+        }
+      ],
+      "parity_ids": [
+        "wifi_management"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getWifiCapability. Backend source: src/network/routes.py:71. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_network_wifi_connect",
+      "method": "POST",
+      "path": "/network/wifi/connect",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 391
+        }
+      ],
+      "parity_ids": [
+        "wifi_management"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: connectWifi. Backend source: src/network/routes.py:115. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_network_wifi_disconnect",
+      "method": "POST",
+      "path": "/network/wifi/disconnect",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 397
+        }
+      ],
+      "parity_ids": [
+        "wifi_management"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: disconnectWifi. Backend source: src/network/routes.py:135. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_network_wifi_saved",
+      "method": "GET",
+      "path": "/network/wifi/saved",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 389
+        }
+      ],
+      "parity_ids": [
+        "wifi_management"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getSavedWifi. Backend source: src/network/routes.py:104. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "delete_network_wifi_saved_con_name",
+      "method": "DELETE",
+      "path": "/network/wifi/saved/{con_name}",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 399
+        }
+      ],
+      "parity_ids": [
+        "wifi_management"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: forgetWifi. Backend source: src/network/routes.py:150. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_network_wifi_scan",
+      "method": "POST",
+      "path": "/network/wifi/scan",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 384
+        }
+      ],
+      "parity_ids": [
+        "wifi_management"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: scanWifi. Backend source: src/network/routes.py:93. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_network_wifi_status",
+      "method": "GET",
+      "path": "/network/wifi/status",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 382
+        }
+      ],
+      "parity_ids": [
+        "wifi_management"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getWifiStatus. Backend source: src/network/routes.py:82. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_oauth_callback",
+      "method": "GET",
+      "path": "/oauth/callback",
+      "surface": "internal",
+      "auth": [
+        "signed_single_use_oauth_state_or_provider_bound_pending_flow"
+      ],
+      "scope": "public",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/components/plugin-settings/oauth-connection.tsx",
+          "line": 281
+        }
+      ],
+      "parity_ids": [
+        "oauth_connections",
+        "oauth_relay_flow",
+        "oauth_device_flow",
+        "oauth_key_exchange_flow",
+        "oauth_plex_flow",
+        "oauth_app_registration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: browser relay return. Backend source: src/oauth/routes.py:165. Not an app callback. Signed state completion then 302 relative browser return to ../../integrations or ../../settings; src/oauth/routes.py:135. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78). Mutating single-use completion: a valid matched pending state is popped before denial/provider-error/missing-code handling, so those outcomes and exchange failure consume the attempt too. Successful completion exchanges the provider code, persists tokens and invalidates provider data; never replay automatically. src/oauth/service.py:730\u2013775,829\u2013850."
+    },
+    {
+      "id": "get_oauth_connections",
+      "method": "GET",
+      "path": "/oauth/connections",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/oauth.ts",
+          "line": 100
+        }
+      ],
+      "parity_ids": [
+        "oauth_connections",
+        "oauth_relay_flow",
+        "oauth_device_flow",
+        "oauth_key_exchange_flow",
+        "oauth_plex_flow",
+        "oauth_app_registration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: listOAuthConnections. Backend source: src/oauth/routes.py:75. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "delete_oauth_connections_connection_id",
+      "method": "DELETE",
+      "path": "/oauth/connections/{connection_id}",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/oauth.ts",
+          "line": 119
+        }
+      ],
+      "parity_ids": [
+        "oauth_connections",
+        "oauth_relay_flow",
+        "oauth_device_flow",
+        "oauth_key_exchange_flow",
+        "oauth_plex_flow",
+        "oauth_app_registration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: disconnectOAuthConnection. Backend source: src/oauth/routes.py:130. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_oauth_connections_connection_id_authorize",
+      "method": "POST",
+      "path": "/oauth/connections/{connection_id}/authorize",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/oauth.ts",
+          "line": 104
+        }
+      ],
+      "parity_ids": [
+        "oauth_connections",
+        "oauth_relay_flow",
+        "oauth_device_flow",
+        "oauth_key_exchange_flow",
+        "oauth_plex_flow",
+        "oauth_app_registration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: startOAuthConnection. Backend source: src/oauth/routes.py:97. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_oauth_connections_connection_id_complete",
+      "method": "POST",
+      "path": "/oauth/connections/{connection_id}/complete",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/oauth.ts",
+          "line": 113
+        }
+      ],
+      "parity_ids": [
+        "oauth_connections",
+        "oauth_relay_flow",
+        "oauth_device_flow",
+        "oauth_key_exchange_flow",
+        "oauth_plex_flow",
+        "oauth_app_registration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: completeOAuthConnection. Backend source: src/oauth/routes.py:117. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_outputs",
+      "method": "GET",
+      "path": "/outputs",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 170
+        }
+      ],
+      "parity_ids": [
+        "output_catalog"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: listOutputs. Backend source: src/outputs/routes.py:119. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_outputs_available",
+      "method": "GET",
+      "path": "/outputs/available",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 175
+        }
+      ],
+      "parity_ids": [
+        "output_catalog"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: listAvailableOutputs. Backend source: src/outputs/routes.py:135. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_outputs_catalog",
+      "method": "GET",
+      "path": "/outputs/catalog",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 173
+        }
+      ],
+      "parity_ids": [
+        "output_catalog"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: listOutputCatalog. Backend source: src/outputs/routes.py:145. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_outputs_output_id_actions_action",
+      "method": "POST",
+      "path": "/outputs/{output_id}/actions/{action}",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "board",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 191
+        }
+      ],
+      "parity_ids": [
+        "output_actions"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: runDraftOutputAction. Backend source: src/outputs/routes.py:183. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_outputs_output_id_boards",
+      "method": "POST",
+      "path": "/outputs/{output_id}/boards",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 210
+        }
+      ],
+      "parity_ids": [
+        "output_board_creation"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: createOutputBoard. Backend source: src/outputs/routes.py:91. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_outputs_output_id_install",
+      "method": "POST",
+      "path": "/outputs/{output_id}/install",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 179
+        }
+      ],
+      "parity_ids": [
+        "output_catalog"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: installOutput. Backend source: src/outputs/routes.py:162. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_pages_ai_chat",
+      "method": "POST",
+      "path": "/pages/ai/chat",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api-stream.ts",
+          "line": 69
+        }
+      ],
+      "parity_ids": [
+        "ai_chat",
+        "ai_staging"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: streamChat. Backend source: src/ai/page_routes.py:576. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_pages_ai_generate",
+      "method": "POST",
+      "path": "/pages/ai/generate",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 182
+        }
+      ],
+      "parity_ids": [
+        "ai_generate"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: generateAiPage. Backend source: src/ai/page_routes.py:482. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_pages_current_display",
+      "method": "GET",
+      "path": "/pages/current-display",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "board",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 249
+        }
+      ],
+      "parity_ids": [
+        "home_state",
+        "collection_rules_editor"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getCurrentDisplay. Backend source: src/mcp_server.py:1760; src/pages/routes.py:126. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78). Current-display preview and board current-message are distinct states; preserve selected/scheduled/actual/held/silence fields separately. Page-type-dependent behavior: a template page with stored template returns raw template/metadata; single/composite (and fallback) pages force preview_page(force_refresh=True), fan out to plugin rendering and replace preview cache. src/pages/routes.py:167\u2013174; src/pages/service.py:849\u2013854. Conservative explicit replay because this GET can trigger provider work, not merely return stored state."
+    },
+    {
+      "id": "post_pages_import",
+      "method": "POST",
+      "path": "/pages/import",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 273
+        }
+      ],
+      "parity_ids": [
+        "page_sharing"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: importPage. Backend source: src/mcp_server.py:1712; src/ops/executors.py:544; src/pages/routes.py:350. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_pages_preview_batch",
+      "method": "POST",
+      "path": "/pages/preview/batch",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 266
+        }
+      ],
+      "parity_ids": [
+        "page_preview",
+        "canvas_management",
+        "page_library_navigation"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: previewPagesBatch. Backend source: src/pages/service.py:860; src/pages/routes.py:435. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_pages_page_id_preview",
+      "method": "POST",
+      "path": "/pages/{page_id}/preview",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "none",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 263
+        }
+      ],
+      "parity_ids": [
+        "page_preview",
+        "canvas_management",
+        "page_library_navigation"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: previewPage. Backend source: src/pages/service.py:799; src/pages/routes.py:384. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_pages_page_id_share",
+      "method": "GET",
+      "path": "/pages/{page_id}/share",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 270
+        }
+      ],
+      "parity_ids": [
+        "page_sharing"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getPageShareString. Backend source: src/pages/routes.py:315. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_panel_panel_id",
+      "method": "GET",
+      "path": "/panel/{panel_id}",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled",
+        "tv_bearer_is_also_accepted_for_limited_viewer_scope_only"
+      ],
+      "scope": "resource",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 684
+        }
+      ],
+      "parity_ids": [
+        "panel_viewer",
+        "panel_link_sharing",
+        "panel_presentation"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getPanel. Backend source: src/panels/routes.py:308. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78). Middleware also permits scoped fb_tv_ bearer for these viewer operations (PATCH limited to six screen presentation fields); controller must use its browser-session context, not a TV token. src/auth/middleware.py:214\u2013253."
+    },
+    {
+      "id": "get_panel_panel_id_frame",
+      "method": "GET",
+      "path": "/panel/{panel_id}/frame",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled",
+        "tv_bearer_is_also_accepted_for_limited_viewer_scope_only"
+      ],
+      "scope": "resource",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 685
+        }
+      ],
+      "parity_ids": [
+        "panel_viewer",
+        "panel_link_sharing",
+        "panel_presentation"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getPanelFrame. Backend source: src/panels/routes.py:351. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78). Middleware also permits scoped fb_tv_ bearer for these viewer operations (PATCH limited to six screen presentation fields); controller must use its browser-session context, not a TV token. src/auth/middleware.py:214\u2013253."
+    },
+    {
+      "id": "get_panels",
+      "method": "GET",
+      "path": "/panels",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled",
+        "tv_bearer_is_also_accepted_for_limited_viewer_scope_only"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 656
+        }
+      ],
+      "parity_ids": [
+        "panel_configuration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: listPanels. Backend source: src/mcp_server.py:2980; src/panels/service.py:21; src/panels/routes.py:110. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78). Middleware also permits scoped fb_tv_ bearer for these viewer operations (PATCH limited to six screen presentation fields); controller must use its browser-session context, not a TV token. src/auth/middleware.py:214\u2013253."
+    },
+    {
+      "id": "post_panels",
+      "method": "POST",
+      "path": "/panels",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 659
+        }
+      ],
+      "parity_ids": [
+        "panel_configuration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: createPanel. Backend source: src/mcp_server.py:3002; src/panels/service.py:48; src/panels/routes.py:121; src/ops/executors.py:2274. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_panels_geometry",
+      "method": "POST",
+      "path": "/panels/geometry",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 651
+        }
+      ],
+      "parity_ids": [
+        "panel_configuration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: resolvePanelGeometry. Backend source: src/panels/routes.py:162. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "delete_panels_panel_id",
+      "method": "DELETE",
+      "path": "/panels/{panel_id}",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 673
+        }
+      ],
+      "parity_ids": [
+        "panel_configuration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: deletePanel. Backend source: src/mcp_server.py:3080; src/panels/service.py:81; src/panels/routes.py:281; src/ops/executors.py:2359. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "patch_panels_panel_id",
+      "method": "PATCH",
+      "path": "/panels/{panel_id}",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled",
+        "tv_bearer_is_also_accepted_for_limited_viewer_scope_only"
+      ],
+      "scope": "resource",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 667
+        }
+      ],
+      "parity_ids": [
+        "panel_configuration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updatePanel. Backend source: src/mcp_server.py:3028; src/panels/service.py:63; src/panels/routes.py:189; src/ops/executors.py:2309. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78). Middleware also permits scoped fb_tv_ bearer for these viewer operations (PATCH limited to six screen presentation fields); controller must use its browser-session context, not a TV token. src/auth/middleware.py:214\u2013253."
+    },
+    {
+      "id": "get_plugins",
+      "method": "GET",
+      "path": "/plugins",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 265
+        }
+      ],
+      "parity_ids": [
+        "plugins_configuration",
+        "oauth_app_registration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: listPlugins. Backend source: src/v1/routes_plugins.py:34; src/plugins/registry.py:1508; src/plugins/routes.py:209. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_plugins_errors",
+      "method": "GET",
+      "path": "/plugins/errors",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 320
+        }
+      ],
+      "parity_ids": [
+        "plugins_configuration",
+        "oauth_app_registration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getPluginErrors. Backend source: src/plugins/routes.py:261. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_plugins_install",
+      "method": "POST",
+      "path": "/plugins/install",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "line": 88
+        }
+      ],
+      "parity_ids": [
+        "plugin_marketplace"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: installGitPlugin. Backend source: src/plugins/routes.py:830. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_plugins_registry",
+      "method": "GET",
+      "path": "/plugins/registry",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "line": 80
+        }
+      ],
+      "parity_ids": [
+        "plugin_marketplace"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: listRegistryPlugins. Backend source: src/mcp_server.py:748; src/plugins/routes.py:288. Read/probe may contact providers or update transient caches; conservative explicit replay until runtime proof. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_plugins_registry_plugin_id_install",
+      "method": "POST",
+      "path": "/plugins/registry/{plugin_id}/install",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "line": 83
+        }
+      ],
+      "parity_ids": [
+        "plugin_marketplace"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: installRegistryPlugin. Backend source: src/plugins/sources.py:1148; src/plugins/routes.py:810. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_plugins_updates",
+      "method": "GET",
+      "path": "/plugins/updates",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "line": 103
+        }
+      ],
+      "parity_ids": [
+        "plugin_marketplace"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getPluginUpdates. Backend source: src/plugins/routes.py:301. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_plugins_updates_apply",
+      "method": "POST",
+      "path": "/plugins/updates/apply",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "line": 112
+        }
+      ],
+      "parity_ids": [
+        "plugin_marketplace"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: applyAllPluginUpdates. Backend source: src/plugins/routes.py:905. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_plugins_updates_check",
+      "method": "POST",
+      "path": "/plugins/updates/check",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "line": 106
+        }
+      ],
+      "parity_ids": [
+        "plugin_marketplace"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: triggerPluginUpdateCheck. Backend source: src/plugins/routes.py:867. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_plugins_plugin_id_demo_page",
+      "method": "GET",
+      "path": "/plugins/{plugin_id}/demo-page",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 313
+        }
+      ],
+      "parity_ids": [
+        "plugin_demo"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getPluginDemoPage. Backend source: src/mcp_server.py:1034; src/plugins/routes.py:660. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_plugins_plugin_id_demo_page",
+      "method": "POST",
+      "path": "/plugins/{plugin_id}/demo-page",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 316
+        }
+      ],
+      "parity_ids": [
+        "plugin_demo"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: createPluginDemoPage. Backend source: src/mcp_server.py:1057; src/plugins/routes.py:674; src/ops/executors.py:311. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_plugins_plugin_id_instances",
+      "method": "GET",
+      "path": "/plugins/{plugin_id}/instances",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 323
+        }
+      ],
+      "parity_ids": [
+        "plugin_instances"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: listPluginInstances. Backend source: src/mcp_server.py:979; src/plugins/routes.py:699. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_plugins_plugin_id_instances",
+      "method": "POST",
+      "path": "/plugins/{plugin_id}/instances",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 326
+        }
+      ],
+      "parity_ids": [
+        "plugin_instances"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: createPluginInstance. Backend source: src/mcp_server.py:1001; src/plugins/routes.py:720; src/ops/executors.py:267. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "delete_plugins_plugin_id_instances_instance_label",
+      "method": "DELETE",
+      "path": "/plugins/{plugin_id}/instances/{instance_label}",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 332
+        }
+      ],
+      "parity_ids": [
+        "plugin_instances"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: deletePluginInstance. Backend source: src/mcp_server.py:1018; src/plugins/routes.py:744; src/ops/executors.py:290. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_plugins_plugin_id_manifest",
+      "method": "GET",
+      "path": "/plugins/{plugin_id}/manifest",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 276
+        }
+      ],
+      "parity_ids": [
+        "plugins_configuration",
+        "oauth_app_registration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getPluginManifest. Backend source: src/mcp_server.py:1134; src/plugins/routes.py:386. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_plugins_plugin_id_options_options_id",
+      "method": "POST",
+      "path": "/plugins/{plugin_id}/options/{options_id}",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 306
+        }
+      ],
+      "parity_ids": [
+        "plugin_options"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getPluginOptions. Backend source: src/plugins/routes.py:521. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "delete_plugins_plugin_id_uninstall",
+      "method": "DELETE",
+      "path": "/plugins/{plugin_id}/uninstall",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "line": 94
+        }
+      ],
+      "parity_ids": [
+        "plugin_marketplace"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: uninstallPlugin. Backend source: src/plugins/registry.py:1946; src/plugins/routes.py:854. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_plugins_plugin_id_update",
+      "method": "POST",
+      "path": "/plugins/{plugin_id}/update",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "line": 99
+        }
+      ],
+      "parity_ids": [
+        "plugin_marketplace"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updatePlugin. Backend source: src/mcp_server.py:920; src/v1/routes_plugins.py:84; src/plugins/routes.py:891; src/ops/executors.py:208. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_plugins_plugin_id_variables",
+      "method": "GET",
+      "path": "/plugins/{plugin_id}/variables",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 311
+        }
+      ],
+      "parity_ids": [
+        "plugins_configuration",
+        "oauth_app_registration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getPluginVariables. Backend source: src/plugins/routes.py:495. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_schedules_active_page",
+      "method": "GET",
+      "path": "/schedules/active/page",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "board",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 287
+        }
+      ],
+      "parity_ids": [
+        "home_state",
+        "collection_rules_editor"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getActiveSchedule. Backend source: src/schedules/routes.py:202. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78). Includes get_temporary_override for the countdown payload; this clears and persists an expired override before returning, even when scheduling is disabled. src/schedules/routes.py:209; src/settings/service.py:2695\u20132716. Not a pure read; no automatic replay."
+    },
+    {
+      "id": "get_schedules_settings",
+      "method": "GET",
+      "path": "/schedules/settings",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 356
+        }
+      ],
+      "parity_ids": [
+        "schedule_validation",
+        "calendar_interaction"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getScheduleSettings. Backend source: src/settings/service.py:2513; src/schedules/routes.py:307. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "put_schedules_settings",
+      "method": "PUT",
+      "path": "/schedules/settings",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 359
+        }
+      ],
+      "parity_ids": [
+        "schedule_validation",
+        "calendar_interaction"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: setScheduleSettings. Backend source: src/schedules/routes.py:318. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_schedules_validate",
+      "method": "POST",
+      "path": "/schedules/validate",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 291
+        }
+      ],
+      "parity_ids": [
+        "schedule_validation",
+        "calendar_interaction"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: validateSchedules. Backend source: src/mcp_server.py:1897; src/schedules/service.py:360; src/schedules/routes.py:242. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_send_welcome_message",
+      "method": "POST",
+      "path": "/send-welcome-message",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/setup.ts",
+          "line": 73
+        }
+      ],
+      "parity_ids": [
+        "board_setup"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: sendWelcomeMessage. Backend source: src/board_api/routes.py:418. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_settings_active_page",
+      "method": "GET",
+      "path": "/settings/active-page",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "board",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 231
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 232
+        }
+      ],
+      "parity_ids": [
+        "home_state",
+        "collection_rules_editor"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getActivePage. Backend source: src/mcp_server.py:2499; src/settings/routes.py:592. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "put_settings_active_page",
+      "method": "PUT",
+      "path": "/settings/active-page",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "board",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 237
+        }
+      ],
+      "parity_ids": [
+        "home_state",
+        "collection_rules_editor"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: setActivePage. Backend source: src/mcp_server.py:2379; src/settings/routes.py:617; src/ops/executors.py:631. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_settings_ai",
+      "method": "GET",
+      "path": "/settings/ai",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 154
+        }
+      ],
+      "parity_ids": [
+        "ai_configuration",
+        "oauth_app_registration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getAiSettings. Backend source: src/settings/routes.py:226. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "put_settings_ai",
+      "method": "PUT",
+      "path": "/settings/ai",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 157
+        }
+      ],
+      "parity_ids": [
+        "ai_configuration",
+        "oauth_app_registration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updateAiSettings. Backend source: src/settings/routes.py:233. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_settings_ai_providers_provider_id_models",
+      "method": "GET",
+      "path": "/settings/ai/providers/{provider_id}/models",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 165
+        }
+      ],
+      "parity_ids": [
+        "ai_configuration",
+        "oauth_app_registration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: listAiProviderModels. Backend source: src/settings/routes.py:263. Read/probe may contact providers or update transient caches; conservative explicit replay until runtime proof. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_settings_ai_test",
+      "method": "POST",
+      "path": "/settings/ai/test",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "line": 168
+        }
+      ],
+      "parity_ids": [
+        "ai_configuration",
+        "oauth_app_registration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: testAiProvider. Backend source: src/mcp_server.py:3185; src/settings/routes.py:289. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_settings_all",
+      "method": "GET",
+      "path": "/settings/all",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 156
+        }
+      ],
+      "parity_ids": [
+        "general_settings"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getAllSettings. Backend source: src/settings/routes.py:1647. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_settings_board",
+      "method": "GET",
+      "path": "/settings/board",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 618
+        }
+      ],
+      "parity_ids": [
+        "board_configuration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getBoardSettings. Backend source: src/settings/service.py:2180; src/settings/routes.py:1098. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "put_settings_board",
+      "method": "PUT",
+      "path": "/settings/board",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 624
+        }
+      ],
+      "parity_ids": [
+        "board_configuration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updateBoardSettings. Backend source: src/settings/routes.py:1111. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_settings_board_add",
+      "method": "POST",
+      "path": "/settings/board/add",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 630
+        }
+      ],
+      "parity_ids": [
+        "board_configuration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: addBoard. Backend source: src/settings/routes.py:1207. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "delete_settings_board_board_id",
+      "method": "DELETE",
+      "path": "/settings/board/{board_id}",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 636
+        }
+      ],
+      "parity_ids": [
+        "board_configuration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: removeBoard. Backend source: src/settings/routes.py:1230. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_settings_board_board_id_detect_size",
+      "method": "POST",
+      "path": "/settings/board/{board_id}/detect-size",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "board",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 687
+        }
+      ],
+      "parity_ids": [
+        "output_actions"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: detectBoardSize. Backend source: src/mcp_server.py:2937; src/settings/routes.py:1323; src/ops/executors.py:2220. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_settings_board_board_id_identify",
+      "method": "POST",
+      "path": "/settings/board/{board_id}/identify",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "board",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 691
+        }
+      ],
+      "parity_ids": [
+        "output_actions"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: identifyBoardTile. Backend source: src/settings/routes.py:1384. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_settings_display",
+      "method": "GET",
+      "path": "/settings/display",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 158
+        }
+      ],
+      "parity_ids": [
+        "display_preferences",
+        "accessibility"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getDisplaySettings. Backend source: src/settings/service.py:2606; src/settings/routes.py:1429. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "put_settings_display",
+      "method": "PUT",
+      "path": "/settings/display",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 160
+        }
+      ],
+      "parity_ids": [
+        "display_preferences",
+        "accessibility"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updateDisplaySettings. Backend source: src/settings/service.py:2611; src/settings/routes.py:1436. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_settings_hdmi_kiosk",
+      "method": "GET",
+      "path": "/settings/hdmi-kiosk",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 676
+        }
+      ],
+      "parity_ids": [
+        "panel_configuration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getHdmiKiosk. Backend source: src/settings/routes.py:1706. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_settings_hdmi_kiosk",
+      "method": "POST",
+      "path": "/settings/hdmi-kiosk",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 678
+        }
+      ],
+      "parity_ids": [
+        "panel_configuration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: setHdmiKiosk. Backend source: src/settings/routes.py:1732. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_settings_location",
+      "method": "GET",
+      "path": "/settings/location",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 167
+        }
+      ],
+      "parity_ids": [
+        "location_settings",
+        "calendar_interaction",
+        "geolocation_permission"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getLocationSettings. Backend source: src/settings/service.py:2628; src/settings/routes.py:1457. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "put_settings_location",
+      "method": "PUT",
+      "path": "/settings/location",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 169
+        }
+      ],
+      "parity_ids": [
+        "location_settings",
+        "calendar_interaction",
+        "geolocation_permission"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updateLocationSettings. Backend source: src/settings/service.py:2633; src/settings/routes.py:1464. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_settings_location_sun_times",
+      "method": "GET",
+      "path": "/settings/location/sun-times",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 175
+        }
+      ],
+      "parity_ids": [
+        "location_settings",
+        "calendar_interaction",
+        "geolocation_permission"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getSunTimes. Backend source: src/settings/routes.py:1478. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_settings_location_sun_times_week",
+      "method": "GET",
+      "path": "/settings/location/sun-times-week",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 177
+        }
+      ],
+      "parity_ids": [
+        "location_settings",
+        "calendar_interaction",
+        "geolocation_permission"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getSunTimesWeek. Backend source: src/settings/routes.py:1530. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_settings_mqtt",
+      "method": "GET",
+      "path": "/settings/mqtt",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 345
+        }
+      ],
+      "parity_ids": [
+        "mqtt_settings"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getMqttSettings. Backend source: src/settings/service.py:2579; src/settings/routes.py:201. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "put_settings_mqtt",
+      "method": "PUT",
+      "path": "/settings/mqtt",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 348
+        }
+      ],
+      "parity_ids": [
+        "mqtt_settings"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updateMqttSettings. Backend source: src/settings/routes.py:210. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_settings_output",
+      "method": "GET",
+      "path": "/settings/output",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 131
+        }
+      ],
+      "parity_ids": [
+        "general_settings"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getOutputSettings. Backend source: src/settings/service.py:2018; src/settings/routes.py:550. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "put_settings_output",
+      "method": "PUT",
+      "path": "/settings/output",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 133
+        }
+      ],
+      "parity_ids": [
+        "general_settings"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updateOutputSettings. Backend source: src/settings/routes.py:558. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_settings_plugins",
+      "method": "GET",
+      "path": "/settings/plugins",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 180
+        }
+      ],
+      "parity_ids": [
+        "polling_preferences"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getPluginSettings. Backend source: src/settings/service.py:2648; src/settings/routes.py:1617. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "put_settings_plugins",
+      "method": "PUT",
+      "path": "/settings/plugins",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 182
+        }
+      ],
+      "parity_ids": [
+        "polling_preferences"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updatePluginSettings. Backend source: src/settings/service.py:2653; src/settings/routes.py:1624. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_settings_polling",
+      "method": "GET",
+      "path": "/settings/polling",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 149
+        }
+      ],
+      "parity_ids": [
+        "polling_preferences"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getPollingSettings. Backend source: src/settings/service.py:2171; src/settings/routes.py:1055. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "put_settings_polling",
+      "method": "PUT",
+      "path": "/settings/polling",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 151
+        }
+      ],
+      "parity_ids": [
+        "polling_preferences"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updatePollingSettings. Backend source: src/settings/routes.py:1063. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "delete_settings_restore_notice",
+      "method": "DELETE",
+      "path": "/settings/restore-notice",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 127
+        }
+      ],
+      "parity_ids": [
+        "general_settings"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: dismissSettingsRestoreNotice. Backend source: src/settings/routes.py:1040. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_settings_restore_notice",
+      "method": "GET",
+      "path": "/settings/restore-notice",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "line": 125
+        }
+      ],
+      "parity_ids": [
+        "general_settings"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getSettingsRestoreNotice. Backend source: src/settings/routes.py:1024. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "put_settings_silence_schedule",
+      "method": "PUT",
+      "path": "/settings/silence-schedule",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "board",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 348
+        }
+      ],
+      "parity_ids": [
+        "silence_configuration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updateSilenceSchedule. Backend source: src/settings/routes.py:339. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "delete_settings_temporary_override",
+      "method": "DELETE",
+      "path": "/settings/temporary-override",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 259
+        }
+      ],
+      "parity_ids": [
+        "temporary_override"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: clearTemporaryOverride. Backend source: src/settings/service.py:2754; src/settings/routes.py:999. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_settings_temporary_override",
+      "method": "GET",
+      "path": "/settings/temporary-override",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 252
+        }
+      ],
+      "parity_ids": [
+        "temporary_override"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getTemporaryOverride. Backend source: src/mcp_server.py:2658; src/settings/service.py:2695; src/settings/routes.py:811. Read auto-clears expired persisted override: src/settings/service.py:2695. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_settings_temporary_override",
+      "method": "POST",
+      "path": "/settings/temporary-override",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 254
+        }
+      ],
+      "parity_ids": [
+        "temporary_override"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: setTemporaryOverride. Backend source: src/mcp_server.py:2677; src/settings/service.py:2741; src/settings/routes.py:822; src/ops/executors.py:1852. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_settings_wizard",
+      "method": "GET",
+      "path": "/settings/wizard",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 215
+        }
+      ],
+      "parity_ids": [
+        "wizard_state"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getWizardState. Backend source: src/settings/service.py:2668; src/settings/routes.py:1408. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "put_settings_wizard",
+      "method": "PUT",
+      "path": "/settings/wizard",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "line": 218
+        }
+      ],
+      "parity_ids": [
+        "wizard_state"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: setWizardState. Backend source: src/settings/service.py:2673; src/settings/routes.py:1414. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "delete_silence_queue",
+      "method": "DELETE",
+      "path": "/silence-queue",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "board",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 329
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 330
+        }
+      ],
+      "parity_ids": [
+        "home_commands"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: discardHeldSend. Backend source: src/service_api/routes.py:441. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_silence_status",
+      "method": "GET",
+      "path": "/silence-status",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "board",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 320
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 321
+        }
+      ],
+      "parity_ids": [
+        "home_state",
+        "collection_rules_editor"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getSilenceStatus. Backend source: src/mcp_server.py:2762; src/service_api/routes.py:353. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_staff_picks",
+      "method": "GET",
+      "path": "/staff-picks",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 277
+        }
+      ],
+      "parity_ids": [
+        "staff_picks"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getStaffPicks. Backend source: src/mcp_server.py:1729; src/staff_picks/routes.py:52. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_staff_picks_pick_id_share",
+      "method": "GET",
+      "path": "/staff-picks/{pick_id}/share",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "resource",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 278
+        }
+      ],
+      "parity_ids": [
+        "staff_picks"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getStaffPickShareString. Backend source: src/staff_picks/routes.py:63. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_start",
+      "method": "POST",
+      "path": "/start",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "board",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 292
+        }
+      ],
+      "parity_ids": [
+        "home_commands"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: startService. Backend source: src/service_api/routes.py:216. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_stocks_search",
+      "method": "GET",
+      "path": "/stocks/search",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 178
+        }
+      ],
+      "parity_ids": [
+        "integration_helpers"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: searchStockSymbols. Backend source: src/api_server.py:1863. Read/probe may contact providers or update transient caches; conservative explicit replay until runtime proof. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_stocks_validate",
+      "method": "POST",
+      "path": "/stocks/validate",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 181
+        }
+      ],
+      "parity_ids": [
+        "integration_helpers"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: validateStockSymbol. Backend source: src/api_server.py:1900. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_stop",
+      "method": "POST",
+      "path": "/stop",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "board",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 293
+        }
+      ],
+      "parity_ids": [
+        "home_commands"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: stopService. Backend source: src/service_api/routes.py:247. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_system_channel",
+      "method": "GET",
+      "path": "/system/channel",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 403
+        }
+      ],
+      "parity_ids": [
+        "system_updates"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getReleaseChannel. Backend source: src/system/routes.py:339. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_system_channel",
+      "method": "POST",
+      "path": "/system/channel",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 406
+        }
+      ],
+      "parity_ids": [
+        "system_updates"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: setReleaseChannel. Backend source: src/system/routes.py:355. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_system_restart",
+      "method": "POST",
+      "path": "/system/restart",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 321
+        }
+      ],
+      "parity_ids": [
+        "system_power"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: restartSystem. Backend source: src/system/routes.py:273. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_system_shutdown",
+      "method": "POST",
+      "path": "/system/shutdown",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 323
+        }
+      ],
+      "parity_ids": [
+        "system_power"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: shutdownSystem. Backend source: src/system/routes.py:286. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_system_update",
+      "method": "POST",
+      "path": "/system/update",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 307
+        }
+      ],
+      "parity_ids": [
+        "system_updates"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: applyUpdate. Backend source: src/system/routes.py:168. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_system_update_check",
+      "method": "GET",
+      "path": "/system/update-check",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 302
+        }
+      ],
+      "parity_ids": [
+        "system_updates"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: checkForUpdate. Backend source: src/system/routes.py:104. Read/probe may contact providers or update transient caches; conservative explicit replay until runtime proof. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_system_update_auto",
+      "method": "POST",
+      "path": "/system/update/auto",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "mixed",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 310
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 316
+        }
+      ],
+      "parity_ids": [
+        "system_updates"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: setAutoUpdate, setAutoUpdateInterval. Backend source: src/system/routes.py:233. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "get_system_update_status",
+      "method": "GET",
+      "path": "/system/update/status",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 305
+        }
+      ],
+      "parity_ids": [
+        "system_updates"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getUpdateStatus. Backend source: src/system/routes.py:122. Read/probe may contact providers or update transient caches; conservative explicit replay until runtime proof. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_templates_render",
+      "method": "POST",
+      "path": "/templates/render",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "line": 184
+        }
+      ],
+      "parity_ids": [
+        "template_authoring",
+        "canvas_management",
+        "canvas_draw",
+        "canvas_shapes",
+        "canvas_source",
+        "editor_document",
+        "editor_charset"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: renderTemplate. Backend source: src/v1/routes_meta.py:94; src/templates/routes.py:188. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_templates_render_live",
+      "method": "POST",
+      "path": "/templates/render/live",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "line": 209
+        }
+      ],
+      "parity_ids": [
+        "template_live_output"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: renderTemplateLive. Backend source: src/templates/routes.py:378. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_templates_validate",
+      "method": "POST",
+      "path": "/templates/validate",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "line": 154
+        }
+      ],
+      "parity_ids": [
+        "template_authoring",
+        "canvas_management",
+        "canvas_draw",
+        "canvas_shapes",
+        "canvas_source",
+        "editor_document",
+        "editor_charset"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: validateTemplate. Backend source: src/mcp_server.py:1601; src/templates/engine.py:1975; src/templates/routes.py:134. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_traffic_routes_geocode",
+      "method": "POST",
+      "path": "/traffic/routes/geocode",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 148
+        }
+      ],
+      "parity_ids": [
+        "integration_helpers"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: geocodeAddress. Backend source: src/api_server.py:1942. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "post_traffic_routes_validate",
+      "method": "POST",
+      "path": "/traffic/routes/validate",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "line": 163
+        }
+      ],
+      "parity_ids": [
+        "integration_helpers"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: validateTrafficRoute. Backend source: src/api_server.py:1992. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    },
+    {
+      "id": "patch_v1_boards_board",
+      "method": "PATCH",
+      "path": "/v1/boards/{board}",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "board",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 644
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 303
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 309
+        }
+      ],
+      "parity_ids": [
+        "board_control"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: setBoardPaused, setDefaultPage, setScheduleEnabled. Backend source: src/mcp_server.py:2817; src/v1/routes_boards.py:208; src/ops/executors.py:2055. Web setBoardPaused/setDefaultPage/setScheduleEnabled share this PATCH; board primary alias supported."
+    },
+    {
+      "id": "post_v1_boards_board_message",
+      "method": "POST",
+      "path": "/v1/boards/{board}/message",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "board",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 582
+        }
+      ],
+      "parity_ids": [
+        "home_commands"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: sendBoardMessage. Backend source: src/v1/routes_boards.py:427."
+    },
+    {
+      "id": "post_v1_boards_board_restore",
+      "method": "POST",
+      "path": "/v1/boards/{board}/restore",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "board",
+      "side_effects": "hardware",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "line": 580
+        }
+      ],
+      "parity_ids": [
+        "home_commands"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: restoreBoard. Backend source: src/v1/routes_boards.py:683."
+    },
+    {
+      "id": "get_v1_collections",
+      "method": "GET",
+      "path": "/v1/collections",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/collections.ts",
+          "line": 83
+        }
+      ],
+      "parity_ids": [
+        "collections",
+        "collection_rules_editor"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getCollections. Backend source: src/mcp_server.py:2107; src/v1/routes_content.py:222; src/collections/service.py:65; src/collections/routes.py:92. Web migrated from corresponding legacy CRUD paths; v1 delegates to the same handlers. No revision/precondition in v10."
+    },
+    {
+      "id": "post_v1_collections",
+      "method": "POST",
+      "path": "/v1/collections",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/collections.ts",
+          "line": 86
+        }
+      ],
+      "parity_ids": [
+        "collections",
+        "collection_rules_editor"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: createCollection. Backend source: src/mcp_server.py:2123; src/v1/routes_content.py:238; src/ops/executors.py:1430; src/collections/service.py:71; src/collections/routes.py:106. Web migrated from corresponding legacy CRUD paths; v1 delegates to the same handlers. No revision/precondition in v10."
+    },
+    {
+      "id": "delete_v1_collections_collection_id",
+      "method": "DELETE",
+      "path": "/v1/collections/{collection_id}",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "resource",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/collections.ts",
+          "line": 98
+        }
+      ],
+      "parity_ids": [
+        "collections",
+        "collection_rules_editor"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: deleteCollection. Backend source: src/mcp_server.py:2206; src/v1/routes_content.py:281; src/ops/executors.py:1573; src/collections/service.py:87; src/collections/routes.py:162. Web migrated from corresponding legacy CRUD paths; v1 delegates to the same handlers. No revision/precondition in v10."
+    },
+    {
+      "id": "put_v1_collections_collection_id",
+      "method": "PUT",
+      "path": "/v1/collections/{collection_id}",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "resource",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/collections.ts",
+          "line": 92
+        }
+      ],
+      "parity_ids": [
+        "collections",
+        "collection_rules_editor"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updateCollection. Backend source: src/mcp_server.py:2165; src/v1/routes_content.py:266; src/ops/executors.py:1489; src/collections/service.py:83; src/collections/routes.py:140. Web migrated from corresponding legacy CRUD paths; v1 delegates to the same handlers. No revision/precondition in v10."
+    },
+    {
+      "id": "get_v1_functions",
+      "method": "GET",
+      "path": "/v1/functions",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "line": 152
+        }
+      ],
+      "parity_ids": [
+        "template_authoring",
+        "canvas_management",
+        "canvas_draw",
+        "canvas_shapes",
+        "canvas_source",
+        "editor_document",
+        "editor_charset"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getFormulaFunctions. Backend source: src/v1/routes_meta.py:78. Public formula function discovery; successor of GET /templates/formula-functions."
+    },
+    {
+      "id": "get_v1_pages",
+      "method": "GET",
+      "path": "/v1/pages",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 248
+        }
+      ],
+      "parity_ids": [
+        "pages_crud",
+        "ai_staging",
+        "canvas_management",
+        "canvas_draw",
+        "canvas_shapes",
+        "canvas_source",
+        "editor_document",
+        "editor_charset",
+        "page_library_navigation"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getPages. Backend source: src/mcp_server.py:1223; src/v1/routes_content.py:63; src/pages/service.py:173; src/pages/routes.py:113. Web migrated from corresponding legacy CRUD paths; v1 delegates to the same handlers. No revision/precondition in v10."
+    },
+    {
+      "id": "post_v1_pages",
+      "method": "POST",
+      "path": "/v1/pages",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 253
+        }
+      ],
+      "parity_ids": [
+        "pages_crud",
+        "ai_staging",
+        "canvas_management",
+        "canvas_draw",
+        "canvas_shapes",
+        "canvas_source",
+        "editor_document",
+        "editor_charset",
+        "page_library_navigation"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: createPage. Backend source: src/mcp_server.py:1258; src/v1/routes_content.py:79; src/ops/executors.py:375; src/pages/service.py:181; src/pages/routes.py:199. Web migrated from corresponding legacy CRUD paths; v1 delegates to the same handlers. No revision/precondition in v10."
+    },
+    {
+      "id": "delete_v1_pages_page_id",
+      "method": "DELETE",
+      "path": "/v1/pages/{page_id}",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "resource",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 262
+        }
+      ],
+      "parity_ids": [
+        "pages_crud",
+        "ai_staging",
+        "canvas_management",
+        "canvas_draw",
+        "canvas_shapes",
+        "canvas_source",
+        "editor_document",
+        "editor_charset",
+        "page_library_navigation"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: deletePage. Backend source: src/mcp_server.py:1406; src/v1/routes_content.py:124; src/ops/executors.py:611; src/pages/service.py:297; src/pages/routes.py:275. Web migrated from corresponding legacy CRUD paths; v1 delegates to the same handlers. No revision/precondition in v10."
+    },
+    {
+      "id": "get_v1_pages_page_id",
+      "method": "GET",
+      "path": "/v1/pages/{page_id}",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "resource",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 250
+        }
+      ],
+      "parity_ids": [
+        "pages_crud",
+        "ai_staging",
+        "canvas_management",
+        "canvas_draw",
+        "canvas_shapes",
+        "canvas_source",
+        "editor_document",
+        "editor_charset",
+        "page_library_navigation"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getPage. Backend source: src/mcp_server.py:1239; src/v1/routes_content.py:93; src/pages/service.py:177; src/pages/routes.py:223. Web migrated from corresponding legacy CRUD paths; v1 delegates to the same handlers. No revision/precondition in v10."
+    },
+    {
+      "id": "put_v1_pages_page_id",
+      "method": "PUT",
+      "path": "/v1/pages/{page_id}",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "resource",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "line": 258
+        }
+      ],
+      "parity_ids": [
+        "pages_crud",
+        "ai_staging",
+        "canvas_management",
+        "canvas_draw",
+        "canvas_shapes",
+        "canvas_source",
+        "editor_document",
+        "editor_charset",
+        "page_library_navigation"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updatePage. Backend source: src/mcp_server.py:1333; src/v1/routes_content.py:108; src/ops/executors.py:440; src/pages/service.py:217; src/pages/routes.py:240. Web migrated from corresponding legacy CRUD paths; v1 delegates to the same handlers. No revision/precondition in v10."
+    },
+    {
+      "id": "get_v1_plugins_plugin_id",
+      "method": "GET",
+      "path": "/v1/plugins/{plugin_id}",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "resource",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 274
+        }
+      ],
+      "parity_ids": [
+        "plugins_configuration",
+        "oauth_app_registration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getPlugin. Backend source: src/v1/routes_plugins.py:69; src/plugins/registry.py:929; src/plugins/routes.py:325. GET succeeds legacy detail; PATCH consolidates legacy config/enable/disable."
+    },
+    {
+      "id": "patch_v1_plugins_plugin_id",
+      "method": "PATCH",
+      "path": "/v1/plugins/{plugin_id}",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "resource",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 283
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 289
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 295
+        }
+      ],
+      "parity_ids": [
+        "plugins_configuration",
+        "oauth_app_registration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updatePluginConfig, enablePlugin, disablePlugin. Backend source: src/mcp_server.py:920; src/v1/routes_plugins.py:84; src/plugins/routes.py:891; src/ops/executors.py:208. GET succeeds legacy detail; PATCH consolidates legacy config/enable/disable."
+    },
+    {
+      "id": "get_v1_plugins_plugin_id_data",
+      "method": "GET",
+      "path": "/v1/plugins/{plugin_id}/data",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "resource",
+      "side_effects": "external",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "line": 270
+        }
+      ],
+      "parity_ids": [
+        "plugins_configuration",
+        "oauth_app_registration"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getPluginData. Backend source: src/mcp_server.py:1193; src/v1/routes_plugins.py:116; src/plugins/routes.py:454. Successor of deprecated GET /displays/{display_type}/raw; data fetch may contact provider/update caches. Read/probe may contact providers or update transient caches; conservative explicit replay until runtime proof."
+    },
+    {
+      "id": "get_v1_schedules",
+      "method": "GET",
+      "path": "/v1/schedules",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 266
+        }
+      ],
+      "parity_ids": [
+        "schedule_entries",
+        "calendar_interaction"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getSchedules. Backend source: src/mcp_server.py:1842; src/v1/routes_content.py:144; src/schedules/service.py:61; src/schedules/routes.py:149. Web migrated from corresponding legacy CRUD paths; v1 delegates to the same handlers. No revision/precondition in v10."
+    },
+    {
+      "id": "post_v1_schedules",
+      "method": "POST",
+      "path": "/v1/schedules",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "server",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 269
+        }
+      ],
+      "parity_ids": [
+        "schedule_entries",
+        "calendar_interaction"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: createSchedule. Backend source: src/mcp_server.py:1920; src/v1/routes_content.py:160; src/schedules/service.py:88; src/schedules/routes.py:183; src/ops/executors.py:1148. Web migrated from corresponding legacy CRUD paths; v1 delegates to the same handlers. No revision/precondition in v10."
+    },
+    {
+      "id": "delete_v1_schedules_schedule_id",
+      "method": "DELETE",
+      "path": "/v1/schedules/{schedule_id}",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "resource",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 281
+        }
+      ],
+      "parity_ids": [
+        "schedule_entries",
+        "calendar_interaction"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: deleteSchedule. Backend source: src/mcp_server.py:2094; src/v1/routes_content.py:202; src/schedules/service.py:159; src/schedules/routes.py:373; src/ops/executors.py:1302. Web migrated from corresponding legacy CRUD paths; v1 delegates to the same handlers. No revision/precondition in v10."
+    },
+    {
+      "id": "put_v1_schedules_schedule_id",
+      "method": "PUT",
+      "path": "/v1/schedules/{schedule_id}",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "resource",
+      "side_effects": "configuration",
+      "replay": "explicit_only",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "line": 275
+        }
+      ],
+      "parity_ids": [
+        "schedule_entries",
+        "calendar_interaction"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: updateSchedule. Backend source: src/mcp_server.py:1996; src/v1/routes_content.py:188; src/schedules/service.py:123; src/schedules/routes.py:351; src/ops/executors.py:1213. Web migrated from corresponding legacy CRUD paths; v1 delegates to the same handlers. No revision/precondition in v10."
+    },
+    {
+      "id": "get_v1_status",
+      "method": "GET",
+      "path": "/v1/status",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 289
+        }
+      ],
+      "parity_ids": [
+        "connection_boot"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getStatus. Backend source: src/devices.py:366; src/v1/routes_meta.py:166; src/network/wifi.py:257. Successor of GET /status."
+    },
+    {
+      "id": "get_v1_variables",
+      "method": "GET",
+      "path": "/v1/variables",
+      "surface": "public",
+      "auth": [
+        "session_cookie_or_api_bearer",
+        "anonymous_when_auth_disabled_and_no_token_required"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "line": 151
+        }
+      ],
+      "parity_ids": [
+        "template_authoring",
+        "canvas_management",
+        "canvas_draw",
+        "canvas_shapes",
+        "canvas_source",
+        "editor_document",
+        "editor_charset"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getTemplateVariables. Backend source: src/v1/routes_meta.py:39. Successor merges legacy /templates/variables and /variables."
+    },
+    {
+      "id": "get_version",
+      "method": "GET",
+      "path": "/version",
+      "surface": "internal",
+      "auth": [
+        "session_cookie_when_auth_enabled",
+        "anonymous_when_auth_disabled"
+      ],
+      "scope": "server",
+      "side_effects": "none",
+      "replay": "safe_read",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "line": 299
+        }
+      ],
+      "parity_ids": [
+        "system_updates"
+      ],
+      "contract_status": "candidate",
+      "verification_status": "schema_only",
+      "notes": "Web functions: getVersion. Backend source: src/system/routes.py:86. Internal surface has no consumer compatibility promise (src/v1/visibility.py:78)."
+    }
+  ]
+}

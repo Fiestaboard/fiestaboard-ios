@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "source_commit": "2ced809c8fe20d4ac6e5dc6603d691c8cb4e475a",
+  "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
   "rows": [
     {
       "id": "connection_boot",
@@ -9,21 +9,34 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 290
+          "line": 290,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/components/boot-gate.tsx",
-          "line": 54
+          "line": 54,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0cca25b3237e1c6f20700cce53177f93c3e1b85fa03e06f70a5e58514ea253f4"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 289
+          "line": 289,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
+        },
+        {
+          "path": "src/service_api/routes.py",
+          "line": 137,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "920782c2de786f6ee80ccceb2221e6379fa16ac8728a8ddccc30e9b0bded1dcd"
         }
       ],
       "operation_ids": [
         "get_config",
         "get_health",
-        "get_v1_status"
+        "get_v1_status",
+        "get_discover"
       ],
       "native_equivalent": "Native forms, navigation, state and explicit actions covering the listed web capability.",
       "verification": "Source inventory only. Exercise each listed operation and visible success, refusal, partial failure and recovery state against a pinned isolated server before release.",
@@ -36,31 +49,45 @@
       "web_sources": [
         {
           "path": "web/app/routes/login.tsx",
-          "line": 165
+          "line": 165,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "9dddfd093007865e2f378b876ba592b05bd185cb2a751b6330dd6a7664f72ac7"
         },
         {
           "path": "web/src/lib/api/auth.ts",
-          "line": 43
+          "line": 43,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "92b53334cb0de82538a13afe46445ed104f018fccbcb3a278d15afbc3c8301d6"
         },
         {
           "path": "web/src/lib/api/auth.ts",
-          "line": 109
+          "line": 109,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "92b53334cb0de82538a13afe46445ed104f018fccbcb3a278d15afbc3c8301d6"
         },
         {
           "path": "web/app/routes/login.tsx",
-          "line": 236
+          "line": 236,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "9dddfd093007865e2f378b876ba592b05bd185cb2a751b6330dd6a7664f72ac7"
         },
         {
           "path": "web/app/routes/login.tsx",
-          "line": 212
+          "line": 212,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "9dddfd093007865e2f378b876ba592b05bd185cb2a751b6330dd6a7664f72ac7"
         },
         {
           "path": "web/src/lib/api/auth.ts",
-          "line": 41
+          "line": 41,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "92b53334cb0de82538a13afe46445ed104f018fccbcb3a278d15afbc3c8301d6"
         },
         {
           "path": "web/app/routes/login.tsx",
-          "line": 59
+          "line": 59,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "9dddfd093007865e2f378b876ba592b05bd185cb2a751b6330dd6a7664f72ac7"
         }
       ],
       "operation_ids": [
@@ -81,15 +108,21 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/auth.ts",
-          "line": 51
+          "line": 51,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "92b53334cb0de82538a13afe46445ed104f018fccbcb3a278d15afbc3c8301d6"
         },
         {
           "path": "web/src/lib/api/auth.ts",
-          "line": 77
+          "line": 77,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "92b53334cb0de82538a13afe46445ed104f018fccbcb3a278d15afbc3c8301d6"
         },
         {
           "path": "web/src/lib/api/auth.ts",
-          "line": 138
+          "line": 138,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "92b53334cb0de82538a13afe46445ed104f018fccbcb3a278d15afbc3c8301d6"
         }
       ],
       "operation_ids": [
@@ -108,23 +141,33 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/sessions.ts",
-          "line": 64
+          "line": 64,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "24d4d14d21336bc48dfbecab972601874c4fbdbcfcd75128257169d859fb670e"
         },
         {
           "path": "web/src/lib/api/sessions.ts",
-          "line": 65
+          "line": 65,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "24d4d14d21336bc48dfbecab972601874c4fbdbcfcd75128257169d859fb670e"
         },
         {
           "path": "web/src/lib/api/sessions.ts",
-          "line": 63
+          "line": 63,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "24d4d14d21336bc48dfbecab972601874c4fbdbcfcd75128257169d859fb670e"
         },
         {
           "path": "web/src/lib/api/sessions.ts",
-          "line": 70
+          "line": 70,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "24d4d14d21336bc48dfbecab972601874c4fbdbcfcd75128257169d859fb670e"
         },
         {
           "path": "web/src/lib/api/sessions.ts",
-          "line": 71
+          "line": 71,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "24d4d14d21336bc48dfbecab972601874c4fbdbcfcd75128257169d859fb670e"
         }
       ],
       "operation_ids": [
@@ -145,19 +188,27 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/sessions.ts",
-          "line": 66
+          "line": 66,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "24d4d14d21336bc48dfbecab972601874c4fbdbcfcd75128257169d859fb670e"
         },
         {
           "path": "web/src/lib/api/sessions.ts",
-          "line": 50
+          "line": 50,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "24d4d14d21336bc48dfbecab972601874c4fbdbcfcd75128257169d859fb670e"
         },
         {
           "path": "web/src/lib/api/sessions.ts",
-          "line": 69
+          "line": 69,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "24d4d14d21336bc48dfbecab972601874c4fbdbcfcd75128257169d859fb670e"
         },
         {
           "path": "web/src/lib/api/sessions.ts",
-          "line": 67
+          "line": 67,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "24d4d14d21336bc48dfbecab972601874c4fbdbcfcd75128257169d859fb670e"
         }
       ],
       "operation_ids": [
@@ -177,15 +228,21 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/auth.ts",
-          "line": 188
+          "line": 188,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "92b53334cb0de82538a13afe46445ed104f018fccbcb3a278d15afbc3c8301d6"
         },
         {
           "path": "web/src/lib/api/auth.ts",
-          "line": 170
+          "line": 170,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "92b53334cb0de82538a13afe46445ed104f018fccbcb3a278d15afbc3c8301d6"
         },
         {
           "path": "web/src/lib/api/auth.ts",
-          "line": 181
+          "line": 181,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "92b53334cb0de82538a13afe46445ed104f018fccbcb3a278d15afbc3c8301d6"
         }
       ],
       "operation_ids": [
@@ -204,39 +261,57 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 590
+          "line": 598,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 591
+          "line": 599,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/pages.ts",
-          "line": 249
+          "line": 255,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f3bb37a2abebf4d9ca8b79e2b441af5e871de3f56fab865372db10ee9dc30e74"
         },
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 287
+          "line": 295,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         },
         {
           "path": "web/src/lib/api/pages.ts",
-          "line": 231
+          "line": 237,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f3bb37a2abebf4d9ca8b79e2b441af5e871de3f56fab865372db10ee9dc30e74"
         },
         {
           "path": "web/src/lib/api/pages.ts",
-          "line": 232
+          "line": 238,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f3bb37a2abebf4d9ca8b79e2b441af5e871de3f56fab865372db10ee9dc30e74"
         },
         {
           "path": "web/src/lib/api/pages.ts",
-          "line": 237
+          "line": 243,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f3bb37a2abebf4d9ca8b79e2b441af5e871de3f56fab865372db10ee9dc30e74"
         },
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 320
+          "line": 336,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         },
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 321
+          "line": 337,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         }
       ],
       "operation_ids": [
@@ -258,39 +333,57 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 597
+          "line": 605,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 598
+          "line": 606,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 295
+          "line": 295,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 329
+          "line": 345,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         },
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 330
+          "line": 346,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 292
+          "line": 292,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 293
+          "line": 293,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 582
+          "line": 590,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 580
+          "line": 588,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         }
       ],
       "operation_ids": [
@@ -313,15 +406,21 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 259
+          "line": 264,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         },
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 252
+          "line": 257,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         },
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 254
+          "line": 259,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         }
       ],
       "operation_ids": [
@@ -340,15 +439,21 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 644
+          "line": 652,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 303
+          "line": 325,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         },
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 309
+          "line": 325,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         }
       ],
       "operation_ids": [
@@ -365,39 +470,57 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 603
+          "line": 611,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 610
+          "line": 618,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 605
+          "line": 613,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 612
+          "line": 613,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 602
+          "line": 610,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 618
+          "line": 626,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 624
+          "line": 632,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 630
+          "line": 638,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 636
+          "line": 644,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         }
       ],
       "operation_ids": [
@@ -420,27 +543,39 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/setup.ts",
-          "line": 79
+          "line": 79,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "32a13851f1daffc5a807b1bc47a1d8f29d50cfec43d68314f649b9f86b1b91d0"
         },
         {
           "path": "web/src/lib/api/setup.ts",
-          "line": 85
+          "line": 85,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "32a13851f1daffc5a807b1bc47a1d8f29d50cfec43d68314f649b9f86b1b91d0"
         },
         {
           "path": "web/src/lib/api/setup.ts",
-          "line": 66
+          "line": 66,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "32a13851f1daffc5a807b1bc47a1d8f29d50cfec43d68314f649b9f86b1b91d0"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 616
+          "line": 624,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/setup.ts",
-          "line": 63
+          "line": 63,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "32a13851f1daffc5a807b1bc47a1d8f29d50cfec43d68314f649b9f86b1b91d0"
         },
         {
           "path": "web/src/lib/api/setup.ts",
-          "line": 73
+          "line": 73,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "32a13851f1daffc5a807b1bc47a1d8f29d50cfec43d68314f649b9f86b1b91d0"
         }
       ],
       "operation_ids": [
@@ -461,19 +596,27 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/outputs.ts",
-          "line": 170
+          "line": 170,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "acead1e7c95832c73a63dffe2250b2d19a6b2074b6d74e3e91ebca3b8b6faeea"
         },
         {
           "path": "web/src/lib/api/outputs.ts",
-          "line": 175
+          "line": 175,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "acead1e7c95832c73a63dffe2250b2d19a6b2074b6d74e3e91ebca3b8b6faeea"
         },
         {
           "path": "web/src/lib/api/outputs.ts",
-          "line": 173
+          "line": 173,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "acead1e7c95832c73a63dffe2250b2d19a6b2074b6d74e3e91ebca3b8b6faeea"
         },
         {
           "path": "web/src/lib/api/outputs.ts",
-          "line": 179
+          "line": 179,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "acead1e7c95832c73a63dffe2250b2d19a6b2074b6d74e3e91ebca3b8b6faeea"
         }
       ],
       "operation_ids": [
@@ -493,19 +636,27 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/outputs.ts",
-          "line": 203
+          "line": 203,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "acead1e7c95832c73a63dffe2250b2d19a6b2074b6d74e3e91ebca3b8b6faeea"
         },
         {
           "path": "web/src/lib/api/outputs.ts",
-          "line": 191
+          "line": 191,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "acead1e7c95832c73a63dffe2250b2d19a6b2074b6d74e3e91ebca3b8b6faeea"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 687
+          "line": 695,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 691
+          "line": 699,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         }
       ],
       "operation_ids": [
@@ -525,7 +676,9 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/outputs.ts",
-          "line": 210
+          "line": 210,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "acead1e7c95832c73a63dffe2250b2d19a6b2074b6d74e3e91ebca3b8b6faeea"
         }
       ],
       "operation_ids": [
@@ -542,31 +695,45 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 656
+          "line": 664,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 659
+          "line": 667,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 651
+          "line": 659,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 673
+          "line": 681,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 667
+          "line": 675,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 676
+          "line": 684,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 678
+          "line": 686,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         }
       ],
       "operation_ids": [
@@ -589,11 +756,15 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 684
+          "line": 692,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         },
         {
           "path": "web/src/lib/api/boards.ts",
-          "line": 685
+          "line": 693,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ca305efceda136ccf3cf1846a6ed79102b5ebf1d4c38c9f9b965a48b1b6c4d69"
         }
       ],
       "operation_ids": [
@@ -611,11 +782,15 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/outputs.ts",
-          "line": 215
+          "line": 215,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "acead1e7c95832c73a63dffe2250b2d19a6b2074b6d74e3e91ebca3b8b6faeea"
         },
         {
           "path": "web/src/lib/api/outputs.ts",
-          "line": 218
+          "line": 218,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "acead1e7c95832c73a63dffe2250b2d19a6b2074b6d74e3e91ebca3b8b6faeea"
         }
       ],
       "operation_ids": [
@@ -633,23 +808,33 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/pages.ts",
-          "line": 248
+          "line": 254,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f3bb37a2abebf4d9ca8b79e2b441af5e871de3f56fab865372db10ee9dc30e74"
         },
         {
           "path": "web/src/lib/api/pages.ts",
-          "line": 253
+          "line": 259,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f3bb37a2abebf4d9ca8b79e2b441af5e871de3f56fab865372db10ee9dc30e74"
         },
         {
           "path": "web/src/lib/api/pages.ts",
-          "line": 262
+          "line": 272,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f3bb37a2abebf4d9ca8b79e2b441af5e871de3f56fab865372db10ee9dc30e74"
         },
         {
           "path": "web/src/lib/api/pages.ts",
-          "line": 250
+          "line": 256,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f3bb37a2abebf4d9ca8b79e2b441af5e871de3f56fab865372db10ee9dc30e74"
         },
         {
           "path": "web/src/lib/api/pages.ts",
-          "line": 258
+          "line": 264,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f3bb37a2abebf4d9ca8b79e2b441af5e871de3f56fab865372db10ee9dc30e74"
         }
       ],
       "operation_ids": [
@@ -670,11 +855,15 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/pages.ts",
-          "line": 266
+          "line": 276,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f3bb37a2abebf4d9ca8b79e2b441af5e871de3f56fab865372db10ee9dc30e74"
         },
         {
           "path": "web/src/lib/api/pages.ts",
-          "line": 263
+          "line": 273,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f3bb37a2abebf4d9ca8b79e2b441af5e871de3f56fab865372db10ee9dc30e74"
         }
       ],
       "operation_ids": [
@@ -692,11 +881,15 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/pages.ts",
-          "line": 273
+          "line": 283,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f3bb37a2abebf4d9ca8b79e2b441af5e871de3f56fab865372db10ee9dc30e74"
         },
         {
           "path": "web/src/lib/api/pages.ts",
-          "line": 270
+          "line": 280,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f3bb37a2abebf4d9ca8b79e2b441af5e871de3f56fab865372db10ee9dc30e74"
         }
       ],
       "operation_ids": [
@@ -714,11 +907,15 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/pages.ts",
-          "line": 277
+          "line": 287,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f3bb37a2abebf4d9ca8b79e2b441af5e871de3f56fab865372db10ee9dc30e74"
         },
         {
           "path": "web/src/lib/api/pages.ts",
-          "line": 278
+          "line": 288,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f3bb37a2abebf4d9ca8b79e2b441af5e871de3f56fab865372db10ee9dc30e74"
         }
       ],
       "operation_ids": [
@@ -736,19 +933,27 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/collections.ts",
-          "line": 83
+          "line": 86,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "5fe6658ab4410730aa269d04cf5cdd6d2012949a9c1b4cb5ee7310a646c27d3f"
         },
         {
           "path": "web/src/lib/api/collections.ts",
-          "line": 86
+          "line": 89,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "5fe6658ab4410730aa269d04cf5cdd6d2012949a9c1b4cb5ee7310a646c27d3f"
         },
         {
           "path": "web/src/lib/api/collections.ts",
-          "line": 98
+          "line": 104,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "5fe6658ab4410730aa269d04cf5cdd6d2012949a9c1b4cb5ee7310a646c27d3f"
         },
         {
           "path": "web/src/lib/api/collections.ts",
-          "line": 92
+          "line": 95,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "5fe6658ab4410730aa269d04cf5cdd6d2012949a9c1b4cb5ee7310a646c27d3f"
         }
       ],
       "operation_ids": [
@@ -768,19 +973,27 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 266
+          "line": 271,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         },
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 269
+          "line": 274,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         },
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 281
+          "line": 289,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         },
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 275
+          "line": 280,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         }
       ],
       "operation_ids": [
@@ -800,15 +1013,21 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 356
+          "line": 373,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         },
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 359
+          "line": 381,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         },
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 291
+          "line": 299,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         }
       ],
       "operation_ids": [
@@ -827,7 +1046,9 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/schedules.ts",
-          "line": 348
+          "line": 364,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0293eaab98dc801ddf2ca75d7cbde3a7e14e1864eed1fd6b216242be86daa489"
         }
       ],
       "operation_ids": [
@@ -840,47 +1061,79 @@
     {
       "id": "plugins_configuration",
       "area": "integrations",
-      "workflow": "Installed plugin list/detail/manifest, enable/disable, schema configuration, secret masks/preservation, variables, data and circuit-breaker errors.",
+      "workflow": "Installed plugin list/detail/manifest, enable/disable, schema configuration, secret masks/preservation, variables, data and circuit-breaker errors. Cached late answers lift breaker quarantine; preserve per-board geometry identity and error recovery.",
       "web_sources": [
         {
           "path": "web/src/lib/api/misc.ts",
-          "line": 77
+          "line": 77,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f13e4fc0ff3f23b7598bf702d75415ce9b13ca9591c80124030161ca3eb5c013"
         },
         {
           "path": "web/src/lib/api/plugins.ts",
-          "line": 265
+          "line": 265,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "e706ccdd623ffc2d81b79cf92afdea67f32cca11d6f4bc8c3063105b4e55d16a"
         },
         {
           "path": "web/src/lib/api/plugins.ts",
-          "line": 320
+          "line": 320,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "e706ccdd623ffc2d81b79cf92afdea67f32cca11d6f4bc8c3063105b4e55d16a"
         },
         {
           "path": "web/src/lib/api/plugins.ts",
-          "line": 276
+          "line": 276,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "e706ccdd623ffc2d81b79cf92afdea67f32cca11d6f4bc8c3063105b4e55d16a"
         },
         {
           "path": "web/src/lib/api/plugins.ts",
-          "line": 311
+          "line": 311,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "e706ccdd623ffc2d81b79cf92afdea67f32cca11d6f4bc8c3063105b4e55d16a"
         },
         {
           "path": "web/src/lib/api/plugins.ts",
-          "line": 274
+          "line": 274,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "e706ccdd623ffc2d81b79cf92afdea67f32cca11d6f4bc8c3063105b4e55d16a"
         },
         {
           "path": "web/src/lib/api/plugins.ts",
-          "line": 283
+          "line": 283,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "e706ccdd623ffc2d81b79cf92afdea67f32cca11d6f4bc8c3063105b4e55d16a"
         },
         {
           "path": "web/src/lib/api/plugins.ts",
-          "line": 289
+          "line": 289,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "e706ccdd623ffc2d81b79cf92afdea67f32cca11d6f4bc8c3063105b4e55d16a"
         },
         {
           "path": "web/src/lib/api/plugins.ts",
-          "line": 295
+          "line": 295,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "e706ccdd623ffc2d81b79cf92afdea67f32cca11d6f4bc8c3063105b4e55d16a"
         },
         {
           "path": "web/src/lib/api/plugins.ts",
-          "line": 270
+          "line": 270,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "e706ccdd623ffc2d81b79cf92afdea67f32cca11d6f4bc8c3063105b4e55d16a"
+        },
+        {
+          "path": "src/plugins/registry.py",
+          "line": 2163,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c8c296358af98ec36ec4756a7d8c1bde71102ef0938ba956af786fe156b701b6"
+        },
+        {
+          "path": "web/app/routes/integrations._index.tsx",
+          "line": 616,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "48ce836b10dde14f2b0f25a971a364af1594c01a68bd6d90ada3ac7934c080c4"
         }
       ],
       "operation_ids": [
@@ -904,15 +1157,21 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/plugins.ts",
-          "line": 323
+          "line": 323,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "e706ccdd623ffc2d81b79cf92afdea67f32cca11d6f4bc8c3063105b4e55d16a"
         },
         {
           "path": "web/src/lib/api/plugins.ts",
-          "line": 326
+          "line": 326,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "e706ccdd623ffc2d81b79cf92afdea67f32cca11d6f4bc8c3063105b4e55d16a"
         },
         {
           "path": "web/src/lib/api/plugins.ts",
-          "line": 332
+          "line": 332,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "e706ccdd623ffc2d81b79cf92afdea67f32cca11d6f4bc8c3063105b4e55d16a"
         }
       ],
       "operation_ids": [
@@ -931,11 +1190,15 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/plugins.ts",
-          "line": 313
+          "line": 313,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "e706ccdd623ffc2d81b79cf92afdea67f32cca11d6f4bc8c3063105b4e55d16a"
         },
         {
           "path": "web/src/lib/api/plugins.ts",
-          "line": 316
+          "line": 316,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "e706ccdd623ffc2d81b79cf92afdea67f32cca11d6f4bc8c3063105b4e55d16a"
         }
       ],
       "operation_ids": [
@@ -953,35 +1216,51 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/plugin-registry.ts",
-          "line": 88
+          "line": 88,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "d543eeb0ee14ecd5050ecdbe7af0fba16510ddaa4ca8d509f9416da9e65c2855"
         },
         {
           "path": "web/src/lib/api/plugin-registry.ts",
-          "line": 80
+          "line": 80,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "d543eeb0ee14ecd5050ecdbe7af0fba16510ddaa4ca8d509f9416da9e65c2855"
         },
         {
           "path": "web/src/lib/api/plugin-registry.ts",
-          "line": 83
+          "line": 83,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "d543eeb0ee14ecd5050ecdbe7af0fba16510ddaa4ca8d509f9416da9e65c2855"
         },
         {
           "path": "web/src/lib/api/plugin-registry.ts",
-          "line": 103
+          "line": 103,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "d543eeb0ee14ecd5050ecdbe7af0fba16510ddaa4ca8d509f9416da9e65c2855"
         },
         {
           "path": "web/src/lib/api/plugin-registry.ts",
-          "line": 112
+          "line": 112,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "d543eeb0ee14ecd5050ecdbe7af0fba16510ddaa4ca8d509f9416da9e65c2855"
         },
         {
           "path": "web/src/lib/api/plugin-registry.ts",
-          "line": 106
+          "line": 106,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "d543eeb0ee14ecd5050ecdbe7af0fba16510ddaa4ca8d509f9416da9e65c2855"
         },
         {
           "path": "web/src/lib/api/plugin-registry.ts",
-          "line": 94
+          "line": 94,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "d543eeb0ee14ecd5050ecdbe7af0fba16510ddaa4ca8d509f9416da9e65c2855"
         },
         {
           "path": "web/src/lib/api/plugin-registry.ts",
-          "line": 99
+          "line": 99,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "d543eeb0ee14ecd5050ecdbe7af0fba16510ddaa4ca8d509f9416da9e65c2855"
         }
       ],
       "operation_ids": [
@@ -1005,7 +1284,9 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/plugins.ts",
-          "line": 306
+          "line": 306,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "e706ccdd623ffc2d81b79cf92afdea67f32cca11d6f4bc8c3063105b4e55d16a"
         }
       ],
       "operation_ids": [
@@ -1022,23 +1303,33 @@
       "web_sources": [
         {
           "path": "web/src/components/plugin-settings/oauth-connection.tsx",
-          "line": 281
+          "line": 281,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f7c2b48593d88624b55ddc8dd3525c80aac54d3c174e6504221dc951aacc7725"
         },
         {
           "path": "web/src/lib/api/oauth.ts",
-          "line": 100
+          "line": 100,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "70ab3fe83c994399f94acd4d53c3b0671fc5a6cb40f56e42e02cc28311f5eaf5"
         },
         {
           "path": "web/src/lib/api/oauth.ts",
-          "line": 119
+          "line": 119,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "70ab3fe83c994399f94acd4d53c3b0671fc5a6cb40f56e42e02cc28311f5eaf5"
         },
         {
           "path": "web/src/lib/api/oauth.ts",
-          "line": 104
+          "line": 104,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "70ab3fe83c994399f94acd4d53c3b0671fc5a6cb40f56e42e02cc28311f5eaf5"
         },
         {
           "path": "web/src/lib/api/oauth.ts",
-          "line": 113
+          "line": 113,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "70ab3fe83c994399f94acd4d53c3b0671fc5a6cb40f56e42e02cc28311f5eaf5"
         }
       ],
       "operation_ids": [
@@ -1059,19 +1350,27 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/templates.ts",
-          "line": 184
+          "line": 184,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "944d8c3deb44a3d235ea7b6456a1dd882544407bb2cd13f0dfaf0c6fad0c3a80"
         },
         {
           "path": "web/src/lib/api/templates.ts",
-          "line": 154
+          "line": 154,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "944d8c3deb44a3d235ea7b6456a1dd882544407bb2cd13f0dfaf0c6fad0c3a80"
         },
         {
           "path": "web/src/lib/api/templates.ts",
-          "line": 152
+          "line": 152,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "944d8c3deb44a3d235ea7b6456a1dd882544407bb2cd13f0dfaf0c6fad0c3a80"
         },
         {
           "path": "web/src/lib/api/templates.ts",
-          "line": 151
+          "line": 151,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "944d8c3deb44a3d235ea7b6456a1dd882544407bb2cd13f0dfaf0c6fad0c3a80"
         }
       ],
       "operation_ids": [
@@ -1091,7 +1390,9 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/templates.ts",
-          "line": 209
+          "line": 209,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "944d8c3deb44a3d235ea7b6456a1dd882544407bb2cd13f0dfaf0c6fad0c3a80"
         }
       ],
       "operation_ids": [
@@ -1108,51 +1409,75 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/misc.ts",
-          "line": 85
+          "line": 85,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f13e4fc0ff3f23b7598bf702d75415ce9b13ca9591c80124030161ca3eb5c013"
         },
         {
           "path": "web/src/lib/api/misc.ts",
-          "line": 98
+          "line": 98,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f13e4fc0ff3f23b7598bf702d75415ce9b13ca9591c80124030161ca3eb5c013"
         },
         {
           "path": "web/src/lib/api/misc.ts",
-          "line": 112
+          "line": 112,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f13e4fc0ff3f23b7598bf702d75415ce9b13ca9591c80124030161ca3eb5c013"
         },
         {
           "path": "web/src/lib/api/misc.ts",
-          "line": 193
+          "line": 193,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f13e4fc0ff3f23b7598bf702d75415ce9b13ca9591c80124030161ca3eb5c013"
         },
         {
           "path": "web/src/lib/api/templates.ts",
-          "line": 225
+          "line": 225,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "944d8c3deb44a3d235ea7b6456a1dd882544407bb2cd13f0dfaf0c6fad0c3a80"
         },
         {
           "path": "web/src/lib/api/misc.ts",
-          "line": 116
+          "line": 116,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f13e4fc0ff3f23b7598bf702d75415ce9b13ca9591c80124030161ca3eb5c013"
         },
         {
           "path": "web/src/lib/api/misc.ts",
-          "line": 129
+          "line": 129,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f13e4fc0ff3f23b7598bf702d75415ce9b13ca9591c80124030161ca3eb5c013"
         },
         {
           "path": "web/src/lib/api/misc.ts",
-          "line": 143
+          "line": 143,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f13e4fc0ff3f23b7598bf702d75415ce9b13ca9591c80124030161ca3eb5c013"
         },
         {
           "path": "web/src/lib/api/misc.ts",
-          "line": 178
+          "line": 178,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f13e4fc0ff3f23b7598bf702d75415ce9b13ca9591c80124030161ca3eb5c013"
         },
         {
           "path": "web/src/lib/api/misc.ts",
-          "line": 181
+          "line": 181,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f13e4fc0ff3f23b7598bf702d75415ce9b13ca9591c80124030161ca3eb5c013"
         },
         {
           "path": "web/src/lib/api/misc.ts",
-          "line": 148
+          "line": 148,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f13e4fc0ff3f23b7598bf702d75415ce9b13ca9591c80124030161ca3eb5c013"
         },
         {
           "path": "web/src/lib/api/misc.ts",
-          "line": 163
+          "line": 163,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f13e4fc0ff3f23b7598bf702d75415ce9b13ca9591c80124030161ca3eb5c013"
         }
       ],
       "operation_ids": [
@@ -1180,19 +1505,27 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/ai.ts",
-          "line": 154
+          "line": 154,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "6fd8057fc0edda01a2e4b7a1fc0d07191f41b8d2ac620a580ad47b5b200467fa"
         },
         {
           "path": "web/src/lib/api/ai.ts",
-          "line": 157
+          "line": 157,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "6fd8057fc0edda01a2e4b7a1fc0d07191f41b8d2ac620a580ad47b5b200467fa"
         },
         {
           "path": "web/src/lib/api/ai.ts",
-          "line": 165
+          "line": 165,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "6fd8057fc0edda01a2e4b7a1fc0d07191f41b8d2ac620a580ad47b5b200467fa"
         },
         {
           "path": "web/src/lib/api/ai.ts",
-          "line": 168
+          "line": 168,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "6fd8057fc0edda01a2e4b7a1fc0d07191f41b8d2ac620a580ad47b5b200467fa"
         }
       ],
       "operation_ids": [
@@ -1212,7 +1545,9 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/ai.ts",
-          "line": 182
+          "line": 182,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "6fd8057fc0edda01a2e4b7a1fc0d07191f41b8d2ac620a580ad47b5b200467fa"
         }
       ],
       "operation_ids": [
@@ -1229,7 +1564,9 @@
       "web_sources": [
         {
           "path": "web/src/lib/api-stream.ts",
-          "line": 69
+          "line": 69,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "051d36cba19fb8c102d216f9b7480bdff08a12768cc5bddc5464c03f582c2986"
         }
       ],
       "operation_ids": [
@@ -1246,31 +1583,45 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/ai.ts",
-          "line": 228
+          "line": 228,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "6fd8057fc0edda01a2e4b7a1fc0d07191f41b8d2ac620a580ad47b5b200467fa"
         },
         {
           "path": "web/src/lib/api/ai.ts",
-          "line": 210
+          "line": 210,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "6fd8057fc0edda01a2e4b7a1fc0d07191f41b8d2ac620a580ad47b5b200467fa"
         },
         {
           "path": "web/src/lib/api/ai.ts",
-          "line": 226
+          "line": 226,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "6fd8057fc0edda01a2e4b7a1fc0d07191f41b8d2ac620a580ad47b5b200467fa"
         },
         {
           "path": "web/src/lib/api/ai.ts",
-          "line": 212
+          "line": 212,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "6fd8057fc0edda01a2e4b7a1fc0d07191f41b8d2ac620a580ad47b5b200467fa"
         },
         {
           "path": "web/src/lib/api/ai.ts",
-          "line": 221
+          "line": 221,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "6fd8057fc0edda01a2e4b7a1fc0d07191f41b8d2ac620a580ad47b5b200467fa"
         },
         {
           "path": "web/src/lib/api/ai.ts",
-          "line": 215
+          "line": 215,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "6fd8057fc0edda01a2e4b7a1fc0d07191f41b8d2ac620a580ad47b5b200467fa"
         },
         {
           "path": "web/src/lib/api/ai.ts",
-          "line": 231
+          "line": 231,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "6fd8057fc0edda01a2e4b7a1fc0d07191f41b8d2ac620a580ad47b5b200467fa"
         }
       ],
       "operation_ids": [
@@ -1293,31 +1644,45 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/settings.ts",
-          "line": 138
+          "line": 138,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c7cfaad7d641a5e4a52f48b7b688d8e7f1a91ad1c9bb237dda19cf9b69ba4e43"
         },
         {
           "path": "web/src/lib/api/settings.ts",
-          "line": 143
+          "line": 143,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c7cfaad7d641a5e4a52f48b7b688d8e7f1a91ad1c9bb237dda19cf9b69ba4e43"
         },
         {
           "path": "web/src/lib/api/settings.ts",
-          "line": 156
+          "line": 161,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c7cfaad7d641a5e4a52f48b7b688d8e7f1a91ad1c9bb237dda19cf9b69ba4e43"
         },
         {
           "path": "web/src/lib/api/settings.ts",
-          "line": 131
+          "line": 131,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c7cfaad7d641a5e4a52f48b7b688d8e7f1a91ad1c9bb237dda19cf9b69ba4e43"
         },
         {
           "path": "web/src/lib/api/settings.ts",
-          "line": 133
+          "line": 133,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c7cfaad7d641a5e4a52f48b7b688d8e7f1a91ad1c9bb237dda19cf9b69ba4e43"
         },
         {
           "path": "web/src/lib/api/settings.ts",
-          "line": 127
+          "line": 127,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c7cfaad7d641a5e4a52f48b7b688d8e7f1a91ad1c9bb237dda19cf9b69ba4e43"
         },
         {
           "path": "web/src/lib/api/settings.ts",
-          "line": 125
+          "line": 125,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c7cfaad7d641a5e4a52f48b7b688d8e7f1a91ad1c9bb237dda19cf9b69ba4e43"
         }
       ],
       "operation_ids": [
@@ -1340,11 +1705,15 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/settings.ts",
-          "line": 158
+          "line": 163,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c7cfaad7d641a5e4a52f48b7b688d8e7f1a91ad1c9bb237dda19cf9b69ba4e43"
         },
         {
           "path": "web/src/lib/api/settings.ts",
-          "line": 160
+          "line": 165,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c7cfaad7d641a5e4a52f48b7b688d8e7f1a91ad1c9bb237dda19cf9b69ba4e43"
         }
       ],
       "operation_ids": [
@@ -1362,19 +1731,27 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/settings.ts",
-          "line": 180
+          "line": 185,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c7cfaad7d641a5e4a52f48b7b688d8e7f1a91ad1c9bb237dda19cf9b69ba4e43"
         },
         {
           "path": "web/src/lib/api/settings.ts",
-          "line": 182
+          "line": 187,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c7cfaad7d641a5e4a52f48b7b688d8e7f1a91ad1c9bb237dda19cf9b69ba4e43"
         },
         {
           "path": "web/src/lib/api/settings.ts",
-          "line": 149
+          "line": 154,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c7cfaad7d641a5e4a52f48b7b688d8e7f1a91ad1c9bb237dda19cf9b69ba4e43"
         },
         {
           "path": "web/src/lib/api/settings.ts",
-          "line": 151
+          "line": 156,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c7cfaad7d641a5e4a52f48b7b688d8e7f1a91ad1c9bb237dda19cf9b69ba4e43"
         }
       ],
       "operation_ids": [
@@ -1394,19 +1771,27 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/settings.ts",
-          "line": 167
+          "line": 172,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c7cfaad7d641a5e4a52f48b7b688d8e7f1a91ad1c9bb237dda19cf9b69ba4e43"
         },
         {
           "path": "web/src/lib/api/settings.ts",
-          "line": 169
+          "line": 174,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c7cfaad7d641a5e4a52f48b7b688d8e7f1a91ad1c9bb237dda19cf9b69ba4e43"
         },
         {
           "path": "web/src/lib/api/settings.ts",
-          "line": 175
+          "line": 180,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c7cfaad7d641a5e4a52f48b7b688d8e7f1a91ad1c9bb237dda19cf9b69ba4e43"
         },
         {
           "path": "web/src/lib/api/settings.ts",
-          "line": 177
+          "line": 182,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c7cfaad7d641a5e4a52f48b7b688d8e7f1a91ad1c9bb237dda19cf9b69ba4e43"
         }
       ],
       "operation_ids": [
@@ -1426,15 +1811,21 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 353
+          "line": 353,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 345
+          "line": 345,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 348
+          "line": 348,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         }
       ],
       "operation_ids": [
@@ -1453,11 +1844,15 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 356
+          "line": 356,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 376
+          "line": 376,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         }
       ],
       "operation_ids": [
@@ -1475,35 +1870,51 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 403
+          "line": 403,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 406
+          "line": 406,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 307
+          "line": 307,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 302
+          "line": 302,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 310
+          "line": 310,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 316
+          "line": 316,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 305
+          "line": 305,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 299
+          "line": 299,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         }
       ],
       "operation_ids": [
@@ -1526,11 +1937,15 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 321
+          "line": 321,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 323
+          "line": 323,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         }
       ],
       "operation_ids": [
@@ -1548,31 +1963,45 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 381
+          "line": 381,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 391
+          "line": 391,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 397
+          "line": 397,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 389
+          "line": 389,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 399
+          "line": 399,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 384
+          "line": 384,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 382
+          "line": 382,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         }
       ],
       "operation_ids": [
@@ -1595,35 +2024,51 @@
       "web_sources": [
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 325
+          "line": 325,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 339
+          "line": 339,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 337
+          "line": 337,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 328
+          "line": 328,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 333
+          "line": 333,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 343
+          "line": 343,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 341
+          "line": 341,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         },
         {
           "path": "web/src/lib/api/system.ts",
-          "line": 335
+          "line": 335,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "7bee195dcc42347b8d37e396528b7dd910ae60ba15e533ff449c3dfdcd536794"
         }
       ],
       "operation_ids": [
@@ -1647,7 +2092,9 @@
       "web_sources": [
         {
           "path": "web/src/lib/base-path.ts",
-          "line": 21
+          "line": 21,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "4f068baedd63432b378bd2befa9ae1e92df3129795e7c365f4cc8472cf79ef4b"
         }
       ],
       "operation_ids": [],
@@ -1662,7 +2109,9 @@
       "web_sources": [
         {
           "path": "web/app/routes.ts",
-          "line": 7
+          "line": 7,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "d5c80d7b5c34b538f4966a088f42ca3ee7ba2129a475d44aafe4204811d596ac"
         }
       ],
       "operation_ids": [],
@@ -1677,7 +2126,9 @@
       "web_sources": [
         {
           "path": "web/app/routes/settings.tsx",
-          "line": 125
+          "line": 117,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "e23c5d5dfdee9e6d98aea970ad6d00f0cb6dd6b0fa833a17321fad2e704a4ad2"
         }
       ],
       "operation_ids": [],
@@ -1692,7 +2143,9 @@
       "web_sources": [
         {
           "path": "web/src/components/settings/fiestapanel-settings.tsx",
-          "line": 374
+          "line": 374,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "5f9195b52f7962ad85e7a268219eaf38805e70577e78115b174d921610a332ee"
         }
       ],
       "operation_ids": [
@@ -1710,7 +2163,9 @@
       "web_sources": [
         {
           "path": "web/src/components/panel/panel-view.tsx",
-          "line": 1
+          "line": 1,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "81f3d6671df618065241f9fc9b152a5b285c380de2f67ca7885010607baa5078"
         }
       ],
       "operation_ids": [
@@ -1728,7 +2183,9 @@
       "web_sources": [
         {
           "path": "web/app/routes/pages._index.tsx",
-          "line": 1
+          "line": 1,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "65ddadd83db0140d41c85f0785fe13cc0cbfe8a8f7d45343f8816ce1ed9d6afe"
         }
       ],
       "operation_ids": [
@@ -1751,7 +2208,21 @@
       "web_sources": [
         {
           "path": "web/src/components/page-builder.tsx",
-          "line": 135
+          "line": 135,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0ae2865fc570d84bf2055199935877310ec3c3525dea089ac1b219544148c9bc"
+        },
+        {
+          "path": "web/src/components/charset-template-editor.tsx",
+          "line": 3,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "a972b60b60f93d875711baf0b91e86917cb39511dd84582419b7bd5b94c71905"
+        },
+        {
+          "path": "web/src/components/tiptap-template-editor/TipTapTemplateEditor.tsx",
+          "line": 1,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "4e5e65e9bdc400ff4e7d9aabcf97354a85105f8866881fce30f83281adaaed15"
         }
       ],
       "operation_ids": [
@@ -1766,7 +2237,7 @@
         "get_v1_variables"
       ],
       "native_equivalent": "Native document/TextKit editing with retained unknown fields/nodes; use server render/validate, not an invented editor endpoint.",
-      "verification": "Golden round trips, token-adjacent edits, IME/multiline paste, all charsets, explicit null and rich/plain switching.",
+      "verification": "Golden round trips, token-adjacent edits, IME/multiline paste, all charsets, explicit null and rich/plain switching. Separate split-flap TipTap and LED FiestaUI 8.14.2 rich/plain, IME, selection, undo, preview, save/conflict/recovery and resize acceptance is required. LED color/block spans, icons, mixed case and unsupported-cell marks are distinct source-backed requirements; raw-only LED is not equivalent.",
       "implementation_status": "planned"
     },
     {
@@ -1776,7 +2247,33 @@
       "web_sources": [
         {
           "path": "web/src/components/charset-template-editor.tsx",
-          "line": 1
+          "line": 1,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "a972b60b60f93d875711baf0b91e86917cb39511dd84582419b7bd5b94c71905"
+        },
+        {
+          "path": "web/src/components/charset-template-editor.tsx",
+          "line": 3,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "a972b60b60f93d875711baf0b91e86917cb39511dd84582419b7bd5b94c71905"
+        },
+        {
+          "path": "web/src/components/tiptap-template-editor/TipTapTemplateEditor.tsx",
+          "line": 1,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "4e5e65e9bdc400ff4e7d9aabcf97354a85105f8866881fce30f83281adaaed15"
+        },
+        {
+          "path": "web/src/lib/board-characters-to-template.ts",
+          "line": 56,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "cd13737f123a6f0dce8dd82c049d1bcc0e2a757e5f70b23b21dd908631aee0fd"
+        },
+        {
+          "path": "web/src/components/tiptap-template-editor/utils/constants.ts",
+          "line": 34,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "af94bec90440a7d603ba36f83b9e039579cc61bec9460556490aaffa1968b08a"
         }
       ],
       "operation_ids": [
@@ -1791,7 +2288,7 @@
         "get_v1_variables"
       ],
       "native_equivalent": "Native grid/text editing preserves board charset, icon/color spans and metadata. Local gestures map to existing save/render operations.",
-      "verification": "Compare device/charset golden fixtures and unsupported character/case/tile/icon/color/block-span warnings.",
+      "verification": "Compare device/charset golden fixtures and unsupported character/case/tile/icon/color/block-span warnings. Separate split-flap TipTap and LED FiestaUI 8.14.2 rich/plain, IME, selection, undo, preview, save/conflict/recovery and resize acceptance is required. LED color/block spans, icons, mixed case and unsupported-cell marks are distinct source-backed requirements; raw-only LED is not equivalent.",
       "implementation_status": "planned"
     },
     {
@@ -1801,7 +2298,9 @@
       "web_sources": [
         {
           "path": "web/src/lib/page-draft.ts",
-          "line": 1
+          "line": 1,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "279a29aeed5fc0a61b81c6537d092454b086821c36ea4728c7d611b16ae7e99e"
         }
       ],
       "operation_ids": [],
@@ -1816,12 +2315,26 @@
       "web_sources": [
         {
           "path": "web/src/components/page-builder.tsx",
-          "line": 1
+          "line": 1,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0ae2865fc570d84bf2055199935877310ec3c3525dea089ac1b219544148c9bc"
+        },
+        {
+          "path": "web/src/components/charset-template-editor.tsx",
+          "line": 3,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "a972b60b60f93d875711baf0b91e86917cb39511dd84582419b7bd5b94c71905"
+        },
+        {
+          "path": "web/src/components/tiptap-template-editor/TipTapTemplateEditor.tsx",
+          "line": 1,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "4e5e65e9bdc400ff4e7d9aabcf97354a85105f8866881fce30f83281adaaed15"
         }
       ],
       "operation_ids": [],
       "native_equivalent": "Native undo manager and accessible toolbar/keyboard equivalents. Local edit history needs no API.",
-      "verification": "Verify undo/redo grouping, mode switches, canvas strokes and draft navigation.",
+      "verification": "Verify undo/redo grouping, mode switches, canvas strokes and draft navigation. Separate split-flap TipTap and LED FiestaUI 8.14.2 rich/plain, IME, selection, undo, preview, save/conflict/recovery and resize acceptance is required. LED color/block spans, icons, mixed case and unsupported-cell marks are distinct source-backed requirements; raw-only LED is not equivalent.",
       "implementation_status": "planned"
     },
     {
@@ -1831,7 +2344,9 @@
       "web_sources": [
         {
           "path": "web/src/components/canvas-editor/canvases-panel.tsx",
-          "line": 100
+          "line": 131,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "d2e898d359a7a03897c64ae03f83fa58af3f40a2b3fbf618d4254e9b548dc5c6"
         }
       ],
       "operation_ids": [
@@ -1858,7 +2373,9 @@
       "web_sources": [
         {
           "path": "web/src/components/canvas-editor/canvas-draw-tab.tsx",
-          "line": 189
+          "line": 195,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "0e583db2b6094f02bd569637f704acaf020f3a4e7a3bdab211f9898d5b7496c2"
         }
       ],
       "operation_ids": [
@@ -1883,7 +2400,9 @@
       "web_sources": [
         {
           "path": "web/src/components/canvas-editor/canvas-shapes-editor.tsx",
-          "line": 1
+          "line": 1,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "68ee1ffc75b14641eb505b3ab9bbe2bb22c9e0f07ae4d0e10794d73f6ec4093f"
         }
       ],
       "operation_ids": [
@@ -1908,7 +2427,9 @@
       "web_sources": [
         {
           "path": "web/src/components/canvas-editor/canvas-source-picker.tsx",
-          "line": 3
+          "line": 3,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "ed9116582f5c74da106be315ac370b54dff56a7ea1abb2defc014e610c6c43f0"
         }
       ],
       "operation_ids": [
@@ -1933,7 +2454,9 @@
       "web_sources": [
         {
           "path": "web/src/components/schedule/schedule-calendar-view.tsx",
-          "line": 1
+          "line": 1,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "5b134197d2d392fab3d14d276f2f16853f7ec6250b35b4445cae0b983352fabc"
         }
       ],
       "operation_ids": [
@@ -1960,7 +2483,9 @@
       "web_sources": [
         {
           "path": "web/app/routes/collections.tsx",
-          "line": 1
+          "line": 1,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "4a418ce8bfb1ff80cca1453d535a4538c6920edc27f39de989330ac261e95425"
         }
       ],
       "operation_ids": [
@@ -1986,7 +2511,9 @@
       "web_sources": [
         {
           "path": "web/src/components/plugin-settings/oauth-connection.tsx",
-          "line": 255
+          "line": 255,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f7c2b48593d88624b55ddc8dd3525c80aac54d3c174e6504221dc951aacc7725"
         }
       ],
       "operation_ids": [
@@ -2007,7 +2534,9 @@
       "web_sources": [
         {
           "path": "web/src/components/plugin-settings/oauth-connection.tsx",
-          "line": 14
+          "line": 14,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f7c2b48593d88624b55ddc8dd3525c80aac54d3c174e6504221dc951aacc7725"
         }
       ],
       "operation_ids": [
@@ -2028,7 +2557,9 @@
       "web_sources": [
         {
           "path": "web/src/components/plugin-settings/oauth-connection.tsx",
-          "line": 589
+          "line": 589,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f7c2b48593d88624b55ddc8dd3525c80aac54d3c174e6504221dc951aacc7725"
         }
       ],
       "operation_ids": [
@@ -2049,7 +2580,9 @@
       "web_sources": [
         {
           "path": "web/src/components/plugin-settings/oauth-connection.tsx",
-          "line": 274
+          "line": 274,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f7c2b48593d88624b55ddc8dd3525c80aac54d3c174e6504221dc951aacc7725"
         }
       ],
       "operation_ids": [
@@ -2070,7 +2603,9 @@
       "web_sources": [
         {
           "path": "web/src/components/plugin-settings/oauth-connection.tsx",
-          "line": 160
+          "line": 160,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f7c2b48593d88624b55ddc8dd3525c80aac54d3c174e6504221dc951aacc7725"
         }
       ],
       "operation_ids": [
@@ -2103,7 +2638,9 @@
       "web_sources": [
         {
           "path": "web/src/lib/use-ai-chat.ts",
-          "line": 270
+          "line": 270,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "4821b343cf1ba2719a84ca098195d6ae58b05180afa3cbf2b2f867de40903edf"
         }
       ],
       "operation_ids": [
@@ -2132,7 +2669,9 @@
       "web_sources": [
         {
           "path": "web/src/components/settings/appearance-settings.tsx",
-          "line": 9
+          "line": 9,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "15039bb8a976e9893fb4a6cef3559bbd4e6d32262b5929d318e610a2323c1cff"
         }
       ],
       "operation_ids": [],
@@ -2147,7 +2686,9 @@
       "web_sources": [
         {
           "path": "web/src/i18n/config.ts",
-          "line": 1
+          "line": 1,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "235dd1095dc92dd7acf12cd8f71b18b538a01c03910c1b5d6f4fa9ac7a939d4c"
         }
       ],
       "operation_ids": [],
@@ -2162,7 +2703,9 @@
       "web_sources": [
         {
           "path": "web/src/components/skip-to-content.tsx",
-          "line": 1
+          "line": 1,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "63a1228e6777e003de0120afbc59985f121193f3c90a57ebe1d2a7f5e2094dd4"
         }
       ],
       "operation_ids": [
@@ -2180,7 +2723,9 @@
       "web_sources": [
         {
           "path": "web/src/components/install-prompt.tsx",
-          "line": 1
+          "line": 1,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "f201d6f4ce6fed18ff6142353b8c6744ecba7a33d40c34e2d7b35817b9fe5efa"
         }
       ],
       "operation_ids": [],
@@ -2195,7 +2740,9 @@
       "web_sources": [
         {
           "path": "web/app/routes/offline.tsx",
-          "line": 1
+          "line": 1,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c1fbcfd306791e00d1a4398de2e2221770856002029b25031e966b04c8b41f06"
         }
       ],
       "operation_ids": [],
@@ -2210,7 +2757,9 @@
       "web_sources": [
         {
           "path": "web/src/components/settings/location-settings.tsx",
-          "line": 88
+          "line": 88,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "974e6d212e48495420269e38d8b50e57b3395234297f517e0dc887f7a9be796d"
         }
       ],
       "operation_ids": [
@@ -2230,7 +2779,9 @@
       "web_sources": [
         {
           "path": "web/src/lib/github.ts",
-          "line": 47
+          "line": 47,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "bd5fa66644e288df427356397f51b3b7620b204a1f007305732f7316b6950d7b"
         }
       ],
       "operation_ids": [],
@@ -2245,7 +2796,9 @@
       "web_sources": [
         {
           "path": "web/src/components/settings/mcp-settings.tsx",
-          "line": 46
+          "line": 47,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "75d2091051cdd91a07b7a0a4e80b1171aee67618a2595af65e7e1abc91061938"
         }
       ],
       "operation_ids": [],
@@ -2260,7 +2813,9 @@
       "web_sources": [
         {
           "path": "web/app/routes/debug.tsx",
-          "line": 23
+          "line": 23,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "bdaaa05aa5579b0450edab2be00ffd9c419f966439b1429fb80949d2bf5ab705"
         }
       ],
       "operation_ids": [],
@@ -2275,12 +2830,98 @@
       "web_sources": [
         {
           "path": "web/app/routes.ts",
-          "line": 7
+          "line": 7,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "d5c80d7b5c34b538f4966a088f42ca3ee7ba2129a475d44aafe4204811d596ac"
         }
       ],
       "operation_ids": [],
       "native_equivalent": "Native adaptive navigation, split editor/preview when usable, accessible single-column fallback and system geometry; this is a native presentation requirement, not a backend operation.",
       "verification": "Device/simulator matrix: narrow/closed, open/wide, seated/part-folded, tent/short-wide, iPad multiwindow, rotation; preserve draft/selection/undo/target.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "plugin_color_rules",
+      "area": "integrations",
+      "workflow": "Ordered field color conditions, comparison operators, fallback/empty rules, per-instance configuration and generated field_color variables.",
+      "web_sources": [
+        {
+          "path": "web/app/routes/integrations._index.tsx",
+          "line": 616,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "48ce836b10dde14f2b0f25a971a364af1594c01a68bd6d90ada3ac7934c080c4"
+        },
+        {
+          "path": "src/plugins/registry.py",
+          "line": 1354,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "c8c296358af98ec36ec4756a7d8c1bde71102ef0938ba956af786fe156b701b6"
+        }
+      ],
+      "operation_ids": [
+        "patch_v1_plugins_plugin_id",
+        "get_plugins_plugin_id_variables"
+      ],
+      "native_equivalent": "Native schema forms and explicit configuration/probe actions with preserved field semantics.",
+      "verification": "Source-bound current inventory only; native widget success, validation, refusal and recovery acceptance pending.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "plugin_json_mapper",
+      "area": "integrations",
+      "workflow": "Probe JSON endpoint from schema-declared request fields, inspect response tree and edit ordered variable/path/default mapping rows. Both json-path-mapper and generic-data-mapping-helper aliases remain valid.",
+      "web_sources": [
+        {
+          "path": "web/src/components/plugin-settings/json-path-mapper-field.tsx",
+          "line": 14,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "5cd76fcfd84183858c0319cae4b92a77ca672c7815259209cd0d3de5152e5216"
+        },
+        {
+          "path": "web/src/components/plugin-settings/schema-form.tsx",
+          "line": 1020,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "511eedb9a452a478683c1adcf708324d61e91e011496f0105b21e53963d560eb"
+        }
+      ],
+      "operation_ids": [
+        "post_generic_data_test_fetch",
+        "patch_v1_plugins_plugin_id"
+      ],
+      "native_equivalent": "Native schema forms and explicit configuration/probe actions with preserved field semantics.",
+      "verification": "Source-bound current inventory only; native widget success, validation, refusal and recovery acceptance pending.",
+      "implementation_status": "planned"
+    },
+    {
+      "id": "schema_widgets",
+      "area": "integrations",
+      "workflow": "Schema conditional visibility and sections; password/secret masks, textarea/timezone/page picker, typed enums, remote options and mode-cards/device-picker/tile-grid controls; preserve omitted/null/unknown settings fields.",
+      "web_sources": [
+        {
+          "path": "web/src/components/plugin-settings/schema-form.tsx",
+          "line": 63,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "511eedb9a452a478683c1adcf708324d61e91e011496f0105b21e53963d560eb"
+        },
+        {
+          "path": "web/src/components/plugin-settings/schema-form.tsx",
+          "line": 875,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "511eedb9a452a478683c1adcf708324d61e91e011496f0105b21e53963d560eb"
+        },
+        {
+          "path": "web/src/components/plugin-settings/board-widgets.tsx",
+          "line": 94,
+          "source_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "sha256": "16a2b9a49dd6314c0af5af4acb723150adce78f4c4cd870e97f6a1fcb96b0637"
+        }
+      ],
+      "operation_ids": [
+        "patch_v1_plugins_plugin_id",
+        "post_plugins_plugin_id_options_options_id"
+      ],
+      "native_equivalent": "Native schema forms and explicit configuration/probe actions with preserved field semantics.",
+      "verification": "Source-bound current inventory only; native widget success, validation, refusal and recovery acceptance pending.",
       "implementation_status": "planned"
     }
   ]

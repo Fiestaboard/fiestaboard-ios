@@ -28,7 +28,7 @@ source_evidence = {}
 for path in sorted(Path('/app').rglob('*')):
     if path.is_file():
         data = path.read_bytes()
-        source_evidence[str(path.relative_to('/app'))] = {'sha256':hashlib.sha256(data).hexdigest(),'lines':len(data.splitlines())}
+        source_evidence[str(path.relative_to('/app'))] = {'sha256':hashlib.sha256(data).hexdigest(),'lines':len(data.splitlines()),'source_commit':sys.argv[1]}
 seed = Path('/opt/fiestaboard/seed/outputs/outputs.lock.json')
 lock = seed.read_bytes()
 from src.outputs.seed import load_lock, tree_digest
@@ -40,12 +40,32 @@ source_lock = Path('/app/outputs.lock.json').read_bytes()
 seed_matches_source = json.loads(lock) == json.loads(source_lock)
 if not seed_matches_source:
     raise RuntimeError('image seed does not match pinned source lock')
+# Bind current companion artifacts only when they declare this exact source.
+# Historical evidence stays committed separately and is never relabeled.
+artifacts = []
+for relative, local in [
+    ('Contracts/current-source-ledger.json', OUT/'current-source-ledger.json'),
+    ('Contracts/current-capabilities.json', OUT/'current-capabilities.json'),
+    ('Fixtures/contracts/current/bootstrap-control.json', Path('/contract-fixtures/current/bootstrap-control.json')),
+]:
+    if local.is_file():
+        data = local.read_bytes()
+        artifact = json.loads(data)
+        source_commit = artifact.get('source_commit', artifact.get('source', {}).get('commit'))
+        if source_commit == sys.argv[1]:
+            artifacts.append({'path':relative,'source_commit':source_commit,'sha256':hashlib.sha256(data).hexdigest()})
+baseline = {}
+original = OUT/'archive/10.0.0/snapshot.json'
+if original.is_file():
+    original_source = json.loads(original.read_text())['source']
+    baseline = {'path':'Contracts/archive/10.0.0/snapshot.json','source_commit':original_source['commit'],'version':original_source['version']}
 write(OUT/'snapshot.json', {'schema_version':1,'source':{'commit':sys.argv[1],'version':app.version},
     'generator':{'image':sys.argv[2],'python':platform.python_version(),'architecture':platform.machine(),'implementation':platform.python_implementation(),
     'dependencies':sorted(d.metadata['Name']+'=='+d.version for d in importlib.metadata.distributions()),
     'output_seed':{'lock_sha256':hashlib.sha256(lock).hexdigest(),'outputs':json.loads(lock)['outputs'],'matches_source_lock':seed_matches_source,'source_lock_sha256':hashlib.sha256(source_lock).hexdigest(),'source_outputs':json.loads(source_lock)['outputs']},
     'source_preparation':'git archive; omit root .env, data, config.json, auth.json; no worktree files',
     'lifespan':'not entered; no startup hardware workers'},
-    'schemas':metadata,'source_evidence':source_evidence,
-    'blockers':['HA upstream authentication untested','Provider-native OAuth completion pending','Backend conditional writes absent','Full operation fixtures pending','Native physical-device verification pending','Proxy and ingress topology verification pending']})
+    'baseline':baseline,'artifacts':artifacts,'schemas':metadata,'source_evidence':source_evidence,
+    'source_manifest_sha256':hashlib.sha256(json.dumps(source_evidence,sort_keys=True,separators=(',',':')).encode()).hexdigest(),
+    'blockers':['HA upstream authentication untested','Provider-native OAuth completion pending','Cross-writer conditional revision/native acceptance pending','Full operation fixtures pending','Native physical-device verification pending','Proxy and ingress topology verification pending']})
 print('Exported normalized schemas: ' + ', '.join(f'{key}={value["operation_count"]}' for key,value in metadata.items()))

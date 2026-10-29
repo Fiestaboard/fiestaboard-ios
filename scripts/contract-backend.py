@@ -86,11 +86,14 @@ def main():
             output = args.root.resolve()/'Contracts'
             output.mkdir(parents=True,exist_ok=True)
             extra = ['--mount',f'type=bind,src={output},dst=/contract-output']
+            fixtures = args.root.resolve()/'Fixtures/contracts'
+            if fixtures.is_dir():
+                extra.extend(['--mount',f'type=bind,src={fixtures},dst=/contract-fixtures,readonly'])
             subprocess.run(container(source,args.image,extra,['/contract-tools/export-openapi.py',args.commit,args.image]),check=True)
         else:
             extra = ['--mount',f'type=bind,src={args.root.resolve() / "Tests/Integration"},dst=/contract-tests,readonly',
                      '--mount',f'type=bind,src={args.root.resolve() / "Fixtures/contracts"},dst=/contract-fixtures,readonly']
-            command = ['-m','pytest','-c','/dev/null','-p','no:cacheprovider','--tb=short','-q','/contract-tests/test_auth_boundary.py']
+            command = ['-m','pytest','-c','/dev/null','-p','no:cacheprovider','--tb=short','-q','/contract-tests']
             if args.upstream:
                 # The upstream conftest auth bypass is not loaded into our proof.
                 command = ['-m','pytest','-p','no:cacheprovider','--tb=short','-q',

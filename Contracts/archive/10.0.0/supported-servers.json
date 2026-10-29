@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "source_commit": "2ced809c8fe20d4ac6e5dc6603d691c8cb4e475a",
+  "releases": [
+    {
+      "version": "10.0.0",
+      "source_commit": "2ced809c8fe20d4ac6e5dc6603d691c8cb4e475a",
+      "status": "candidate",
+      "evidence": []
+    }
+  ],
+  "blockers": [
+    "Full native feature implementation and workflow verification are pending.",
+    "Internal UI operations have no upstream mobile compatibility guarantee; explicit version-bounded first-party adapter acceptance is pending.",
+    "Atomic revisions across page, collection and schedule writers are not yet implemented.",
+    "Actual Home Assistant upstream authentication and native ingress access are unverified.",
+    "Native completion proof for all four OAuth flows and interruption recovery is pending.",
+    "Per-operation runtime fixtures and deployment topology coverage remain incomplete.",
+    "Physical iPhone/iPad/Duo network, pose and accessibility validation is pending."
+  ]
+}

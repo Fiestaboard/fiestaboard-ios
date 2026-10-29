@@ -4,6 +4,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -29,6 +30,23 @@ class RunnerTests(unittest.TestCase):
             self.assertEqual((dest/'safe.txt').read_text(),'committed\n')
             self.assertFalse((dest/'.env').exists())
             self.assertFalse((dest/'untracked').exists())
+
+    def test_export_accepts_empty_output_root_without_fixture_mount(self):
+        spec = importlib.util.spec_from_file_location('contract_runner', ROOT / 'scripts/contract-backend.py')
+        runner = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(runner)
+        with tempfile.TemporaryDirectory(prefix='empty export root ') as tmp:
+            output = Path(tmp) / 'new-output'
+            def prepare(_repo, _commit, destination):
+                destination.mkdir(parents=True)
+            def execute(command, **_kwargs):
+                for arg in command:
+                    if isinstance(arg, str) and arg.startswith('type=bind,src='):
+                        source = arg.removeprefix('type=bind,src=').split(',dst=')[0]
+                        self.assertTrue(Path(source).is_dir(), f'Export mount source missing: {source}')
+            with patch.object(runner, 'prepare', side_effect=prepare), patch.object(runner.subprocess, 'run', side_effect=execute), patch('sys.argv', ['contract-backend.py', 'export', '--repo', tmp, '--commit', 'a' * 40, '--root', str(output)]):
+                runner.main()
+            self.assertTrue((output / 'Contracts').is_dir())
 
     def test_refusing_mutable_commit_expression(self):
         result = subprocess.run(['python3',str(ROOT/'scripts/contract-backend.py'),'prepare','--repo','.', '--commit','HEAD','--destination','/tmp/not-created-contract'],cwd=ROOT,capture_output=True)

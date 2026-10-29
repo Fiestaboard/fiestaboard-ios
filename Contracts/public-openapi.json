@@ -586,12 +586,373 @@
         "title": "BoardUpdate",
         "type": "object"
       },
-      "Canvas": {
-        "additionalProperties": false,
-        "description": "One pixel canvas on a page.",
+      "CanvasLayerModel": {
+        "description": "One canvas drawn in panel pixels (FiestaUI ``LedBitmapLayer``).",
+        "properties": {
+          "height": {
+            "description": "Pixels down.",
+            "title": "Height",
+            "type": "integer"
+          },
+          "rgba": {
+            "description": "Base64 of width x height x 4 bytes of straight-alpha RGBA, row-major. A pixel with alpha > 0 overwrites what the cells drew; alpha 0 is transparent.",
+            "title": "Rgba",
+            "type": "string"
+          },
+          "width": {
+            "description": "Pixels across.",
+            "title": "Width",
+            "type": "integer"
+          },
+          "x": {
+            "description": "Panel x of the layer's left column.",
+            "title": "X",
+            "type": "integer"
+          },
+          "y": {
+            "description": "Panel y of the layer's top row.",
+            "title": "Y",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height",
+          "rgba"
+        ],
+        "title": "CanvasLayerModel",
+        "type": "object"
+      },
+      "Collection": {
+        "description": "A collection – an ordered set of pages plus a selection mode.",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "edit_protocol": {
+            "const": "collection-revision-v1",
+            "readOnly": true,
+            "title": "Edit Protocol",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "page_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Page Ids",
+            "type": "array"
+          },
+          "random": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RandomModeConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "readOnly": true,
+            "title": "Revision"
+          },
+          "selection_mode": {
+            "default": "time",
+            "enum": [
+              "time",
+              "variable",
+              "random"
+            ],
+            "title": "Selection Mode",
+            "type": "string"
+          },
+          "time": {
+            "$ref": "#/components/schemas/TimeModeConfig"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "variable": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VariableModeConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "page_ids",
+          "edit_protocol"
+        ],
+        "title": "Collection",
+        "type": "object"
+      },
+      "CollectionCreate": {
+        "description": "Request model for creating a new collection.",
+        "properties": {
+          "name": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "page_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Page Ids",
+            "type": "array"
+          },
+          "random": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RandomModeConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "selection_mode": {
+            "default": "time",
+            "enum": [
+              "time",
+              "variable",
+              "random"
+            ],
+            "title": "Selection Mode",
+            "type": "string"
+          },
+          "time": {
+            "$ref": "#/components/schemas/TimeModeConfig"
+          },
+          "variable": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VariableModeConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "page_ids"
+        ],
+        "title": "CollectionCreate",
+        "type": "object"
+      },
+      "CollectionDeleteResponse": {
+        "description": "Body of ``DELETE /collections/{collection_id}``.\n\nPer ``docs/internal/reference/API_CONVENTIONS.md`` a delete answers 200\nwith the deleted resource id (this domain's choice) — not a\n``{\"status\": \"success\"}`` envelope.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "CollectionDeleteResponse",
+        "type": "object"
+      },
+      "CollectionListResponse": {
+        "description": "Body of ``GET /collections``.",
+        "properties": {
+          "collections": {
+            "items": {
+              "$ref": "#/components/schemas/Collection"
+            },
+            "title": "Collections",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "collections",
+          "total"
+        ],
+        "title": "CollectionListResponse",
+        "type": "object"
+      },
+      "CollectionUpdate": {
+        "description": "Request model for updating an existing collection.",
+        "properties": {
+          "expected_revision": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "page_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Ids"
+          },
+          "random": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RandomModeConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "selection_mode": {
+            "anyOf": [
+              {
+                "enum": [
+                  "time",
+                  "variable",
+                  "random"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Selection Mode"
+          },
+          "time": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TimeModeConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "variable": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VariableModeConfig"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "title": "CollectionUpdate",
+        "type": "object"
+      },
+      "DocumentArea": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
+        "properties": {
+          "col": {
+            "minimum": 1.0,
+            "title": "Col",
+            "type": "integer"
+          },
+          "cols": {
+            "minimum": 1.0,
+            "title": "Cols",
+            "type": "integer"
+          },
+          "row": {
+            "minimum": 1.0,
+            "title": "Row",
+            "type": "integer"
+          },
+          "rows": {
+            "minimum": 1.0,
+            "title": "Rows",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "row",
+          "col",
+          "rows",
+          "cols"
+        ],
+        "title": "DocumentArea",
+        "type": "object"
+      },
+      "DocumentCanvas": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
         "properties": {
           "area": {
-            "$ref": "#/components/schemas/CanvasArea"
+            "$ref": "#/components/schemas/DocumentArea"
           },
           "bleed": {
             "items": {
@@ -610,7 +971,7 @@
           "content": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/CanvasContent"
+                "$ref": "#/components/schemas/DocumentContent"
               },
               {
                 "type": "null"
@@ -653,179 +1014,13 @@
           "id",
           "area"
         ],
-        "title": "Canvas",
+        "title": "DocumentCanvas",
         "type": "object"
       },
-      "CanvasArea": {
-        "additionalProperties": false,
-        "description": "1-based character cells of the page grid.",
-        "properties": {
-          "col": {
-            "minimum": 1.0,
-            "title": "Col",
-            "type": "integer"
-          },
-          "cols": {
-            "minimum": 1.0,
-            "title": "Cols",
-            "type": "integer"
-          },
-          "row": {
-            "minimum": 1.0,
-            "title": "Row",
-            "type": "integer"
-          },
-          "rows": {
-            "minimum": 1.0,
-            "title": "Rows",
-            "type": "integer"
-          }
+      "DocumentCircle": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
         },
-        "required": [
-          "row",
-          "col",
-          "rows",
-          "cols"
-        ],
-        "title": "CanvasArea",
-        "type": "object"
-      },
-      "CanvasContent": {
-        "additionalProperties": false,
-        "description": "What a canvas draws, in its own coordinate space (``size``).",
-        "properties": {
-          "background": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Background"
-          },
-          "palette": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "title": "Palette",
-            "type": "object"
-          },
-          "pixels": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Pixels",
-            "type": "array"
-          },
-          "shapes": {
-            "items": {
-              "discriminator": {
-                "mapping": {
-                  "circle": "#/components/schemas/CircleShape",
-                  "ellipse": "#/components/schemas/EllipseShape",
-                  "gradient": "#/components/schemas/GradientShape",
-                  "line": "#/components/schemas/LineShape",
-                  "polygon": "#/components/schemas/PolygonShape",
-                  "rect": "#/components/schemas/RectShape",
-                  "text": "#/components/schemas/TextShape"
-                },
-                "propertyName": "type"
-              },
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/RectShape"
-                },
-                {
-                  "$ref": "#/components/schemas/CircleShape"
-                },
-                {
-                  "$ref": "#/components/schemas/EllipseShape"
-                },
-                {
-                  "$ref": "#/components/schemas/LineShape"
-                },
-                {
-                  "$ref": "#/components/schemas/PolygonShape"
-                },
-                {
-                  "$ref": "#/components/schemas/TextShape"
-                },
-                {
-                  "$ref": "#/components/schemas/GradientShape"
-                }
-              ]
-            },
-            "title": "Shapes",
-            "type": "array"
-          },
-          "size": {
-            "anyOf": [
-              {
-                "maxItems": 2,
-                "minItems": 2,
-                "prefixItems": [
-                  {
-                    "type": "integer"
-                  },
-                  {
-                    "type": "integer"
-                  }
-                ],
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Size"
-          }
-        },
-        "title": "CanvasContent",
-        "type": "object"
-      },
-      "CanvasLayerModel": {
-        "description": "One canvas drawn in panel pixels (FiestaUI ``LedBitmapLayer``).",
-        "properties": {
-          "height": {
-            "description": "Pixels down.",
-            "title": "Height",
-            "type": "integer"
-          },
-          "rgba": {
-            "description": "Base64 of width x height x 4 bytes of straight-alpha RGBA, row-major. A pixel with alpha > 0 overwrites what the cells drew; alpha 0 is transparent.",
-            "title": "Rgba",
-            "type": "string"
-          },
-          "width": {
-            "description": "Pixels across.",
-            "title": "Width",
-            "type": "integer"
-          },
-          "x": {
-            "description": "Panel x of the layer's left column.",
-            "title": "X",
-            "type": "integer"
-          },
-          "y": {
-            "description": "Panel y of the layer's top row.",
-            "title": "Y",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "x",
-          "y",
-          "width",
-          "height",
-          "rgba"
-        ],
-        "title": "CanvasLayerModel",
-        "type": "object"
-      },
-      "CircleShape": {
-        "additionalProperties": false,
         "properties": {
           "as": {
             "anyOf": [
@@ -939,265 +1134,109 @@
           "cy",
           "r"
         ],
-        "title": "CircleShape",
+        "title": "DocumentCircle",
         "type": "object"
       },
-      "Collection": {
-        "description": "A collection – an ordered set of pages plus a selection mode.",
+      "DocumentContent": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
         "properties": {
-          "created_at": {
-            "format": "date-time",
-            "title": "Created At",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "name": {
-            "maxLength": 100,
-            "minLength": 1,
-            "title": "Name",
-            "type": "string"
-          },
-          "page_ids": {
-            "items": {
-              "type": "string"
-            },
-            "minItems": 1,
-            "title": "Page Ids",
-            "type": "array"
-          },
-          "random": {
+          "background": {
             "anyOf": [
               {
-                "$ref": "#/components/schemas/RandomModeConfig"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "selection_mode": {
-            "default": "time",
-            "enum": [
-              "time",
-              "variable",
-              "random"
-            ],
-            "title": "Selection Mode",
-            "type": "string"
-          },
-          "time": {
-            "$ref": "#/components/schemas/TimeModeConfig"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
                 "type": "string"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Updated At"
+            "title": "Background"
           },
-          "variable": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/VariableModeConfig"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "name",
-          "page_ids"
-        ],
-        "title": "Collection",
-        "type": "object"
-      },
-      "CollectionCreate": {
-        "description": "Request model for creating a new collection.",
-        "properties": {
-          "name": {
-            "maxLength": 100,
-            "minLength": 1,
-            "title": "Name",
-            "type": "string"
+          "palette": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Palette",
+            "type": "object"
           },
-          "page_ids": {
+          "pixels": {
             "items": {
               "type": "string"
             },
-            "minItems": 1,
-            "title": "Page Ids",
+            "title": "Pixels",
             "type": "array"
           },
-          "random": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RandomModeConfig"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "selection_mode": {
-            "default": "time",
-            "enum": [
-              "time",
-              "variable",
-              "random"
-            ],
-            "title": "Selection Mode",
-            "type": "string"
-          },
-          "time": {
-            "$ref": "#/components/schemas/TimeModeConfig"
-          },
-          "variable": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/VariableModeConfig"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "name",
-          "page_ids"
-        ],
-        "title": "CollectionCreate",
-        "type": "object"
-      },
-      "CollectionDeleteResponse": {
-        "description": "Body of ``DELETE /collections/{collection_id}``.\n\nPer ``docs/internal/reference/API_CONVENTIONS.md`` a delete answers 200\nwith the deleted resource id (this domain's choice) — not a\n``{\"status\": \"success\"}`` envelope.",
-        "properties": {
-          "id": {
-            "title": "Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id"
-        ],
-        "title": "CollectionDeleteResponse",
-        "type": "object"
-      },
-      "CollectionListResponse": {
-        "description": "Body of ``GET /collections``.",
-        "properties": {
-          "collections": {
+          "shapes": {
             "items": {
-              "$ref": "#/components/schemas/Collection"
-            },
-            "title": "Collections",
-            "type": "array"
-          },
-          "total": {
-            "title": "Total",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "collections",
-          "total"
-        ],
-        "title": "CollectionListResponse",
-        "type": "object"
-      },
-      "CollectionUpdate": {
-        "description": "Request model for updating an existing collection.",
-        "properties": {
-          "name": {
-            "anyOf": [
-              {
-                "maxLength": 100,
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name"
-          },
-          "page_ids": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
+              "discriminator": {
+                "mapping": {
+                  "circle": "#/components/schemas/DocumentCircle",
+                  "ellipse": "#/components/schemas/DocumentEllipse",
+                  "gradient": "#/components/schemas/DocumentGradient",
+                  "line": "#/components/schemas/DocumentLine",
+                  "polygon": "#/components/schemas/DocumentPolygon",
+                  "rect": "#/components/schemas/DocumentRect",
+                  "text": "#/components/schemas/DocumentText"
                 },
-                "minItems": 1,
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/DocumentRect"
+                },
+                {
+                  "$ref": "#/components/schemas/DocumentCircle"
+                },
+                {
+                  "$ref": "#/components/schemas/DocumentEllipse"
+                },
+                {
+                  "$ref": "#/components/schemas/DocumentLine"
+                },
+                {
+                  "$ref": "#/components/schemas/DocumentPolygon"
+                },
+                {
+                  "$ref": "#/components/schemas/DocumentText"
+                },
+                {
+                  "$ref": "#/components/schemas/DocumentGradient"
+                }
+              ]
+            },
+            "title": "Shapes",
+            "type": "array"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "maxItems": 2,
+                "minItems": 2,
+                "prefixItems": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ],
                 "type": "array"
               },
               {
                 "type": "null"
               }
             ],
-            "title": "Page Ids"
-          },
-          "random": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/RandomModeConfig"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "selection_mode": {
-            "anyOf": [
-              {
-                "enum": [
-                  "time",
-                  "variable",
-                  "random"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Selection Mode"
-          },
-          "time": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/TimeModeConfig"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "variable": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/VariableModeConfig"
-              },
-              {
-                "type": "null"
-              }
-            ]
+            "title": "Size"
           }
         },
-        "title": "CollectionUpdate",
+        "title": "DocumentContent",
         "type": "object"
       },
-      "EllipseShape": {
-        "additionalProperties": false,
+      "DocumentEllipse": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
         "properties": {
           "as": {
             "anyOf": [
@@ -1326,99 +1365,13 @@
           "rx",
           "ry"
         ],
-        "title": "EllipseShape",
+        "title": "DocumentEllipse",
         "type": "object"
       },
-      "ErrorResponse": {
-        "description": "The single error body the API serves.",
-        "properties": {
-          "detail": {
-            "title": "Detail",
-            "type": "string"
-          }
+      "DocumentGradient": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
         },
-        "required": [
-          "detail"
-        ],
-        "title": "ErrorResponse",
-        "type": "object"
-      },
-      "FailedRegion": {
-        "description": "A rectangle of flaps that did not take a write, in board cells (0-based).",
-        "properties": {
-          "col": {
-            "description": "First column of the rectangle.",
-            "title": "Col",
-            "type": "integer"
-          },
-          "cols": {
-            "description": "Width in columns.",
-            "title": "Cols",
-            "type": "integer"
-          },
-          "row": {
-            "description": "First row of the rectangle.",
-            "title": "Row",
-            "type": "integer"
-          },
-          "rows": {
-            "description": "Height in rows.",
-            "title": "Rows",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "row",
-          "col",
-          "rows",
-          "cols"
-        ],
-        "title": "FailedRegion",
-        "type": "object"
-      },
-      "FormulaFunctionEntry": {
-        "description": "One built-in formula function, as the function picker lists it.",
-        "properties": {
-          "category": {
-            "title": "Category",
-            "type": "string"
-          },
-          "signature": {
-            "title": "Signature",
-            "type": "string"
-          },
-          "summary": {
-            "title": "Summary",
-            "type": "string"
-          }
-        },
-        "required": [
-          "category",
-          "signature",
-          "summary"
-        ],
-        "title": "FormulaFunctionEntry",
-        "type": "object"
-      },
-      "FormulaFunctionsResponse": {
-        "description": "``GET /templates/formula-functions``.",
-        "properties": {
-          "functions": {
-            "additionalProperties": {
-              "$ref": "#/components/schemas/FormulaFunctionEntry"
-            },
-            "title": "Functions",
-            "type": "object"
-          }
-        },
-        "required": [
-          "functions"
-        ],
-        "title": "FormulaFunctionsResponse",
-        "type": "object"
-      },
-      "GradientShape": {
-        "additionalProperties": false,
         "properties": {
           "angle": {
             "anyOf": [
@@ -1558,7 +1511,586 @@
           "from",
           "to"
         ],
-        "title": "GradientShape",
+        "title": "DocumentGradient",
+        "type": "object"
+      },
+      "DocumentLine": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
+        "properties": {
+          "as": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As"
+          },
+          "foreach": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Foreach"
+          },
+          "if": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "If"
+          },
+          "stroke": {
+            "title": "Stroke",
+            "type": "string"
+          },
+          "type": {
+            "const": "line",
+            "title": "Type",
+            "type": "string"
+          },
+          "width": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "default": 1,
+            "title": "Width"
+          },
+          "x1": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "X1"
+          },
+          "x2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "X2"
+          },
+          "y1": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Y1"
+          },
+          "y2": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Y2"
+          }
+        },
+        "required": [
+          "type",
+          "x1",
+          "y1",
+          "x2",
+          "y2",
+          "stroke"
+        ],
+        "title": "DocumentLine",
+        "type": "object"
+      },
+      "DocumentPolygon": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
+        "properties": {
+          "as": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As"
+          },
+          "fill": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fill"
+          },
+          "foreach": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Foreach"
+          },
+          "if": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "If"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "items": {
+                  "maxItems": 2,
+                  "minItems": 2,
+                  "prefixItems": [
+                    {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    },
+                    {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "integer"
+                        },
+                        {
+                          "type": "string"
+                        }
+                      ]
+                    }
+                  ],
+                  "type": "array"
+                },
+                "type": "array"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Points"
+          },
+          "stroke": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stroke"
+          },
+          "type": {
+            "const": "polygon",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "points"
+        ],
+        "title": "DocumentPolygon",
+        "type": "object"
+      },
+      "DocumentRect": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
+        "properties": {
+          "as": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As"
+          },
+          "fill": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fill"
+          },
+          "foreach": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Foreach"
+          },
+          "h": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "H"
+          },
+          "if": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "If"
+          },
+          "stroke": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stroke"
+          },
+          "type": {
+            "const": "rect",
+            "title": "Type",
+            "type": "string"
+          },
+          "w": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "W"
+          },
+          "x": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "X"
+          },
+          "y": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Y"
+          }
+        },
+        "required": [
+          "type",
+          "x",
+          "y",
+          "w",
+          "h"
+        ],
+        "title": "DocumentRect",
+        "type": "object"
+      },
+      "DocumentText": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
+        "properties": {
+          "as": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As"
+          },
+          "color": {
+            "title": "Color",
+            "type": "string"
+          },
+          "font": {
+            "default": "5x7",
+            "enum": [
+              "3x5",
+              "5x7"
+            ],
+            "title": "Font",
+            "type": "string"
+          },
+          "foreach": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Foreach"
+          },
+          "if": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "If"
+          },
+          "text": {
+            "maxLength": 256,
+            "title": "Text",
+            "type": "string"
+          },
+          "type": {
+            "const": "text",
+            "title": "Type",
+            "type": "string"
+          },
+          "x": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "X"
+          },
+          "y": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Y"
+          }
+        },
+        "required": [
+          "type",
+          "x",
+          "y",
+          "text",
+          "color"
+        ],
+        "title": "DocumentText",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "description": "The single error body the API serves.",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          }
+        },
+        "required": [
+          "detail"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "FailedRegion": {
+        "description": "A rectangle of flaps that did not take a write, in board cells (0-based).",
+        "properties": {
+          "col": {
+            "description": "First column of the rectangle.",
+            "title": "Col",
+            "type": "integer"
+          },
+          "cols": {
+            "description": "Width in columns.",
+            "title": "Cols",
+            "type": "integer"
+          },
+          "row": {
+            "description": "First row of the rectangle.",
+            "title": "Row",
+            "type": "integer"
+          },
+          "rows": {
+            "description": "Height in rows.",
+            "title": "Rows",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "row",
+          "col",
+          "rows",
+          "cols"
+        ],
+        "title": "FailedRegion",
+        "type": "object"
+      },
+      "FormulaFunctionEntry": {
+        "description": "One built-in formula function, as the function picker lists it.",
+        "properties": {
+          "category": {
+            "title": "Category",
+            "type": "string"
+          },
+          "signature": {
+            "title": "Signature",
+            "type": "string"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "signature",
+          "summary"
+        ],
+        "title": "FormulaFunctionEntry",
+        "type": "object"
+      },
+      "FormulaFunctionsResponse": {
+        "description": "``GET /templates/formula-functions``.",
+        "properties": {
+          "functions": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FormulaFunctionEntry"
+            },
+            "title": "Functions",
+            "type": "object"
+          }
+        },
+        "required": [
+          "functions"
+        ],
+        "title": "FormulaFunctionsResponse",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -1696,7 +2228,11 @@
         "title": "InstallUpdate",
         "type": "object"
       },
+      "JsonValue": {},
       "LineMetadata": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
         "description": "Per-line formatting metadata for template pages.\n\nStores alignment and wrap settings that were previously encoded as\ninline prefixes ({center}, {wrap}, etc.) in the template strings.",
         "properties": {
           "alignment": {
@@ -1716,137 +2252,6 @@
           }
         },
         "title": "LineMetadata",
-        "type": "object"
-      },
-      "LineShape": {
-        "additionalProperties": false,
-        "properties": {
-          "as": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "As"
-          },
-          "foreach": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Foreach"
-          },
-          "if": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "If"
-          },
-          "stroke": {
-            "title": "Stroke",
-            "type": "string"
-          },
-          "type": {
-            "const": "line",
-            "title": "Type",
-            "type": "string"
-          },
-          "width": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "integer"
-              },
-              {
-                "type": "string"
-              }
-            ],
-            "default": 1,
-            "title": "Width"
-          },
-          "x1": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "integer"
-              },
-              {
-                "type": "string"
-              }
-            ],
-            "title": "X1"
-          },
-          "x2": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "integer"
-              },
-              {
-                "type": "string"
-              }
-            ],
-            "title": "X2"
-          },
-          "y1": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "integer"
-              },
-              {
-                "type": "string"
-              }
-            ],
-            "title": "Y1"
-          },
-          "y2": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "integer"
-              },
-              {
-                "type": "string"
-              }
-            ],
-            "title": "Y2"
-          }
-        },
-        "required": [
-          "type",
-          "x1",
-          "y1",
-          "x2",
-          "y2",
-          "stroke"
-        ],
-        "title": "LineShape",
         "type": "object"
       },
       "MessageResponse": {
@@ -1950,13 +2355,16 @@
         "type": "object"
       },
       "Page": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
         "description": "A saved page configuration.\n\nPages can be one of three types:\n- single: Displays a single source type\n- composite: Combines specific rows from multiple sources\n- template: Custom content with templated variables\n\nEach page targets a specific device type (flagship: 22x6, note: 15x3).",
         "properties": {
           "canvases": {
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/Canvas"
+                  "$ref": "#/components/schemas/DocumentCanvas"
                 },
                 "type": "array"
               },
@@ -2004,12 +2412,26 @@
             ],
             "title": "Display Type"
           },
+          "document_protocol": {
+            "const": "page-document-v1",
+            "description": "Validated known content with opaque JSON extension preservation.",
+            "readOnly": true,
+            "title": "Document Protocol",
+            "type": "string"
+          },
           "duration_seconds": {
             "default": 300,
             "maximum": 3600.0,
             "minimum": 10.0,
             "title": "Duration Seconds",
             "type": "integer"
+          },
+          "edit_protocol": {
+            "const": "page-revision-v1",
+            "description": "Runtime support for conditional sparse page saves; never caller input.",
+            "readOnly": true,
+            "title": "Edit Protocol",
+            "type": "string"
           },
           "grid_cols": {
             "anyOf": [
@@ -2074,6 +2496,18 @@
             "minimum": 1.0,
             "title": "Notes Wide",
             "type": "integer"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "readOnly": true,
+            "title": "Revision"
           },
           "rows": {
             "anyOf": [
@@ -2163,19 +2597,24 @@
         },
         "required": [
           "name",
-          "type"
+          "type",
+          "edit_protocol",
+          "document_protocol"
         ],
         "title": "Page",
         "type": "object"
       },
       "PageCreate": {
-        "description": "Request model for creating a new page.",
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
+        "description": "Create author content; server-assigned identity and timestamps are ignored.",
         "properties": {
           "canvases": {
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/Canvas"
+                  "$ref": "#/components/schemas/DocumentCanvas"
                 },
                 "type": "array"
               },
@@ -2452,13 +2891,13 @@
         "type": "object"
       },
       "PageUpdate": {
-        "description": "Request model for updating an existing page.",
+        "description": "Sparse known-field patch. Supplied lists replace the complete field.\n\nOmitted fields survive, including opaque top-level extensions. Nullable\ncontent fields accept explicit null to remove them; nested lists are never\nmerged by position or guessed identity.",
         "properties": {
           "canvases": {
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/Canvas"
+                  "$ref": "#/components/schemas/DocumentCanvas"
                 },
                 "type": "array"
               },
@@ -2508,6 +2947,19 @@
               }
             ],
             "title": "Duration Seconds"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
           },
           "grid_cols": {
             "anyOf": [
@@ -3130,124 +3582,6 @@
         "title": "PluginUpdate",
         "type": "object"
       },
-      "PolygonShape": {
-        "additionalProperties": false,
-        "properties": {
-          "as": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "As"
-          },
-          "fill": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Fill"
-          },
-          "foreach": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Foreach"
-          },
-          "if": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "If"
-          },
-          "points": {
-            "anyOf": [
-              {
-                "items": {
-                  "maxItems": 2,
-                  "minItems": 2,
-                  "prefixItems": [
-                    {
-                      "anyOf": [
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "integer"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    },
-                    {
-                      "anyOf": [
-                        {
-                          "type": "number"
-                        },
-                        {
-                          "type": "integer"
-                        },
-                        {
-                          "type": "string"
-                        }
-                      ]
-                    }
-                  ],
-                  "type": "array"
-                },
-                "type": "array"
-              },
-              {
-                "type": "string"
-              }
-            ],
-            "title": "Points"
-          },
-          "stroke": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Stroke"
-          },
-          "type": {
-            "const": "polygon",
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "type",
-          "points"
-        ],
-        "title": "PolygonShape",
-        "type": "object"
-      },
       "RandomModeConfig": {
         "description": "Settings for random page selection.\n\n``interval_seconds`` is the page duration — how long each randomly chosen\npage is shown before a new one is selected.",
         "properties": {
@@ -3260,139 +3594,6 @@
           }
         },
         "title": "RandomModeConfig",
-        "type": "object"
-      },
-      "RectShape": {
-        "additionalProperties": false,
-        "properties": {
-          "as": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "As"
-          },
-          "fill": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Fill"
-          },
-          "foreach": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Foreach"
-          },
-          "h": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "integer"
-              },
-              {
-                "type": "string"
-              }
-            ],
-            "title": "H"
-          },
-          "if": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "If"
-          },
-          "stroke": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Stroke"
-          },
-          "type": {
-            "const": "rect",
-            "title": "Type",
-            "type": "string"
-          },
-          "w": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "integer"
-              },
-              {
-                "type": "string"
-              }
-            ],
-            "title": "W"
-          },
-          "x": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "integer"
-              },
-              {
-                "type": "string"
-              }
-            ],
-            "title": "X"
-          },
-          "y": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "integer"
-              },
-              {
-                "type": "string"
-              }
-            ],
-            "title": "Y"
-          }
-        },
-        "required": [
-          "type",
-          "x",
-          "y",
-          "w",
-          "h"
-        ],
-        "title": "RectShape",
         "type": "object"
       },
       "RefreshRequest": {
@@ -3536,6 +3737,9 @@
         "type": "object"
       },
       "RowConfig": {
+        "additionalProperties": {
+          "$ref": "#/components/schemas/JsonValue"
+        },
         "description": "Configuration for a single row in a composite page.\n\nSpecifies which row from which source should be placed at which position.\nRow limits depend on the device type of the parent page.",
         "properties": {
           "row_index": {
@@ -3735,6 +3939,13 @@
       "ScheduleListResponse": {
         "description": "What ``GET /schedules`` answers with.\n\n``default_page_id`` and ``enabled`` are per-board, so both are ``null`` on\nthe cross-board listing (``board_id=*``) — that listing has no single board\nto answer for.",
         "properties": {
+          "default_page_edit_protocol": {
+            "const": "schedule-default-revision-v1",
+            "default": "schedule-default-revision-v1",
+            "readOnly": true,
+            "title": "Default Page Edit Protocol",
+            "type": "string"
+          },
           "default_page_id": {
             "anyOf": [
               {
@@ -3745,6 +3956,17 @@
               }
             ],
             "title": "Default Page Id"
+          },
+          "default_page_revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Page Revision"
           },
           "enabled": {
             "anyOf": [
@@ -3839,6 +4061,12 @@
             "title": "Day Pattern",
             "type": "string"
           },
+          "edit_protocol": {
+            "const": "schedule-revision-v1",
+            "readOnly": true,
+            "title": "Edit Protocol",
+            "type": "string"
+          },
           "enabled": {
             "default": true,
             "title": "Enabled",
@@ -3929,6 +4157,18 @@
             "title": "Resolved Start Time",
             "type": "string"
           },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "readOnly": true,
+            "title": "Revision"
+          },
           "start_sun_offset": {
             "default": 0,
             "title": "Start Sun Offset",
@@ -3965,7 +4205,8 @@
         "required": [
           "page_id",
           "start_time",
-          "resolved_start_time"
+          "resolved_start_time",
+          "edit_protocol"
         ],
         "title": "ScheduleResponse",
         "type": "object"
@@ -4089,6 +4330,19 @@
               }
             ],
             "title": "End Type"
+          },
+          "expected_revision": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Revision"
           },
           "one_off_date": {
             "anyOf": [
@@ -4248,6 +4502,12 @@
             "title": "Day Pattern",
             "type": "string"
           },
+          "edit_protocol": {
+            "const": "schedule-revision-v1",
+            "readOnly": true,
+            "title": "Edit Protocol",
+            "type": "string"
+          },
           "enabled": {
             "default": true,
             "title": "Enabled",
@@ -4338,6 +4598,18 @@
             "title": "Resolved Start Time",
             "type": "string"
           },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "readOnly": true,
+            "title": "Revision"
+          },
           "start_sun_offset": {
             "default": 0,
             "title": "Start Sun Offset",
@@ -4381,7 +4653,8 @@
         "required": [
           "page_id",
           "start_time",
-          "resolved_start_time"
+          "resolved_start_time",
+          "edit_protocol"
         ],
         "title": "ScheduleWriteResponse",
         "type": "object"
@@ -4474,107 +4747,6 @@
           "line_count"
         ],
         "title": "TemplateRenderResponse",
-        "type": "object"
-      },
-      "TextShape": {
-        "additionalProperties": false,
-        "properties": {
-          "as": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "As"
-          },
-          "color": {
-            "title": "Color",
-            "type": "string"
-          },
-          "font": {
-            "default": "5x7",
-            "enum": [
-              "3x5",
-              "5x7"
-            ],
-            "title": "Font",
-            "type": "string"
-          },
-          "foreach": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Foreach"
-          },
-          "if": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "If"
-          },
-          "text": {
-            "maxLength": 256,
-            "title": "Text",
-            "type": "string"
-          },
-          "type": {
-            "const": "text",
-            "title": "Type",
-            "type": "string"
-          },
-          "x": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "integer"
-              },
-              {
-                "type": "string"
-              }
-            ],
-            "title": "X"
-          },
-          "y": {
-            "anyOf": [
-              {
-                "type": "number"
-              },
-              {
-                "type": "integer"
-              },
-              {
-                "type": "string"
-              }
-            ],
-            "title": "Y"
-          }
-        },
-        "required": [
-          "type",
-          "x",
-          "y",
-          "text",
-          "color"
-        ],
-        "title": "TextShape",
         "type": "object"
       },
       "TimeModeConfig": {
@@ -5047,9 +5219,9 @@
     }
   },
   "info": {
-    "description": "FiestaBoard drives one or more split-flap displays from templated pages.\n\n### Hello world\n\nPut text on the board right now:\n\n```bash\ncurl -X POST http://fiestaboard.local:4420/api/v1/boards/primary/message \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"text\": \"HELLO WORLD\"}'\n```\n\n`primary` works as a board id on every `/v1/boards/...` path, so a\nsingle-board install never has to look one up — and a multi-board install\nputs the id there instead.\n\n### How the pieces fit\n\nFour nouns, and one way to do each thing:\n\n* A **board** is a physical display. `POST /v1/boards/{board}/message` writes\n  to it; `GET /v1/boards/{board}` says what is on it and why.\n* A **page** is a template: literal text plus `{{plugin_id.variable}}`\n  placeholders that **plugins** fill with live data.\n* A **schedule** (or a **collection**) decides which page a board shows at a\n  given moment. A message write bypasses both for a one-off; `DELETE\n  /v1/boards/{board}/message` hands the board back to the schedule.\n\n### Base URL\n\nnginx fronts the API under `/api`, so every path below is reached as\n`/api/<path>` — `GET /v1/status` is\n`http://fiestaboard.local:4420/api/v1/status`. These docs live at\n`/api/docs`, the schema at `/api/openapi.json`.\n\n### What is not here\n\nThis document is the API to build against: 33 operations. The app serves\n~200 more, but they are the web UI's private RPC channel — undocumented on\npurpose, with no compatibility promise, and liable to change in any release.\nThey are published separately at `/api/internal/openapi.json` for the UI's\nown contract checks. Two flat legacy operations, `POST /send-message` and\n`POST /refresh`, remain here because earlier documentation named them; both\nare deprecated and both name their `/v1` replacement in a `Link` header.\n\n### Deprecated board fields\n\nSince settings v4, a board's connection lives in its `output_config`, read\nalongside its `output`. The flat connection fields that board responses\nstill carry (`api_mode`, `host`, `port`, `local_api_key`, `cloud_key`,\n`note_array_token`, `tiles`, and the `board_api_mode`, `board_host` and\n`board_key_set` summary fields) are copies of it, kept for compatibility\nthrough v10 and removed in v11. Every response that carries them sends\n`Deprecation: true` and a `Link` with `rel=\"deprecation\"` pointing here,\nand the schema marks the typed ones `deprecated`. The same fields leave the\nMQTT `board_api_mode` entity and the MCP board tools in v11.\n\n### Authentication\n\nOff by default: a fresh install answers every request. With\n`FIESTABOARD_AUTH_ENABLED=true`, a script sends\n`Authorization: Bearer <token>` (create one with `POST /auth/mcp-token`),\nwhich is accepted on every `/v1` path and on `/api/mcp`. The web UI instead\ncarries the session cookie that `POST /auth/login` sets.\n",
+    "description": "FiestaBoard drives one or more split-flap displays from templated pages.\n\n### Hello world\n\nPut text on the board right now:\n\n```bash\ncurl -X POST http://fiestaboard.local:4420/api/v1/boards/primary/message \\\n  -H 'Content-Type: application/json' \\\n  -d '{\"text\": \"HELLO WORLD\"}'\n```\n\n`primary` works as a board id on every `/v1/boards/...` path, so a\nsingle-board install never has to look one up — and a multi-board install\nputs the id there instead.\n\n### How the pieces fit\n\nFour nouns, and one way to do each thing:\n\n* A **board** is a physical display. `POST /v1/boards/{board}/message` writes\n  to it; `GET /v1/boards/{board}` says what is on it and why.\n* A **page** is a template: literal text plus `{{plugin_id.variable}}`\n  placeholders that **plugins** fill with live data.\n* A **schedule** (or a **collection**) decides which page a board shows at a\n  given moment. A message write bypasses both for a one-off; `DELETE\n  /v1/boards/{board}/message` hands the board back to the schedule.\n\n### Base URL\n\nnginx fronts the API under `/api`, so every path below is reached as\n`/api/<path>` — `GET /v1/status` is\n`http://fiestaboard.local:4420/api/v1/status`. These docs live at\n`/api/docs`, the schema at `/api/openapi.json`.\n\n### What is not here\n\nThis document is the API to build against: 33 operations. The app serves\n~200 more, but they are the web UI's private RPC channel — undocumented on\npurpose, with no compatibility promise, and liable to change in any release.\nThey are published separately at `/api/internal/openapi.json` for the UI's\nown contract checks, and can be browsed at `/api/docs` by picking\n**Internal web UI API** in the definition dropdown at the top of the page.\nTwo flat legacy operations, `POST /send-message` and `POST /refresh`,\nremain here because earlier documentation named them; both\nare deprecated and both name their `/v1` replacement in a `Link` header.\n\n### Deprecated board fields\n\nSince settings v4, a board's connection lives in its `output_config`, read\nalongside its `output`. The flat connection fields that board responses\nstill carry (`api_mode`, `host`, `port`, `local_api_key`, `cloud_key`,\n`note_array_token`, `tiles`, and the `board_api_mode`, `board_host` and\n`board_key_set` summary fields) are copies of it, kept for compatibility\nthrough v10 and removed in v11. Every response that carries them sends\n`Deprecation: true` and a `Link` with `rel=\"deprecation\"` pointing here,\nand the schema marks the typed ones `deprecated`. The same fields leave the\nMQTT `board_api_mode` entity and the MCP board tools in v11.\n\n### Authentication\n\nOff by default: a fresh install answers every request. With\n`FIESTABOARD_AUTH_ENABLED=true`, a script sends\n`Authorization: Bearer <token>` (create one with `POST /auth/mcp-token`),\nwhich is accepted on every `/v1` path and on `/api/mcp`. The web UI instead\ncarries the session cookie that `POST /auth/login` sets.\n",
     "title": "FiestaBoard Display API",
-    "version": "10.0.0"
+    "version": "10.1.17"
   },
   "openapi": "3.1.0",
   "paths": {
@@ -5895,6 +6067,22 @@
               "title": "Collection Id",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Expected Revision"
+            }
           }
         ],
         "responses": {
@@ -5927,6 +6115,16 @@
               }
             },
             "description": "Conflict — duplicate id, or a resource pinned by the environment."
+          },
+          "412": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Precondition failed — the resource changed since it was loaded. Reload before editing."
           },
           "422": {
             "content": {
@@ -6049,6 +6247,16 @@
               }
             },
             "description": "Resource not found."
+          },
+          "412": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Precondition failed — the resource changed since it was loaded. Reload before editing."
           },
           "422": {
             "content": {
@@ -6318,6 +6526,22 @@
               "title": "Page Id",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Expected Revision"
+            }
           }
         ],
         "responses": {
@@ -6350,6 +6574,16 @@
               }
             },
             "description": "Conflict — duplicate id, or a resource pinned by the environment."
+          },
+          "412": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Precondition failed — the resource changed since it was loaded. Reload before editing."
           },
           "422": {
             "content": {
@@ -6472,6 +6706,16 @@
               }
             },
             "description": "Resource not found."
+          },
+          "412": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Precondition failed — the resource changed since it was loaded. Reload before editing."
           },
           "422": {
             "content": {
@@ -7070,6 +7314,22 @@
               "title": "Schedule Id",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Expected Revision"
+            }
           }
         ],
         "responses": {
@@ -7092,6 +7352,16 @@
               }
             },
             "description": "Resource not found."
+          },
+          "412": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Precondition failed — the resource changed since it was loaded. Reload before editing."
           },
           "422": {
             "content": {
@@ -7214,6 +7484,16 @@
               }
             },
             "description": "Resource not found."
+          },
+          "412": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Precondition failed — the resource changed since it was loaded. Reload before editing."
           },
           "422": {
             "content": {

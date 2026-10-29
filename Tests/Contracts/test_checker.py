@@ -25,6 +25,12 @@ class CheckerTests(unittest.TestCase):
             'supported-servers.json': {'schema_version': 1, 'source_commit': SHA, 'releases': [{'version': '10.0.0', 'source_commit': SHA, 'status': 'candidate', 'evidence': []}], 'blockers': ['native pending']},
             'snapshot.json': {'schema_version': 1, 'source': {'commit': SHA, 'version': '10.0.0'}, 'generator': {'image': 'sha256:' + 'b'*64, 'python': '3.14.9', 'dependencies': ['fastapi==0.162.0'], 'output_seed': {'lock_sha256': 'c'*64}}, 'source_evidence': {'web/app.ts': {'sha256': 'd'*64, 'lines': 5}}, 'schemas': {}, 'blockers': ['fixtures pending']},
         }
+        self.docs['snapshot.json']['source_evidence']['web/app.ts']['source_commit'] = SHA
+        for doc, key in [('parity.json', 'rows'), ('operations.json', 'operations')]:
+            for item in self.docs[doc][key]:
+                for ref in item['web_sources']:
+                    ref.update(source_commit=SHA, sha256='d' * 64)
+        self.docs['operations.json']['operations'][0]['backend_sources'] = copy.deepcopy(self.docs['operations.json']['operations'][0]['web_sources'])
         self.sync_schemas()
 
     def sync_schemas(self):
@@ -34,9 +40,58 @@ class CheckerTests(unittest.TestCase):
             self.docs['snapshot.json']['schemas'][surface] = {'path': 'Contracts/' + name, 'sha256': hashlib.sha256(data).hexdigest(), 'operation_count': 1}
 
     def run_check(self, *args):
+        self.docs['snapshot.json'].setdefault('source_manifest_sha256', hashlib.sha256(json.dumps(self.docs['snapshot.json']['source_evidence'], sort_keys=True, separators=(',', ':')).encode()).hexdigest())
         for name, doc in self.docs.items():
             (self.root / 'Contracts' / name).write_text(json.dumps(doc))
         return subprocess.run([sys.executable, str(ROOT / 'scripts/check-contracts.py'), '--root', str(self.root), *args], capture_output=True, text=True)
+
+    def test_wrong_source_evidence_commit_fails(self):
+        self.docs['snapshot.json']['source_evidence']['web/app.ts']['source_commit'] = 'e' * 40
+        self.assertNotEqual(self.run_check().returncode, 0)
+
+    def test_wrong_reference_hash_fails(self):
+        self.docs['parity.json']['rows'][0]['web_sources'][0]['sha256'] = 'e' * 64
+        self.assertNotEqual(self.run_check().returncode, 0)
+
+    def test_stale_reference_source_fails(self):
+        self.docs['operations.json']['operations'][0]['web_sources'][0]['source_commit'] = 'e' * 40
+        self.assertNotEqual(self.run_check().returncode, 0)
+
+    def test_supported_operation_requires_hashed_current_evidence(self):
+        self.docs['operations.json']['operations'][0]['contract_status'] = 'supported'
+        self.assertNotEqual(self.run_check().returncode, 0)
+
+    def test_runtime_operation_requires_hashed_current_evidence(self):
+        self.docs['operations.json']['operations'][0]['verification_status'] = 'runtime_verified'
+        self.assertNotEqual(self.run_check().returncode, 0)
+
+    def test_verified_row_requires_hashed_current_evidence(self):
+        self.docs['parity.json']['rows'][0]['implementation_status'] = 'verified'
+        self.assertNotEqual(self.run_check().returncode, 0)
+
+    def test_wrong_source_manifest_hash_fails(self):
+        self.docs['snapshot.json']['source_manifest_sha256'] = 'e' * 64
+        self.assertNotEqual(self.run_check().returncode, 0)
+
+    def test_current_artifact_wrong_hash_fails(self):
+        (self.root / 'fixture.json').write_text('{}')
+        self.docs['snapshot.json']['artifacts'] = [{'source_commit': SHA, 'path': 'fixture.json', 'sha256': 'e' * 64}]
+        self.assertNotEqual(self.run_check().returncode, 0)
+
+    def test_current_artifact_wrong_source_fails(self):
+        content = json.dumps({'source_commit': 'e' * 40}).encode()
+        (self.root / 'fixture.json').write_bytes(content)
+        self.docs['snapshot.json']['artifacts'] = [{'source_commit': SHA, 'path': 'fixture.json', 'sha256': hashlib.sha256(content).hexdigest()}]
+        self.assertNotEqual(self.run_check().returncode, 0)
+
+    def test_capability_schema_hash_mismatch_fails(self):
+        artifact = {'source_commit': SHA, 'kind': 'current-capabilities', 'operations': [
+            {'id': 'readThing', 'method': 'GET', 'path': '/thing', 'surface': 'public', 'schema_sha256': 'e' * 64}
+        ]}
+        content = json.dumps(artifact).encode()
+        (self.root / 'capabilities.json').write_bytes(content)
+        self.docs['snapshot.json']['artifacts'] = [{'source_commit': SHA, 'path': 'capabilities.json', 'sha256': hashlib.sha256(content).hexdigest()}]
+        self.assertNotEqual(self.run_check().returncode, 0)
 
     def test_valid_candidate_passes_integrity(self):
         result = self.run_check()
@@ -104,6 +159,10 @@ class CheckerTests(unittest.TestCase):
         self.docs['parity.json']['rows'].append(extra)
         self.assertNotEqual(self.run_check().returncode,0)
 
+    def test_missing_backend_source_fails(self):
+        del self.docs['operations.json']['operations'][0]['backend_sources']
+        self.assertNotEqual(self.run_check().returncode, 0)
+
     def test_missing_operation_auth_field_fails(self):
         del self.docs['operations.json']['operations'][0]['auth']
         self.assertNotEqual(self.run_check().returncode, 0)
@@ -129,6 +188,8 @@ class CheckerTests(unittest.TestCase):
         evidence = b'synthetic fully verified release fixture; not product proof\n'
         (self.root/'proof.txt').write_bytes(evidence)
         release['evidence'] = [{'source_commit':SHA,'path':'proof.txt','sha256':hashlib.sha256(evidence).hexdigest(),'category':category} for category in release['acceptance']]
+        self.docs['parity.json']['rows'][0]['evidence'] = release['evidence']
+        op['evidence'] = release['evidence']
         return release
 
     def test_fully_evidenced_release_ready_can_pass(self):
