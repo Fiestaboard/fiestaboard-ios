@@ -1,0 +1,1930 @@
+{
+  "schema_version": 1,
+  "kind": "candidate-page-management",
+  "source": {
+    "commit": "ff2415c4a646b55510f6f633c78915cdc9c333f2",
+    "version": "10.1.20"
+  },
+  "source_evidence": {
+    "src/pages/routes.py": "9938f0de0e4595ebcd607f33f1d36c87ec722fa3c4c2461ef6246d96a663aaa6",
+    "src/pages/models.py": "3647f36779b7a76323589e525822256079001c85ca328e5ed9a4a5c1789e9ab4",
+    "src/pages/service.py": "dde8ad33eeca30b648b890e975d167aec175ec39d0cfdbee60944bad0ade0e74",
+    "src/pages/storage.py": "315c1221f07296a9c54b84b86620104913544e6c130f1298bdf6c5d25604a6fa",
+    "src/content_references.py": "e7d6c3f5130f32e351c026400b4c80ad2b1513552d2b2e50c5363d5efca95594",
+    "src/v1/routes_content.py": "8929209880e3c0039e717511641586a66205dd1594c18fcb955101496754fd03",
+    "src/auth/middleware.py": "0bab9ea722402837f57042a7d8d10646246cde6c60440178d4d382c463baeaf4",
+    "src/settings/service.py": "f768114d8e95d997a9c86af641a7d1f229c13944864b8a35ebe27a14bbef5b95",
+    "src/collections/service.py": "434708fb63f87ba16c5508d8393877e4316ea4b1dbc5e640a73495c0d34fe93e",
+    "src/schedules/storage.py": "4056e11fcedd0207bb09b250e1f99bf5c31e9309bf0ec8dc8c904e32c68d5b03"
+  },
+  "limits": "Fenced Docker, network none, read-only clean source, temporary stores, fresh process per scenario, authenticated real middleware/routes/stores. No lifespan or display initialization, real config, hardware or providers. UI output target; lazy runtime getter stubbed None. Synthetic auth setup secrets never recorded. Selection fixtures use real settings setters to arrange references; store readbacks explicitly marked. No storage-I/O failure injection, live-deployment proof or physical-output observation.",
+  "cases": [
+    {
+      "id": "basic.create_flagship",
+      "request": {
+        "method": "POST",
+        "path": "/v1/pages",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "body": {
+          "name": "create_flagship",
+          "type": "template",
+          "device_type": "flagship",
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "id-1",
+          "revision": "revision-1",
+          "name": "create_flagship",
+          "type": "template",
+          "device_type": "flagship",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": null,
+          "grid_cols": null,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          },
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "basic.create_led",
+      "request": {
+        "method": "POST",
+        "path": "/v1/pages",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "body": {
+          "name": "create_led",
+          "type": "template",
+          "device_type": "panel",
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          },
+          "grid_rows": 8,
+          "grid_cols": 16
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "id-2",
+          "revision": "revision-2",
+          "name": "create_led",
+          "type": "template",
+          "device_type": "panel",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": 8,
+          "grid_cols": 16,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          },
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "basic.get_flagship",
+      "request": {
+        "method": "GET",
+        "path": "/v1/pages/id-1",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-1",
+          "revision": "revision-1",
+          "name": "create_flagship",
+          "type": "template",
+          "device_type": "flagship",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": null,
+          "grid_cols": null,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          },
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "basic.get_led",
+      "request": {
+        "method": "GET",
+        "path": "/v1/pages/id-2",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-2",
+          "revision": "revision-2",
+          "name": "create_led",
+          "type": "template",
+          "device_type": "panel",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": 8,
+          "grid_cols": 16,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          },
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "basic.invalid_name",
+      "request": {
+        "method": "POST",
+        "path": "/v1/pages",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "body": {
+          "name": "",
+          "type": "template"
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": [
+            {
+              "type": "string_too_short",
+              "loc": [
+                "body",
+                "name"
+              ],
+              "msg": "String should have at least 1 character",
+              "input": "",
+              "ctx": {
+                "min_length": 1
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "basic.invalid_panel_missing_grid",
+      "request": {
+        "method": "POST",
+        "path": "/v1/pages",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "body": {
+          "name": "Bad",
+          "type": "template",
+          "device_type": "panel"
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": [
+            {
+              "type": "value_error",
+              "loc": [
+                "body"
+              ],
+              "msg": "Value error, A panel page needs grid_rows and grid_cols",
+              "input": {
+                "name": "Bad",
+                "type": "template",
+                "device_type": "panel"
+              },
+              "ctx": {
+                "error": {}
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "basic.invalid_panel_grid",
+      "request": {
+        "method": "POST",
+        "path": "/v1/pages",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "body": {
+          "name": "Bad",
+          "type": "template",
+          "device_type": "panel",
+          "grid_rows": 0,
+          "grid_cols": 16
+        }
+      },
+      "response": {
+        "status": 422,
+        "body": {
+          "detail": [
+            {
+              "type": "greater_than_equal",
+              "loc": [
+                "body",
+                "grid_rows"
+              ],
+              "msg": "Input should be greater than or equal to 3",
+              "input": 0,
+              "ctx": {
+                "ge": 3
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "basic.rename",
+      "request": {
+        "method": "PUT",
+        "path": "/v1/pages/id-1",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "body": {
+          "name": "Renamed",
+          "expected_revision": "revision-1"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "page": {
+            "id": "id-1",
+            "revision": "revision-3",
+            "name": "Renamed",
+            "type": "template",
+            "device_type": "flagship",
+            "display_type": null,
+            "rows": null,
+            "template": [
+              "Mixed {{red:HOT}}"
+            ],
+            "line_metadata": null,
+            "duration_seconds": 300,
+            "transition_strategy": null,
+            "transition_interval_ms": null,
+            "transition_step_size": null,
+            "demo_plugin_id": null,
+            "notes_wide": 1,
+            "notes_tall": 1,
+            "grid_rows": null,
+            "grid_cols": null,
+            "canvases": null,
+            "created_at": "<timestamp>",
+            "updated_at": "<timestamp>",
+            "future_author": {
+              "nullable": null,
+              "values": [
+                1,
+                "keep"
+              ]
+            },
+            "edit_protocol": "page-revision-v1",
+            "document_protocol": "page-document-v1"
+          },
+          "incompatible_references": []
+        }
+      }
+    },
+    {
+      "id": "basic.stale_delete",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/pages/id-1?expected_revision=revision-1",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "query": {
+          "expected_revision": "revision-1"
+        }
+      },
+      "response": {
+        "status": 412,
+        "body": {
+          "detail": "Page changed since it was loaded. Reload the page before saving or deleting."
+        }
+      }
+    },
+    {
+      "id": "basic.after_stale",
+      "request": {
+        "method": "GET",
+        "path": "/v1/pages/id-1",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-1",
+          "revision": "revision-3",
+          "name": "Renamed",
+          "type": "template",
+          "device_type": "flagship",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": null,
+          "grid_cols": null,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": "<timestamp>",
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          },
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "basic.delete_flagship",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/pages/id-1?expected_revision=revision-3",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "query": {
+          "expected_revision": "revision-3"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-1",
+          "message": "Page id-1 deleted",
+          "default_page_created": false,
+          "new_page_id": null,
+          "active_page_updated": false,
+          "new_active_page_id": null
+        }
+      }
+    },
+    {
+      "id": "basic.delete_led",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/pages/id-2?expected_revision=revision-2",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "query": {
+          "expected_revision": "revision-2"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-2",
+          "message": "Page id-2 deleted. A default welcome page was created.",
+          "default_page_created": true,
+          "new_page_id": "id-3",
+          "active_page_updated": false,
+          "new_active_page_id": null
+        }
+      }
+    },
+    {
+      "id": "basic.deleted_get",
+      "request": {
+        "method": "GET",
+        "path": "/v1/pages/id-2",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        }
+      },
+      "response": {
+        "status": 404,
+        "body": {
+          "detail": "Page not found: id-2"
+        }
+      }
+    },
+    {
+      "id": "basic.missing_delete",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/pages/missing?expected_revision=missing",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "query": {
+          "expected_revision": "revision-4"
+        }
+      },
+      "response": {
+        "status": 404,
+        "body": {
+          "detail": "Page not found: missing"
+        }
+      }
+    },
+    {
+      "id": "references.create",
+      "request": {
+        "method": "POST",
+        "path": "/v1/pages",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "body": {
+          "name": "create",
+          "type": "template",
+          "device_type": "flagship",
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "id-1",
+          "revision": "revision-1",
+          "name": "create",
+          "type": "template",
+          "device_type": "flagship",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": null,
+          "grid_cols": null,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          },
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "references.collection_create",
+      "request": {
+        "method": "POST",
+        "path": "/v1/collections",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "body": {
+          "name": "Consumer",
+          "page_ids": [
+            "id-1"
+          ]
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "id-2",
+          "revision": "revision-2",
+          "name": "Consumer",
+          "page_ids": [
+            "id-1"
+          ],
+          "selection_mode": "time",
+          "time": {
+            "interval_seconds": 30
+          },
+          "variable": null,
+          "random": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "edit_protocol": "collection-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "references.collection_in_use",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/pages/id-1?expected_revision=revision-1",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "query": {
+          "expected_revision": "revision-1"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "detail": "Cannot delete id-1; remove or change these references first: collection id-2 (Consumer)"
+        }
+      }
+    },
+    {
+      "id": "references.after_collection_refusal",
+      "request": {
+        "method": "GET",
+        "path": "/v1/pages/id-1",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-1",
+          "revision": "revision-1",
+          "name": "create",
+          "type": "template",
+          "device_type": "flagship",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": null,
+          "grid_cols": null,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          },
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "references.collection_delete",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/collections/id-2?expected_revision=revision-2",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "query": {
+          "expected_revision": "revision-2"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-2"
+        }
+      }
+    },
+    {
+      "id": "references.schedule_create",
+      "request": {
+        "method": "POST",
+        "path": "/v1/schedules",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "body": {
+          "page_id": "id-1",
+          "start_time": "10:00",
+          "enabled": false,
+          "board_id": "contract-secondary"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "id-3",
+          "revision": "revision-3",
+          "board_id": "contract-secondary",
+          "page_id": "id-1",
+          "start_time": "10:00",
+          "end_time": null,
+          "day_pattern": "all",
+          "custom_days": null,
+          "enabled": false,
+          "recurrence_type": "weekly",
+          "annual_date": null,
+          "annual_end_date": null,
+          "one_off_date": null,
+          "one_off_end_date": null,
+          "start_type": "fixed",
+          "start_sun_offset": 0,
+          "end_type": "fixed",
+          "end_sun_offset": 0,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "resolved_start_time": "10:00",
+          "resolved_end_time": null,
+          "warnings": [],
+          "edit_protocol": "schedule-revision-v1"
+        }
+      }
+    },
+    {
+      "id": "references.disabled_schedule_in_use",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/pages/id-1?expected_revision=revision-1",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "query": {
+          "expected_revision": "revision-1"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "detail": "Cannot delete id-1; remove or change these references first: schedule id-3 (board contract-secondary)"
+        }
+      }
+    },
+    {
+      "id": "references.after_schedule_refusal",
+      "request": {
+        "method": "GET",
+        "path": "/v1/pages/id-1",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-1",
+          "revision": "revision-1",
+          "name": "create",
+          "type": "template",
+          "device_type": "flagship",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": null,
+          "grid_cols": null,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          },
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "references.schedule_delete",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/schedules/id-3?expected_revision=revision-3",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "query": {
+          "expected_revision": "revision-3"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-3"
+        }
+      }
+    },
+    {
+      "id": "references.default_get",
+      "request": {
+        "method": "GET",
+        "path": "/schedules/default-page?board_id=contract-primary",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "query": {
+          "board_id": "contract-primary"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "revision": "revision-4",
+          "edit_protocol": "schedule-default-revision-v1",
+          "default_page_id": null
+        }
+      }
+    },
+    {
+      "id": "references.default_set",
+      "request": {
+        "method": "PUT",
+        "path": "/schedules/default-page",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "body": {
+          "page_id": "id-1",
+          "board_id": "contract-primary",
+          "expected_revision": "revision-4"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "revision": "revision-5",
+          "edit_protocol": "schedule-default-revision-v1",
+          "default_page_id": "id-1"
+        }
+      }
+    },
+    {
+      "id": "references.default_in_use",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/pages/id-1?expected_revision=revision-1",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "query": {
+          "expected_revision": "revision-1"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "detail": "Cannot delete id-1; remove or change these references first: schedule default for board contract-primary"
+        }
+      }
+    },
+    {
+      "id": "references.after_default_refusal",
+      "request": {
+        "method": "GET",
+        "path": "/v1/pages/id-1",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-1",
+          "revision": "revision-1",
+          "name": "create",
+          "type": "template",
+          "device_type": "flagship",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": null,
+          "grid_cols": null,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          },
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "references.default_clear",
+      "request": {
+        "method": "PUT",
+        "path": "/schedules/default-page",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "body": {
+          "page_id": null,
+          "board_id": "contract-primary",
+          "expected_revision": "revision-5"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "revision": "revision-6",
+          "edit_protocol": "schedule-default-revision-v1",
+          "default_page_id": null
+        }
+      }
+    },
+    {
+      "id": "references.delete_after_unreference",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/pages/id-1?expected_revision=revision-1",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "query": {
+          "expected_revision": "revision-1"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-1",
+          "message": "Page id-1 deleted. A default welcome page was created.",
+          "default_page_created": true,
+          "new_page_id": "id-4",
+          "active_page_updated": false,
+          "new_active_page_id": null
+        }
+      }
+    },
+    {
+      "id": "last_flagship.create",
+      "request": {
+        "method": "POST",
+        "path": "/v1/pages",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "body": {
+          "name": "create",
+          "type": "template",
+          "device_type": "flagship",
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "id-1",
+          "revision": "revision-1",
+          "name": "create",
+          "type": "template",
+          "device_type": "flagship",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": null,
+          "grid_cols": null,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          },
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "last_flagship.before",
+      "request": {
+        "method": "GET",
+        "path": "/v1/pages",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "pages": [
+            {
+              "id": "id-1",
+              "revision": "revision-1",
+              "name": "create",
+              "type": "template",
+              "device_type": "flagship",
+              "display_type": null,
+              "rows": null,
+              "template": [
+                "Mixed {{red:HOT}}"
+              ],
+              "line_metadata": null,
+              "duration_seconds": 300,
+              "transition_strategy": null,
+              "transition_interval_ms": null,
+              "transition_step_size": null,
+              "demo_plugin_id": null,
+              "notes_wide": 1,
+              "notes_tall": 1,
+              "grid_rows": null,
+              "grid_cols": null,
+              "canvases": null,
+              "created_at": "<timestamp>",
+              "updated_at": null,
+              "future_author": {
+                "nullable": null,
+                "values": [
+                  1,
+                  "keep"
+                ]
+              },
+              "edit_protocol": "page-revision-v1",
+              "document_protocol": "page-document-v1"
+            }
+          ],
+          "total": 1
+        }
+      }
+    },
+    {
+      "id": "last_flagship.delete_last",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/pages/id-1?expected_revision=revision-1",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "query": {
+          "expected_revision": "revision-1"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-1",
+          "message": "Page id-1 deleted. A default welcome page was created.",
+          "default_page_created": true,
+          "new_page_id": "id-2",
+          "active_page_updated": false,
+          "new_active_page_id": null
+        }
+      }
+    },
+    {
+      "id": "last_flagship.replacement",
+      "request": {
+        "method": "GET",
+        "path": "/v1/pages/id-2",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-2",
+          "revision": "revision-2",
+          "name": "Welcome",
+          "type": "template",
+          "device_type": "flagship",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "      Welcome to      ",
+            "     FiestaBoard      ",
+            "                      ",
+            "   Create a new page  ",
+            "    to get started    ",
+            "                      "
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": null,
+          "grid_cols": null,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "last_flagship.after",
+      "request": {
+        "method": "GET",
+        "path": "/v1/pages",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "pages": [
+            {
+              "id": "id-2",
+              "revision": "revision-2",
+              "name": "Welcome",
+              "type": "template",
+              "device_type": "flagship",
+              "display_type": null,
+              "rows": null,
+              "template": [
+                "      Welcome to      ",
+                "     FiestaBoard      ",
+                "                      ",
+                "   Create a new page  ",
+                "    to get started    ",
+                "                      "
+              ],
+              "line_metadata": null,
+              "duration_seconds": 300,
+              "transition_strategy": null,
+              "transition_interval_ms": null,
+              "transition_step_size": null,
+              "demo_plugin_id": null,
+              "notes_wide": 1,
+              "notes_tall": 1,
+              "grid_rows": null,
+              "grid_cols": null,
+              "canvases": null,
+              "created_at": "<timestamp>",
+              "updated_at": null,
+              "edit_protocol": "page-revision-v1",
+              "document_protocol": "page-document-v1"
+            }
+          ],
+          "total": 1
+        }
+      }
+    },
+    {
+      "id": "last_led.create",
+      "request": {
+        "method": "POST",
+        "path": "/v1/pages",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "body": {
+          "name": "create",
+          "type": "template",
+          "device_type": "panel",
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          },
+          "grid_rows": 8,
+          "grid_cols": 16
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "id-1",
+          "revision": "revision-1",
+          "name": "create",
+          "type": "template",
+          "device_type": "panel",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": 8,
+          "grid_cols": 16,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          },
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "last_led.before",
+      "request": {
+        "method": "GET",
+        "path": "/v1/pages",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "pages": [
+            {
+              "id": "id-1",
+              "revision": "revision-1",
+              "name": "create",
+              "type": "template",
+              "device_type": "panel",
+              "display_type": null,
+              "rows": null,
+              "template": [
+                "Mixed {{red:HOT}}"
+              ],
+              "line_metadata": null,
+              "duration_seconds": 300,
+              "transition_strategy": null,
+              "transition_interval_ms": null,
+              "transition_step_size": null,
+              "demo_plugin_id": null,
+              "notes_wide": 1,
+              "notes_tall": 1,
+              "grid_rows": 8,
+              "grid_cols": 16,
+              "canvases": null,
+              "created_at": "<timestamp>",
+              "updated_at": null,
+              "future_author": {
+                "nullable": null,
+                "values": [
+                  1,
+                  "keep"
+                ]
+              },
+              "edit_protocol": "page-revision-v1",
+              "document_protocol": "page-document-v1"
+            }
+          ],
+          "total": 1
+        }
+      }
+    },
+    {
+      "id": "last_led.delete_last",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/pages/id-1?expected_revision=revision-1",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "query": {
+          "expected_revision": "revision-1"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-1",
+          "message": "Page id-1 deleted. A default welcome page was created.",
+          "default_page_created": true,
+          "new_page_id": "id-2",
+          "active_page_updated": false,
+          "new_active_page_id": null
+        }
+      }
+    },
+    {
+      "id": "last_led.replacement",
+      "request": {
+        "method": "GET",
+        "path": "/v1/pages/id-2",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-2",
+          "revision": "revision-2",
+          "name": "Welcome",
+          "type": "template",
+          "device_type": "panel",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "Welcome"
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": 8,
+          "grid_cols": 16,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "last_led.after",
+      "request": {
+        "method": "GET",
+        "path": "/v1/pages",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "pages": [
+            {
+              "id": "id-2",
+              "revision": "revision-2",
+              "name": "Welcome",
+              "type": "template",
+              "device_type": "panel",
+              "display_type": null,
+              "rows": null,
+              "template": [
+                "Welcome"
+              ],
+              "line_metadata": null,
+              "duration_seconds": 300,
+              "transition_strategy": null,
+              "transition_interval_ms": null,
+              "transition_step_size": null,
+              "demo_plugin_id": null,
+              "notes_wide": 1,
+              "notes_tall": 1,
+              "grid_rows": 8,
+              "grid_cols": 16,
+              "canvases": null,
+              "created_at": "<timestamp>",
+              "updated_at": null,
+              "edit_protocol": "page-revision-v1",
+              "document_protocol": "page-document-v1"
+            }
+          ],
+          "total": 1
+        }
+      }
+    },
+    {
+      "id": "multi_active.create_flagship",
+      "request": {
+        "method": "POST",
+        "path": "/v1/pages",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "body": {
+          "name": "create_flagship",
+          "type": "template",
+          "device_type": "flagship",
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "id-1",
+          "revision": "revision-1",
+          "name": "create_flagship",
+          "type": "template",
+          "device_type": "flagship",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": null,
+          "grid_cols": null,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          },
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "multi_active.create_led",
+      "request": {
+        "method": "POST",
+        "path": "/v1/pages",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "body": {
+          "name": "create_led",
+          "type": "template",
+          "device_type": "panel",
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          },
+          "grid_rows": 8,
+          "grid_cols": 16
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": "id-2",
+          "revision": "revision-2",
+          "name": "create_led",
+          "type": "template",
+          "device_type": "panel",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "Mixed {{red:HOT}}"
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": 8,
+          "grid_cols": 16,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "future_author": {
+            "nullable": null,
+            "values": [
+              1,
+              "keep"
+            ]
+          },
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "multi_active.before",
+      "store_readback": {
+        "contract-primary": "id-1",
+        "contract-secondary": "id-1",
+        "contract-led": "id-2"
+      }
+    },
+    {
+      "id": "multi_active.delete_shared_active",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/pages/id-1?expected_revision=revision-1",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "query": {
+          "expected_revision": "revision-1"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-1",
+          "message": "Page id-1 deleted. A default welcome page was created.",
+          "default_page_created": true,
+          "new_page_id": "id-3",
+          "active_page_updated": true,
+          "new_active_page_id": "id-3"
+        }
+      }
+    },
+    {
+      "id": "multi_active.after_shared",
+      "store_readback": {
+        "contract-primary": "id-3",
+        "contract-secondary": "id-3",
+        "contract-led": "id-2"
+      }
+    },
+    {
+      "id": "multi_active.delete_led_active",
+      "request": {
+        "method": "DELETE",
+        "path": "/v1/pages/id-2?expected_revision=revision-2",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        },
+        "query": {
+          "expected_revision": "revision-2"
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-2",
+          "message": "Page id-2 deleted. A default welcome page was created.",
+          "default_page_created": true,
+          "new_page_id": "id-4",
+          "active_page_updated": true,
+          "new_active_page_id": "id-4"
+        }
+      }
+    },
+    {
+      "id": "multi_active.after_led",
+      "store_readback": {
+        "contract-primary": "id-3",
+        "contract-secondary": "id-3",
+        "contract-led": "id-4"
+      }
+    },
+    {
+      "id": "multi_active.led_replacement",
+      "request": {
+        "method": "GET",
+        "path": "/v1/pages/id-4",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": "id-4",
+          "revision": "revision-3",
+          "name": "Welcome",
+          "type": "template",
+          "device_type": "panel",
+          "display_type": null,
+          "rows": null,
+          "template": [
+            "Welcome"
+          ],
+          "line_metadata": null,
+          "duration_seconds": 300,
+          "transition_strategy": null,
+          "transition_interval_ms": null,
+          "transition_step_size": null,
+          "demo_plugin_id": null,
+          "notes_wide": 1,
+          "notes_tall": 1,
+          "grid_rows": 8,
+          "grid_cols": 16,
+          "canvases": null,
+          "created_at": "<timestamp>",
+          "updated_at": null,
+          "edit_protocol": "page-revision-v1",
+          "document_protocol": "page-document-v1"
+        }
+      }
+    },
+    {
+      "id": "multi_active.after",
+      "request": {
+        "method": "GET",
+        "path": "/v1/pages",
+        "headers": {
+          "cookie": {
+            "name": "fiestaboard_session",
+            "present": true
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "pages": [
+            {
+              "id": "id-3",
+              "revision": "revision-4",
+              "name": "Welcome",
+              "type": "template",
+              "device_type": "flagship",
+              "display_type": null,
+              "rows": null,
+              "template": [
+                "      Welcome to      ",
+                "     FiestaBoard      ",
+                "                      ",
+                "   Create a new page  ",
+                "    to get started    ",
+                "                      "
+              ],
+              "line_metadata": null,
+              "duration_seconds": 300,
+              "transition_strategy": null,
+              "transition_interval_ms": null,
+              "transition_step_size": null,
+              "demo_plugin_id": null,
+              "notes_wide": 1,
+              "notes_tall": 1,
+              "grid_rows": null,
+              "grid_cols": null,
+              "canvases": null,
+              "created_at": "<timestamp>",
+              "updated_at": null,
+              "edit_protocol": "page-revision-v1",
+              "document_protocol": "page-document-v1"
+            },
+            {
+              "id": "id-4",
+              "revision": "revision-3",
+              "name": "Welcome",
+              "type": "template",
+              "device_type": "panel",
+              "display_type": null,
+              "rows": null,
+              "template": [
+                "Welcome"
+              ],
+              "line_metadata": null,
+              "duration_seconds": 300,
+              "transition_strategy": null,
+              "transition_interval_ms": null,
+              "transition_step_size": null,
+              "demo_plugin_id": null,
+              "notes_wide": 1,
+              "notes_tall": 1,
+              "grid_rows": 8,
+              "grid_cols": 16,
+              "canvases": null,
+              "created_at": "<timestamp>",
+              "updated_at": null,
+              "edit_protocol": "page-revision-v1",
+              "document_protocol": "page-document-v1"
+            }
+          ],
+          "total": 2
+        }
+      }
+    }
+  ]
+}

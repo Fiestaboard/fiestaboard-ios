@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "status": "candidate-additive-evidence",
+  "source": {
+    "commit": "ff2415c4a646b55510f6f633c78915cdc9c333f2",
+    "version": "10.1.20"
+  },
+  "image": "sha256:79ecc5613dec30c8d46ce5533083e1093a85b2295556e7de3111bf63032ef530",
+  "source_evidence": {
+    "src/pages/routes.py": "9938f0de0e4595ebcd607f33f1d36c87ec722fa3c4c2461ef6246d96a663aaa6",
+    "src/pages/models.py": "3647f36779b7a76323589e525822256079001c85ca328e5ed9a4a5c1789e9ab4",
+    "src/pages/service.py": "dde8ad33eeca30b648b890e975d167aec175ec39d0cfdbee60944bad0ade0e74",
+    "src/pages/storage.py": "315c1221f07296a9c54b84b86620104913544e6c130f1298bdf6c5d25604a6fa",
+    "src/content_references.py": "e7d6c3f5130f32e351c026400b4c80ad2b1513552d2b2e50c5363d5efca95594",
+    "src/v1/routes_content.py": "8929209880e3c0039e717511641586a66205dd1594c18fcb955101496754fd03",
+    "src/auth/middleware.py": "0bab9ea722402837f57042a7d8d10646246cde6c60440178d4d382c463baeaf4",
+    "src/settings/service.py": "f768114d8e95d997a9c86af641a7d1f229c13944864b8a35ebe27a14bbef5b95",
+    "src/collections/service.py": "434708fb63f87ba16c5508d8393877e4316ea4b1dbc5e640a73495c0d34fe93e",
+    "src/schedules/storage.py": "4056e11fcedd0207bb09b250e1f99bf5c31e9309bf0ec8dc8c904e32c68d5b03"
+  },
+  "artifacts": {
+    "page-management.json": "814530375c9b6cf12d92a3d7b6a81754ea8f7833829d3d9aa379e12758d29702",
+    "test_page_management.py": "4337ed4edfb5b1be7d872603fe5da6f661dedc62c072760f2567040fac096e96",
+    "verify.py": "70d9a4c78450df3fe6d47bab7db6f19e94ddb589d4fd85d1f829741a9cefde72"
+  },
+  "records": 48,
+  "limits": "Fenced Docker, network none, read-only clean source, temporary stores, fresh process per scenario, authenticated real middleware/routes/stores. No lifespan or display initialization, real config, hardware or providers. UI output target; lazy runtime getter stubbed None. Synthetic auth setup secrets never recorded. Selection fixtures use real settings setters to arrange references; store readbacks explicitly marked. No storage-I/O failure injection, live-deployment proof or physical-output observation."
+}
