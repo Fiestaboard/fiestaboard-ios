@@ -2,6 +2,13 @@ import Foundation
 import Combine
 import FiestaBoardKit
 
+/// App-owned metadata persistence shared by every scene. Copying this value retains one serialized catalog writer.
+/// Constructing it performs no storage, network, or vault access.
+public struct ConnectionPersistence: Sendable {
+    public let catalog: ServerCatalog
+    public init(directory: URL) { catalog = ServerCatalog(directory: directory) }
+}
+
 public enum ConnectionPhase: Sendable, Equatable {
     case picker, checking, authentication(BootstrapPhase), connected, demo
 }
@@ -203,16 +210,16 @@ public enum ConnectionPhase: Sendable, Equatable {
     private func route(_ next: any FiestaBoardService, token: UUID) async {
         guard valid(token), let snapshot else { return }
         if snapshot.phase != .ready { phase = .authentication(snapshot.phase); return }
-        handedToStore = true
-        await store.connect(next).value
+        if handedToStore && store.hasRetainedService {
+            // A required shell read may fail after authentication succeeded. Retry that retained actor without retiring its cookie.
+            await store.reconnect(allowCandidateWrites: false, preferredBoardID: selected?.preferredBoardID).value
+        } else {
+            handedToStore = true
+            await store.connect(next, preferredBoardID: selected?.preferredBoardID).value
+        }
         guard valid(token) else { return }
-        if store.status != nil {
-            if let preferred = selected?.preferredBoardID, store.boards.contains(where: { $0.id == preferred }) {
-                await store.selectBoard(preferred).value
-                guard valid(token) else { return }
-            }
-            phase = .connected
-        } else { message = store.message; phase = .authentication(.signIn) }
+        if store.status != nil { phase = .connected }
+        else { message = store.message; phase = .authentication(.signIn) }
     }
     private func associate(_ next: any FiestaBoardService, token: UUID) async throws {
         guard let snapshot, valid(token) else { return }

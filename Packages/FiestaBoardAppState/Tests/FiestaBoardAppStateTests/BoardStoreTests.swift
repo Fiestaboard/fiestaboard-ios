@@ -807,3 +807,23 @@ extension BoardStoreTests {
         XCTAssertEqual(store.status?.access, .simulated); XCTAssertFalse(store.pages.isEmpty); XCTAssertNil(store.message)
     }
 }
+
+extension BoardStoreTests {
+    func testInitialPreferredDetailLoadDoesNotRecoverAmbiguousCommand() async throws {
+        for preferred in ["board-2", "board-led"] {
+            let demo = try DemoFiestaBoardService(); let store = BoardStore()
+            await store.connect(demo).value
+            await store.selectBoard(preferred).value
+            await demo.setSimulation(.unknown)
+            await store.confirm(try XCTUnwrap(store.prepare(.text("UNCERTAIN")))).value
+            XCTAssertTrue(store.needsReadback)
+            store.disconnect()
+            await store.connect(demo, preferredBoardID: preferred).value
+            XCTAssertEqual(store.selectedBoardID, preferred)
+            XCTAssertEqual(store.board?.summary.id, preferred)
+            XCTAssertTrue(store.needsReadback); XCTAssertFalse(store.canWrite)
+            await store.refresh().value
+            XCTAssertFalse(store.needsReadback); XCTAssertTrue(store.canWrite)
+        }
+    }
+}

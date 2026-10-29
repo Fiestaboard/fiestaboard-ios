@@ -3,7 +3,9 @@ import FiestaBoardKit
 import FiestaBoardAppState
 
 @main struct FiestaBoardApp: App {
-    var body: some Scene { WindowGroup { DraftScene() } }
+    private let connectionPersistence = ConnectionPersistence(
+        directory: URL.applicationSupportDirectory.appendingPathComponent("FiestaBoard/Servers", isDirectory: true))
+    var body: some Scene { WindowGroup { DraftScene(persistence: connectionPersistence) } }
 }
 
 // Select the standard property-wrapper type explicitly; SDK 27 also overloads @State as a macro.
@@ -14,12 +16,11 @@ enum DraftTab: Hashable { case home, library, displays, settings }
 struct DraftScene: View {
     @StateObject private var store: BoardStore
     @StateObject private var connection: ConnectionModel
-    init() {
+    init(persistence: ConnectionPersistence) {
         let store = BoardStore()
-        let directory = URL.applicationSupportDirectory.appendingPathComponent("FiestaBoard/Servers", isDirectory: true)
         _store = StateObject(wrappedValue: store)
         _connection = StateObject(wrappedValue: ConnectionModel(
-            store: store, catalog: ServerCatalog(directory: directory), discovery: BonjourServerDiscovery(),
+            store: store, catalog: persistence.catalog, discovery: BonjourServerDiscovery(),
             preferences: .standard, serviceFactory: { LiveFiestaBoardService(deployment: $0, vault: KeychainSessionVault()) }))
     }
     @DraftState private var tab = DraftTab.home

@@ -108,9 +108,10 @@ public struct PreparedAction: Identifiable, Sendable {
         return try? BoardTarget(deployment: service.deployment, boardID: id)
     }
     public init() {}
+    var hasRetainedService: Bool { service != nil }
 
     @discardableResult public func connect(_ next: any FiestaBoardService, allowCandidateWrites: Bool = false,
-                                           username: String = "", password: String = "") -> Task<Void, Never> {
+                                           username: String = "", password: String = "", preferredBoardID: String? = nil) -> Task<Void, Never> {
         let retirement = retireService()
         resetConnection()
         service = next
@@ -135,7 +136,9 @@ public struct PreparedAction: Identifiable, Sendable {
                 let list = try await next.boards()
                 guard valid(token) else { return }
                 pageSessionOptedIn = allowCandidateWrites || result.isDemo
-                status = result; boards = list; selectedBoardID = list.first?.id
+                status = result; boards = list
+                // Initial selection loads detail without treating it as explicit recovery from an unknown command.
+                selectedBoardID = list.first(where: { $0.id == preferredBoardID })?.id ?? list.first?.id
                 do {
                     let library = try await next.pages()
                     guard valid(token) else { return }
@@ -168,11 +171,12 @@ public struct PreparedAction: Identifiable, Sendable {
         return task
     }
 
-    @discardableResult public func reconnect(allowCandidateWrites: Bool) -> Task<Void, Never> {
+    @discardableResult public func reconnect(allowCandidateWrites: Bool, preferredBoardID: String? = nil) -> Task<Void, Never> {
         guard let service else { return Task {} }
         // Retire UI contexts without clearing this actor's valid memory cookie.
+        let preferred = preferredBoardID ?? selectedBoardID
         self.service = nil
-        return connect(service, allowCandidateWrites: allowCandidateWrites)
+        return connect(service, allowCandidateWrites: allowCandidateWrites, preferredBoardID: preferred)
     }
 
     private func retireService() -> Task<Void, Never>? {

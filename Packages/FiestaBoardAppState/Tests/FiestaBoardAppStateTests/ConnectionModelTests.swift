@@ -113,6 +113,47 @@ import FiestaBoardKit
         let records = try await catalog.list(); XCTAssertEqual(records.first?.preferredBoardID, "board-led")
     }
 
+    func testAutomaticPreferredSelectionPreservesUnknownCommandBarrierForInitialAndOtherBoard() async throws {
+        for preferred in ["board-2", "board-led"] {
+            let service = try OnboardingService(usingDemoDeployment: true)
+            await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+            let catalog = ServerCatalog(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+            let saved = try await catalog.upsert(SavedServer(deployment: service.deployment, alias: "Saved", installationID: "installation", preferredBoardID: preferred))
+            let store = BoardStore()
+            let model = ConnectionModel(store: store, catalog: catalog, discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, serviceFactory: { _ in service })
+            await model.selectSaved(saved).value
+            XCTAssertEqual(store.selectedBoardID, preferred)
+            await service.demo.setSimulation(.unknown)
+            await store.confirm(try XCTUnwrap(store.prepare(.text("UNCERTAIN")))).value
+            XCTAssertTrue(store.needsReadback)
+            model.disconnect()
+            await model.selectSaved(saved).value
+            XCTAssertEqual(model.phase, .connected)
+            XCTAssertEqual(store.selectedBoardID, preferred)
+            XCTAssertTrue(store.needsReadback, "Automatic preferred selection must not acknowledge recovery for \(preferred)")
+            await store.reconnect(allowCandidateWrites: true).value
+            XCTAssertTrue(store.needsReadback); XCTAssertFalse(store.canWrite)
+            await store.refresh().value
+            XCTAssertFalse(store.needsReadback); XCTAssertTrue(store.canWrite)
+        }
+    }
+    func testCheckStateRetriesRequiredShellLoadWithoutClearingAuthenticatedMemorySession() async throws {
+        for failBoards in [false, true] {
+            let service = try OnboardingService(usingDemoDeployment: true)
+            await service.chooseAuth(AuthStatus(enabled: true, setupRequired: false, authenticated: true, authKind: "session"))
+            await service.failNextShellLoad(boards: failBoards)
+            let store = BoardStore()
+            let model = ConnectionModel(store: store, catalog: ServerCatalog(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)), discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, serviceFactory: { _ in service })
+            model.address = service.deployment.description
+            await model.connectAddress().value
+            XCTAssertNil(store.status)
+            await model.checkServerState().value
+            XCTAssertEqual(model.phase, .connected); XCTAssertNotNil(store.status)
+            let events = await service.events
+            XCTAssertFalse(events.contains("disconnect")); XCTAssertFalse(events.contains("login"))
+        }
+    }
+
 }
 private struct EmptyDiscovery: ServerDiscovering {
     func candidates() -> AsyncThrowingStream<DiscoveredServer, Error> { AsyncThrowingStream { $0.finish() } }
@@ -138,7 +179,10 @@ private actor OnboardingService: FiestaBoardService {
     var blocked = false
     var gate: CheckedContinuation<Void, Never>?
     var observers: [CheckedContinuation<Void, Never>] = []
-    init() throws { deployment = try DeploymentURL("https://board.example.com"); demo = try DemoFiestaBoardService() }
+    init(usingDemoDeployment: Bool = false) throws {
+        let demo = try DemoFiestaBoardService(); self.demo = demo
+        deployment = usingDemoDeployment ? demo.deployment : try DeploymentURL("https://board.example.com")
+    }
     func blockBootstrap() { blocked = true }
     func waitForBootstrap() async { if gate != nil { return }; await withCheckedContinuation { observers.append($0) } }
     func releaseBootstrap() { gate?.resume(); gate = nil }
@@ -158,8 +202,23 @@ private actor OnboardingService: FiestaBoardService {
     func login(username: String, password: String) async throws -> AuthStatus { throw FiestaBoardError.unknownMutationOutcome }
     func login(username: String, password: String, rememberMe: Bool) async throws -> AuthStatus { events.append("login"); throw loginError }
     func logout() async throws {}
-    func connect(allowCandidateWrites: Bool) async throws -> ConnectionStatus { try await demo.connect(allowCandidateWrites: false) }
-    func boards() async throws -> [BoardSummary] { try await demo.boards() }
+    private var connectFailure = false
+    private var boardsFailure = false
+    func failNextShellLoad(boards: Bool) { if boards { boardsFailure = true } else { connectFailure = true } }
+    func disconnect() async {
+        events.append("disconnect")
+        if auth.enabled { auth = AuthStatus(enabled: true, setupRequired: false, authenticated: false) }
+    }
+    func connect(allowCandidateWrites: Bool) async throws -> ConnectionStatus {
+        events.append("connect")
+        if connectFailure { connectFailure = false; throw FiestaBoardError.networkUnavailable }
+        guard !auth.enabled || auth.authenticated else { throw FiestaBoardError.unauthenticated }
+        return try await demo.connect(allowCandidateWrites: false)
+    }
+    func boards() async throws -> [BoardSummary] {
+        if boardsFailure { boardsFailure = false; throw FiestaBoardError.networkUnavailable }
+        return try await demo.boards()
+    }
     func board(_ target: BoardTarget) async throws -> BoardDetail { try await demo.board(target) }
     func pages() async throws -> [Page] { try await demo.pages() }
     func page(id: String) async throws -> Page { try await demo.page(id: id) }
@@ -169,7 +228,7 @@ private actor OnboardingService: FiestaBoardService {
     func previewPage(requestData: Data, target: BoardTarget) async throws -> TemplatePreviewResult { throw FiestaBoardError.unsupportedOperation }
     func updateBoard(_ patch: BoardPatch, on target: BoardTarget) async throws -> BoardConfigurationReceipt { throw FiestaBoardError.unsupportedOperation }
     func restoreBoard(_ target: BoardTarget) async throws -> BoardRestoreReceipt { throw FiestaBoardError.unsupportedOperation }
-    func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult { throw FiestaBoardError.unsupportedOperation }
+    func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult { try await demo.sendText(text, to: target) }
     func selectPage(id: String, on target: BoardTarget) async throws -> MutationResult { throw FiestaBoardError.unsupportedOperation }
 }
 
@@ -182,4 +241,43 @@ private final class FactoryCalls: @unchecked Sendable {
 private struct ForbiddenDiscovery: ServerDiscovering {
     func candidates() -> AsyncThrowingStream<DiscoveredServer, Error> { fatalError("Demo must not start discovery") }
     func snapshots() -> AsyncThrowingStream<[DiscoveredServer], Error> { fatalError("Demo must not start discovery") }
+}
+
+extension ConnectionModelTests {
+    func testAppOwnedPersistenceSharesOneCatalogAcrossConcurrentSceneUpdates() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let appPersistence = ConnectionPersistence(directory: directory)
+        // DraftScene receives copies of this app-owned value; active Model/Store state remains independent.
+        let firstScenePersistence = appPersistence
+        let secondScenePersistence = appPersistence
+        let firstCatalog = firstScenePersistence.catalog, secondCatalog = secondScenePersistence.catalog
+        XCTAssertTrue(firstCatalog === secondCatalog)
+        let records = try (0..<40).map {
+            SavedServer(deployment: try DeploymentURL("https://board\($0).example.com"), alias: "Board \($0)")
+        }
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for (index, record) in records.enumerated() {
+                let catalog = index.isMultiple(of: 2) ? firstCatalog : secondCatalog
+                group.addTask { _ = try await catalog.upsert(record) }
+            }
+            try await group.waitForAll()
+        }
+        let inserted = try await firstCatalog.list()
+        XCTAssertEqual(Set(inserted.map(\.id)), Set(records.map(\.id)))
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for (index, record) in records.enumerated() {
+                if index < 10 { group.addTask { try await firstCatalog.remove(id: record.id) } }
+                else {
+                    var changed = record; changed.alias = "Renamed \(index)"
+                    let update = changed
+                    group.addTask { _ = try await secondCatalog.upsert(update) }
+                }
+            }
+            try await group.waitForAll()
+        }
+        let updated = try await secondCatalog.list()
+        XCTAssertEqual(updated.count, 30)
+        XCTAssertTrue(updated.allSatisfy { $0.alias.hasPrefix("Renamed ") })
+        XCTAssertTrue(Set(updated.map(\.id)).isDisjoint(with: Set(records.prefix(10).map(\.id))))
+    }
 }
