@@ -90,7 +90,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     public func setAuthenticationPreference(enabled: Bool, setupToken: String? = nil) async throws -> AuthStatus {
         guard enabled || setupToken == nil else { throw FiestaBoardError.invalidRequestContext }
         struct Body: Encodable { let enabled: Bool }
-        let token = generation
+        let token = try await beginAuthenticationTransition()
         try await onboardingAcknowledgement(APIRequest(.post, path: ["auth", "preference"],
             body: JSONEncoder().encode(Body(enabled: enabled)), context: setupToken.map(APIRequestContext.onboardingToken) ?? .standard, cachePolicy: .noStore), expectedStatus: 200)
         guard token == generation else { throw FiestaBoardError.staleSession }
@@ -101,7 +101,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
 
     public func setupAdministrator(username: String, password: String, setupToken: String? = nil) async throws -> AuthStatus {
         struct Body: Encodable { let username: String; let password: String }
-        let token = generation
+        let token = try await beginAuthenticationTransition()
         try await onboardingAcknowledgement(APIRequest(.post, path: ["auth", "setup"],
             body: JSONEncoder().encode(Body(username: username, password: password)), context: setupToken.map(APIRequestContext.onboardingToken) ?? .standard, cachePolicy: .noStore), expectedStatus: 201)
         guard token == generation else { throw FiestaBoardError.staleSession }
@@ -132,7 +132,8 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         try await login(username: username, password: password, rememberMe: false)
     }
 
-    public func login(username: String, password: String, rememberMe: Bool) async throws -> AuthStatus {
+    /// Retire old reads/mutations before dispatch and clear their cookie generation before accepting a replacement session.
+    private func beginAuthenticationTransition() async throws -> UInt64 {
         generation &+= 1
         resetCollectionSession()
         access = .readOnly
@@ -141,6 +142,11 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         let token = generation
         await transport.resetSession()
         guard token == generation else { throw FiestaBoardError.staleSession }
+        return token
+    }
+
+    public func login(username: String, password: String, rememberMe: Bool) async throws -> AuthStatus {
+        let token = try await beginAuthenticationTransition()
         struct Login: Encodable { let username: String; let password: String; let remember_me: Bool }
         struct Reply: Decodable { let status: String }
         let reply: Reply = try await fetch(APIRequest(.post, path: ["auth", "login"],

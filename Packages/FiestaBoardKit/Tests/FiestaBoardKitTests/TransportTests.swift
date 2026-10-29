@@ -255,3 +255,70 @@ extension TransportTests {
         XCTAssertEqual(log.requests.count, 2)
     }
 }
+
+/// Only the logout reply is suspended; setup/status still exercise the real transport cookie jar.
+private final class OnboardingCookieCoordinator: @unchecked Sendable {
+    private let lock = NSLock()
+    private var pending: OnboardingCookieURLProtocol?
+    private var waiter: CheckedContinuation<Void, Never>?
+    private var recorded: [URLRequest] = []
+    var requests: [URLRequest] { lock.withLock { recorded } }
+    func receive(_ value: OnboardingCookieURLProtocol) {
+        let request = value.request
+        let waiting = lock.withLock { () -> CheckedContinuation<Void, Never>? in
+            recorded.append(request)
+            if request.url!.lastPathComponent == "logout" {
+                pending = value; let result = waiter; waiter = nil; return result
+            }
+            return nil
+        }
+        if request.url!.lastPathComponent == "logout" { waiting?.resume(); return }
+        if request.url!.lastPathComponent == "setup" {
+            value.respond(status: 201, headers: ["Set-Cookie": "fiestaboard_session=replacement; Path=/; Secure"], data: Data(#"{"status":"ok"}"#.utf8))
+        } else {
+            value.respond(status: 200, headers: [:], data: fixture("auth"))
+        }
+    }
+    func waitForLogout() async {
+        await withCheckedContinuation { continuation in
+            let ready = lock.withLock { if pending != nil { return true }; waiter = continuation; return false }
+            if ready { continuation.resume() }
+        }
+    }
+    func releaseLogout() {
+        let value = lock.withLock { let result = pending; pending = nil; return result }
+        value?.respond(status: 200, headers: ["Set-Cookie": "fiestaboard_session=; Path=/; Max-Age=0"], data: Data(#"{"status":"ok"}"#.utf8))
+    }
+}
+private final class OnboardingCookieURLProtocol: URLProtocol, @unchecked Sendable {
+    nonisolated(unsafe) static var coordinator: OnboardingCookieCoordinator!
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() { Self.coordinator.receive(self) }
+    override func stopLoading() {}
+    func respond(status: Int, headers: [String: String], data: Data) {
+        let response = HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: "HTTP/1.1", headerFields: headers)!
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: data)
+        client?.urlProtocolDidFinishLoading(self)
+    }
+}
+extension TransportTests {
+    func testOldLogoutCannotDeleteReplacementSetupCookie() async throws {
+        let coordinator = OnboardingCookieCoordinator()
+        OnboardingCookieURLProtocol.coordinator = coordinator
+        let deployment = try DeploymentURL("https://board.test/prefix")
+        let service = LiveFiestaBoardService(deployment: deployment, transport: URLSessionTransport(deployment: deployment, protocolClasses: [OnboardingCookieURLProtocol.self]))
+        let oldLogout = Task { try await service.logout() }
+        await coordinator.waitForLogout()
+        let status = try await service.setupAdministrator(username: "demo", password: "fixture-password")
+        XCTAssertEqual(status.bootstrapPhase, .ready)
+        XCTAssertEqual(coordinator.requests.last?.value(forHTTPHeaderField: "Cookie"), "fiestaboard_session=replacement")
+        coordinator.releaseLogout()
+        do { try await oldLogout.value; XCTFail("Expected obsolete logout") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+        _ = try await service.authStatus()
+        XCTAssertEqual(coordinator.requests.last?.value(forHTTPHeaderField: "Cookie"), "fiestaboard_session=replacement")
+        XCTAssertEqual(coordinator.requests.filter { $0.url!.lastPathComponent == "setup" }.count, 1)
+    }
+}

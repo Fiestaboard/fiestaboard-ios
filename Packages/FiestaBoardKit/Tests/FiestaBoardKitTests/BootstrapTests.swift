@@ -123,3 +123,67 @@ private actor BootstrapPauseTransport: APITransport {
         health = nil
     }
 }
+
+extension BootstrapTests {
+    func testOldBootstrapAndAuthStatusCannotOutliveSetupOrDisablePreference() async throws {
+        for bootstrapRead in [true, false] {
+            for setup in [true, false] {
+                let transport = OnboardingTransitionTransport(setup: setup)
+                let service = LiveFiestaBoardService(deployment: deployment, transport: transport)
+                let oldPhase = Task { () throws -> BootstrapPhase in
+                    if bootstrapRead { return try await service.bootstrap().phase }
+                    return try await service.authStatus().bootstrapPhase
+                }
+                await transport.waitForOldStatus()
+                let newStatus: AuthStatus
+                if setup { newStatus = try await service.setupAdministrator(username: "contract_admin", password: "fixture-password") }
+                else { newStatus = try await service.setAuthenticationPreference(enabled: false) }
+                XCTAssertEqual(newStatus.bootstrapPhase, .ready)
+                try await transport.releaseOldStatus()
+                do {
+                    let obsolete = try await oldPhase.value
+                    XCTFail("Old \(bootstrapRead ? "bootstrap" : "authStatus") returned \(obsolete) after \(setup ? "setup" : "disable preference")")
+                } catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+                let currentStatus = try await service.authStatus()
+                XCTAssertEqual(currentStatus.bootstrapPhase, .ready)
+                let paths = await transport.paths
+                XCTAssertEqual(paths.filter { $0 == ["auth", setup ? "setup" : "preference"] }.count, 1)
+            }
+        }
+    }
+}
+
+private actor OnboardingTransitionTransport: APITransport {
+    let setup: Bool
+    private var statusCount = 0
+    private var oldStatus: CheckedContinuation<APIResponse, Never>?
+    private var waiter: CheckedContinuation<Void, Never>?
+    private(set) var paths: [[String]] = []
+    init(setup: Bool) { self.setup = setup }
+    func resetSession() {}
+    func send(_ request: APIRequest) async throws -> APIResponse {
+        paths.append(request.path)
+        if request.path == ["health"] { return APIResponse(status: 200, data: try BootstrapTests.body("health")) }
+        if request.path == ["discover"] { return APIResponse(status: 200, data: try BootstrapTests.body("discover_disabled")) }
+        if request.path == ["auth", "status"] {
+            statusCount += 1
+            if statusCount == 1 {
+                return await withCheckedContinuation { continuation in
+                    oldStatus = continuation; waiter?.resume(); waiter = nil
+                }
+            }
+            return APIResponse(status: 200, data: try BootstrapTests.body(setup ? "auth_authenticated" : "auth_disabled"))
+        }
+        if request.path == ["auth", "setup"] || request.path == ["auth", "preference"] {
+            return APIResponse(status: setup ? 201 : 200, data: Data(#"{"status":"ok"}"#.utf8))
+        }
+        throw FiestaBoardError.invalidPath
+    }
+    func waitForOldStatus() async {
+        if oldStatus == nil { await withCheckedContinuation { waiter = $0 } }
+    }
+    func releaseOldStatus() throws {
+        oldStatus?.resume(returning: APIResponse(status: 200, data: try BootstrapTests.body(setup ? "auth_enabled" : "auth_undecided")))
+        oldStatus = nil
+    }
+}
