@@ -98,6 +98,75 @@ final class ServerDiscoveryTests: XCTestCase {
         _ = await consumer.result
         await fulfillment(of: [terminated], timeout: 1)
     }
+    func testCallbackBoundaryCannotRestoreOlderWorkAfterRemovalOrOvertakeTerminal() async throws {
+        let callbacks = BonjourCallbackStream()
+        let consumer = Task { () -> (count: Int, inversions: Int, restored: Bool, removed: Bool, error: ServerDiscoveryError?) in
+            var count = 0, last = -1, inversions = 0
+            var removed = false, restored = false
+            do {
+                for try await snapshot in callbacks.snapshots {
+                    count += 1
+                    if let first = snapshot.first, let sequence = Int(first.id) {
+                        if sequence < last { inversions += 1 }
+                        last = sequence
+                        if removed { restored = true }
+                    } else { removed = true }
+                }
+                return (count, inversions, restored, removed, nil)
+            } catch { return (count, inversions, restored, removed, error as? ServerDiscoveryError) }
+        }
+        let template = ad()
+        await withCheckedContinuation { (done: CheckedContinuation<Void, Never>) in
+            DispatchQueue(label: "FiestaBoard.discovery.callback-test").async {
+                for sequence in 0..<10_000 {
+                    callbacks.publish([BonjourAdvertisement(id: "\(sequence)", name: template.name,
+                        serviceType: template.serviceType, txt: template.txt, endpoint: template.endpoint)])
+                }
+                callbacks.publish([])
+                callbacks.finish(error: ServerDiscoveryError.unavailable)
+                // Any callback arriving after terminal completion must also remain suppressed.
+                callbacks.publish([BonjourAdvertisement(id: "0", name: template.name, serviceType: template.serviceType, txt: template.txt, endpoint: template.endpoint)])
+                done.resume()
+            }
+        }
+        let result = await consumer.value
+        XCTAssertEqual(result.count, 10_001, "A terminal callback must follow every preceding result/removal callback")
+        XCTAssertEqual(result.inversions, 0, "Serial callback order must survive the Swift concurrency boundary")
+        XCTAssertTrue(result.removed)
+        XCTAssertFalse(result.restored, "Older work must never publish after the authoritative removal")
+        XCTAssertEqual(result.error, .unavailable)
+    }
+    func testChangedAdvertisementsKeepCancelledCleanupWithinConcurrencyLimit() async throws {
+        let (source, feed) = AsyncThrowingStream<[BonjourAdvertisement], Error>.makeStream()
+        let verifier = CleanupVerifier()
+        let browser = BonjourServerDiscovery(advertisements: { source }, resolve: { advertisement in
+            guard case .hostPort(_, let port) = advertisement.endpoint else { throw URLError(.badURL) }
+            return try DeploymentURL("http://board.local:\(port.rawValue)", allowLocalHTTP: true)
+        }, verify: { try await verifier.verify($0) }, verificationTimeout: .seconds(3), maximumConcurrentVerifications: 1)
+        let consumer = Task { () throws -> [[DiscoveredServer]] in
+            var values: [[DiscoveredServer]] = []
+            for try await value in browser.snapshots() { values.append(value) }
+            return values
+        }
+        func revision(_ number: UInt16) -> BonjourAdvertisement {
+            BonjourAdvertisement(id: "same", name: "revision-\(number)", serviceType: "_http._tcp",
+                txt: ["product": "FiestaBoard", "path": "/"], endpoint: .hostPort(host: "board.local", port: NWEndpoint.Port(rawValue: 4420 + number)!))
+        }
+        feed.yield([revision(1)])
+        await verifier.waitForStart()
+        for number: UInt16 in 2...10 {
+            feed.yield([revision(number)])
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        feed.finish()
+        let values = try await consumer.value
+        let maximum = await verifier.maximum
+        let cancellations = await verifier.cancellations
+        XCTAssertEqual(maximum, 1, "Cancelled verification still owns capacity until asynchronous cleanup completes")
+        XCTAssertGreaterThan(cancellations, 0)
+        XCTAssertEqual(values.last?.first?.identity.name, "Final")
+        XCTAssertTrue(values.flatMap { $0 }.allSatisfy { $0.identity.name == "Final" }, "Stale cancelled generations must never become candidates")
+    }
     func testEmptyBrowseAndAmbiguousFailureRemainTruthful() async throws {
         let verified = try identity()
         let empty = discovery(AsyncThrowingStream { $0.finish() }, verify: { _ in verified })
@@ -175,4 +244,31 @@ private actor VerificationGate {
 private actor ResolutionLog {
     private(set) var ids: [String] = []
     func append(_ id: String) { ids.append(id) }
+}
+
+private actor CleanupVerifier {
+    private var active = 0
+    private var starts = 0
+    private var waiter: CheckedContinuation<Void, Never>?
+    private(set) var maximum = 0
+    private(set) var cancellations = 0
+    func verify(_ deployment: DeploymentURL) async throws -> ServerIdentity {
+        starts += 1; active += 1; maximum = max(maximum, active)
+        waiter?.resume(); waiter = nil
+        defer { active -= 1 }
+        if URLComponents(string: deployment.description)?.port == 4430 {
+            return try ServerIdentity(product: "FiestaBoard", version: "test", installationID: "one", name: "Final")
+        }
+        do { try await Task.sleep(for: .seconds(30)) }
+        catch {
+            cancellations += 1
+            // Model real asynchronous resource teardown that must finish despite task cancellation.
+            await Task.detached { try? await Task.sleep(for: .milliseconds(200)) }.value
+        }
+        return try ServerIdentity(product: "FiestaBoard", version: "test", installationID: "one", name: "Stale")
+    }
+    func waitForStart() async {
+        if starts > 0 { return }
+        await withCheckedContinuation { waiter = $0 }
+    }
 }

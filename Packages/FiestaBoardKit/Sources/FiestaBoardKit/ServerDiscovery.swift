@@ -119,7 +119,9 @@ private actor DiscoveryRun {
     let limit: Int
     var current: [String: BonjourAdvertisement] = [:]
     var verified: [String: DiscoveredServer] = [:]
-    var pending: [String: (UUID, Task<Void, Never>)] = [:]
+    // Active tasks include invalidated generations until cancellation and resource cleanup finish.
+    var active: [UUID: Task<Void, Never>] = [:]
+    var generations: [String: UUID] = [:]
     var attempted: Set<String> = []
     var finished = false
     var stopped = false
@@ -135,7 +137,7 @@ private actor DiscoveryRun {
         var next: [String: BonjourAdvertisement] = [:]
         for advertisement in snapshot where advertisement.isFiestaBoard { next[advertisement.id] = advertisement }
         for (id, old) in current where next[id] != old {
-            pending.removeValue(forKey: id)?.1.cancel()
+            if let token = generations.removeValue(forKey: id) { active[token]?.cancel() }
             verified.removeValue(forKey: id)
             attempted.remove(id)
         }
@@ -146,13 +148,13 @@ private actor DiscoveryRun {
     func stop(error: (any Error)?) {
         guard !stopped else { return }
         stopped = true
-        for task in pending.values { task.1.cancel() }
-        pending.removeAll()
+        for task in active.values { task.cancel() }
+        generations.removeAll()
         continuation.finish(throwing: error)
     }
     func schedule() {
         guard !stopped else { return }
-        for id in current.keys.sorted() where pending.count < limit && !attempted.contains(id) {
+        for id in current.keys.sorted() where active.count < limit && !attempted.contains(id) {
             guard let advertisement = current[id] else { continue }
             attempted.insert(id)
             let token = UUID()
@@ -171,16 +173,20 @@ private actor DiscoveryRun {
                 } catch { /* Unreachable, wrong-product, and stale advertisements are not candidates. */ }
                 completed(id: id, token: token, server: server)
             }
-            pending[id] = (token, task)
+            generations[id] = token
+            active[token] = task
         }
     }
     func completed(id: String, token: UUID, server: DiscoveredServer?) {
-        guard !stopped, pending[id]?.0 == token else { return }
-        pending.removeValue(forKey: id)
-        if let server { verified[id] = server }
+        active.removeValue(forKey: token)
+        guard !stopped else { return }
+        if generations[id] == token {
+            generations.removeValue(forKey: id)
+            if let server { verified[id] = server }
+        }
         emit(); schedule(); completeIfIdle()
     }
-    func completeIfIdle() { if finished && pending.isEmpty { stop(error: nil) } }
+    func completeIfIdle() { if finished && active.isEmpty { stop(error: nil) } }
     func emit() {
         let ordered = verified.keys.sorted().compactMap { verified[$0] }
         var unique: [String: DiscoveredServer] = [:]
@@ -200,21 +206,36 @@ private func withDiscoveryTimeout<T: Sendable>(_ timeout: Duration, operation: @
     }
 }
 
-private actor NetworkBonjourBrowser {
+/// Synchronously records Network's serial callbacks before any task/actor hop.
+/// Stream buffering preserves a preceding removal when a terminal callback immediately follows it.
+struct BonjourCallbackStream: Sendable {
+    let snapshots: AsyncThrowingStream<[BonjourAdvertisement], Error>
     let continuation: AsyncThrowingStream<[BonjourAdvertisement], Error>.Continuation
+    init() {
+        let (stream, continuation) = AsyncThrowingStream<[BonjourAdvertisement], Error>.makeStream()
+        self.snapshots = stream; self.continuation = continuation
+    }
+    func publish(_ snapshot: [BonjourAdvertisement]) { continuation.yield(snapshot) }
+    func finish(error: (any Error)? = nil) { continuation.finish(throwing: error) }
+}
+
+private actor NetworkBonjourBrowser {
+    let callbacks: BonjourCallbackStream
     var browser: NWBrowser?
     var deadline: Task<Void, Never>?
     var stopped = false
-    init(_ continuation: AsyncThrowingStream<[BonjourAdvertisement], Error>.Continuation) { self.continuation = continuation }
+    init(_ callbacks: BonjourCallbackStream) { self.callbacks = callbacks }
     static func stream(duration: Duration) -> AsyncThrowingStream<[BonjourAdvertisement], Error> {
-        AsyncThrowingStream(bufferingPolicy: .bufferingNewest(1)) { continuation in
-            let session = NetworkBonjourBrowser(continuation)
-            Task { await session.start(duration: duration) }
-            continuation.onTermination = { _ in Task { await session.stop(error: nil) } }
-        }
+        let callbacks = BonjourCallbackStream()
+        let session = NetworkBonjourBrowser(callbacks)
+        callbacks.continuation.onTermination = { _ in Task { await session.stop(error: nil) } }
+        Task { await session.start(duration: duration) }
+        return callbacks.snapshots
     }
     func start(duration: Duration) {
         guard !stopped else { return }
+        let callbacks = self.callbacks
+        let queue = DispatchQueue(label: "FiestaBoard.discovery")
         let browser = NWBrowser(for: .bonjourWithTXTRecord(type: "_http._tcp", domain: nil), using: .tcp)
         browser.browseResultsChangedHandler = { results, _ in
             let snapshot = results.compactMap { result -> BonjourAdvertisement? in
@@ -223,24 +244,28 @@ private actor NetworkBonjourBrowser {
                 return BonjourAdvertisement(id: "\(name).\(type).\(domain)", name: name, serviceType: type,
                     txt: ["product": txt["product"] ?? "", "path": txt["path"] ?? ""], endpoint: result.endpoint)
             }
-            Task { await self.publish(snapshot) }
+            callbacks.publish(snapshot)
         }
         browser.stateUpdateHandler = { state in
             switch state {
-            case .failed, .waiting: Task { await self.stop(error: ServerDiscoveryError.unavailable) }
+            case .failed, .waiting: callbacks.finish(error: ServerDiscoveryError.unavailable)
             default: break
             }
         }
         self.browser = browser
-        browser.start(queue: DispatchQueue(label: "FiestaBoard.discovery"))
-        deadline = Task { do { try await Task.sleep(for: duration); stop(error: nil) } catch {} }
+        browser.start(queue: queue)
+        deadline = Task {
+            do {
+                try await Task.sleep(for: duration)
+                queue.async { callbacks.finish() }
+            } catch {}
+        }
     }
-    func publish(_ snapshot: [BonjourAdvertisement]) { if !stopped { continuation.yield(snapshot) } }
     func stop(error: (any Error)?) {
         guard !stopped else { return }
         stopped = true; browser?.cancel(); browser = nil
         deadline?.cancel(); deadline = nil
-        continuation.finish(throwing: error)
+        callbacks.finish(error: error)
     }
 }
 
