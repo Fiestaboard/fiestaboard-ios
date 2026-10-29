@@ -12,7 +12,16 @@ private typealias DraftState<Value> = SwiftUI.State<Value>
 enum DraftTab: Hashable { case home, library, displays, settings }
 
 struct DraftScene: View {
-    @StateObject private var store = BoardStore()
+    @StateObject private var store: BoardStore
+    @StateObject private var connection: ConnectionModel
+    init() {
+        let store = BoardStore()
+        let directory = URL.applicationSupportDirectory.appendingPathComponent("FiestaBoard/Servers", isDirectory: true)
+        _store = StateObject(wrappedValue: store)
+        _connection = StateObject(wrappedValue: ConnectionModel(
+            store: store, catalog: ServerCatalog(directory: directory), discovery: BonjourServerDiscovery(),
+            preferences: .standard, serviceFactory: { LiveFiestaBoardService(deployment: $0, vault: KeychainSessionVault()) }))
+    }
     @DraftState private var tab = DraftTab.home
     @DraftState private var search = ""
     @DraftState private var composing = false
@@ -22,13 +31,13 @@ struct DraftScene: View {
     @DraftState private var candidateWrites = false
     @DraftState private var started = false
     @DraftState private var demoMode = DemoSimulation.accepted
-    @DraftState private var demo: DemoFiestaBoardService?
+    private var demo: DemoFiestaBoardService? { connection.demoService }
     private let accent = Color.orange
 
     var body: some View {
         Group {
             if store.status == nil {
-                WelcomeView(store: store, startDemo: startDemo)
+                ConnectionView(model: connection, store: store)
             } else {
                 TabView(selection: $tab) {
                     Tab("Home", systemImage: "house", value: .home) { home }
@@ -40,6 +49,15 @@ struct DraftScene: View {
             }
         }
         .tint(accent)
+        .onChange(of: store.selectedBoardID) { _, id in
+            if let id, connection.phase == .connected, !connection.busy { Task { await connection.persistPreferredBoard(id) } }
+        }
+        .onChange(of: store.status == nil) { _, disconnected in
+            if disconnected && !store.connecting { connection.storeConnectionChanged(); candidateWrites = false }
+        }
+        .onChange(of: store.connecting) { _, connecting in
+            if !connecting && store.status == nil { connection.storeConnectionChanged(); candidateWrites = false }
+        }
         .sheet(isPresented: $composing, onDismiss: {
             if let action = reviewAfterCompose { reviewAfterCompose = nil; pending = action }
         }) {
@@ -98,7 +116,7 @@ struct DraftScene: View {
         }
         .task {
             guard !started else { return }; started = true
-            if ProcessInfo.processInfo.arguments.contains("--demo") { startDemo() }
+            await connection.start(demo: ProcessInfo.processInfo.arguments.contains("--demo")).value
         }
     }
 
@@ -137,7 +155,7 @@ struct DraftScene: View {
                                         DisclosureGroup("Expected output differs") { BoardOutputView(board: board, expected: true) }
                                     }
                                 } else if store.boards.isEmpty {
-                                    ContentUnavailableView("No displays", systemImage: "rectangle.on.rectangle", description: Text("This deployment has no boards to select."))
+                                    ContentUnavailableView("No displays", systemImage: "rectangle.on.rectangle", description: Text("Add a display in the server web interface, then reconnect to load it here."))
                                 }
                             }.frame(maxWidth: .infinity)
                             VStack(alignment: .leading, spacing: 16) {
@@ -225,6 +243,7 @@ struct DraftScene: View {
                     if store.pages.isEmpty { Text("No pages on this deployment.") }
                 }
             }.navigationTitle("Library").searchable(text: $search, prompt: "Find a page")
+                .toolbar { ToolbarItem(placement: .primaryAction) { Button("Reload library") { store.refreshLibrary() }.disabled(store.connecting) } }
         }
     }
     private var pageChooser: some View {
@@ -268,9 +287,20 @@ struct DraftScene: View {
                     connectionBanner
                     LabeledContent("Version", value: store.status?.version.displayedVersion ?? "Unknown")
                     LabeledContent("Board controls", value: store.status?.access.rawValue ?? "Disconnected")
-                    Text("Sessions stay in memory for this window. Passwords are never saved. Closing the app or disconnecting clears the local session.").font(.footnote).foregroundStyle(.secondary)
-                    Button("Disconnect") { store.disconnect(); demo = nil; candidateWrites = false }
-                    if store.status?.isDemo != true { Button("Log out & disconnect") { store.logout(); candidateWrites = false } }
+                    Text("Passwords are never saved. Disconnect clears this window’s active session. Remembered sign-in stays securely stored until you forget it or log out.").font(.footnote).foregroundStyle(.secondary)
+                    Button("Disconnect") { connection.disconnect(); candidateWrites = false }
+                    if store.status?.isDemo != true {
+                        Button("Forget remembered sign-in") { Task { await connection.forgetSignIn() } }
+                        if let warning = connection.persistence.warning {
+                        Text(warning == .remoteRevocationPending ? "Remote sign-out is still pending. Sign out in the server web interface if needed." : "Remembered sign-in needs attention. Sign in again or forget the saved session.").font(.footnote).foregroundStyle(.orange)
+                    }
+                        Button("Log out & disconnect") { connection.logout(); candidateWrites = false }
+                    }
+                }
+                if !store.logoutNotices.isEmpty {
+                    Section("Sign-out status") {
+                        ForEach(store.logoutNotices) { notice in Text(notice.message).font(.footnote) }
+                    }
                 }
                 if store.status?.isDemo == true {
                     Section("Simulate an outcome") {
@@ -281,7 +311,7 @@ struct DraftScene: View {
                 } else {
                     Section("Server changes") {
                         Toggle("Enable changes on this server", isOn: $candidateWrites)
-                        Text("Applying reconnects. With this setting enabled, this session opts into supported page saves, collection editing and board controls. Collection creation supports the audited 10.1.7 candidate; editing existing collections requires collection-revision-v1 and the original revision. Page saves require the exact page-revision-v1 protocol and a loaded revision; each save needs confirmation. Board controls separately require the exact non-development FiestaBoard 10.0.0 version and can change the chosen board. Other versions may support page saves while board controls remain read-only. This draft has no supported release pairing.").font(.footnote)
+                        DisclosureGroup("Compatibility details") { Text("Applying reconnects. With this setting enabled, this session opts into supported page saves, collection editing and board controls. Collection creation supports the audited 10.1.7 candidate; editing existing collections requires collection-revision-v1 and the original revision. Page saves require the exact page-revision-v1 protocol and a loaded revision; each save needs confirmation. Board controls separately require the exact non-development FiestaBoard 10.0.0 version and can change the chosen board. Other versions may support page saves while board controls remain read-only. This draft has no supported release pairing.").font(.footnote) }
                         Button("Apply change setting") { store.reconnect(allowCandidateWrites: candidateWrites) }.disabled(store.commandBusy || store.connecting)
                     }
                 }
@@ -299,69 +329,16 @@ struct DraftScene: View {
               let text = try? String(contentsOf: url, encoding: .utf8) else { return "FiestaBoard TV mapping · MIT license. See ThirdPartyNotices in the source distribution." }
         return text
     }
-    private func startDemo() {
-        do { let next = try DemoFiestaBoardService(); demo = next; demoMode = .accepted; store.connect(next) }
-        catch { store.disconnect() }
-    }
     private func pageName(_ id: String?) -> String {
         guard let id else { return "None reported" }
         return store.pages.first(where: { $0.id == id })?.name ?? id
     }
 }
 
-private struct WelcomeView: View {
-    @ObservedObject var store: BoardStore
-    let startDemo: () -> Void
-    @DraftState private var serverURL = ""
-    @DraftState private var localHTTP = false
-    @DraftState private var username = ""
-    @DraftState private var password = ""
-    @DraftState private var validationError: String?
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Image(systemName: "rectangle.split.3x3.fill").font(.system(size: 56)).foregroundStyle(.orange).accessibilityHidden(true)
-                        Text("A little more\nFiesta, everywhere.").font(.largeTitle.bold())
-                        Text("Keep an eye on your displays and put a thought on the board.").foregroundStyle(.secondary)
-                        Button("Explore Demo", action: startDemo).buttonStyle(.borderedProminent).controlSize(.large).disabled(store.connecting)
-                    }.padding(.vertical)
-                }
-                Section("Manual server connection") {
-                    TextField("https://board.example.com/prefix", text: $serverURL).textContentType(.URL).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled().accessibilityLabel("Server URL")
-                    Toggle("Allow HTTP on my local network", isOn: $localHTTP)
-                    Text("Enter the deployment URL, including any proxy prefix. The app adds /api. HTTPS is required for public servers.").font(.footnote).foregroundStyle(.secondary)
-                }
-                Section("Sign in if required") {
-                    TextField("Username", text: $username).textContentType(.username).textInputAutocapitalization(.never).autocorrectionDisabled()
-                    SecureField("Password", text: $password).textContentType(.password)
-                    Text("Credentials are used only for this connection attempt. Passwords are cleared from this form immediately.").font(.footnote).foregroundStyle(.secondary)
-                }
-                Section {
-                    Button("Connect read-only") {
-                        let secret = password; password = ""; validationError = nil
-                        do {
-                            let deployment = try DeploymentURL(serverURL, allowLocalHTTP: localHTTP)
-                            store.connect(LiveFiestaBoardService(deployment: deployment), username: username, password: secret)
-                        } catch { validationError = (error as? FiestaBoardError)?.localizedDescription ?? "Check the server URL." }
-                    }.disabled(store.connecting || serverURL.isEmpty)
-                    if store.connecting { ProgressView("Connecting…"); Button("Cancel") { store.disconnect() } }
-                    if let error = validationError { Text(error).foregroundStyle(.red) }
-                    else if let message = store.message {
-                        Label(message, systemImage: store.remoteLogoutState == .succeeded ? "checkmark.circle" : store.remoteLogoutState == .pending ? "clock" : "exclamationmark.triangle")
-                            .foregroundStyle(store.remoteLogoutState == .succeeded || store.remoteLogoutState == .pending ? Color.secondary : Color.red)
-                    }
-                }
-                Section("Draft details") { DraftScopeView() }
-            }.navigationTitle("Welcome")
-        }
-    }
-}
 private struct DraftScopeView: View {
     var body: some View {
         Text("Native draft: manual connection, page library, on-device drafts, supported page name and fixed template edits, explicit template validation and text preview, revision-checked server page saves, display selection, text and page actions, pause, schedule following, fallback page and restore controls. Refresh is manual; there is no background polling. Demo saves, evaluations and board actions are entirely simulated.")
-        Text("Save local draft keeps a recovery copy on this device. A separate confirmed server save updates supported stored page fields when the server advertises the known page protocol and this session opts in. Rich, canvas and collection editing, discovery, server setup, OAuth, schedule editing, plugins, administration and pixel rendering remain planned. Use the web interface for those features and full visual previews.")
+        Text("Save local draft keeps a recovery copy on this device. A separate confirmed server save updates supported stored page fields when the server advertises the known page protocol and this session opts in. Native discovery, sign-in and initial server setup are available as a testable draft. Collections support revision-checked editing where available. Rich split-flap and LED editing, canvas editing, OAuth, schedule editing, plugins, administration and pixel rendering remain planned. Use the web interface for those features and full visual previews.")
         Text("No supported release pairing or full web/TV renderer parity is claimed.").font(.footnote).foregroundStyle(.secondary)
     }
 }

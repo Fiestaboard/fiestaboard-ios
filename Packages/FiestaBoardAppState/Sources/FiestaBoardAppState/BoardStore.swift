@@ -33,6 +33,20 @@ public struct PageDocumentSnapshot: Sendable {
 }
 
 public enum RemoteLogoutState: Sendable, Equatable { case pending, succeeded, failed }
+public struct LogoutNotice: Identifiable, Sendable, Equatable {
+    public let id: UUID
+    public let deployment: DeploymentURL
+    public let state: RemoteLogoutState
+    public let cleanupPending: Bool
+    public var message: String {
+        let suffix = cleanupPending ? " Saved sign-in could not be removed from this device; try forgetting it again." : ""
+        switch state {
+        case .pending: return "Signing out of \(deployment.description)…" + suffix
+        case .succeeded: return "Server sign-out confirmed for \(deployment.description)." + suffix
+        case .failed: return "Server sign-out could not be confirmed for \(deployment.description). Sign out in its web interface if needed." + suffix
+        }
+    }
+}
 public enum ActionPayload: Sendable { case text(String), page(String), configuration(BoardPatch), restore }
 /// A confirmation binds the exact payload to the deployment, board and current UI generation.
 public struct PreparedAction: Identifiable, Sendable {
@@ -66,6 +80,7 @@ public struct PreparedAction: Identifiable, Sendable {
     @Published public private(set) var selectedBoardID: String?
     @Published public private(set) var message: String?
     @Published public private(set) var remoteLogoutState: RemoteLogoutState?
+    @Published public private(set) var logoutNotices: [LogoutNotice] = []
     @Published public private(set) var connecting = false
     @Published public private(set) var refreshing = false
     @Published private var readbackTargets: Set<BoardTarget> = []
@@ -79,13 +94,14 @@ public struct PreparedAction: Identifiable, Sendable {
     private var pageWriteGenerations: [PageIdentity: UInt64] = [:]
     private var service: (any FiestaBoardService)?
     private var connectionTask: Task<Void, Never>?
+    private var retirementTask: Task<Void, Never>?
     private var refreshTask: Task<Void, Never>?
     private var commandTask: Task<Void, Never>?
     @Published private var inFlight: Set<BoardTarget> = []
     private var usedActions: Set<UUID> = []
     public var commandBusy: Bool { target.map { inFlight.contains($0) } ?? false }
     public var canWrite: Bool {
-        status != nil && status?.access != .readOnly && target != nil && !connecting && !refreshing && !commandBusy && !needsReadback
+        board != nil && status != nil && status?.access != .readOnly && target != nil && !connecting && !refreshing && !commandBusy && !needsReadback
     }
     private var target: BoardTarget? {
         guard let service, let id = selectedBoardID else { return nil }
@@ -95,13 +111,16 @@ public struct PreparedAction: Identifiable, Sendable {
 
     @discardableResult public func connect(_ next: any FiestaBoardService, allowCandidateWrites: Bool = false,
                                            username: String = "", password: String = "") -> Task<Void, Never> {
-        disconnect()
+        let retirement = retireService()
+        resetConnection()
         service = next
         connectionLabel = next.isDemo ? "Demo · simulated" : next.deployment.description
         connecting = true
         let token = generation
         let task = Task { [weak self] in
             guard let self else { return }
+            await retirement?.value
+            guard valid(token) else { return }
             do {
                 let auth = try await next.authStatus()
                 guard valid(token) else { return }
@@ -115,17 +134,30 @@ public struct PreparedAction: Identifiable, Sendable {
                 guard valid(token) else { return }
                 let list = try await next.boards()
                 guard valid(token) else { return }
-                let library = try await next.pages()
-                guard valid(token) else { return }
-                var detail: BoardDetail?
-                if let first = list.first {
-                    detail = try await next.board(BoardTarget(deployment: next.deployment, boardID: first.id))
-                }
-                guard valid(token) else { return }
                 pageSessionOptedIn = allowCandidateWrites || result.isDemo
-                status = result; boards = list; pages = library
-                selectedBoardID = list.first?.id; board = detail
-                if let target, !inFlight.contains(target) { readbackTargets.remove(target) }
+                status = result; boards = list; selectedBoardID = list.first?.id
+                do {
+                    let library = try await next.pages()
+                    guard valid(token) else { return }
+                    pages = library
+                } catch {
+                    guard valid(token) else { return }
+                    if handleAuthenticationLoss(error) { return }
+                    message = "The library could not be loaded. " + safeDescription(error)
+                }
+                if let target {
+                    do {
+                        let detail = try await next.board(target)
+                        guard valid(token) else { return }
+                        board = detail
+                        // An ambiguous command barrier survives reconnect; only explicit refresh clears it.
+                    } catch {
+                        guard valid(token) else { return }
+                        if handleAuthenticationLoss(error) { return }
+                        readbackTargets.insert(target)
+                        message = "Display details could not be loaded. Refresh before using controls. " + safeDescription(error)
+                    }
+                }
             } catch {
                 guard valid(token) else { return }
                 if !handleAuthenticationLoss(error) { message = safeDescription(error) }
@@ -138,10 +170,24 @@ public struct PreparedAction: Identifiable, Sendable {
 
     @discardableResult public func reconnect(allowCandidateWrites: Bool) -> Task<Void, Never> {
         guard let service else { return Task {} }
+        // Retire UI contexts without clearing this actor's valid memory cookie.
+        self.service = nil
         return connect(service, allowCandidateWrites: allowCandidateWrites)
     }
 
+    private func retireService() -> Task<Void, Never>? {
+        guard let old = service else { return retirementTask }
+        let previous = retirementTask
+        let task = Task { await previous?.value; await old.disconnect() }
+        retirementTask = task
+        return task
+    }
     public func disconnect() {
+        _ = retireService()
+        resetConnection()
+    }
+    public func waitForSessionCleanup() async { await retirementTask?.value }
+    private func resetConnection() {
         generation &+= 1
         connectionTask?.cancel(); refreshTask?.cancel(); commandTask?.cancel(); collectionListTask?.cancel()
         connectionTask = nil; refreshTask = nil; commandTask = nil
@@ -156,24 +202,37 @@ public struct PreparedAction: Identifiable, Sendable {
     /// Drops the local session immediately; the captured old service revokes its session separately.
     @discardableResult public func logout() -> Task<Void, Never> {
         let old = service
-        disconnect()
+        resetConnection()
         guard let old else { return Task {} }
         let token = generation
         let server = old.deployment.description
+        let noticeID = UUID()
+        logoutNotices.append(LogoutNotice(id: noticeID, deployment: old.deployment, state: .pending, cleanupPending: false))
         remoteLogoutState = .pending
         message = "Disconnected locally. Signing out of \(server)…"
         return Task { [weak self] in
             do {
                 try await old.logout()
-                guard let self, generation == token else { return }
+                let persistence = await old.sessionPersistenceState()
+                guard let self else { return }
+                updateLogoutNotice(noticeID, state: .succeeded, cleanupPending: persistence.cleanupPending)
+                guard generation == token else { return }
                 remoteLogoutState = .succeeded
                 message = "Disconnected locally. Server sign-out confirmed for \(server)."
             } catch {
-                guard let self, generation == token else { return }
+                let persistence = await old.sessionPersistenceState()
+                guard let self else { return }
+                updateLogoutNotice(noticeID, state: .failed, cleanupPending: persistence.cleanupPending)
+                guard generation == token else { return }
                 remoteLogoutState = .failed
                 message = "Disconnected locally. Server sign-out could not be confirmed for \(server); the server session may still be active. Sign out in the server’s web interface if needed."
             }
         }
+    }
+
+    private func updateLogoutNotice(_ id: UUID, state: RemoteLogoutState, cleanupPending: Bool) {
+        guard let index = logoutNotices.firstIndex(where: { $0.id == id }) else { return }
+        logoutNotices[index] = LogoutNotice(id: id, deployment: logoutNotices[index].deployment, state: state, cleanupPending: cleanupPending)
     }
 
     @discardableResult public func selectBoard(_ id: String) -> Task<Void, Never> {
@@ -203,6 +262,22 @@ public struct PreparedAction: Identifiable, Sendable {
         }
         refreshTask = task
         return task
+    }
+
+    /// A failed optional library read can be retried without replacing authentication or document contexts.
+    @discardableResult public func refreshLibrary() -> Task<Void, Never> {
+        guard let service, status != nil, !connecting else { return Task {} }
+        let token = generation
+        return Task { [weak self] in
+            guard let self else { return }
+            do {
+                let library = try await service.pages()
+                guard valid(token) else { return }; pages = library
+            } catch {
+                guard valid(token) else { return }
+                if !handleAuthenticationLoss(error) { message = "The library could not be loaded. " + safeDescription(error) }
+            }
+        }
     }
 
     /// Bind local editor input to this connection; a late reply cannot become another server's document.
@@ -392,7 +467,7 @@ public struct PreparedAction: Identifiable, Sendable {
     /// Authentication loss ends this UI session at every request boundary. It also
     /// invalidates prepared actions; a readback failure cannot erase an earlier receipt.
     private func handleAuthenticationLoss(_ error: any Error, preservingReceipt: String? = nil) -> Bool {
-        guard (error as? FiestaBoardError) == .unauthenticated else { return false }
+        guard let known = error as? FiestaBoardError, known == .unauthenticated || known == .staleSession else { return false }
         let server = connectionLabel
         disconnect()
         let prompt = "Authentication is required for \(server). Use the manual connection form to sign in again."

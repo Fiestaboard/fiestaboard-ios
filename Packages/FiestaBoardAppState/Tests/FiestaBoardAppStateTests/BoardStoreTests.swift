@@ -291,6 +291,19 @@ private actor SessionFaultService: FiestaBoardService {
     nonisolated let isDemo = false
     private let demo: DemoFiestaBoardService
     private var rejectRead = false
+    private var pageFailure: FiestaBoardError?
+    private var detailFailure: FiestaBoardError?
+    private var emptyBoards = false
+    private var delayPages = false
+    private var pagesGate: CheckedContinuation<Void, Never>?
+    private var pagesObservers: [CheckedContinuation<Void, Never>] = []
+    func blockPages() { delayPages = true }
+    func waitForPages() async { if pagesGate != nil { return }; await withCheckedContinuation { pagesObservers.append($0) } }
+    func releasePages() { pagesGate?.resume(); pagesGate = nil }
+    private var delayDisconnect = false
+    private var disconnectGate: CheckedContinuation<Void, Never>?
+    private var disconnectObservers: [CheckedContinuation<Void, Never>] = []
+    private(set) var lifecycle: [String] = []
     private var failLogout = false
     private var delayLogout = false
     private var logoutGate: CheckedContinuation<Void, Never>?
@@ -298,13 +311,24 @@ private actor SessionFaultService: FiestaBoardService {
     private(set) var sentCount = 0
     init() throws { let demo = try DemoFiestaBoardService(); self.demo = demo; deployment = demo.deployment }
     func rejectNextRead() { rejectRead = true }
+    func failPages(_ error: FiestaBoardError?) { pageFailure = error }
+    func failDetail(_ error: FiestaBoardError?) { detailFailure = error }
+    func setEmptyBoards() { emptyBoards = true }
+    func blockDisconnect() { delayDisconnect = true }
+    func waitForDisconnect() async { if disconnectGate != nil { return }; await withCheckedContinuation { disconnectObservers.append($0) } }
+    func releaseDisconnect() { disconnectGate?.resume(); disconnectGate = nil }
+    func disconnect() async {
+        lifecycle.append("disconnect-start")
+        if delayDisconnect { await withCheckedContinuation { disconnectGate = $0; disconnectObservers.forEach { $0.resume() }; disconnectObservers = [] } }
+        lifecycle.append("disconnect-end")
+    }
     func configureLogout(fails: Bool, delayed: Bool) { failLogout = fails; delayLogout = delayed }
     func waitForLogout() async {
         if logoutGate != nil { return }
         await withCheckedContinuation { logoutObservers.append($0) }
     }
     func releaseLogout() { logoutGate?.resume(); logoutGate = nil }
-    func authStatus() async throws -> AuthStatus { try await demo.authStatus() }
+    func authStatus() async throws -> AuthStatus { lifecycle.append("auth"); return try await demo.authStatus() }
     func login(username: String, password: String) async throws -> AuthStatus { try await demo.login(username: username, password: password) }
     func logout() async throws {
         if delayLogout {
@@ -320,12 +344,16 @@ private actor SessionFaultService: FiestaBoardService {
         value["access"] = "candidateWrites"; value["isDemo"] = false
         return try JSONDecoder().decode(ConnectionStatus.self, from: JSONSerialization.data(withJSONObject: value))
     }
-    func boards() async throws -> [BoardSummary] { try await demo.boards() }
+    func boards() async throws -> [BoardSummary] { if emptyBoards { return [] }; return try await demo.boards() }
     func board(_ target: BoardTarget) async throws -> BoardDetail {
+        if let detailFailure { throw detailFailure }
         if rejectRead { rejectRead = false; throw FiestaBoardError.unauthenticated }
         return try await demo.board(target)
     }
-    func pages() async throws -> [Page] { try await demo.pages() }
+    func pages() async throws -> [Page] {
+        if delayPages { await withCheckedContinuation { pagesGate = $0; pagesObservers.forEach { $0.resume() }; pagesObservers = [] } }
+        if let pageFailure { throw pageFailure }; return try await demo.pages()
+    }
     func page(id: String) async throws -> Page { try await demo.page(id: id) }
     func pageDocumentData(id: String) async throws -> Data {
         if rejectRead { rejectRead = false; throw FiestaBoardError.unauthenticated }
@@ -680,5 +708,102 @@ extension BoardStoreTests {
         XCTAssertEqual(page.name, "Stored before cancellation")
         let count = await service.sentCount
         XCTAssertEqual(count, 1)
+    }
+}
+
+
+extension BoardStoreTests {
+    func testOptionalPageFailureKeepsAuthenticatedShell() async throws {
+        let service = try SessionFaultService(); await service.failPages(.networkUnavailable)
+        let store = BoardStore(); await store.connect(service).value
+        XCTAssertNotNil(store.status); XCTAssertFalse(store.boards.isEmpty)
+        XCTAssertNotNil(store.message); XCTAssertTrue(store.pages.isEmpty)
+    }
+    func testOptionalDetailFailureRequiresSuccessfulReadBeforeCommands() async throws {
+        let service = try SessionFaultService(); await service.failDetail(.networkUnavailable)
+        let store = BoardStore(); await store.connect(service, allowCandidateWrites: true).value
+        XCTAssertNotNil(store.status); XCTAssertTrue(store.needsReadback); XCTAssertFalse(store.canWrite)
+    }
+    func testEmptyBoardListIsAConnectedServer() async throws {
+        let service = try SessionFaultService(); await service.setEmptyBoards()
+        let store = BoardStore(); await store.connect(service).value
+        XCTAssertNotNil(store.status); XCTAssertTrue(store.boards.isEmpty); XCTAssertFalse(store.canWrite)
+    }
+    func testAuthenticationFailureInOptionalPagesInvalidatesConnection() async throws {
+        let service = try SessionFaultService(); await service.failPages(.unauthenticated)
+        let store = BoardStore(); await store.connect(service).value
+        XCTAssertNil(store.status); XCTAssertFalse(store.canWrite)
+    }
+}
+
+extension BoardStoreTests {
+    func testOptionalLibraryCanBeRetriedWithoutReplacingSession() async throws {
+        let service = try SessionFaultService(); await service.failPages(.networkUnavailable)
+        let store = BoardStore(); await store.connect(service).value
+        await service.failPages(nil)
+        await store.refreshLibrary().value
+        XCTAssertNotNil(store.status); XCTAssertFalse(store.pages.isEmpty)
+    }
+    func testDetailFailureUnlocksOnlyAfterSuccessfulRefresh() async throws {
+        let service = try SessionFaultService(); await service.failDetail(.networkUnavailable)
+        let store = BoardStore(); await store.connect(service, allowCandidateWrites: true).value
+        await service.failDetail(nil); await store.refresh().value
+        XCTAssertNotNil(store.board); XCTAssertFalse(store.needsReadback); XCTAssertTrue(store.canWrite)
+    }
+    func testReconnectDoesNotClearAmbiguousCommandBarrier() async throws {
+        let demo = try DemoFiestaBoardService(); let store = BoardStore(); await store.connect(demo).value
+        await demo.setSimulation(.unknown)
+        await store.confirm(try XCTUnwrap(store.prepare(.text("UNKNOWN")))).value
+        await store.reconnect(allowCandidateWrites: true).value
+        XCTAssertTrue(store.needsReadback); XCTAssertFalse(store.canWrite)
+        await store.refresh().value; XCTAssertTrue(store.canWrite)
+    }
+}
+
+extension BoardStoreTests {
+    func testSameServiceSettingReconnectPreservesActiveMemorySession() async throws {
+        let service = try SessionFaultService(); let store = BoardStore()
+        await store.connect(service).value; await store.reconnect(allowCandidateWrites: true).value
+        let lifecycle = await service.lifecycle
+        XCTAssertEqual(lifecycle, ["auth", "auth"])
+    }
+    func testDisconnectCleanupCompletesBeforeSameActorConnectCanAuthenticate() async throws {
+        let service = try SessionFaultService(); let store = BoardStore()
+        await store.connect(service).value; await service.blockDisconnect()
+        store.disconnect(); await service.waitForDisconnect()
+        let reconnect = store.connect(service)
+        let suspended = await service.lifecycle; XCTAssertEqual(suspended, ["auth", "disconnect-start"])
+        await service.releaseDisconnect(); await reconnect.value
+        let lifecycle = await service.lifecycle
+        XCTAssertEqual(lifecycle, ["auth", "disconnect-start", "disconnect-end", "auth"])
+        XCTAssertNotNil(store.status)
+    }
+    func testStaleSessionInOptionalReadInvalidatesShell() async throws {
+        let service = try SessionFaultService(); await service.failPages(.staleSession)
+        let store = BoardStore(); await store.connect(service).value
+        XCTAssertNil(store.status); XCTAssertFalse(store.canWrite)
+    }
+}
+
+extension BoardStoreTests {
+    func testOldLogoutWarningRemainsAvailableWithoutOverwritingNewConnection() async throws {
+        let old = try SessionFaultService(); let store = BoardStore(); await store.connect(old).value
+        await old.configureLogout(fails: true, delayed: true)
+        let logout = store.logout(); await old.waitForLogout()
+        await store.connect(try DemoFiestaBoardService()).value
+        await old.releaseLogout(); await logout.value
+        XCTAssertEqual(store.status?.access, .simulated); XCTAssertNil(store.message)
+        XCTAssertEqual(store.logoutNotices.last?.deployment, old.deployment)
+        XCTAssertEqual(store.logoutNotices.last?.state, .failed)
+    }
+}
+
+extension BoardStoreTests {
+    func testLateOldOptionalPageAuthenticationFailureCannotDisconnectNewServer() async throws {
+        let old = try SessionFaultService(); await old.blockPages(); await old.failPages(.unauthenticated)
+        let store = BoardStore(); let first = store.connect(old); await old.waitForPages()
+        await store.connect(try DemoFiestaBoardService()).value
+        await old.releasePages(); await first.value
+        XCTAssertEqual(store.status?.access, .simulated); XCTAssertFalse(store.pages.isEmpty); XCTAssertNil(store.message)
     }
 }

@@ -238,3 +238,19 @@ extension DemoUITests {
         }
     }
 }
+
+extension DemoUITests {
+    @MainActor
+    func testDemoDisconnectReturnsToNativeServerPicker() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo"]
+        app.launch()
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        app.tabBars.buttons["Settings"].tap()
+        app.buttons["Disconnect"].tap()
+        XCTAssertTrue(app.buttons["findFiestaBoard"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.textFields["connectionAddress"].exists)
+        XCTAssertTrue(app.buttons["exploreDemo"].exists)
+        XCTAssertFalse(app.secureTextFields["connectionPassword"].exists)
+    }
+}
