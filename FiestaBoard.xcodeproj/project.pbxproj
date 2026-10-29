@@ -11,6 +11,7 @@
 		078026B7E4D421E7148C5185 /* CollectionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4490F7035D0FAA8FEDE9402 /* CollectionContext.swift */; };
 		115DFFF51DF1B46D1D1DC0FB /* PageDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5355EF228B18953DCB6086EA /* PageDocument.swift */; };
 		176381A71DE7EC4D6F1D2600 /* LosslessJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFB2DF849651A564FCE1F486 /* LosslessJSON.swift */; };
+		1832C659D12996166FF88C1F /* PageManagement.swift in Sources */ = {isa = PBXBuildFile; fileRef = B111FC6C6933C9409006391C /* PageManagement.swift */; };
 		18EB9C22DE4A28BA68F2AD14 /* ConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 460657FBB5DCDA5016DF814D /* ConnectionView.swift */; };
 		19BDFA978481512FB988BB96 /* FiestaBoardDocuments.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 49BC2ED373F21B24BB1720FB /* FiestaBoardDocuments.framework */; };
 		1DC85EC6AD31351DCF715362 /* SessionVault.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0769B4598394A149E221E8 /* SessionVault.swift */; };
@@ -178,6 +179,7 @@
 		A7CD60F365F22213C8C5A3BD /* DemoUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoUITests.swift; sourceTree = "<group>"; };
 		A97B4AF51A85801376D6EE28 /* DemoService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoService.swift; sourceTree = "<group>"; };
 		ADD3E20169D98490321CE3F4 /* ServerDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerDiscovery.swift; sourceTree = "<group>"; };
+		B111FC6C6933C9409006391C /* PageManagement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageManagement.swift; sourceTree = "<group>"; };
 		B269490EAA2BC1900A3319B2 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		C3B380D9832C5FAA53AF1EDA /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
 		C47F8AA33E9578A49496430F /* LocalPageEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalPageEditorView.swift; sourceTree = "<group>"; };
@@ -269,6 +271,7 @@
 				39295C71C5ED93F6ABEFB0B4 /* FiestaBoardError.swift */,
 				B269490EAA2BC1900A3319B2 /* Models.swift */,
 				A0B00B96E005DAE7C0B39B09 /* PageEditing.swift */,
+				B111FC6C6933C9409006391C /* PageManagement.swift */,
 				EABDE686F7FEDAE342474766 /* ServerAddress.swift */,
 				33C9936205557D822BCDBC68 /* ServerCatalog.swift */,
 				ADD3E20169D98490321CE3F4 /* ServerDiscovery.swift */,
@@ -644,6 +647,7 @@
 				1F17B659C5A4800BBD4066C0 /* Models.swift in Sources */,
 				1EDB6D6A37593CDC64B9C86B /* PackageResources.swift in Sources */,
 				216E17622D37BAC98E2FC3E7 /* PageEditing.swift in Sources */,
+				1832C659D12996166FF88C1F /* PageManagement.swift in Sources */,
 				3A7D569AE67E9EF1DB06CE68 /* ServerAddress.swift in Sources */,
 				92535869889AB4DC8D9FF326 /* ServerCatalog.swift in Sources */,
 				8CFC43B3AA777E3F0EE5DD3F /* ServerDiscovery.swift in Sources */,

@@ -25,6 +25,7 @@ struct DraftScene: View {
     }
     @DraftState private var tab = DraftTab.home
     @DraftState private var search = ""
+    @DraftState private var creatingPage = false
     @DraftState private var composing = false
     @DraftState private var textDraft = ""
     @DraftState private var reviewAfterCompose: PreparedAction?
@@ -235,6 +236,9 @@ struct DraftScene: View {
                     }
                     .accessibilityIdentifier("openCollections")
                 }
+                if let library = store.pageLibrary {
+                    Section { PageLibraryFeedback(library: library, store: store) }
+                }
                 Section("Pages · local drafts available") {
                     ForEach(store.pages.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }) { page in
                         NavigationLink { PageDetailView(page: page, store: store, prepare: { pending = store.prepare(.page(page.id)) }) } label: {
@@ -244,7 +248,22 @@ struct DraftScene: View {
                     if store.pages.isEmpty { Text("No pages on this deployment.") }
                 }
             }.navigationTitle("Library").searchable(text: $search, prompt: "Find a page")
-                .toolbar { ToolbarItem(placement: .primaryAction) { Button("Reload library") { store.refreshLibrary() }.disabled(store.connecting) } }
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button("New page", systemImage: "plus") { creatingPage = true }
+                            .accessibilityIdentifier("newLibraryPage")
+                            .disabled(store.pageLibrary?.capability.canCreate != true)
+                    }
+                    ToolbarItem(placement: .secondaryAction) {
+                        Button("Reload library", systemImage: "arrow.clockwise") { store.refreshLibrary() }.disabled(store.connecting)
+                    }
+                }
+                .sheet(isPresented: $creatingPage) {
+                    if let library = store.pageLibrary {
+                        NavigationStack { CreateLibraryPageView(library: library, store: store) }
+                    }
+                }
+                .onChange(of: store.connectionLabel) { _, _ in creatingPage = false }
         }
     }
     private var pageChooser: some View {

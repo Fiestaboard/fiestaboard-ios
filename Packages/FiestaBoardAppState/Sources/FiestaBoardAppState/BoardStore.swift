@@ -22,6 +22,35 @@ public enum PageEditingAccess: Sendable, Equatable {
         }
     }
 }
+public enum PageLibraryPhase: Equatable, Sendable {
+    case idle, working, completed(String), reviewRequired(String), reviewed(String), failed(String)
+    public var message: String? {
+        switch self {
+        case .idle, .working: nil
+        case .completed(let text), .reviewRequired(let text), .reviewed(let text), .failed(let text): text
+        }
+    }
+}
+/// Retained per deployment so dismissing a sheet cannot replay an ambiguous operation.
+@MainActor public final class PageLibraryState: ObservableObject {
+    public let deployment: DeploymentURL
+    @Published public var name = ""
+    @Published public var isPanel = false
+    @Published public var rows = 8
+    @Published public var columns = 16
+    @Published public fileprivate(set) var phase: PageLibraryPhase = .idle
+    @Published public fileprivate(set) var capability = PageManagementCapability(canCreate: false, canDelete: false)
+    @Published public fileprivate(set) var deletion: PageDeletionContext?
+    fileprivate var deletionGeneration: UInt64 = 0
+    fileprivate var deletionWriteGeneration: UInt64 = 0
+    fileprivate var blocked = false
+    fileprivate var deletionRecoveryEpochs: [String: UInt64] = [:]
+    public var busy: Bool { phase == .working }
+    public var needsReview: Bool { blocked }
+    public var canCreate: Bool { capability.canCreate && !busy && !blocked }
+    public var canDelete: Bool { capability.canDelete && !busy && !blocked }
+    fileprivate init(deployment: DeploymentURL) { self.deployment = deployment }
+}
 private struct PageIdentity: Hashable { let deployment: DeploymentURL; let id: String }
 public struct PageDocumentSnapshot: Sendable {
     public let id: String
@@ -62,6 +91,10 @@ public struct PreparedAction: Identifiable, Sendable {
 
 // Combine keeps this draft buildable where compiler macro sandbox execution is unavailable.
 @MainActor public final class BoardStore: ObservableObject {
+    @Published public private(set) var pageLibrary: PageLibraryState?
+    private var pageLibraryObservation: AnyCancellable?
+    private var pageLibraryEpoch: UInt64 = 0
+    private var pageLibraries: [DeploymentURL: PageLibraryState] = [:]
     @Published public private(set) var status: ConnectionStatus?
     @Published public private(set) var boards: [BoardSummary] = []
     @Published public private(set) var pages: [Page] = []
@@ -113,7 +146,7 @@ public struct PreparedAction: Identifiable, Sendable {
     private var usedActions: Set<UUID> = []
     public var commandBusy: Bool { target.map { inFlight.contains($0) } ?? false }
     public var canWrite: Bool {
-        board != nil && status != nil && status?.access != .readOnly && target != nil && !connecting && !refreshing && !commandBusy && !needsReadback
+        board != nil && status != nil && status?.access != .readOnly && target != nil && !connecting && !refreshing && !commandBusy && !needsReadback && pageLibrary?.busy != true && pageLibrary?.needsReview != true
     }
     private var target: BoardTarget? {
         guard let service, let id = selectedBoardID else { return nil }
@@ -149,6 +182,13 @@ public struct PreparedAction: Identifiable, Sendable {
                 guard valid(token) else { return }
                 pageSessionOptedIn = allowCandidateWrites || result.isDemo
                 status = result; boards = list
+                let libraryState = pageLibraries[next.deployment] ?? PageLibraryState(deployment: next.deployment)
+                pageLibraries[next.deployment] = libraryState
+                pageLibrary = libraryState
+                pageLibraryObservation = libraryState.objectWillChange.sink { [weak self] _ in self?.objectWillChange.send() }
+                let capability = await next.pageManagementCapability()
+                guard valid(token) else { return }
+                libraryState.capability = capability
                 // Initial selection loads detail without treating it as explicit recovery from an unknown command.
                 selectedBoardID = list.first(where: { $0.id == preferredBoardID })?.id ?? list.first?.id
                 do {
@@ -206,6 +246,7 @@ public struct PreparedAction: Identifiable, Sendable {
     public func waitForSessionCleanup() async { await retirementTask?.value }
     private func resetConnection() {
         generation &+= 1
+        pageLibraryObservation = nil; pageLibrary = nil; pageLibraryEpoch &+= 1
         connectionTask?.cancel(); refreshTask?.cancel(); commandTask?.cancel(); collectionListTask?.cancel()
         connectionTask = nil; refreshTask = nil; commandTask = nil
         service = nil; status = nil; boards = []; pages = []; board = nil; defaultPageContext = nil; defaultPageCapability = .unavailable; selectedBoardID = nil
@@ -301,13 +342,14 @@ public struct PreparedAction: Identifiable, Sendable {
 
     /// A failed optional library read can be retried without replacing authentication or document contexts.
     @discardableResult public func refreshLibrary() -> Task<Void, Never> {
-        guard let service, status != nil, !connecting else { return Task {} }
+        guard let service, status != nil, !connecting, pageLibrary?.busy != true else { return Task {} }
         let token = generation
+        let epoch = pageLibraryEpoch
         return Task { [weak self] in
             guard let self else { return }
             do {
                 let library = try await service.pages()
-                guard valid(token) else { return }; pages = library
+                guard valid(token), epoch == pageLibraryEpoch else { return }; pages = library
             } catch {
                 guard valid(token) else { return }
                 if !handleAuthenticationLoss(error) { message = "The library could not be loaded. " + safeDescription(error) }
@@ -352,6 +394,7 @@ public struct PreparedAction: Identifiable, Sendable {
         guard pageEditingAccess(context: context).canSave, let service else { throw FiestaBoardError.pageWritesDisabled }
         try patch.validate()
         pageWriteGenerations[identity, default: 0] &+= 1
+        pageLibraryEpoch &+= 1
         savingPages.insert(identity); pageReadbacks.insert(identity)
         defer { savingPages.remove(identity) }
         do {
@@ -753,5 +796,157 @@ private enum StoreError: LocalizedError {
              .rejected(status: 422), .rateLimited: true
         default: false
         }
+    }
+}
+
+// Page lifecycle operations share the editor's per-page mutation barriers.
+extension BoardStore {
+    private func requirePageLibrary() throws -> (any FiestaBoardService, PageLibraryState) {
+        guard let service, let library = pageLibrary, status != nil, !connecting,
+              library.deployment == service.deployment else { throw FiestaBoardError.staleSession }
+        guard !library.busy, !library.needsReview else { throw FiestaBoardError.pageReadbackRequired }
+        return (service, library)
+    }
+
+    public func createLibraryPage() async throws -> String {
+        let (service, library) = try requirePageLibrary()
+        guard library.canCreate else { throw FiestaBoardError.pageWritesDisabled }
+        let input = PageCreationInput(name: library.name.trimmingCharacters(in: .whitespacesAndNewlines),
+                                      family: library.isPanel ? .panel(rows: library.rows, cols: library.columns) : .flagship)
+        try input.validate()
+        let token = generation
+        library.phase = .working; library.deletion = nil
+        var dispatched = false
+        defer { if dispatched { pageLibraryEpoch &+= 1 } }
+        do {
+            let context = try await service.preparePageCreation(input)
+            guard valid(token), pageLibrary === library else { throw FiestaBoardError.staleSession }
+            library.blocked = true; pageLibraryEpoch &+= 1; dispatched = true
+            let receipt = try await service.createPage(context: context)
+            guard valid(token), pageLibrary === library else { throw FiestaBoardError.staleSession }
+            if !pages.contains(where: { $0.id == receipt.page.id }) { pages.append(receipt.page) }
+            library.name = ""; library.blocked = false
+            library.phase = .completed("Page created. Open its editor to add content.")
+            return receipt.page.id
+        } catch {
+            finishPageLibraryFailure(error, library: library, dispatched: dispatched)
+            if token == generation { _ = handleAuthenticationLoss(error) }
+            throw error
+        }
+    }
+
+    public func preparePageDeletion(id: String) async throws {
+        let (service, library) = try requirePageLibrary()
+        guard library.canDelete, pages.contains(where: { $0.id == id }) else { throw FiestaBoardError.pageWritesDisabled }
+        let identity = PageIdentity(deployment: service.deployment, id: id)
+        guard !savingPages.contains(identity), !pageReadbacks.contains(identity) else { throw FiestaBoardError.pageReadbackRequired }
+        let token = generation; let writeEpoch = pageWriteGenerations[identity, default: 0]
+        library.phase = .working; library.deletion = nil
+        do {
+            let context = try await service.readPageForDeletion(id: id)
+            guard valid(token), pageLibrary === library else { throw FiestaBoardError.staleSession }
+            guard !savingPages.contains(identity), writeEpoch == pageWriteGenerations[identity, default: 0] else { throw FiestaBoardError.stalePageContext }
+            library.deletion = context; library.deletionGeneration = token; library.deletionWriteGeneration = writeEpoch
+            library.phase = .idle
+        } catch {
+            library.phase = .failed(safeDescription(error))
+            if token == generation { _ = handleAuthenticationLoss(error) }
+            throw error
+        }
+    }
+
+    public func cancelPageDeletion() { pageLibrary?.deletion = nil }
+
+    public func deleteLibraryPage() async throws {
+        let (service, library) = try requirePageLibrary()
+        guard library.canDelete, let context = library.deletion,
+              library.deletionGeneration == generation else { throw FiestaBoardError.stalePageContext }
+        let identity = PageIdentity(deployment: service.deployment, id: context.page.id)
+        guard !savingPages.contains(identity), !pageReadbacks.contains(identity),
+              library.deletionWriteGeneration == pageWriteGenerations[identity, default: 0] else { throw FiestaBoardError.stalePageContext }
+        let token = generation
+        library.deletion = nil; library.phase = .working; library.blocked = true
+        pageWriteGenerations[identity, default: 0] &+= 1; pageLibraryEpoch &+= 1
+        savingPages.insert(identity); pageReadbacks.insert(identity); pageContexts.removeValue(forKey: context.page.id)
+        library.deletionRecoveryEpochs[identity.id] = pageWriteGenerations[identity, default: 0]
+        defer { savingPages.remove(identity); pageLibraryEpoch &+= 1 }
+        var acknowledged = false
+        do {
+            let receipt = try await service.deletePage(context: context)
+            acknowledged = true
+            guard valid(token), pageLibrary === library else { throw FiestaBoardError.staleSession }
+            pages.removeAll { $0.id == receipt.id }
+            let summary = receipt.defaultPageCreated ? "Page deleted. The server created a replacement page." : "Page deleted."
+            try await reloadPageLibraryState(service: service, library: library, token: token)
+            pageReadbacks.remove(identity); library.deletionRecoveryEpochs.removeValue(forKey: identity.id); library.blocked = false
+            library.phase = .completed(summary + " Library and display selections refreshed.")
+        } catch {
+            if acknowledged {
+                library.phase = .reviewRequired("The server acknowledged deletion, but current library or display state could not be read. Review current state before another change.")
+            } else {
+                finishPageLibraryFailure(error, library: library, dispatched: true)
+                if !library.blocked { pageReadbacks.remove(identity); library.deletionRecoveryEpochs.removeValue(forKey: identity.id) }
+            }
+            if token == generation { _ = handleAuthenticationLoss(error) }
+            throw error
+        }
+    }
+
+    private func finishPageLibraryFailure(_ error: any Error, library: PageLibraryState, dispatched: Bool) {
+        let requiresReview: Bool
+        switch error as? FiestaBoardError {
+        case .unknownMutationOutcome, .staleSession, .stalePageContext, .pageConflict: requiresReview = dispatched
+        case .none: requiresReview = dispatched
+        default: requiresReview = false
+        }
+        library.blocked = requiresReview
+        library.phase = requiresReview
+            ? .reviewRequired("The result needs review. Your input is kept. Read the current library and display selections before starting another request; this request will not be repeated.")
+            : .failed(safeDescription(error))
+    }
+
+    private func reloadPageLibraryState(service: any FiestaBoardService, library: PageLibraryState, token: UInt64) async throws {
+        let epoch = pageLibraryEpoch
+        let currentPages = try await service.pages()
+        let summaries = try await service.boards()
+        var details: [BoardDetail] = []
+        for summary in summaries {
+            let target = try BoardTarget(deployment: service.deployment, boardID: summary.id)
+            details.append(try await service.board(target))
+        }
+        guard valid(token), pageLibrary === library else { throw FiestaBoardError.staleSession }
+        guard epoch == pageLibraryEpoch else { throw FiestaBoardError.stalePageContext }
+        pages = currentPages; boards = summaries
+        if let selectedBoardID { board = details.first { $0.summary.id == selectedBoardID } }
+        defaultPageContext = nil
+        if let target { await loadDefaultContext(service, target: target, token: token) }
+        guard valid(token), pageLibrary === library else { throw FiestaBoardError.staleSession }
+    }
+
+    public func reviewPageLibrary() async {
+        guard let service, let library = pageLibrary, !library.busy, !connecting, status != nil else { return }
+        let token = generation
+        library.phase = .working
+        do {
+            try await reloadPageLibraryState(service: service, library: library, token: token)
+            library.phase = library.blocked
+                ? .reviewed("Current pages and display selections are loaded. A matching page name or missing page does not prove the earlier request succeeded. Inspect the library before starting a new request.")
+                : .completed("Library and display selections refreshed.")
+        } catch {
+            library.phase = library.blocked ? .reviewRequired(safeDescription(error)) : .failed(safeDescription(error))
+            if token == generation { _ = handleAuthenticationLoss(error) }
+        }
+    }
+
+    public func acknowledgePageLibraryReview() {
+        guard let library = pageLibrary, case .reviewed = library.phase else { return }
+        for (id, epoch) in library.deletionRecoveryEpochs {
+            let identity = PageIdentity(deployment: library.deployment, id: id)
+            if pageWriteGenerations[identity, default: 0] == epoch && !savingPages.contains(identity) {
+                pageReadbacks.remove(identity)
+            }
+        }
+        library.deletionRecoveryEpochs.removeAll()
+        library.blocked = false; library.deletion = nil; library.phase = .idle
     }
 }
