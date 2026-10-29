@@ -9,6 +9,11 @@ public protocol FiestaBoardService: Sendable {
     func login(username: String, password: String, rememberMe: Bool) async throws -> AuthStatus
     func authStatus() async throws -> AuthStatus
     func login(username: String, password: String) async throws -> AuthStatus
+    func configureSessionPersistence(rememberMe: Bool, installationID: String?) async
+    func restoreRememberedSession(observedInstallationID: String) async throws -> Bool
+    func forgetRememberedSession() async
+    func disconnect() async
+    func sessionPersistenceState() async -> SessionPersistenceState
     func logout() async throws
     func connect(allowCandidateWrites: Bool) async throws -> ConnectionStatus
     func boards() async throws -> [BoardSummary]
@@ -39,6 +44,8 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     private let transport: any APITransport
     private let allowsSimulatedCollectionWrites: Bool
     private var generation: UInt64 = 0
+    private var observedInstallationID: String?
+    private var persistenceWarning: SessionPersistenceWarning?
     private var access = DraftAccess.readOnly
     private var pageWritesOptedIn = false
     private var previewAudited = false
@@ -58,9 +65,9 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     private var collectionCreateReadbackRequired = false
     private var knownBoards: [String: BoardSummary] = [:]
 
-    public init(deployment: DeploymentURL, transport: (any APITransport)? = nil) {
+    public init(deployment: DeploymentURL, transport: (any APITransport)? = nil, vault: (any SessionVault)? = nil) {
         self.deployment = deployment
-        self.transport = transport ?? URLSessionTransport(deployment: deployment)
+        self.transport = transport ?? URLSessionTransport(deployment: deployment, vault: vault)
         allowsSimulatedCollectionWrites = false
     }
 
@@ -72,6 +79,10 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     }
 
     public func bootstrap() async throws -> BootstrapSnapshot {
+        try await bootstrapSnapshot(invalidateUnauthenticated: true)
+    }
+
+    private func bootstrapSnapshot(invalidateUnauthenticated: Bool) async throws -> BootstrapSnapshot {
         let token = generation
         try Task.checkCancellation()
         let health: ServerHealth = try await fetch(APIRequest(path: ["health"], cachePolicy: .noStore))
@@ -80,10 +91,11 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         let identity: ServerIdentity = try await fetch(APIRequest(path: ["discover"], cachePolicy: .noStore))
         guard identity.product == "FiestaBoard" else { throw FiestaBoardError.wrongProduct }
         guard token == generation else { throw FiestaBoardError.staleSession }
-        let auth: AuthStatus = try await fetch(APIRequest(path: ["auth", "status"], cachePolicy: .noStore))
+        observedInstallationID = identity.installationID
+        let auth: AuthStatus = try await fetch(APIRequest(path: ["auth", "status"], cachePolicy: .noStore), invalidateUnauthenticated: invalidateUnauthenticated)
         guard token == generation else { throw FiestaBoardError.staleSession }
         try Task.checkCancellation()
-        if auth.enabled && !auth.authenticated { invalidateAuthentication() }
+        if invalidateUnauthenticated && auth.enabled && !auth.authenticated { invalidateAuthentication() }
         return BootstrapSnapshot(deployment: deployment, health: health, identity: identity, auth: auth)
     }
 
@@ -147,6 +159,8 @@ public actor LiveFiestaBoardService: FiestaBoardService {
 
     public func login(username: String, password: String, rememberMe: Bool) async throws -> AuthStatus {
         let token = try await beginAuthenticationTransition()
+        await transport.configureSessionPersistence(rememberMe: rememberMe, installationID: observedInstallationID)
+        guard token == generation else { throw FiestaBoardError.staleSession }
         struct Login: Encodable { let username: String; let password: String; let remember_me: Bool }
         struct Reply: Decodable { let status: String }
         let reply: Reply = try await fetch(APIRequest(.post, path: ["auth", "login"],
@@ -158,6 +172,56 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         return status
     }
 
+    public func configureSessionPersistence(rememberMe: Bool, installationID: String?) async {
+        // The service only trusts an identity observed through its own fresh bootstrap.
+        let identity = installationID == observedInstallationID ? observedInstallationID : nil
+        await transport.configureSessionPersistence(rememberMe: rememberMe, installationID: identity)
+    }
+
+    public func sessionPersistenceState() async -> SessionPersistenceState {
+        var state = await transport.sessionPersistenceState()
+        if let persistenceWarning { state.warning = persistenceWarning }
+        return state
+    }
+
+    /// Fresh public discovery precedes import; fresh authenticated bootstrap follows it.
+    /// Imported material never grants write access or reuses an old document generation.
+    public func restoreRememberedSession(observedInstallationID: String) async throws -> Bool {
+        let token = try await beginAuthenticationTransition()
+        let publicSnapshot = try await bootstrapSnapshot(invalidateUnauthenticated: false)
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        guard !observedInstallationID.isEmpty, publicSnapshot.identity.installationID == observedInstallationID else { return false }
+        guard await transport.restoreRememberedSession(observedInstallationID: observedInstallationID) else { return false }
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        do {
+            let verified = try await bootstrapSnapshot(invalidateUnauthenticated: false)
+            guard token == generation else { throw FiestaBoardError.staleSession }
+            guard verified.identity.installationID == observedInstallationID, verified.auth.authenticated,
+                  verified.auth.bootstrapPhase == .ready else {
+                await transport.forgetRememberedSession(); await transport.resetSession(); return false
+            }
+            return true
+        } catch {
+            guard token == generation else { throw FiestaBoardError.staleSession }
+            if (error as? FiestaBoardError) == .unauthenticated {
+                await transport.forgetRememberedSession()
+                guard token == generation else { throw FiestaBoardError.staleSession }
+                await transport.resetSession()
+                return false
+            }
+            await transport.resetSession()
+            throw error
+        }
+    }
+
+    public func forgetRememberedSession() async { await transport.forgetRememberedSession() }
+
+    /// Local disconnect clears active cookies and capability/document generations.
+    /// Explicit remembered material remains available for a future revalidated restore.
+    public func disconnect() async {
+        _ = try? await beginAuthenticationTransition()
+    }
+
     public func logout() async throws {
         generation &+= 1
         resetCollectionSession()
@@ -165,12 +229,18 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         access = .readOnly
         pageWritesOptedIn = false; previewAudited = false; knownPages = [:]
         knownBoards = [:]
+        persistenceWarning = nil
+        await transport.forgetRememberedSession()
+        guard generation == token else { throw FiestaBoardError.staleSession }
         do {
             struct Reply: Decodable { let status: String }
             let _: Reply = try await fetch(APIRequest(.post, path: ["auth", "logout"]))
             if generation == token { await transport.resetSession() }
         } catch {
-            if generation == token { await transport.resetSession() }
+            if generation == token {
+                await transport.resetSession()
+                persistenceWarning = .remoteRevocationPending
+            }
             throw error
         }
     }
@@ -359,7 +429,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard access == .candidateWrites else { throw FiestaBoardError.writesDisabled }
         guard knownBoards[target.boardID] != nil else { throw FiestaBoardError.invalidTarget }
     }
-    private func response(_ request: APIRequest) async throws -> APIResponse {
+    private func response(_ request: APIRequest, invalidateUnauthenticated: Bool = true) async throws -> APIResponse {
         let token = generation
         do {
             let result = try await transport.send(request)
@@ -367,13 +437,13 @@ public actor LiveFiestaBoardService: FiestaBoardService {
             return result
         } catch {
             guard token == generation else { throw FiestaBoardError.staleSession }
-            if (error as? FiestaBoardError) == .unauthenticated { invalidateAuthentication() }
+            if invalidateUnauthenticated && (error as? FiestaBoardError) == .unauthenticated { invalidateAuthentication() }
             if error is CancellationError && !request.isMutation { throw error }
             throw (error as? FiestaBoardError) ?? (request.isMutation ? .unknownMutationOutcome : .networkUnavailable)
         }
     }
-    private func fetch<T: Decodable & Sendable>(_ request: APIRequest) async throws -> T {
-        let response = try await response(request)
+    private func fetch<T: Decodable & Sendable>(_ request: APIRequest, invalidateUnauthenticated: Bool = true) async throws -> T {
+        let response = try await response(request, invalidateUnauthenticated: invalidateUnauthenticated)
         do { return try JSONDecoder().decode(T.self, from: response.data) }
         catch let error as FiestaBoardError where !request.isMutation { throw error }
         catch { throw request.isMutation ? FiestaBoardError.unknownMutationOutcome : .invalidResponse }
