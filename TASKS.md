@@ -2,6 +2,10 @@
 
 This is the short current queue and durable milestone history. Full web-app feature parity is required before the first App Store release. Checkboxes mean the whole listed deliverable is accepted, not that a draft screen exists. `Contracts/parity.json` remains the source-bound release inventory; source/fixture tests alone do not make a workflow release-verified.
 
+## Latest editor work — October 29
+
+The new native creative-editor draft is implemented; its [verification report](docs/research/2026-10-29-creative-editor-verification.md) distinguishes tested authoring from the remaining LED/catalog/renderer/device work. The detailed remaining editor queue is at the end of this file. Full rich-editor parity remains open.
+
 ## Current status — October 28, 2026 (resumed)
 
 The user resumed execution with a quality-first order: **setup/sign-in → board switching and page management → settings → rich content editing for both split-flap and LED**. Root drives implementation with bounded Sol 6.1 assistance and independent Astra review. Full web parity remains the release requirement.
@@ -190,3 +194,21 @@ Partial means a subset exists in the draft; the checkbox stays open until the en
 - Native collections: implemented against merged source79edd37d2/version10.1.7. Kit65 +AppState46 +Documents25 +EditorState50 host tests pass;29contract tests/integrity and55fenced backend cases pass. Astra core/editor reviews pass after six findings were fixed. Simulator/device builds and existing UI-test compilation pass; interactive tests remain unexecuted. See the linked collection verification record for commits, source boundaries and remaining acceptance.
 
 - October28 user approved continuous parity implementation and explicitly required rich editing for split-flap and LED. [Separate acceptance matrix](docs/research/2026-10-28-rich-editor-requirements.md); [early HA access decision/proof limits](docs/research/2026-10-28-ingress-access-decision.md). Fresh baseline186Swift/29contract tests passed before implementation. User confirmed test endpoint opens in iPhone Safari; native device/auth/output proof remains open.
+
+## October 29 — native creative-editor milestone
+
+User directed the next implementation toward iOS creative-app patterns. The canvas/row inspector replaces fixed-slot raw-only editing; this is a bounded draft, **not** full rich-editor parity.
+
+- [x] Lossless structural row operations (including empty templates), metadata-aware duplication/reorder, alignment/wrap, history and sparse original-revision saves.
+- [x] Preserve legacy prefix semantics when materializing metadata; unknown nested metadata and numeric spellings survive transport.
+- [x] Native rich token attachments with source mode, caret insertion and chip editing; split-flap palette, variables/formulas/fill, and preservation of balanced LED spans/icons.
+- [x] Board-derived flagship/Note/Note-array/panel geometry; unknown geometry is explicit, excess authored rows remain editable.
+- [x] Standard native glass toolbars, canvas-first editing, expanded iPad presentation and adaptive row inspector.
+- [ ] Complete runtime acceptance for both families on physical devices, resize/rotation and accessibility.
+- [ ] LED charset-backed palette/icon controls and editable span extents; source-preserving tokens alone are not LED parity.
+- [ ] Real provider/field/filter/function insertion catalogs instead of manually specified expressions.
+- [ ] Multiline paste and semantic/native-system undo; clipboard, IME/dictation and token-adjacent Unicode device proof.
+- [ ] Draw/brush tools and Apple Pencil interactions with semantic undo.
+- [ ] Exact server-evaluated cells/layers/charset warnings, current-server preview compatibility and live round-trip proof.
+
+Implementation design: `docs/superpowers/plans/2026-10-29-creative-editor.md`. Source evidence: `docs/research/2026-10-29-editor-source-contracts.md`. Do not mark the master rich-editor workflow complete based on this milestone.

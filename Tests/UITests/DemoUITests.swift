@@ -60,7 +60,7 @@ extension DemoUITests {
         selectTab("Library", in: app)
         app.staticTexts["Welcome"].tap()
         app.buttons["editLocalDraft"].tap()
-        XCTAssertTrue(app.staticTexts["Local draft"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["templateCanvasRow0"].waitForExistence(timeout: 5))
         let name = app.textFields["Name"]
         XCTAssertTrue(name.exists)
         name.tap()
@@ -484,5 +484,85 @@ final class ConnectionUITests: XCTestCase {
         app.alerts.buttons["Delete page"].tap()
         XCTAssertTrue(app.buttons["newLibraryPage"].waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts["Native LED test"].exists)
+    }
+}
+
+@MainActor final class CreativeEditorUITests: XCTestCase {
+    override func setUp() { super.setUp(); continueAfterFailure = false }
+    func testRichTokenSourceRoundTripAndStructuralUndo() {
+        let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
+        selectTab("Library", in: app)
+        app.staticTexts["Welcome"].tap(); app.buttons["editLocalDraft"].tap()
+        XCTAssertTrue(app.buttons["templateCanvasRow0"].waitForExistence(timeout: 8))
+        reveal(app.buttons["addTemplateRow"], app); app.buttons["addTemplateRow"].tap()
+        let row = app.textViews["templateRowText"]
+        reveal(row, app); XCTAssertTrue(row.waitForExistence(timeout: 5)); row.tap(); row.typeText("NATIVE ")
+        app.buttons["editorHideKeyboard"].tap()
+        reveal(app.buttons["insertTemplateToken"], app); app.buttons["insertTemplateToken"].tap()
+        app.buttons["Variable"].tap()
+        XCTAssertTrue(app.textFields["tokenSource"].waitForExistence(timeout: 4) || app.textViews["tokenSource"].exists)
+        app.navigationBars.buttons["Insert"].tap()
+        XCTAssertTrue(row.waitForExistence(timeout: 4))
+        XCTAssertTrue(NSPredicate(format: "value == %@", "NATIVE {{weather.temperature}}").evaluate(with: row) ||
+                      XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "NATIVE {{weather.temperature}}"), object: row)], timeout: 4) == .completed)
+        reveal(app.buttons["Source"], app); app.buttons["Source"].tap()
+        XCTAssertEqual(row.value as? String, "NATIVE {{weather.temperature}}")
+        app.buttons["Rich"].tap()
+        XCTAssertEqual(row.value as? String, "NATIVE {{weather.temperature}}")
+        app.navigationBars.buttons["Undo"].tap()
+        XCTAssertEqual(row.value as? String, "NATIVE ")
+        app.navigationBars.buttons["Redo"].tap()
+        XCTAssertEqual(row.value as? String, "NATIVE {{weather.temperature}}")
+        reveal(app.buttons["templateRowActions"], app); app.buttons["templateRowActions"].tap()
+        app.buttons["Duplicate row"].tap()
+        reveal(app.buttons["Source"], app); app.buttons["Source"].tap()
+        XCTAssertEqual(app.textViews["templateRowText"].value as? String, "NATIVE {{weather.temperature}}", "Changing row must not replay the last insertion")
+        app.buttons["Rich"].tap()
+        let richRow = app.textViews["templateRowText"]
+        richRow.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 160, dy: 26)).tap()
+        let tokenSource = app.textFields["tokenSource"]
+        XCTAssertTrue(tokenSource.waitForExistence(timeout: 4), "Tapping a chip opens its editor")
+        // Applying an unchanged chip must replace it, never insert a second copy.
+        XCTAssertEqual(tokenSource.value as? String, "{{weather.temperature}}")
+        XCTAssertTrue(app.navigationBars.buttons["Insert"].isEnabled)
+        app.navigationBars.buttons["Insert"].tap()
+        XCTAssertEqual(app.textViews["templateRowText"].value as? String, "NATIVE {{weather.temperature}}")
+        reveal(app.buttons["insertTemplateToken"], app); app.buttons["insertTemplateToken"].tap()
+        app.buttons["Flexible space"].tap()
+        XCTAssertEqual(app.textViews["templateRowText"].value as? String, "NATIVE {{weather.temperature}}{{fill_space}}", "An unchanged chip replacement must still advance the caret")
+        app.navigationBars.buttons["Close"].tap(); app.buttons["Discard unsaved changes"].tap()
+        XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 5))
+    }
+    func testFreshSplitFlapPaletteAndFormattingSave() {
+        let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
+        selectTab("Library", in: app)
+        app.buttons["newLibraryPage"].tap()
+        let name = app.textFields["New page name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 3)); name.tap(); name.typeText("Creative flap test")
+        name.typeText("\n")
+        app.buttons["createLibraryPage"].tap()
+        let first = app.buttons["addFirstTemplateRow"]
+        XCTAssertTrue(first.waitForExistence(timeout: 8)); first.tap()
+        let row = app.textViews["templateRowText"]
+        reveal(row, app); row.tap(); row.typeText("HELLO")
+        app.buttons["editorHideKeyboard"].tap()
+        reveal(app.buttons["insertTemplateToken"], app); app.buttons["insertTemplateToken"].tap()
+        app.buttons["Red"].tap()
+        reveal(app.buttons["Source"], app); app.buttons["Source"].tap()
+        XCTAssertEqual(row.value as? String, "HELLO{{red}}")
+        reveal(app.buttons["Right"], app); app.buttons["Right"].tap()
+        let wrap = app.switches["Wrap text"]
+        reveal(wrap, app); wrap.tap()
+        let save = app.buttons["savePageOnServer"]
+        reveal(save, app); XCTAssertTrue(save.isEnabled); save.tap()
+        app.buttons["Simulate save"].tap()
+        let acknowledged = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Page storage acknowledged")).firstMatch
+        reveal(acknowledged, app); XCTAssertTrue(acknowledged.waitForExistence(timeout: 8))
+    }
+    private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
+        for _ in 0..<12 {
+            if element.exists && element.isHittable { return }
+            app.swipeUp(velocity: .slow)
+        }
     }
 }

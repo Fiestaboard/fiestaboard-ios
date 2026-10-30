@@ -104,6 +104,8 @@ struct CreateLibraryPageView: View {
                 Form {
                     Section("Page") {
                         TextField("New page name", text: $library.name)
+                            .submitLabel(.done)
+                            .onSubmit { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
                             .disabled(library.busy)
                         Picker("Display format", selection: $library.isPanel) {
                             Text("Split-flap · 6 × 22").tag(false)

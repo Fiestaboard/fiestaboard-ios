@@ -1,6 +1,6 @@
 # Split-flap and LED rich-editor acceptance
 
-User priority: October28 approval explicitly requires rich editing for **both split-flap and LED**. This is a binding implementation/acceptance matrix for W4/W5, not a claim of delivered rich editing. Current native editing remains the bounded fixed-slot raw-template draft until the implementation lands.
+User priority: October28 approval explicitly requires rich editing for **both split-flap and LED**. This is a binding implementation/acceptance matrix for W4/W5, not a claim of delivered rich editing. The October 29 checkpoint below records the new bounded native authoring draft; full rich-editor acceptance remains open.
 
 ## Current source distinction
 
@@ -26,3 +26,7 @@ Current source pins FiestaUI @fiestaboard/ui 8.14.2, registry tarball https://re
 Target changes must preserve content or explain incompatible representation; they may not silently coerce one family into the other. Live output remains explicitly separate from side-effect-free preview. Stage server/AI changes for review and retain original revisions. Server rasterization/evaluation remains authoritative; native UI does not reimplement providers or template evaluation.
 
 The feasibility milestone passes only after both fixture families satisfy document/IME/undo/round-trip tests and both native rich views actually execute. Renderer visual/device proof is recorded independently for each. Unsupported future content is preserved or editing is blocked with a reason. If TextKit cannot maintain these invariants, record the failed proof and select a reviewed native bridge/model before broad implementation; raw-only LED is not a release compromise.
+
+## October 29 implementation checkpoint
+
+The fixed-slot-only limitation is being replaced by the native creative-editor milestone (`docs/superpowers/plans/2026-10-29-creative-editor.md`): selectable design rows, source-preserving token attachments, rich/source switching, caret insertion and chip editing, structural row operations, alignment/wrap, original-revision metadata saves, and model undo/redo. This does **not** certify the full matrix above. LED spans/icons are preserved as whole tokens; visual span-range styling and capability-backed insertion catalogs remain pending. Native multiline paste, provider/function catalogs, brush drawing, exact evaluated cells/layers, native-system undo integration, IME/dictation/Pencil, and full accessibility/device parity remain open. The canvas is an authoring projection and clearly distinguishes dynamic placeholders from server evaluation.

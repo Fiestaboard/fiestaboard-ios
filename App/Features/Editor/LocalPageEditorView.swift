@@ -26,15 +26,6 @@ public struct LocalPageEditorView: View {
 
     public var body: some View {
         Form {
-            Section {
-                Label("Local draft", systemImage: "internaldrive")
-                Text("Save local draft keeps changes on this device. A separate confirmed server save updates stored page content. Template expressions and formatting tokens are edited as raw text.")
-                    .font(.footnote).foregroundStyle(.secondary)
-                Text(model.hasUnsavedChanges ? "Unsaved local changes" : "No unsaved local changes")
-                    .font(.footnote)
-                Text(model.hasServerChanges ? "Changed from server baseline" : "Matches server baseline")
-                    .font(.footnote)
-            }
             if let recovery = model.recoveryNotice {
                 Section("Draft recovery") {
                     Text(recovery)
@@ -53,21 +44,9 @@ public struct LocalPageEditorView: View {
                     .autocorrectionDisabled()
                     .disabled(model.editingFrozen)
             }
-            if let lines = model.lines {
-                Section("Raw template · fixed line slots") {
-                    Text("Each line keeps its original metadata. Adding, removing, or reordering lines is unavailable in this editor.")
-                        .font(.footnote).foregroundStyle(.secondary)
-                    ForEach(lines.indices, id: \.self) { index in
-                        VStack(alignment: .leading) {
-                            Text("Line \(index + 1)").font(.caption).foregroundStyle(.secondary)
-                            RawTemplateTextView(text: Binding(
-                                get: { model.lines?[safe: index] ?? "" },
-                                set: { model.setLine(index, text: $0) }
-                            ), isEditing: $isTextInputActive)
-                            .frame(minHeight: 72)
-                            .disabled(model.editingFrozen)
-                        }
-                    }
+            if model.lines != nil {
+                Section {
+                    TemplateWorkspaceView(model: model, isTextInputActive: $isTextInputActive)
                 }
             } else {
                 Section("Read-only content") {
@@ -77,6 +56,15 @@ public struct LocalPageEditorView: View {
                         .font(.caption.monospaced())
                         .textSelection(.enabled)
                 }
+            }
+            Section {
+                Label("Local draft", systemImage: "internaldrive")
+                Text("Save local draft keeps changes on this device. A separate confirmed server save updates stored page content. Use the design canvas and row tools to edit text, tokens, and formatting.")
+                    .font(.footnote).foregroundStyle(.secondary)
+                Text(model.hasUnsavedChanges ? "Unsaved local changes" : "No unsaved local changes")
+                    .font(.footnote)
+                Text(model.hasServerChanges ? "Changed from server baseline" : "Matches server baseline")
+                    .font(.footnote)
             }
             evaluationSection
             serverSection
@@ -89,13 +77,9 @@ public struct LocalPageEditorView: View {
                     Task { await model.saveDraft() }
                 }
                     .disabled(model.isSaving || model.editingFrozen)
-                HStack {
-                    Button("Undo") { commitTextInput(); model.undo() }.disabled(!model.canUndo || model.editingFrozen)
-                    Spacer()
-                    Button("Redo") { commitTextInput(); model.redo() }.disabled(!model.canRedo || model.editingFrozen)
-                }
             }
         }
+        .presentationSizing(.page)
         .navigationTitle("Page editor")
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
@@ -106,6 +90,12 @@ public struct LocalPageEditorView: View {
                     commitTextInput()
                     if model.hasUnsavedChanges { confirmClose = true } else { model.endEditingSession(); dismiss() }
                 }.disabled(model.isSaving || model.editingFrozen)
+            }
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button("Undo", systemImage: "arrow.uturn.backward") { commitTextInput(); model.undo() }
+                    .disabled(!model.canUndo || model.editingFrozen)
+                Button("Redo", systemImage: "arrow.uturn.forward") { commitTextInput(); model.redo() }
+                    .disabled(!model.canRedo || model.editingFrozen)
             }
         }
         .confirmationDialog("Keep your local changes?", isPresented: $confirmClose, titleVisibility: .visible) {
@@ -200,65 +190,4 @@ public struct LocalPageEditorView: View {
     private func commitTextInput() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
-}
-
-/// TextKit 1 storage/layout on purpose: preserves raw strings and native marked-text input.
-/// Formatting is not converted to HTML or attributed content. UI/IME parity needs device tests.
-private struct RawTemplateTextView: UIViewRepresentable {
-    @Binding var text: String
-    @Binding var isEditing: Bool
-
-    func makeCoordinator() -> Coordinator { Coordinator(self) }
-
-    func makeUIView(context: Context) -> UITextView {
-        let storage = NSTextStorage()
-        let layout = NSLayoutManager()
-        let container = NSTextContainer(size: .zero)
-        storage.addLayoutManager(layout)
-        layout.addTextContainer(container)
-        container.widthTracksTextView = true
-        let view = UITextView(frame: .zero, textContainer: container)
-        view.delegate = context.coordinator
-        view.font = .monospacedSystemFont(ofSize: 16, weight: .regular)
-        view.autocorrectionType = .no
-        view.autocapitalizationType = .none
-        view.smartQuotesType = .no
-        view.smartDashesType = .no
-        view.smartInsertDeleteType = .no
-        view.isScrollEnabled = true
-        view.accessibilityLabel = "Raw template line"
-        return view
-    }
-
-    func updateUIView(_ view: UITextView, context: Context) {
-        context.coordinator.parent = self
-        guard view.markedTextRange == nil, !LosslessJSON.stringsEqual(view.text ?? "", text) else { return }
-        let selection = view.selectedRange
-        view.text = text
-        let length = (text as NSString).length
-        view.selectedRange = NSRange(location: min(selection.location, length), length: 0)
-    }
-
-    final class Coordinator: NSObject, UITextViewDelegate {
-        var parent: RawTemplateTextView
-        init(_ parent: RawTemplateTextView) { self.parent = parent }
-        func textViewDidBeginEditing(_ textView: UITextView) { parent.isEditing = true }
-        func textViewDidEndEditing(_ textView: UITextView) {
-            textView.unmarkText()
-            parent.text = textView.text
-            parent.isEditing = false
-        }
-        func textViewDidChange(_ textView: UITextView) {
-            guard textView.markedTextRange == nil else { return }
-            parent.text = textView.text
-            if !LosslessJSON.stringsEqual(textView.text ?? "", parent.text) { textView.text = parent.text }
-        }
-        func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
-            !text.contains("\n") && !text.contains("\r")
-        }
-    }
-}
-
-private extension Collection {
-    subscript(safe index: Index) -> Element? { indices.contains(index) ? self[index] : nil }
 }

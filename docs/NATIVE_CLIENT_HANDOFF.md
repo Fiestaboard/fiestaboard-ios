@@ -104,7 +104,7 @@ Important source facts for Task7-B:
 
 ## Rich editing remains mandatory for both families
 
-Read `docs/research/2026-10-28-rich-editor-requirements.md`. Current native editor is still the bounded fixed-slot raw-template draft. It does **not** yet satisfy rich split-flap or LED parity.
+Read `docs/research/2026-10-28-rich-editor-requirements.md`. October 29 update: the native creative-editor draft now has rich/source tokens, a selectable canvas, structural rows and formatting. See `docs/research/2026-10-29-creative-editor-verification.md`. It does **not** yet satisfy rich split-flap or LED parity.
 
 Current upstream has separate split-flap TipTap and LED `charset-template-editor.tsx`/FiestaUI TemplateEditor paths. FiestaUI8.14.2 is pinned. LED includes supported color spans, block spans, icons, mixed-case/charset behavior; split-flap has its own glyph/color/tile/variable/formula behavior including filled71. Build and verify both, including rich/plain round trips, IME/paste/selection/undo, server previews, revision-safe saves/conflicts, recovery, resizing and accessibility. Raw-only LED is not an acceptable compromise.
 

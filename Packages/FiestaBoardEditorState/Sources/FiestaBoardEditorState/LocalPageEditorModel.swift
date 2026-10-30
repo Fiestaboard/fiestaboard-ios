@@ -41,6 +41,7 @@ public final class LocalPageEditorModel: ObservableObject {
         recoveryPreservationBarrier = initialSession.document
     }
     public var name: String { session.document.name ?? "" }
+    public var authoringGeometry: TemplateGeometry? { TemplateGeometry(document: session.document) }
     public var pageType: String { session.document.pageType ?? "Unknown page type" }
     public var lines: [String]? { session.document.editableTemplateLines }
     public var readOnlyDocumentText: String {

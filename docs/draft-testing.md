@@ -2,7 +2,7 @@
 
 # Native draft testing
 
-This is a runnable iOS/iPadOS 26+ SwiftUI draft built with Xcode 27.1 / SDK 27.1 and Swift 6. It covers demo mode, manual server connection, display selection, server-reported output, a page library with local on-device drafts, fixed-slot template editing, explicit validation/text preview and revision-checked page saves, native collection authoring with all three modes, text/page board actions, and pause, schedule-following, fallback-page and restore controls. It is not full web parity or a supported released server/app pairing.
+This is a runnable iOS/iPadOS 26+ SwiftUI draft built with Xcode 27.1 / SDK 27.1 and Swift 6. It covers demo mode, manual server connection, display selection, server-reported output, a page library with local on-device drafts, native rich/source template editing with structural row and formatting tools, explicit validation/text preview and revision-checked page saves, native collection authoring with all three modes, text/page board actions, and pause, schedule-following, fallback-page and restore controls. It is not full web parity or a supported released server/app pairing.
 
 ## Open and run
 
@@ -155,3 +155,9 @@ xcodebuild -project FiestaBoard.xcodeproj -scheme FiestaBoard \
 ```
 
 Local Simulator signing is required for real Keychain access. `CODE_SIGNING_ALLOWED=NO` is useful for compile checks, but cannot establish remembered-session runtime acceptance. The CI UI job starts/stops its fixture process and runs phone/tablet jobs. Test-generated saved servers are removed by completed onboarding scenarios.
+
+## Native creative-editor draft (October 29)
+
+Use **FiestaBoard Device Test** to run on your phone without the wireless debugger overhead. In Demo, open Library → New page → Split-flap, enter a name and create it. Add the first row, type text, then use Insert for a color tile, variable, formula or flexible space. Tap a chip to edit it; switch Rich/Source to inspect the exact syntax. Try row actions, alignment/wrap and toolbar Undo/Redo. Save local draft stores recovery on the device; the separate server-save action retains its confirmation.
+
+On iPad the editor uses a larger page presentation and places the row inspector beside the canvas when the window is wide enough. Narrow windows stack them. The design view shows unresolved dynamic tokens, not evaluated output. LED spans/icons are preserved, but visual LED formatting tools and exact server preview are still pending. See [current verification and remaining work](research/2026-10-29-creative-editor-verification.md).
