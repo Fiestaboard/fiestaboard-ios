@@ -95,12 +95,49 @@ public struct PageDocument: Equatable, Sendable {
             if var values = metadata { values.insert(values[index], at: index + 1); metadata = values }
         }
     }
+    /// Mirrors exact20 src/text_utils.py: optional lowercase {wrap}, then one
+    /// case-insensitive alignment prefix. Prefix order is significant.
+    private static func legacyLine(_ line: String) -> (alignment: String, wrap: Bool, content: String) {
+        var content = line
+        let wrap = content.hasPrefix("{wrap}")
+        if wrap { content.removeFirst(6) }
+        for alignment in ["left", "center", "right"] {
+            let token = "{\(alignment)}"
+            if let range = content.range(of: token, options: [.anchored, .caseInsensitive]) {
+                content.removeSubrange(range)
+                return (alignment, wrap, content)
+            }
+        }
+        return ("left", wrap, content)
+    }
+    public func lineAlignment(at index: Int) -> String {
+        guard let lines = templateLines, lines.indices.contains(index) else { return "left" }
+        if case .array(let metadata) = root["line_metadata"], metadata.indices.contains(index) {
+            if case .object(let object) = metadata[index], case .string(let alignment) = object["alignment"] { return alignment }
+            return "left"
+        }
+        return Self.legacyLine(lines[index]).alignment
+    }
+    public func lineWrap(at index: Int) -> Bool {
+        guard let lines = templateLines, lines.indices.contains(index) else { return false }
+        if case .array(let metadata) = root["line_metadata"], metadata.indices.contains(index) {
+            if case .object(let object) = metadata[index], case .bool(let wrap) = object["wrap"] { return wrap }
+            return false
+        }
+        return Self.legacyLine(lines[index]).wrap
+    }
     private mutating func setLineMetadata(at index: Int, key: String, value: LosslessJSON) throws {
         guard let lines = editableTemplateLines else { throw DocumentError.unsupportedTemplate }
         guard lines.indices.contains(index) else { throw DocumentError.invalidLine }
         var metadata: [LosslessJSON]
         if case .array(let existing) = root["line_metadata"] { metadata = existing }
-        else { metadata = Array(repeating: Self.defaultLineMetadata, count: lines.count) }
+        else {
+            // Follow storage migration: metadata overrides prefixes, so consume only the
+            // prefixes the backend previously interpreted, keeping the remaining source exact.
+            let migrated = lines.map(Self.legacyLine)
+            metadata = migrated.map { .object(["alignment": .string($0.alignment), "wrap": .bool($0.wrap)]) }
+            root["template"] = .array(migrated.map { .string($0.content) })
+        }
         guard case .object(var object) = metadata[index] else { throw DocumentError.unsupportedTemplate }
         object[key] = value; metadata[index] = .object(object)
         root["line_metadata"] = .array(metadata)

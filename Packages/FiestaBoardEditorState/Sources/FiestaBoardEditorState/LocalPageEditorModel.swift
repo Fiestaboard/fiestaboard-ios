@@ -68,16 +68,8 @@ public final class LocalPageEditorModel: ObservableObject {
     public func duplicateLine(_ index: Int) { mutate { try $0.duplicateTemplateLine(at: index) } }
     public func setLineAlignment(_ index: Int, alignment: String) { mutate { try $0.setLineAlignment(at: index, alignment: alignment) } }
     public func setLineWrap(_ index: Int, wrap: Bool) { mutate { try $0.setLineWrap(at: index, wrap: wrap) } }
-    public func lineAlignment(_ index: Int) -> String {
-        if case .array(let metadata) = session.document.root["line_metadata"], metadata.indices.contains(index),
-           case .object(let object) = metadata[index], case .string(let value) = object["alignment"] { return value }
-        return "left"
-    }
-    public func lineWrap(_ index: Int) -> Bool {
-        if case .array(let metadata) = session.document.root["line_metadata"], metadata.indices.contains(index),
-           case .object(let object) = metadata[index], case .bool(let value) = object["wrap"] { return value }
-        return false
-    }
+    public func lineAlignment(_ index: Int) -> String { session.document.lineAlignment(at: index) }
+    public func lineWrap(_ index: Int) -> Bool { session.document.lineWrap(at: index) }
     public func undo() { mutate { try $0.undo() } }
     public func redo() { mutate { try $0.redo() } }
     private func mutate(_ operation: (inout DocumentEditingSession) throws -> Void) {

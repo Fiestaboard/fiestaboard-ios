@@ -42,6 +42,18 @@ final class StructuralEditingTests: XCTestCase {
             XCTAssertEqual(document, before)
         }
     }
+    func testFormattingMigratesEffectiveLegacySettingsWithoutChangingOtherRows() throws {
+        for metadata in ["", ",\"line_metadata\":null"] {
+            var document = try PageDocument(data: Data("{\"type\":\"template\",\"template\":[\"{center}A\",\"{wrap}{RIGHT}B\",\"{right}{wrap}C\",\"{WRAP}{center}D\"]\(metadata)}".utf8))
+            try document.setLineWrap(at: 0, wrap: true)
+            XCTAssertEqual(document.templateLines, ["A", "B", "{wrap}C", "{WRAP}{center}D"])
+            XCTAssertEqual(document.root["line_metadata"], .array([
+                .object(["alignment": .string("center"), "wrap": .bool(true)]),
+                .object(["alignment": .string("right"), "wrap": .bool(true)]),
+                .object(["alignment": .string("right"), "wrap": .bool(false)]),
+                .object(["alignment": .string("left"), "wrap": .bool(false)])]))
+        }
+    }
     func testFormattingMaterializesAllRowsAndFailedOperationsAreAtomic() throws {
         var document = try PageDocument(data: Data(#"{"type":"template","template":["A","B"]}"#.utf8))
         try document.setLineAlignment(at: 1, alignment: "center")

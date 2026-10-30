@@ -33,3 +33,11 @@ Exact touched files:
 - Packages/FiestaBoardKit/Tests/FiestaBoardKitTests/MetadataPatchTests.swift
 - Packages/FiestaBoardKit/README.md
 - .superpowers/sdd/2026-10-29-creative-editor/task-1-report.md
+
+## Review follow-up: legacy formatting preservation
+
+Reviewer found that default metadata materialization could override effective legacy alignment/wrap on unrelated rows. Added a failing regression first, then matched exact ff2415c4 source `src/text_utils.py:extract_alignment_from_line`, storage migration `_migrate_v0_to_v1`, and engine `_extract_alignment` delegation. Parser consumes an optional lowercase `{wrap}` first, then one case-insensitive alignment prefix. Therefore `{right}{wrap}B` is right/false with remaining literal `{wrap}B`; `{wrap}{RIGHT}B` is right/true.
+
+Absent/null metadata formatting now migrates effective settings for every row and removes only consumed prefixes, preserving remaining source exactly. Existing metadata arrays retain precedence and their source remains unchanged. Model projections delegate to document effective-setting accessors. New nil/null, parser-order, uppercase alignment, uppercase wrap literal, existing metadata precedence, and undo regression tests pass.
+
+Follow-up full verification: Documents 34 tests passed, EditorState 54 passed, zero failures. Kit unchanged from its 141-test passing run. Exact follow-up files: PageDocument.swift, StructuralEditingTests.swift, Documents README.md, LocalPageEditorModel.swift, StructuralModelTests.swift, and this report.

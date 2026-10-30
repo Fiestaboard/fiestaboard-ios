@@ -50,6 +50,25 @@ import FiestaBoardKit
             XCTAssertNil(model.validation); XCTAssertNil(model.preview)
         }
     }
+    func testLegacyFormattingProjectionMatchesSourceOrderAndMetadataPrecedence() throws {
+        for metadata in ["", ",\"line_metadata\":null"] {
+            let model = try LocalPageEditorModel(rawDocumentData: Data("{\"type\":\"template\",\"template\":[\"{center}A\",\"{wrap}{RIGHT}B\",\"{right}{wrap}C\"]\(metadata)}".utf8), identity: DraftIdentity(deploymentID: "demo", pageID: "p"), draftStore: LocalDraftStore(directory: FileManager.default.temporaryDirectory))
+            XCTAssertEqual(model.lineAlignment(0), "center")
+            XCTAssertEqual(model.lineAlignment(1), "right"); XCTAssertTrue(model.lineWrap(1))
+            XCTAssertEqual(model.lineAlignment(2), "right"); XCTAssertFalse(model.lineWrap(2))
+            model.setLineAlignment(0, alignment: "left")
+            XCTAssertEqual(model.lineAlignment(0), "left")
+            XCTAssertEqual(model.lineAlignment(1), "right"); XCTAssertTrue(model.lineWrap(1))
+            XCTAssertEqual(model.lines, ["A", "B", "{wrap}C"])
+            model.undo()
+            XCTAssertEqual(model.lineAlignment(0), "center")
+            XCTAssertEqual(model.lines, ["{center}A", "{wrap}{RIGHT}B", "{right}{wrap}C"])
+        }
+        let covered = try LocalPageEditorModel(rawDocumentData: Data(#"{"type":"template","template":["{wrap}{center}A"],"line_metadata":[{}]}"#.utf8), identity: DraftIdentity(deploymentID: "demo", pageID: "p"), draftStore: LocalDraftStore(directory: FileManager.default.temporaryDirectory))
+        XCTAssertEqual(covered.lineAlignment(0), "left"); XCTAssertFalse(covered.lineWrap(0))
+        covered.setLineWrap(0, wrap: true)
+        XCTAssertEqual(covered.lines, ["{wrap}{center}A"])
+    }
     func testEmptyTemplateEditableButMustAddRowBeforeServerSave() throws {
         let model = try LocalPageEditorModel(rawDocumentData: Data(#"{"type":"template","template":[],"edit_protocol":"page-revision-v1","revision":"r1"}"#.utf8), identity: DraftIdentity(deploymentID: "demo", pageID: "p"), draftStore: LocalDraftStore(directory: FileManager.default.temporaryDirectory), remote: EditorRemoteActions(disabledReason: { nil }, save: { _ in throw FiestaBoardError.invalidResponse }))
         XCTAssertEqual(model.lines, [])
