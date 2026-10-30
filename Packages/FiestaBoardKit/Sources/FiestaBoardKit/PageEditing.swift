@@ -5,15 +5,40 @@ public struct PageSavePatch: Encodable, Sendable, Equatable {
     public let name: String?
     public let template: [String]?
     public let expectedRevision: String
-    public init(name: String? = nil, template: [String]? = nil, expectedRevision: String) {
-        self.name = name; self.template = template; self.expectedRevision = expectedRevision
+    public let lineMetadataData: Data?
+    public init(name: String? = nil, template: [String]? = nil, lineMetadataData: Data? = nil, expectedRevision: String) {
+        self.name = name; self.template = template; self.lineMetadataData = lineMetadataData; self.expectedRevision = expectedRevision
     }
     enum CodingKeys: String, CodingKey { case name, template, expectedRevision = "expected_revision" }
     public func validate() throws {
-        guard name != nil || template != nil, !expectedRevision.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+        guard name != nil || template != nil || lineMetadataData != nil, !expectedRevision.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               name.map({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) ?? true else {
             throw FiestaBoardError.pageWritesDisabled
         }
+        if let lineMetadataData { try RawJSONObject.validateObjectArray(lineMetadataData) }
+    }
+    /// JSONEncoder cannot preserve arbitrary JSON number spellings. Use serializedData for
+    /// metadata patches; refusing regular Encodable prevents accidental lossy transport.
+    public func encode(to encoder: any Encoder) throws {
+        guard lineMetadataData == nil else { throw FiestaBoardError.pageWritesDisabled }
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(name, forKey: .name)
+        try container.encodeIfPresent(template, forKey: .template)
+        try container.encode(expectedRevision, forKey: .expectedRevision)
+    }
+    public func serializedData() throws -> Data {
+        try validate()
+        let ordinary = PageSavePatch(name: name, template: template, expectedRevision: expectedRevision)
+        let encoded = try JSONEncoder().encode(ordinary)
+        _ = try RawJSONObject.members(encoded)
+        guard let lineMetadataData else { return encoded }
+        guard encoded.last == 125 else { throw FiestaBoardError.invalidResponse }
+        var result = Data(encoded.dropLast())
+        result.append(Data(",\"line_metadata\":".utf8))
+        result.append(lineMetadataData)
+        result.append(125)
+        _ = try RawJSONObject.members(result)
+        return result
     }
 }
 
@@ -84,6 +109,32 @@ private struct JSONObjectEnvelope: Decodable {
     init(from decoder: any Decoder) throws { _ = try decoder.container(keyedBy: Key.self) }
 }
 enum RawJSONObject {
+    static func validateObjectArray(_ data: Data) throws {
+        guard (try? JSONDecoder().decode([JSONObjectEnvelope].self, from: data)) != nil else {
+            throw FiestaBoardError.pageWritesDisabled
+        }
+        // Inspect individual object envelopes too, rejecting ambiguous duplicate keys.
+        let bytes = Array(data)
+        var objectStarts: [Int] = []; var inString = false; var escaped = false
+        var prior: UInt8?
+        for (index, byte) in bytes.enumerated() {
+            if inString {
+                if escaped { escaped = false }
+                else if byte == 92 { escaped = true }
+                else if byte == 34 { inString = false }
+                continue
+            }
+            if [9, 10, 13, 32].contains(byte) { continue }
+            if (byte == 125 || byte == 93), prior == 44 { throw FiestaBoardError.pageWritesDisabled }
+            prior = byte
+            if byte == 34 { inString = true; continue }
+            if byte == 123 { objectStarts.append(index) }
+            if byte == 125 {
+                guard let start = objectStarts.popLast() else { throw FiestaBoardError.pageWritesDisabled }
+                _ = try members(Data(bytes[start...index]))
+            }
+        }
+    }
     static func arrayCount(_ data: Data?) throws -> Int {
         guard let data, data != Data("null".utf8) else { return 0 }
         guard let count = try? JSONDecoder().decode([IgnoredJSONValue].self, from: data).count else { throw FiestaBoardError.invalidResponse }

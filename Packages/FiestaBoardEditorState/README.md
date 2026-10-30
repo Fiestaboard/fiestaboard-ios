@@ -2,7 +2,7 @@
 
 MainActor/Combine editor coordination, host tested on macOS. Depends on Documents and Kit; the document value model remains independent of networking and AppState.
 
-The app injects actions bound to one BoardStore page/session context. A server save checkpoints the captured local draft before the request, freezes editing until completion, and sends only changed name or original fixed-slot template lines with the recovered/loaded baseline revision. Acknowledgement adopts the returned document and clears undo/redo. It does not claim that the pre-request local file contains the new server revision.
+The app injects actions bound to one BoardStore page/session context. Empty local templates can be edited; server saving requires at least one row. Structural and formatting edits invalidate evaluation results and use document undo/recovery. A server save checkpoints the captured local draft before the request, freezes editing until completion, and sends only changed name, template lines, and line metadata with the recovered/loaded baseline revision. Acknowledgement adopts the returned document and clears undo/redo. It does not claim that the pre-request local file contains the new server revision.
 
 Conflict and uncertain outcomes preserve local work and block resends. An explicit scoped readback displays a comparison without advancing the baseline. Confirmed reload first preserves the current draft, then adopts the compared page and clears history. There is no automatic merge, rebase, resend, or direct board delivery. Full local JSON remains selectable for copying.
 

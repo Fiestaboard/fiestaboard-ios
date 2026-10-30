@@ -37,6 +37,36 @@ public struct DocumentEditingSession: Sendable {
         try candidate.replaceTemplateLine(at: index, with: content)
         try adopt(candidate)
     }
+    public mutating func insertTemplateLine(at index: Int, with content: String = "") throws {
+        var candidate = document
+        try candidate.insertTemplateLine(at: index, with: content)
+        try adopt(candidate)
+    }
+    public mutating func removeTemplateLine(at index: Int) throws {
+        var candidate = document
+        try candidate.removeTemplateLine(at: index)
+        try adopt(candidate)
+    }
+    public mutating func moveTemplateLine(from source: Int, to destination: Int) throws {
+        var candidate = document
+        try candidate.moveTemplateLine(from: source, to: destination)
+        try adopt(candidate)
+    }
+    public mutating func duplicateTemplateLine(at index: Int) throws {
+        var candidate = document
+        try candidate.duplicateTemplateLine(at: index)
+        try adopt(candidate)
+    }
+    public mutating func setLineAlignment(at index: Int, alignment: String) throws {
+        var candidate = document
+        try candidate.setLineAlignment(at: index, alignment: alignment)
+        try adopt(candidate)
+    }
+    public mutating func setLineWrap(at index: Int, wrap: Bool) throws {
+        var candidate = document
+        try candidate.setLineWrap(at: index, wrap: wrap)
+        try adopt(candidate)
+    }
     private mutating func adopt(_ candidate: PageDocument) throws {
         guard candidate != document else { return }
         try advanceRevision()

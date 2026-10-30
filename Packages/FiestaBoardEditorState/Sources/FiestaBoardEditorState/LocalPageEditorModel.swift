@@ -55,6 +55,29 @@ public final class LocalPageEditorModel: ObservableObject {
 
     public func setName(_ value: String) { mutate { try $0.setName(value) } }
     public func setLine(_ index: Int, text: String) { mutate { try $0.replaceTemplateLine(at: index, with: text) } }
+    public func insertLine(after index: Int?) {
+        mutate { session in
+            if let index {
+                guard let lines = session.document.editableTemplateLines, lines.indices.contains(index) else { throw DocumentError.invalidLine }
+                try session.insertTemplateLine(at: index + 1, with: "")
+            } else { try session.insertTemplateLine(at: 0, with: "") }
+        }
+    }
+    public func removeLine(_ index: Int) { mutate { try $0.removeTemplateLine(at: index) } }
+    public func moveLine(_ index: Int, to destination: Int) { mutate { try $0.moveTemplateLine(from: index, to: destination) } }
+    public func duplicateLine(_ index: Int) { mutate { try $0.duplicateTemplateLine(at: index) } }
+    public func setLineAlignment(_ index: Int, alignment: String) { mutate { try $0.setLineAlignment(at: index, alignment: alignment) } }
+    public func setLineWrap(_ index: Int, wrap: Bool) { mutate { try $0.setLineWrap(at: index, wrap: wrap) } }
+    public func lineAlignment(_ index: Int) -> String {
+        if case .array(let metadata) = session.document.root["line_metadata"], metadata.indices.contains(index),
+           case .object(let object) = metadata[index], case .string(let value) = object["alignment"] { return value }
+        return "left"
+    }
+    public func lineWrap(_ index: Int) -> Bool {
+        if case .array(let metadata) = session.document.root["line_metadata"], metadata.indices.contains(index),
+           case .object(let object) = metadata[index], case .bool(let value) = object["wrap"] { return value }
+        return false
+    }
     public func undo() { mutate { try $0.undo() } }
     public func redo() { mutate { try $0.redo() } }
     private func mutate(_ operation: (inout DocumentEditingSession) throws -> Void) {
@@ -155,7 +178,8 @@ public final class LocalPageEditorModel: ObservableObject {
     }
     public var hasServerChanges: Bool {
         session.document.root["name"] != session.baseline.root["name"] ||
-        session.document.root["template"] != session.baseline.root["template"]
+        session.document.root["template"] != session.baseline.root["template"] ||
+        session.document.root["line_metadata"] != session.baseline.root["line_metadata"]
     }
     public var serverSaveDisabledReason: String? {
         guard let remote else { return "Server saving is unavailable for this local document." }
@@ -165,15 +189,19 @@ public final class LocalPageEditorModel: ObservableObject {
             return "This document has no supported page revision protocol. Keep changes as a local draft."
         }
         guard case .object(let changes) = try? session.document.changedFields(from: session.baseline),
-              changes.keys.allSatisfy({ ["name", "template"].contains($0) }) else {
-            return "This local document includes changes outside supported name and template fields. Preserve it as a local draft; use the web editor for those changes."
+              changes.keys.allSatisfy({ ["name", "template", "line_metadata"].contains($0) }) else {
+            return "This local document includes changes outside supported name, template, and line metadata fields. Preserve it as a local draft; use the web editor for those changes."
         }
-        if session.document.root["template"] != session.baseline.root["template"] {
-            guard let lines = session.document.editableTemplateLines,
-                  let original = session.baseline.editableTemplateLines, lines.count == original.count else {
-                return "Server saving supports only the original fixed template line slots. Keep this recovered content as a local draft."
+        if session.document.root["line_metadata"] != session.baseline.root["line_metadata"] {
+            guard case .array = session.document.root["line_metadata"] else {
+                return "Only complete line metadata arrays can be saved. Keep this metadata change as a local draft."
             }
         }
+        guard let lines = session.document.editableTemplateLines,
+              session.baseline.editableTemplateLines != nil else {
+            return "This template or its metadata cannot be safely saved. Keep it as a local draft."
+        }
+        guard !lines.isEmpty else { return "Add at least one template line before saving to the server." }
         if remoteStatus == .conflict { return "The page changed on the server. Fetch it for comparison before choosing a reload." }
         if remoteStatus == .unknownOutcome { return "The save result is unknown. Fetch the server page and choose a reload before another save." }
         if remoteStatus == .comparison { return "Choose whether to reload the compared page. Local work stays preserved in the draft." }
@@ -209,7 +237,9 @@ public final class LocalPageEditorModel: ObservableObject {
         guard canSaveToServer, let remote, let revision = baselineRevision else { return }
         let name = session.document.root["name"] != session.baseline.root["name"] ? session.document.name : nil
         let template = session.document.root["template"] != session.baseline.root["template"] ? session.document.editableTemplateLines : nil
-        let patch = PageSavePatch(name: name, template: template, expectedRevision: revision)
+        let metadata = session.document.root["line_metadata"] != session.baseline.root["line_metadata"]
+            ? (try? session.document.root["line_metadata"]?.serializedData()) : nil
+        let patch = PageSavePatch(name: name, template: template, lineMetadataData: metadata, expectedRevision: revision)
         isPreparingRemoteSave = true
         guard await saveDraft() else { isPreparingRemoteSave = false; return }
         isPreparingRemoteSave = false

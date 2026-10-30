@@ -14,7 +14,7 @@ public enum DocumentError: Error, Equatable, Sendable, LocalizedError {
         case .pageMustBeObject: "A full page JSON object is required."
         case .invalidName: "Page name must contain 1 to 100 characters."
         case .unsupportedTemplate: "This template or its metadata cannot be safely edited."
-        case .invalidLine: "Edit an existing line without adding line breaks."
+        case .invalidLine: "Choose a valid template line and keep its content on one line."
         case .deletionRequiresExplicitPolicy(let key): "Removing field '\(key)' needs an explicit deletion policy."
         }
     }

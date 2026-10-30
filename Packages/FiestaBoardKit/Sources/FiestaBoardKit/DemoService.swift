@@ -177,14 +177,24 @@ private actor DemoTransport: APITransport {
                 return APIResponse(status: 200, data: try JSONSerialization.data(withJSONObject: ["id": path[2], "message": "Simulated deletion", "default_page_created": replacementID != nil, "new_page_id": replacementID as Any? ?? NSNull(), "active_page_updated": activeID != nil, "new_active_page_id": activeID as Any? ?? NSNull()]))
             }
             if request.method == .put {
-                var page = try JSONSerialization.jsonObject(with: fixture) as! [String: Any]
-                let body = try JSONSerialization.jsonObject(with: request.body!) as! [String: Any]
-                guard mode != .rejected, body["expected_revision"] as? String == page["revision"] as? String else { throw FiestaBoardError.pageConflict }
-                for field in ["name", "template"] { if let value = body[field] { page[field] = value } }
-                page["revision"] = "demo-" + UUID().uuidString
-                data[name] = try JSONSerialization.data(withJSONObject: page)
+                var page = try RawJSONObject.members(fixture)
+                let body = try RawJSONObject.members(request.body!)
+                guard mode != .rejected,
+                      let expected = body["expected_revision"], let revision = page["revision"],
+                      try JSONDecoder().decode(String.self, from: expected) == JSONDecoder().decode(String.self, from: revision) else { throw FiestaBoardError.pageConflict }
+                for field in ["name", "template", "line_metadata"] { if let value = body[field] { page[field] = value } }
+                page["revision"] = try JSONEncoder().encode("demo-" + UUID().uuidString)
+                var updated = Data([123])
+                for (index, key) in page.keys.sorted().enumerated() {
+                    if index > 0 { updated.append(44) }
+                    updated.append(try JSONEncoder().encode(key)); updated.append(58); updated.append(page[key]!)
+                }
+                updated.append(125)
+                data[name] = updated
                 if mode == .unknown || mode == .partial { throw FiestaBoardError.unknownMutationOutcome }
-                return APIResponse(status: 200, data: try JSONSerialization.data(withJSONObject: ["page": page, "incompatible_references": []]))
+                var receipt = Data("{\"page\":".utf8)
+                receipt.append(updated); receipt.append(Data(",\"incompatible_references\":[]}".utf8))
+                return APIResponse(status: 200, data: receipt)
             }
             return APIResponse(status: 200, data: fixture)
         }

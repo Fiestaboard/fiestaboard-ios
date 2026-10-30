@@ -1,6 +1,6 @@
 # FiestaBoardDocuments
 
-Swift 6 / Foundation + CryptoKit document core. It preserves the complete page JSON tree across local name and fixed-slot raw-template edits. It does not import FiestaBoardKit, communicate with a server, or publish to a board.
+Swift 6 / Foundation + CryptoKit document core. It preserves the complete page JSON tree across local name, template structure, and line formatting edits. It does not import FiestaBoardKit, communicate with a server, or publish to a board.
 
 ## Representation and edit policy
 
@@ -8,7 +8,7 @@ Swift 6 / Foundation + CryptoKit document core. It preserves the complete page J
 
 The archived backend stores template content as a string array plus `line_metadata`; the web editor translates that syntax to/from TipTap. It is not HTML. This slice exposes raw strings and leaves formatting/expression tokens untouched.
 
-Only name and single existing line-slot content can change. A line's original index is its stable identity for this slice. No insertion, deletion, reordering, splitting, merging, metadata synthesis, or rich conversion occurs. Template editing requires type `template`, string-only nonempty line array, no embedded line breaks, and absent/null metadata or a same-length array of metadata objects with supported known alignment/wrap values. Unknown metadata object fields remain intact. Ambiguous content stays read-only. Name edits remain available independently of page content mode.
+Template lines can be inserted, removed, moved, duplicated, and formatted with alignment/wrap. Structural operations move complete row records, including unknown metadata values and exact numeric spellings. Absent/null metadata stays absent/null through structure edits; explicit formatting materializes default metadata for all rows. Template editing requires type `template`, a string-only line array (including empty), no embedded line breaks, and absent/null metadata or a same-length array of metadata objects with supported known alignment/wrap values. Ambiguous content stays read-only. Name edits remain available independently of page content mode.
 
 `changedFields(from:)` returns only changed top-level fields, including explicit null values. Field deletion throws: omission and null are not interchangeable. It is an inspection/future transport primitive, not server save authorization or concurrency protection.
 

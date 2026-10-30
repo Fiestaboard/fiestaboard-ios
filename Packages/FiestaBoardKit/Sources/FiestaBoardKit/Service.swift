@@ -358,7 +358,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         let session = generation
         defer { if session == generation { savingPages.remove(id) } }
         do {
-            let response = try await response(APIRequest(.put, path: ["v1", "pages", id], body: JSONEncoder().encode(patch)))
+            let response = try await response(APIRequest(.put, path: ["v1", "pages", id], body: patch.serializedData()))
             if response.status == 412 { throw FiestaBoardError.pageConflict }
             guard response.status == 200 else { throw FiestaBoardError.unknownMutationOutcome }
             let receipt = try PageSaveReceipt(rawData: response.data, expectedPageID: id)

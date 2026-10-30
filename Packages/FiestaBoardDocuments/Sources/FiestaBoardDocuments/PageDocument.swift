@@ -22,10 +22,9 @@ public struct PageDocument: Equatable, Sendable {
         return lines
     }
 
-    /// Stable line slots are the editing identity in this slice. No insert/delete/move API.
     /// Unknown metadata fields survive; ambiguous shapes or known unsupported values block edits.
     public var editableTemplateLines: [String]? {
-        guard pageType == "template", let lines = templateLines, !lines.isEmpty,
+        guard pageType == "template", let lines = templateLines,
               !lines.contains(where: { $0.contains("\n") || $0.contains("\r") }) else { return nil }
         switch root["line_metadata"] {
         case nil, .null: return lines
@@ -54,6 +53,64 @@ public struct PageDocument: Equatable, Sendable {
         guard lines.indices.contains(index), !content.contains("\n"), !content.contains("\r") else { throw DocumentError.invalidLine }
         lines[index] = content
         root["template"] = .array(lines.map(LosslessJSON.string))
+    }
+
+    private static var defaultLineMetadata: LosslessJSON {
+        .object(["alignment": .string("left"), "wrap": .bool(false)])
+    }
+    /// Mutate complete row records so positional metadata can never drift from its source.
+    private mutating func editRows(_ edit: (inout [String], inout [LosslessJSON]?) throws -> Void) throws {
+        guard var lines = editableTemplateLines else { throw DocumentError.unsupportedTemplate }
+        var metadata: [LosslessJSON]?
+        if case .array(let values) = root["line_metadata"] { metadata = values }
+        try edit(&lines, &metadata)
+        root["template"] = .array(lines.map(LosslessJSON.string))
+        if let metadata { root["line_metadata"] = .array(metadata) }
+    }
+    public mutating func insertTemplateLine(at index: Int, with content: String = "") throws {
+        try editRows { lines, metadata in
+            guard (0...lines.count).contains(index), !content.contains("\n"), !content.contains("\r") else { throw DocumentError.invalidLine }
+            lines.insert(content, at: index)
+            metadata?.insert(Self.defaultLineMetadata, at: index)
+        }
+    }
+    public mutating func removeTemplateLine(at index: Int) throws {
+        try editRows { lines, metadata in
+            guard lines.indices.contains(index) else { throw DocumentError.invalidLine }
+            lines.remove(at: index); metadata?.remove(at: index)
+        }
+    }
+    /// Destination is the row's final index, after the move.
+    public mutating func moveTemplateLine(from source: Int, to destination: Int) throws {
+        try editRows { lines, metadata in
+            guard lines.indices.contains(source), lines.indices.contains(destination) else { throw DocumentError.invalidLine }
+            lines.insert(lines.remove(at: source), at: destination)
+            if var values = metadata { values.insert(values.remove(at: source), at: destination); metadata = values }
+        }
+    }
+    public mutating func duplicateTemplateLine(at index: Int) throws {
+        try editRows { lines, metadata in
+            guard lines.indices.contains(index) else { throw DocumentError.invalidLine }
+            lines.insert(lines[index], at: index + 1)
+            if var values = metadata { values.insert(values[index], at: index + 1); metadata = values }
+        }
+    }
+    private mutating func setLineMetadata(at index: Int, key: String, value: LosslessJSON) throws {
+        guard let lines = editableTemplateLines else { throw DocumentError.unsupportedTemplate }
+        guard lines.indices.contains(index) else { throw DocumentError.invalidLine }
+        var metadata: [LosslessJSON]
+        if case .array(let existing) = root["line_metadata"] { metadata = existing }
+        else { metadata = Array(repeating: Self.defaultLineMetadata, count: lines.count) }
+        guard case .object(var object) = metadata[index] else { throw DocumentError.unsupportedTemplate }
+        object[key] = value; metadata[index] = .object(object)
+        root["line_metadata"] = .array(metadata)
+    }
+    public mutating func setLineAlignment(at index: Int, alignment: String) throws {
+        guard ["left", "center", "right"].contains(alignment) else { throw DocumentError.invalidLine }
+        try setLineMetadata(at: index, key: "alignment", value: .string(alignment))
+    }
+    public mutating func setLineWrap(at index: Int, wrap: Bool) throws {
+        try setLineMetadata(at: index, key: "wrap", value: .bool(wrap))
     }
 
     /// A changed-field object for inspection/future transport. This does not send a request.

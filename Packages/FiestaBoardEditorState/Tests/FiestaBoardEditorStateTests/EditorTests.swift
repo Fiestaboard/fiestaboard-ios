@@ -124,7 +124,7 @@ import FiestaBoardKit
 
     func testRecoveredUnsupportedChangesCannotBeSilentlyDiscardedByPartialSave() async throws {
         let baseline = raw()
-        let changed = Data(#"{"id":"p","name":"Edited","type":"template","template":["ONE","NEW SLOT"],"revision":"r1","edit_protocol":"page-revision-v1"}"#.utf8)
+        let changed = Data(#"{"id":"p","name":"Edited","type":"template","template":["ONE","NEW SLOT"],"canvases":[{"future":true}],"revision":"r1","edit_protocol":"page-revision-v1"}"#.utf8)
         try await store.save(DraftSnapshot(identity: identity, revision: 1, baselineData: baseline, documentData: changed))
         let model = try model(EditorRemoteActions(disabledReason: { nil }, save: { _ in XCTFail("unsupported edit must stay local"); throw FiestaBoardError.pageWritesDisabled }))
         await model.checkRecovery(); model.recoverDraft()
