@@ -20,6 +20,11 @@
       "sha256": "cdf93d36f769d43bf5878c99955034550b2377ae98a542c7f22b7a032a2ac720",
       "writer": "iOS-E1",
       "date": "2026-10-31"
+    },
+    "render-cases.e1.json": {
+      "sha256": "6a81d90e6b755440ad813c43ef2e5b18a5b5666a92b5e401fb55745a560d2880",
+      "writer": "iOS-E1",
+      "date": "2026-10-31"
     }
   }
 }

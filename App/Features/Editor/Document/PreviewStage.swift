@@ -1,6 +1,7 @@
 import SwiftUI
 import FiestaBoardKit
 import FiestaBoardEditorState
+import FiestaBoardRender
 
 /// The pinned live board above the document (PLAN §3.3 "Stage", B19/B20). Header: size readout,
 /// display picker, fit note, updating/retry. Body: the board, never a text dump.
@@ -106,14 +107,15 @@ struct PreviewStage: View {
             .accessibilityIdentifier("boardStage")
             .accessibilityValue(lines.joined(separator: "\n"))
         } else {
-            StageBoard(lines: lines, rows: rows, cols: cols, isPanel: isPanel, loading: false)
+            StageBoard(lines: lines, rows: rows, cols: cols, isPanel: isPanel, loading: state.adoptedRenders == 0 && state.isUpdating)
                 .accessibilityIdentifier("boardStage")
         }
     }
 }
 
-/// Board drawing for the stage. Interim (pre-`d1-hooks-ios`): a static tile grid drawn from the
-/// markup lines. After the render module merges this becomes `BoardFrameView(animated: true)`.
+/// Board drawing for the stage: the shared renderer (`FiestaBoardRender`, iOS-R1), animated so
+/// tiles flip through the drum as the frame changes (B19). The stage's model is the page's
+/// geometry; the chosen display only sets the render's `board_id` in D1.
 struct StageBoard: View {
     var lines: [String]
     var rows: Int
@@ -121,58 +123,19 @@ struct StageBoard: View {
     var isPanel: Bool
     var loading: Bool
 
-    private struct Cell { var text: String; var color: Color? }
-    private static let colors: [String: Color] = [
-        "red": Color(red: 0xeb / 255, green: 0x40 / 255, blue: 0x34 / 255),
-        "orange": Color(red: 0xf5 / 255, green: 0xa6 / 255, blue: 0x23 / 255),
-        "yellow": Color(red: 0xf8 / 255, green: 0xe7 / 255, blue: 0x1c / 255),
-        "green": Color(red: 0x7e / 255, green: 0xd3 / 255, blue: 0x21 / 255),
-        "blue": Color(red: 0x4a / 255, green: 0x90 / 255, blue: 0xe2 / 255),
-        "violet": Color(red: 0x90 / 255, green: 0x13 / 255, blue: 0xfe / 255),
-        "purple": Color(red: 0x90 / 255, green: 0x13 / 255, blue: 0xfe / 255),
-        "white": .white, "black": .black, "filled": .white
-    ]
-    private func cells(_ line: String) -> [Cell] {
-        var result: [Cell] = []
-        var index = line.startIndex
-        while index < line.endIndex {
-            if line[index] == "{", let close = line[index...].firstIndex(of: "}"),
-               let color = Self.colors[String(line[line.index(after: index)..<close]).lowercased()] {
-                result.append(Cell(text: "", color: color)); index = line.index(after: close); continue
-            }
-            result.append(Cell(text: String(line[index]), color: nil)); index = line.index(after: index)
+    private var deviceType: String {
+        if isPanel { return "panel" }
+        switch (rows, cols) {
+        case (6, 22): return "flagship"
+        case (3, 15): return "note"
+        default: return "note_array"
         }
-        return result
     }
 
     var body: some View {
-        let grid = (0..<rows).map { row in row < lines.count ? cells(lines[row]) : [] }
-        Canvas { context, size in
-            let pad = size.width * 0.02
-            context.fill(Path(roundedRect: CGRect(origin: .zero, size: size), cornerRadius: pad), with: .color(Color(white: 0.02)))
-            let inner = CGRect(x: pad, y: pad, width: size.width - 2 * pad, height: size.height - 2 * pad)
-            let pitchX = inner.width / CGFloat(max(1, cols))
-            let pitchY = inner.height / CGFloat(max(1, rows))
-            for row in 0..<rows {
-                for col in 0..<cols {
-                    let cell = col < grid[row].count ? grid[row][col] : Cell(text: "", color: nil)
-                    let rect = CGRect(x: inner.minX + CGFloat(col) * pitchX + pitchX * 0.07, y: inner.minY + CGFloat(row) * pitchY + pitchY * 0.06,
-                                      width: pitchX * 0.86, height: pitchY * 0.88)
-                    context.fill(Path(roundedRect: rect, cornerRadius: isPanel ? 1 : rect.width * 0.12), with: .color(cell.color ?? Color(white: 0.05)))
-                    if !isPanel {
-                        context.fill(Path(CGRect(x: rect.minX, y: rect.midY - 0.5, width: rect.width, height: 1)), with: .color(.black.opacity(0.7)))
-                    }
-                    if !cell.text.isEmpty, cell.text != " " {
-                        context.draw(Text(cell.text).font(.system(size: rect.height * 0.62, weight: .medium, design: .monospaced))
-                            .foregroundStyle(Color(red: 0xf0 / 255, green: 0xf0 / 255, blue: 0xe8 / 255)), at: CGPoint(x: rect.midX, y: rect.midY))
-                    }
-                }
-            }
-        }
-        .aspectRatio(CGFloat(cols) * 0.70 / CGFloat(max(1, rows)) * 1.0, contentMode: .fit)
-        .accessibilityElement()
-        .accessibilityLabel(loading ? "Loading board" : "Board preview")
-        .accessibilityValue(lines.prefix(rows).joined(separator: "\n"))
+        BoardFrameView(frame: BoardFrame.fromLines(lines, rows: rows, cols: cols),
+                       model: DisplayModel.flap(rows: rows, cols: cols, deviceType: deviceType),
+                       size: .fit, animated: true, loading: loading)
     }
 }
 

@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 
 @MainActor
 private func selectTab(_ name: String, in app: XCUIApplication) {
@@ -68,6 +69,8 @@ final class DemoUITests: XCTestCase {
 extension DemoUITests {
     @MainActor
     func testLocalDraftEntryAndUnsavedCloseConfirmation() throws {
+        // Re-recorded for the document editor (PLAN §5.5, iOS-E1): "Save local draft and close" is gone
+        // (local checkpoints are automatic) and the dialog uses the web's words.
         let app = XCUIApplication()
         app.launchArguments = ["--demo"]
         app.launch()
@@ -75,17 +78,18 @@ extension DemoUITests {
         selectTab("Pages", in: app)
         app.staticTexts["Welcome"].tap()
         app.buttons["editLocalDraft"].tap()
-        XCTAssertTrue(app.buttons["templateCanvasRow0"].waitForExistence(timeout: 5))
-        let name = app.textFields["Name"]
+        XCTAssertTrue(app.textViews["boardDocument"].waitForExistence(timeout: 5))
+        let name = app.textFields["pageTitle"]
         XCTAssertTrue(name.exists)
         name.tap()
         name.typeText(" local UI draft")
         app.buttons["Close"].tap()
-        XCTAssertTrue(app.buttons["Discard unsaved changes"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["Discard and leave"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Discard unsaved changes?"].exists)
         dismissConfirmation(app, cancel: "Keep editing")
         XCTAssertTrue(name.exists)
         app.buttons["Close"].tap()
-        app.buttons["Discard unsaved changes"].tap()
+        app.buttons["Discard and leave"].tap()
         XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 3))
         XCTAssertFalse(app.staticTexts["Local draft"].exists)
     }
@@ -175,48 +179,47 @@ extension DemoUITests {
 extension DemoUITests {
     @MainActor
     func testPagePreviewAndConfirmedSimulatedSave() throws {
+        // Re-recorded (PLAN §5.5, iOS-E1): the manual Preview button is replaced by the pinned stage,
+        // which previews on the remembered/first display; the single Save has no confirmation sheet.
         let app = XCUIApplication()
         app.launchArguments = ["--demo"]
         app.launch()
         openPageEditor(app)
 
-        let preview = app.buttons["previewPage"]
-        scrollTo(preview, in: app)
-        XCTAssertFalse(preview.isEnabled, "Evaluation requires an explicit board choice.")
-        let boardPicker = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Board for evaluation")).firstMatch
-        scrollTo(boardPicker, in: app)
-        boardPicker.tap()
-        app.buttons["Demo Kitchen"].tap()
-        preview.tap()
-        let simulatedPreview = app.staticTexts["Demo preview · simulated, expressions are not evaluated"]
-        scrollTo(simulatedPreview, in: app)
-        XCTAssertTrue(simulatedPreview.waitForExistence(timeout: 5))
+        let stage = app.descendants(matching: .any).matching(identifier: "boardStage").firstMatch
+        XCTAssertTrue(stage.waitForExistence(timeout: 5))
+        let picker = app.buttons["evaluationBoardPicker"]
+        XCTAssertEqual(picker.value as? String, "Demo Kitchen", "The stage previews on a display")
+        let rendered = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value CONTAINS %@", "WELCOME TO FIESTA"), object: stage)
+        XCTAssertEqual(XCTWaiter.wait(for: [rendered], timeout: 5), .completed, "Preview is read from the stage")
+        XCTAssertTrue(app.staticTexts["Demo · local preview, expressions are not evaluated"].exists)
 
-        let name = app.textFields["Name"]
-        scrollTo(name, in: app, upwards: false)
+        let name = app.textFields["pageTitle"]
         name.tap()
         name.typeText(" UI save")
         app.navigationBars.buttons["Close"].tap()
         dismissConfirmation(app, cancel: "Keep editing")
+        let status = app.descendants(matching: .any).matching(identifier: "saveStatus").firstMatch
+        XCTAssertEqual(status.value as? String, "Unsaved changes")
         let save = app.buttons["savePageOnServer"]
-        scrollTo(save, in: app)
         XCTAssertTrue(save.isEnabled)
         save.tap()
-        XCTAssertTrue(app.buttons["Simulate save"].waitForExistence(timeout: 3))
-        dismissConfirmation(app)
-        XCTAssertTrue(save.isEnabled, "Cancelling confirmation must leave the edit pending.")
-        save.tap()
-        app.buttons["Simulate save"].tap()
-        let acknowledgement = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Simulated save. Page storage acknowledged.")).firstMatch
-        scrollTo(acknowledgement, in: app)
-        XCTAssertTrue(acknowledgement.waitForExistence(timeout: 5))
-        XCTAssertFalse(save.isEnabled)
-        scrollTo(app.buttons["Undo"], in: app)
-        XCTAssertFalse(app.buttons["Undo"].isEnabled)
+        let toast = app.staticTexts["editorToast"]
+        XCTAssertTrue(toast.waitForExistence(timeout: 5))
+        XCTAssertEqual(toast.label, "Page updated (simulated)")
+        XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 5), "Save returns to the page")
+        app.buttons["editLocalDraft"].tap()
+        XCTAssertTrue(app.textFields["pageTitle"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.textFields["pageTitle"].value as? String, "Welcome UI save", "The saved page reopens with the change")
+        XCTAssertEqual(status.value as? String, "Saved")
+        XCTAssertFalse(app.buttons["savePageOnServer"].isEnabled)
+        XCTAssertFalse(app.buttons["toolbar_undo"].isEnabled)
     }
 
     @MainActor
     func testPageConflictPreservesDraftUntilExplicitReload() throws {
+        // Re-recorded (PLAN §5.5, iOS-E1): the conflict shows as the "Conflict" chip plus a banner whose
+        // one primary action is "Compare and reload"; nothing reloads without explicit confirmation.
         let app = XCUIApplication()
         app.launchArguments = ["--demo"]
         app.launch()
@@ -225,41 +228,31 @@ extension DemoUITests {
         app.buttons["demoOutcomePicker"].tap()
         app.buttons["Rejected"].tap()
         openPageEditor(app)
-        let name = app.textFields["Name"]
-        scrollTo(name, in: app)
+        let name = app.textFields["pageTitle"]
         name.tap()
         name.typeText(" conflict work")
         app.navigationBars.buttons["Close"].tap()
         dismissConfirmation(app, cancel: "Keep editing")
         let save = app.buttons["savePageOnServer"]
-        scrollTo(save, in: app)
         save.tap()
-        app.buttons["Simulate save"].tap()
-        let conflict = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "The server page changed.")).firstMatch
-        scrollTo(conflict, in: app)
-        XCTAssertTrue(conflict.waitForExistence(timeout: 5))
+        let status = app.descendants(matching: .any).matching(identifier: "saveStatus").firstMatch
+        let conflict = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "Conflict"), object: status)
+        XCTAssertEqual(XCTWaiter.wait(for: [conflict], timeout: 5), .completed)
         XCTAssertFalse(save.isEnabled)
-        let fetch = app.buttons["Fetch server page for comparison"]
-        scrollTo(fetch, in: app, upwards: false)
-        fetch.tap()
-        let reload = app.buttons["Reload compared page…"]
-        scrollTo(reload, in: app)
-        XCTAssertTrue(reload.waitForExistence(timeout: 5))
-        scrollTo(name, in: app, upwards: false)
+        let compare = app.buttons["compareAndReload"]
+        XCTAssertTrue(compare.exists)
+        compare.tap()
+        let keep = app.buttons["Keep local work"]
+        XCTAssertTrue(keep.waitForExistence(timeout: 5), "Reload needs explicit confirmation")
         XCTAssertTrue((name.value as? String)?.contains("conflict work") == true)
-        scrollTo(reload, in: app)
-        reload.tap()
         dismissConfirmation(app, cancel: "Keep local work")
-        XCTAssertTrue(reload.exists)
-        reload.tap()
+        XCTAssertTrue((name.value as? String)?.contains("conflict work") == true, "Declining keeps the draft")
+        compare.tap()
         app.buttons["Preserve local draft and reload"].tap()
         let reloaded = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Reloaded the compared server page")).firstMatch
-        scrollTo(reloaded, in: app)
         XCTAssertTrue(reloaded.waitForExistence(timeout: 5))
-        scrollTo(name, in: app, upwards: false)
         XCTAssertEqual(name.value as? String, "Welcome")
-        scrollTo(app.buttons["Undo"], in: app)
-        XCTAssertFalse(app.buttons["Undo"].isEnabled)
+        XCTAssertFalse(app.buttons["toolbar_undo"].isEnabled)
     }
 
     @MainActor
@@ -268,8 +261,8 @@ extension DemoUITests {
         XCTAssertTrue(app.staticTexts["Welcome"].waitForExistence(timeout: 5))
         app.staticTexts["Welcome"].tap()
         app.buttons["editLocalDraft"].tap()
-        XCTAssertTrue(app.navigationBars["Page editor"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.textFields["Name"].exists)
+        XCTAssertTrue(app.navigationBars["Edit Page"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.textFields["pageTitle"].exists)
     }
 
     @MainActor
@@ -906,7 +899,9 @@ final class ConnectionUITests: XCTestCase {
         }
         app.buttons["pageFamilyPicker"].tap(); app.buttons["LED panel"].tap()
         app.buttons["createLibraryPage"].tap()
-        XCTAssertTrue(app.navigationBars["Page editor"].waitForExistence(timeout: 8))
+        // Re-recorded (PLAN §5.5, iOS-E1): the created page opens in the document editor.
+        XCTAssertTrue(app.navigationBars["Edit Page"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.textViews["boardDocument"].exists)
         app.buttons["Close"].tap()
         XCTAssertTrue(app.staticTexts["Native LED test"].waitForExistence(timeout: 4))
         app.staticTexts["Native LED test"].tap()
@@ -923,50 +918,44 @@ final class ConnectionUITests: XCTestCase {
 @MainActor final class CreativeEditorUITests: XCTestCase {
     override func setUp() { super.setUp(); continueAfterFailure = false }
     func testRichTokenSourceRoundTripAndStructuralUndo() {
+        // Re-recorded (PLAN §5.5, iOS-E1): one document surface replaces the per-row editor;
+        // "Plain" replaces "Source"; tokens are typed, undo is the session's (one step per burst).
         let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
         selectTab("Pages", in: app)
         app.staticTexts["Welcome"].tap(); app.buttons["editLocalDraft"].tap()
-        XCTAssertTrue(app.buttons["templateCanvasRow0"].waitForExistence(timeout: 8))
-        reveal(app.buttons["addTemplateRow"], app); app.buttons["addTemplateRow"].tap()
-        let row = app.textViews["templateRowText"]
-        reveal(row, app); XCTAssertTrue(row.waitForExistence(timeout: 5)); row.tap(); row.typeText("NATIVE ")
+        let document = app.textViews["boardDocument"]
+        XCTAssertTrue(document.waitForExistence(timeout: 8))
+        func row(_ n: Int) -> String { ((document.value as? String) ?? "").components(separatedBy: "\n")[n - 1] }
+        let original = row(1)
+        app.buttons["Plain"].tap()
+        let gutter = app.staticTexts["documentRow_1"]
+        document.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 2, dy: gutter.frame.midY - document.frame.minY)).tap()
+        document.typeText("NATIVE {{weather.temperature}}")
         app.buttons["editorHideKeyboard"].tap()
-        reveal(app.buttons["insertTemplateToken"], app); app.buttons["insertTemplateToken"].tap()
-        app.buttons["Variable"].tap()
-        XCTAssertTrue(app.textFields["tokenSource"].waitForExistence(timeout: 4) || app.textViews["tokenSource"].exists)
-        app.navigationBars.buttons["Insert"].tap()
-        XCTAssertTrue(row.waitForExistence(timeout: 4))
-        XCTAssertTrue(NSPredicate(format: "value == %@", "NATIVE {{weather.temperature}}").evaluate(with: row) ||
-                      XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", "NATIVE {{weather.temperature}}"), object: row)], timeout: 4) == .completed)
-        reveal(app.buttons["Source"], app); app.buttons["Source"].tap()
-        XCTAssertEqual(row.value as? String, "NATIVE {{weather.temperature}}")
+        XCTAssertEqual(row(1), "NATIVE {{weather.temperature}}" + original)
         app.buttons["Rich"].tap()
-        XCTAssertEqual(row.value as? String, "NATIVE {{weather.temperature}}")
-        app.navigationBars.buttons["Undo"].tap()
-        XCTAssertEqual(row.value as? String, "NATIVE ")
-        app.navigationBars.buttons["Redo"].tap()
-        XCTAssertEqual(row.value as? String, "NATIVE {{weather.temperature}}")
-        reveal(app.buttons["templateRowActions"], app); app.buttons["templateRowActions"].tap()
-        app.buttons["Duplicate row"].tap()
-        reveal(app.buttons["Source"], app); app.buttons["Source"].tap()
-        XCTAssertEqual(app.textViews["templateRowText"].value as? String, "NATIVE {{weather.temperature}}", "Changing row must not replay the last insertion")
-        app.buttons["Rich"].tap()
-        let richRow = app.textViews["templateRowText"]
-        richRow.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 160, dy: 26)).tap()
+        XCTAssertEqual(row(1), "NATIVE {{weather.temperature}}" + original, "Rich keeps the exact source")
+        app.buttons["toolbar_undo"].tap()
+        XCTAssertEqual(row(1), original, "One undo removes the typing burst")
+        app.buttons["toolbar_redo"].tap()
+        XCTAssertEqual(row(1), "NATIVE {{weather.temperature}}" + original)
+        // Tap the chip (just after "NATIVE ") to edit its source.
+        let charWidth = ("M" as NSString).size(withAttributes: [.font: UIFont.monospacedSystemFont(ofSize: UIFont.preferredFont(forTextStyle: .body).pointSize, weight: .regular)]).width
+        document.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 9 + 7 * charWidth + 24, dy: gutter.frame.midY - document.frame.minY)).tap()
         let tokenSource = app.textFields["tokenSource"]
         XCTAssertTrue(tokenSource.waitForExistence(timeout: 4), "Tapping a chip opens its editor")
-        // Applying an unchanged chip must replace it, never insert a second copy.
         XCTAssertEqual(tokenSource.value as? String, "{{weather.temperature}}")
         XCTAssertTrue(app.navigationBars.buttons["Insert"].isEnabled)
+        // Applying an unchanged chip must replace it, never insert a second copy.
         app.navigationBars.buttons["Insert"].tap()
-        XCTAssertEqual(app.textViews["templateRowText"].value as? String, "NATIVE {{weather.temperature}}")
-        reveal(app.buttons["insertTemplateToken"], app); app.buttons["insertTemplateToken"].tap()
-        app.buttons["Flexible space"].tap()
-        XCTAssertEqual(app.textViews["templateRowText"].value as? String, "NATIVE {{weather.temperature}}{{fill_space}}", "An unchanged chip replacement must still advance the caret")
-        app.navigationBars.buttons["Close"].tap(); app.buttons["Discard unsaved changes"].tap()
+        XCTAssertEqual(row(1), "NATIVE {{weather.temperature}}" + original)
+        app.navigationBars.buttons["Close"].tap(); app.buttons["Discard and leave"].tap()
         XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 5))
     }
     func testFreshSplitFlapPaletteAndFormattingSave() {
+        // Re-recorded (PLAN §5.5, iOS-E1): the new page opens as six empty rows; the colour token is
+        // typed (flap pages uppercase typed text, never token names); Align/Wrap are toolbar buttons;
+        // the single Save replaces the confirmation sheet.
         let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
         selectTab("Pages", in: app)
         app.buttons["newLibraryPage"].tap()
@@ -974,23 +963,23 @@ final class ConnectionUITests: XCTestCase {
         XCTAssertTrue(name.waitForExistence(timeout: 3)); name.tap(); name.typeText("Creative flap test")
         name.typeText("\n")
         app.buttons["createLibraryPage"].tap()
-        let first = app.buttons["addFirstTemplateRow"]
-        XCTAssertTrue(first.waitForExistence(timeout: 8)); first.tap()
-        let row = app.textViews["templateRowText"]
-        reveal(row, app); row.tap(); row.typeText("HELLO")
+        let document = app.textViews["boardDocument"]
+        XCTAssertTrue(document.waitForExistence(timeout: 8))
+        let gutter = app.staticTexts["documentRow_1"]
+        document.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: document.frame.width - 12, dy: gutter.frame.midY - document.frame.minY)).tap()
+        document.typeText("hello{{red}}")
         app.buttons["editorHideKeyboard"].tap()
-        reveal(app.buttons["insertTemplateToken"], app); app.buttons["insertTemplateToken"].tap()
-        app.buttons["Red"].tap()
-        reveal(app.buttons["Source"], app); app.buttons["Source"].tap()
-        XCTAssertEqual(row.value as? String, "HELLO{{red}}")
-        reveal(app.buttons["Right"], app); app.buttons["Right"].tap()
-        let wrap = app.switches["Wrap text"]
-        reveal(wrap, app); wrap.tap()
+        app.buttons["Plain"].tap()
+        XCTAssertEqual(((document.value as? String) ?? "").components(separatedBy: "\n").first, "HELLO{{red}}")
+        app.buttons["toolbar_alignRight"].tap()
+        XCTAssertTrue(app.buttons["toolbar_alignRight"].isSelected)
+        app.buttons["toolbar_wrap"].tap()
+        XCTAssertTrue(app.buttons["toolbar_wrap"].isSelected)
         let save = app.buttons["savePageOnServer"]
-        reveal(save, app); XCTAssertTrue(save.isEnabled); save.tap()
-        app.buttons["Simulate save"].tap()
-        let acknowledged = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Page storage acknowledged")).firstMatch
-        reveal(acknowledged, app); XCTAssertTrue(acknowledged.waitForExistence(timeout: 8))
+        XCTAssertTrue(save.isEnabled); save.tap()
+        let toast = app.staticTexts["editorToast"]
+        XCTAssertTrue(toast.waitForExistence(timeout: 8))
+        XCTAssertEqual(toast.label, "Page updated (simulated)")
     }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
         for _ in 0..<12 {
@@ -1036,6 +1025,7 @@ extension DemoUITests {
 
     @MainActor
     func testEditorSheetAndSelectionSurviveWindowAdaptation() throws {
+        // Re-recorded (PLAN §5.5, iOS-E1): the title field and the dialog's words changed.
         let app = XCUIApplication()
         app.launchArguments = ["--demo"]
         app.launch()
@@ -1043,7 +1033,7 @@ extension DemoUITests {
         selectTab("Pages", in: app)
         app.staticTexts["Welcome"].tap()
         app.buttons["editLocalDraft"].tap()
-        let name = app.textFields["Name"]
+        let name = app.textFields["pageTitle"]
         XCTAssertTrue(name.waitForExistence(timeout: 5))
         name.tap(); name.typeText(" resize")
         let before = name.value as? String
@@ -1054,8 +1044,8 @@ extension DemoUITests {
         XCUIDevice.shared.orientation = .portrait
         XCTAssertEqual(name.value as? String, before)
         app.buttons["Close"].tap()
-        XCTAssertTrue(app.buttons["Discard unsaved changes"].waitForExistence(timeout: 3))
-        app.buttons["Discard unsaved changes"].tap()
+        XCTAssertTrue(app.buttons["Discard and leave"].waitForExistence(timeout: 3))
+        app.buttons["Discard and leave"].tap()
         XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 3))
     }
 

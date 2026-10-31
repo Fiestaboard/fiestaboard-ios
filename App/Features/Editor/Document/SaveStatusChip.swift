@@ -8,7 +8,7 @@ struct SaveStatusChip: View {
     var body: some View {
         HStack(spacing: 4) {
             Circle().fill(tint).frame(width: 7, height: 7)
-            Text(status.label).font(.caption.weight(.medium)).lineLimit(1)
+            Text(status.label).font(.caption.weight(.medium)).lineLimit(1).fixedSize()
         }
         .padding(.horizontal, 8).padding(.vertical, 4)
         .background(tint.opacity(0.14), in: Capsule())

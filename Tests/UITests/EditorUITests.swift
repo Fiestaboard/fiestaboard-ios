@@ -44,7 +44,9 @@ import XCTest
     }
     private func stageLines(_ app: XCUIApplication) -> [String] {
         ((app.descendants(matching: .any).matching(identifier: "boardStage").firstMatch.value as? String) ?? "")
-            .components(separatedBy: "\n")
+            .components(separatedBy: "\n").map { line in
+                var line = line; while line.last == " " { line.removeLast() }; return line
+            }
     }
     private func waitForStage(_ app: XCUIApplication, timeout: TimeInterval = 3, _ condition: ([String]) -> Bool) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
@@ -72,9 +74,12 @@ import XCTest
         let stage = app.descendants(matching: .any).matching(identifier: "boardStage").firstMatch
         XCTAssertTrue(stage.exists)
         XCTAssertGreaterThan(stage.frame.width * stage.frame.height, title.frame.width * title.frame.height)
-        let aboveStage = app.staticTexts.allElementsBoundByIndex.filter { $0.exists && $0.frame.maxY <= stage.frame.minY && $0.frame.minY > app.navigationBars.firstMatch.frame.maxY }
-        let allowed: Set<String> = ["boardSizeReadout", "boardFitNote", "previewUpdating"]
-        XCTAssertTrue(aboveStage.allSatisfy { allowed.contains($0.identifier) }, "Only the stage header sits between the title and the board: \(aboveStage.map(\.identifier))")
+        // Text between the title and the board may only belong to the stage header row
+        // (size readout, display picker label, fit note, updating) — no captions or disclaimers.
+        let header = app.staticTexts["boardSizeReadout"].frame
+        let aboveStage = app.staticTexts.allElementsBoundByIndex.filter { $0.exists && $0.frame.maxY <= stage.frame.minY && $0.frame.minY > title.frame.maxY }
+        let strays = aboveStage.filter { $0.frame.midY < header.minY - 4 || $0.frame.midY > header.maxY + 4 }
+        XCTAssertTrue(strays.isEmpty, "Only the stage header sits between the title and the board: \(strays.map(\.label))")
         attach(app, "D1-B12-new-page")
         attach(app, "D1-B33-editor")
         attach(app, "D1-B20-stage-header")
@@ -144,8 +149,74 @@ import XCTest
         // B25: one Save, one status word, toast, back to the page.
         app.buttons["editorHideKeyboard"].tap()
         app.buttons["savePageOnServer"].tap()
-        XCTAssertTrue(app.staticTexts["Page updated (simulated)"].waitForExistence(timeout: 5))
+        let toast = app.staticTexts["editorToast"]
+        XCTAssertTrue(toast.waitForExistence(timeout: 5), app.debugDescription)
+        XCTAssertEqual(toast.label, "Page updated (simulated)")
         attach(app, "D1-B25-save-chip")
         XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 5), "Back to the page after saving")
+    }
+
+    // MARK: Against the fixture server (`FIXTURE_PORT=18443 python3 Tests/UITests/fixture_server.py`)
+
+    private var fixturePort: Int { Int(ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "") ?? 18443 }
+    private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
+        for _ in 0..<8 where !(element.exists && element.isHittable) { app.swipeUp() }
+        for _ in 0..<8 where !(element.exists && element.isHittable) { app.swipeDown() }
+    }
+    /// Connect and sign in to the mock fixture's `/board-<scenario>-<id>/` prefix (iOS-R1 hook).
+    private func connectToFixture(_ app: XCUIApplication, scenario: String) throws {
+        var request = URLRequest(url: URL(string: "http://127.0.0.1:\(fixturePort)/ready")!); request.timeoutInterval = 3
+        let semaphore = DispatchSemaphore(value: 0); var ready = false
+        URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
+        semaphore.wait()
+        try XCTSkipUnless(ready, "Start the fixture: FIXTURE_PORT=\(fixturePort) python3 Tests/UITests/fixture_server.py")
+        app.launchArguments = []; app.launch()
+        let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
+        let address = app.textFields["connectionAddress"]
+        XCTAssertTrue(app.buttons["exploreDemo"].waitForExistence(timeout: 8))
+        reveal(address, app); address.tap(); address.typeText("http://127.0.0.1:\(fixturePort)/" + alias)
+        let name = app.textFields["Server name (optional)"]
+        reveal(name, app); name.tap(); name.typeText(alias + "\n")
+        let localHTTP = app.switches["connectionLocalHTTP"]
+        reveal(localHTTP, app); localHTTP.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+        let connect = app.buttons["connectionConnect"]
+        reveal(connect, app); connect.tap()
+        let username = app.textFields["Username"]
+        XCTAssertTrue(username.waitForExistence(timeout: 8), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
+        reveal(username, app); username.tap(); username.typeText("fixture_admin")
+        let password = app.secureTextFields["connectionPassword"]
+        reveal(password, app); password.tap(); password.typeText("fixture-password")
+        let signIn = app.buttons["connectionSignIn"]
+        reveal(signIn, app); signIn.tap()
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
+    }
+
+    /// B19 through the fixture's `POST /templates/render` (table + toy fallback): typing in the
+    /// Lobby page reaches the board via a real request/response, within 750 ms of the last key.
+    func testTypingReachesTheBoardThroughFixtureRender() throws {
+        let app = XCUIApplication()
+        try connectToFixture(app, scenario: "manual")
+        openPages(app)
+        let row = app.staticTexts["Lobby"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
+        app.buttons["editLocalDraft"].tap()
+        let document = app.textViews["boardDocument"]
+        XCTAssertTrue(document.waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertEqual(app.buttons["evaluationBoardPicker"].value as? String, "Kitchen")
+        XCTAssertTrue(waitForStage(app, timeout: 5) { $0.first == "WELCOME TO THE LOBBY" }, "First server frame: \(stageLines(app))")
+        XCTAssertEqual(app.staticTexts["boardSizeReadout"].label, "Board size 12 by 29")
+        placeCaret(row: 3, app, document)
+        document.typeText("HELLO")
+        let lastKeystroke = Date()
+        let reached = waitForStage(app, timeout: 2) { $0.count > 2 && $0[2] == "HELLO" }
+        let elapsed = Date().timeIntervalSince(lastKeystroke)
+        let note = XCTAttachment(string: String(format: "Fixture render: stage reached HELLO %.0f ms after the last keystroke", elapsed * 1000))
+        note.name = "B19 latency (fixture render)"; note.lifetime = .keepAlways; add(note)
+        XCTAssertTrue(reached, "\(stageLines(app))")
+        XCTAssertLessThanOrEqual(elapsed, 0.75)
+        XCTAssertFalse(app.staticTexts["Demo · local preview, expressions are not evaluated"].exists, "This frame is the fixture server's render")
+        attach(app, "D1-B19-fixture-render")
+        app.buttons["editorHideKeyboard"].tap()
+        app.navigationBars.buttons["Close"].tap(); app.buttons["Discard and leave"].tap()
     }
 }

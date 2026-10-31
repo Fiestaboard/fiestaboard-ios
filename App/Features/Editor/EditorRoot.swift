@@ -51,12 +51,12 @@ struct EditorRoot: View {
             if model.saveStatus.needsAttention { attentionBanner }
             TemplateWorkspaceView(model: model, buffer: buffer, pipeline: pipeline,
                                   isTextInputActive: $isTextInputActive, rich: $rich)
-            if let message = model.message {
+            if let message = model.message, !Self.isRoutineMessage(message) {
                 Text(message).font(.caption).foregroundStyle(.secondary).lineLimit(3)
                     .accessibilityIdentifier("editorMessage")
             }
         }
-        .padding(.horizontal, 16).padding(.top, 4).padding(.bottom, 8)
+        .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 8)
         .frame(maxWidth: 900, maxHeight: .infinity, alignment: .top)
         .frame(maxWidth: .infinity)
         .background(Color(uiColor: .systemBackground))
@@ -93,6 +93,11 @@ struct EditorRoot: View {
         .onChange(of: scenePhase) { _, phase in
             if phase != .active { pipeline.flush(); Task { await model.checkpointNow() } }
         }
+    }
+
+    /// Automatic checkpoints and undo echoes are not news; errors, conflicts and reloads are.
+    static func isRoutineMessage(_ message: String) -> Bool {
+        message.hasPrefix("Local draft saved") || message.hasPrefix("Undid") || message.hasPrefix("Redid")
     }
 
     // MARK: Title
