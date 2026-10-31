@@ -307,6 +307,9 @@ import FiestaBoardEditorState
                     let value: LosslessJSON = numeric && !named.contains(text) ? FlexibleNumber.draft(text) : .string(text)
                     model.setFlexible(location, key: key, value: value)
                 }), axis: .vertical)
+                // The containing Form row can be taller than the viewport when styles
+                // expand. Preserve the field's intrinsic lines instead of compressing them.
+                .fixedSize(horizontal: false, vertical: true)
                 .textInputAutocapitalization(.never).autocorrectionDisabled()
                 .focused($fieldFocus, equals: fieldID(location, key))
                 .accessibilityLabel(title).accessibilityIdentifier("flexibleField_\(key)")
