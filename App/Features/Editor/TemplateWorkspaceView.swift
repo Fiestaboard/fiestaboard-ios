@@ -41,7 +41,7 @@ struct TemplateWorkspaceView: View {
                               onEdited: { pipeline.edited() }, onCommitNow: { commitNow() },
                               onFocusChange: { isTextInputActive = $0 }, onUndo: undo, onRedo: redo,
                               onEditToken: { source, range in commitNow(); tokenEditing = TokenEditing(source: source, selection: range) })
-                .frame(minHeight: 150)
+                .frame(minHeight: 80)
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(overflow ? Color.orange : Color(uiColor: .separator), lineWidth: overflow ? 2 : 0.5))
             HStack(alignment: .firstTextBaseline) {
                 Text(EditorStrings.lineCounter(count, limit: boardRows))

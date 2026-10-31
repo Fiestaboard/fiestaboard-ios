@@ -164,16 +164,20 @@ struct EditorRoot: View {
     // MARK: Banners
 
     private func recoveryBanner(_ notice: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(notice).font(.footnote)
-            HStack {
-                if model.canRecover { Button("Recover local draft") { pipeline.flush(); model.recoverDraft() } }
-                if model.hasCorruptDraft { Button("Preserve damaged draft separately") { Task { await model.preserveCorruptDraft() } } }
-                else { Button("Keep fetched page") { model.dismissRecovery() } }
-            }.font(.footnote.weight(.semibold))
+        HStack(spacing: 8) {
+            Image(systemName: "clock.arrow.circlepath").foregroundStyle(.orange)
+            Text(model.hasCorruptDraft ? "Damaged local draft found" : "Local draft available")
+                .font(.footnote.weight(.semibold)).lineLimit(1)
+                .accessibilityHint(notice)
+            Spacer(minLength: 4)
+            if model.canRecover { Button("Recover local draft") { pipeline.flush(); model.recoverDraft() } }
+            if model.hasCorruptDraft { Button("Preserve damaged draft separately") { Task { await model.preserveCorruptDraft() } } }
+            else { Button("Keep fetched page") { model.dismissRecovery() } }
         }
-        .padding(10).frame(maxWidth: .infinity, alignment: .leading)
+        .font(.footnote).buttonStyle(.borderless)
+        .padding(.horizontal, 10).padding(.vertical, 6)
         .background(Color.yellow.opacity(0.15), in: RoundedRectangle(cornerRadius: 10))
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("recoveryBanner")
     }
 
@@ -227,8 +231,9 @@ struct EditorRoot: View {
         Task {
             await model.saveToServer()
             guard model.remoteStatus == .idle, !model.hasServerChanges else { return }
-            withAnimation { toast = model.isSimulated ? EditorStrings.pageUpdatedSimulated : EditorStrings.pageUpdated }
-            try? await Task.sleep(for: .milliseconds(1200))
+            toast = model.isSimulated ? EditorStrings.pageUpdatedSimulated : EditorStrings.pageUpdated
+            UIAccessibility.post(notification: .announcement, argument: toast)
+            try? await Task.sleep(for: .milliseconds(1500))
             leave()
         }
     }

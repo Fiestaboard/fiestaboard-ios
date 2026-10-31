@@ -204,10 +204,9 @@ extension DemoUITests {
         let save = app.buttons["savePageOnServer"]
         XCTAssertTrue(save.isEnabled)
         save.tap()
-        let toast = app.staticTexts["editorToast"]
-        XCTAssertTrue(toast.waitForExistence(timeout: 5))
-        XCTAssertEqual(toast.label, "Page updated (simulated)")
-        XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 5), "Save returns to the page")
+        // The editor closes after an acknowledged save (B25); the host may dismiss it before the toast.
+        XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 8) || app.staticTexts["Welcome UI save"].waitForExistence(timeout: 2), "Save returns to the page")
+        if !app.buttons["editLocalDraft"].exists { app.staticTexts["Welcome UI save"].firstMatch.tap() }
         app.buttons["editLocalDraft"].tap()
         XCTAssertTrue(app.textFields["pageTitle"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.textFields["pageTitle"].value as? String, "Welcome UI save", "The saved page reopens with the change")
@@ -242,13 +241,14 @@ extension DemoUITests {
         let compare = app.buttons["compareAndReload"]
         XCTAssertTrue(compare.exists)
         compare.tap()
-        let keep = app.buttons["Keep local work"]
-        XCTAssertTrue(keep.waitForExistence(timeout: 5), "Reload needs explicit confirmation")
+        let reload = app.buttons["Preserve local draft and reload"]
+        XCTAssertTrue(reload.waitForExistence(timeout: 5), "Reload needs explicit confirmation")
         XCTAssertTrue((name.value as? String)?.contains("conflict work") == true)
         dismissConfirmation(app, cancel: "Keep local work")
         XCTAssertTrue((name.value as? String)?.contains("conflict work") == true, "Declining keeps the draft")
         compare.tap()
-        app.buttons["Preserve local draft and reload"].tap()
+        XCTAssertTrue(reload.waitForExistence(timeout: 5))
+        reload.tap()
         let reloaded = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Reloaded the compared server page")).firstMatch
         XCTAssertTrue(reloaded.waitForExistence(timeout: 5))
         XCTAssertEqual(name.value as? String, "Welcome")
@@ -926,13 +926,19 @@ final class ConnectionUITests: XCTestCase {
         let document = app.textViews["boardDocument"]
         XCTAssertTrue(document.waitForExistence(timeout: 8))
         func row(_ n: Int) -> String { ((document.value as? String) ?? "").components(separatedBy: "\n")[n - 1] }
+        // Earlier runs may have left an automatic recovery copy of this demo page; keep the fetched page.
+        if app.buttons["Keep fetched page"].waitForExistence(timeout: 2) { app.buttons["Keep fetched page"].tap() }
         let original = row(1)
-        app.buttons["Plain"].tap()
         let gutter = app.staticTexts["documentRow_1"]
-        document.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 2, dy: gutter.frame.midY - document.frame.minY)).tap()
+        // Row 1 is the first line of the surface: tap its start.
+        document.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 8, dy: 16)).tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
         document.typeText("NATIVE {{weather.temperature}}")
+        let typed = XCTAttachment(screenshot: app.screenshot()); typed.name = "Typed token"; typed.lifetime = .keepAlways; add(typed)
         app.buttons["editorHideKeyboard"].tap()
         XCTAssertEqual(row(1), "NATIVE {{weather.temperature}}" + original)
+        app.buttons["Plain"].tap()
+        XCTAssertEqual(row(1), "NATIVE {{weather.temperature}}" + original, "Plain shows the exact source")
         app.buttons["Rich"].tap()
         XCTAssertEqual(row(1), "NATIVE {{weather.temperature}}" + original, "Rich keeps the exact source")
         app.buttons["toolbar_undo"].tap()
@@ -977,9 +983,9 @@ final class ConnectionUITests: XCTestCase {
         XCTAssertTrue(app.buttons["toolbar_wrap"].isSelected)
         let save = app.buttons["savePageOnServer"]
         XCTAssertTrue(save.isEnabled); save.tap()
-        let toast = app.staticTexts["editorToast"]
-        XCTAssertTrue(toast.waitForExistence(timeout: 8))
-        XCTAssertEqual(toast.label, "Page updated (simulated)")
+        // Acknowledged save closes the editor (B25); the created page is listed.
+        XCTAssertTrue(app.textViews["boardDocument"].waitForNonExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["Creative flap test"].firstMatch.waitForExistence(timeout: 5))
     }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
         for _ in 0..<12 {

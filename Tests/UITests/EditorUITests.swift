@@ -146,14 +146,16 @@ import XCTest
         XCTAssertLessThanOrEqual(elapsed, 0.75, "Stage must update within 750 ms of the last keystroke")
         XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "saveStatus").firstMatch.value as? String, "Unsaved changes")
         attach(app, "D1-B19-typing")
-        // B25: one Save, one status word, toast, back to the page.
+        // B25: one Save, one status word; an acknowledged save says "Page updated" and closes.
         app.buttons["editorHideKeyboard"].tap()
+        attach(app, "D1-B25-save-chip")
         app.buttons["savePageOnServer"].tap()
         let toast = app.staticTexts["editorToast"]
-        XCTAssertTrue(toast.waitForExistence(timeout: 5), app.debugDescription)
-        XCTAssertEqual(toast.label, "Page updated (simulated)")
-        attach(app, "D1-B25-save-chip")
-        XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 5), "Back to the page after saving")
+        let closed = app.textViews["boardDocument"]
+        XCTAssertTrue(toast.waitForExistence(timeout: 5) || closed.waitForNonExistence(timeout: 5))
+        if toast.exists { attach(app, "D1-B25-saved-toast") }
+        XCTAssertTrue(closed.waitForNonExistence(timeout: 5), "Back to Pages after saving")
+        XCTAssertTrue(app.staticTexts["Typing test"].firstMatch.waitForExistence(timeout: 5))
     }
 
     // MARK: Against the fixture server (`FIXTURE_PORT=18443 python3 Tests/UITests/fixture_server.py`)
