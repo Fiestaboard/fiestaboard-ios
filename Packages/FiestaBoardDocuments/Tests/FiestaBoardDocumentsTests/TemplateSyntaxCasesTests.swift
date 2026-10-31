@@ -59,8 +59,8 @@ final class TemplateSyntaxCasesTests: XCTestCase {
         let provenance = repoRoot.appendingPathComponent("Fixtures/shared/source-provenance.json")
         let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: provenance)) as? [String: Any])
         let digest = SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
-        let recorded = (object["template-syntax-cases.json"] as? [String: Any])?["sha256"] as? String
-            ?? object["template-syntax-cases.json"] as? String
+        let files = object["files"] as? [String: Any] ?? object
+        let recorded = (files["template-syntax-cases.json"] as? [String: Any])?["sha256"] as? String
         XCTAssertEqual(recorded, digest)
     }
 

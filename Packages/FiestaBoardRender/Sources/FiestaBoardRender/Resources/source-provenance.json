@@ -1,0 +1,30 @@
+{
+  "source": "fiestaboard-appletv",
+  "commit": "a3df9c9",
+  "package": "iOS-R1",
+  "date": "2026-10-31",
+  "license": "MIT (ThirdPartyNotices/FiestaBoardTV-MIT.txt); SplineSansMono OFL (ThirdPartyNotices/SplineSansMono-OFL.txt)",
+  "note": "board-spec.json has no upstream outside the TV apps (tvOS bytes). led-fonts.json and markup_icons.json are byte-identical to FiestaBoard@v10.3.2 src/fiestaui/led-fonts.json and src/markup_icons.json.",
+  "files": {
+    "board-spec.json": {
+      "from": "Spec/board-spec.json",
+      "sha256": "1a81fcc1cdc12192466a45208cd9ee175d0fb93082a026e5bff1291a5ff676e9"
+    },
+    "led-fonts.json": {
+      "from": "Resources/Matrix/led-fonts.json",
+      "sha256": "975e1ee0eb0eea1e0138d1eeb3217eb3f4d9b610c55cfd66d6a7f65ecb02446d",
+      "fiestaboard_v10.3.2": "src/fiestaui/led-fonts.json",
+      "fiestaboard_sha256": "975e1ee0eb0eea1e0138d1eeb3217eb3f4d9b610c55cfd66d6a7f65ecb02446d"
+    },
+    "markup_icons.json": {
+      "from": "Resources/Matrix/markup_icons.json",
+      "sha256": "fc7eb7cabc90ff6c295e197a8609d74bd5ddbb4832bd7a0c06ac973f6aa6e712",
+      "fiestaboard_v10.3.2": "src/markup_icons.json",
+      "fiestaboard_sha256": "fc7eb7cabc90ff6c295e197a8609d74bd5ddbb4832bd7a0c06ac973f6aa6e712"
+    },
+    "SplineSansMono.ttf": {
+      "from": "Resources/SplineSansMono.ttf",
+      "sha256": "e20c1df32aa2f886e828cfcc81ca5c405d3f3b160990f6b892923e2e449bf525"
+    }
+  }
+}

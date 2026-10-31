@@ -1,4 +1,4 @@
-// Reused from fiestaboard-appletv/Sources/Core/BoardTables.swift.
+// Vendored from fiestaboard-appletv@a3df9c9 Sources/Core/BoardTables.swift (moved from FiestaBoardAppState).
 // Copyright (c) 2026 Fiestaboard contributors. MIT: ThirdPartyNotices/FiestaBoardTV-MIT.txt.
 import Foundation
 

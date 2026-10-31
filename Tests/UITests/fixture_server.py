@@ -7,7 +7,10 @@ server proves native UI/transport composition, not backend compatibility.
 """
 import base64
 import copy
+import importlib
 import json
+import os
+import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Lock
@@ -37,6 +40,17 @@ FLEXIBLE_PAGE = {
         {'id': 'retained', 'kind': 'future-art', 'payload': {'large': 900719925474099312345678}},
     ],
 }
+# Optional route modules (PLAN §4.1): each exposes
+# handle(prefix, route, method, body, query, state) -> (status, body) | None and
+# is consulted, in this order, after authentication for every prefix.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+HOOKS = []
+for _name in ('fixture_boards', 'fixture_render', 'fixture_catalog'):
+    try:
+        HOOKS.append(importlib.import_module(_name))
+    except ImportError:
+        pass
+PREFIXES = ('/signin-', '/setup-', '/mixed-', '/flexible-', '/board-')
 GRID_FIELDS = {'device_type', 'notes_wide', 'notes_tall', 'grid_rows', 'grid_cols', 'display_type', 'rows', 'template', 'line_metadata', 'canvases'}
 
 
@@ -54,11 +68,18 @@ class Handler(BaseHTTPRequestHandler):
     def do_PUT(self):
         self.handle_request('PUT')
 
+    def do_DELETE(self):
+        self.handle_request('DELETE')
+
+    def do_PATCH(self):
+        self.handle_request('PATCH')
+
     def handle_request(self, method):
         if self.path == '/ready':
             return self.reply(200, {'fixture': 'native-onboarding'})
-        parts = self.path.split('/api/', 1)
-        if len(parts) != 2 or not parts[0].startswith(('/signin-', '/setup-', '/mixed-', '/flexible-')):
+        path, _, query = self.path.partition('?')
+        parts = path.split('/api/', 1)
+        if len(parts) != 2 or not parts[0].startswith(PREFIXES):
             return self.reply(404, {})
         prefix, route = parts
         with LOCK:
@@ -67,7 +88,7 @@ class Handler(BaseHTTPRequestHandler):
             session = f'fiestaboard_session=fixture-{prefix[1:]}'
             authenticated = session in self.headers.get('Cookie', '') and session in state['sessions']
             body = {}
-            if method in ('POST', 'PUT'):
+            if method in ('POST', 'PUT', 'PATCH'):
                 try:
                     body = json.loads(self.rfile.read(int(self.headers.get('Content-Length', '0'))))
                 except (ValueError, json.JSONDecodeError):
@@ -101,7 +122,13 @@ class Handler(BaseHTTPRequestHandler):
                 state['sessions'].discard(session)
                 return self.reply(200, {'status': 'ok'}, session + f'; Path={prefix}/api; Max-Age=0')
             if state['mode'] != 'disabled' and not authenticated:
+                # Cookie gating: every route past auth needs the session cookie,
+                # as on a real server with auth enabled (S:src/auth/middleware.py).
                 return self.reply(401, CASES['protected_unauthenticated'])
+            for hook in HOOKS:
+                answer = hook.handle(prefix, route, method, body, query, state)
+                if answer is not None:
+                    return self.reply(*answer)
             if method == 'GET' and route == 'version':
                 # Use an audited nondevelopment candidate so the UI's read-only
                 # assertion actually detects accidental setup-time write opt-in.
@@ -182,4 +209,6 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    ThreadingHTTPServer(('127.0.0.1', 18442), Handler).serve_forever()
+    # FIXTURE_PORT lets two iOS agents run concurrently (18442 / 18443).
+    port = int(os.environ.get('FIXTURE_PORT', '18442'))
+    ThreadingHTTPServer(('127.0.0.1', port), Handler).serve_forever()

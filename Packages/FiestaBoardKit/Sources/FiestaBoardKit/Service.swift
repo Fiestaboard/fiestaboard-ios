@@ -639,7 +639,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
             throw (error as? FiestaBoardError) ?? (request.isMutation ? .unknownMutationOutcome : .networkUnavailable)
         }
     }
-    private func fetch<T: Decodable & Sendable>(_ request: APIRequest, invalidateUnauthenticated: Bool = true) async throws -> T {
+    func fetch<T: Decodable & Sendable>(_ request: APIRequest, invalidateUnauthenticated: Bool = true) async throws -> T {
         let response = try await response(request, invalidateUnauthenticated: invalidateUnauthenticated)
         do { return try JSONDecoder().decode(T.self, from: response.data) }
         catch let error as FiestaBoardError where !request.isMutation { throw error }

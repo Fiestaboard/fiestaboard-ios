@@ -1,5 +1,5 @@
 import XCTest
-@testable import FiestaBoardAppState
+@testable import FiestaBoardRender
 final class BoardTablesTests: XCTestCase {
     func testExactPunctuationBlankAndPigmentCodes() {
         XCTAssertEqual(BoardTables.cell(forCode: 37, code62: .degree), .character("!"))
