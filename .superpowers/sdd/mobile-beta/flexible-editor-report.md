@@ -195,3 +195,20 @@ swiftc -parse App/Features/Editor/FlexibleWorkspaceView.swift App/Features/Edito
 ```
 
 Final parser invocation exited0 with no diagnostics (empty log); the wrapper printed `swiftc_parse_exit=0`. `git diff --check` and `git diff --cached --check` both exited0 with no output before the source commit. No simulator commands, native build, package suites or Python suites were run by this implementer. Controller owns native compilation and fresh phone/tablet main and hidden-invalid journeys, screenshot review and aggregate acceptance. The existing391 Swift/77 Python results are not recast as fresh results for this round. Dynamic Type and keyboard layout acceptance remain pending actual runtime evidence. No approval/access blocker remains; unrelated `docs/mobile-beta/collection-ownership-plan.md` was left untouched and uncommitted.
+
+
+### Round 4 runtime correction — reachable keyboard dismissal
+
+Controller phone7 (`/tmp/fb-ios-flexible-evidence/ui-phone-7.log`) failed both flexible journeys at keyboard dismissal after the label change. The hidden journey typed text, swiped the Form and tapped the inline action at33.15s, but the keyboard remained. The AX hierarchy puts the visible text viewport at y574 with35pt height, the inline dismissal at y736, and the keyboard at y653. Persistent labels increased inspector height; an action inside that scrolling content was no longer reliably reachable above the keyboard. Controller reports iPad4's hidden journey passed, and source label review passed; neither establishes phone acceptance.
+
+Product/UI commit `1ba64e8428ea32a3766f85acc8988597f629d14f` moves the existing Hide keyboard action from FlexibleWorkspaceView to LocalPageEditorView's fixed native top toolbar, only for flexible pages. It retains the single leaf ID `flexibleHideKeyboard` and uses the existing commitTextInput responder path. This serves UIKit block text and SwiftUI numeric/style/target fields independently of inspector scrolling, with no dual accessory ownership. Labels, bindings, focus, model state, history and borderless Form action isolation remain unchanged; no NativeTemplateTextView change was needed.
+
+DemoUITests now requires the keyboard to exist, exactly one app dismissal action to exist and be directly hittable without reveal/swipes, and the keyboard to disappear without expression or Close confirmation presentation. The existing exact text/selection/collapsed-style assertions remain. Style and target edits explicitly dismiss through the toolbar and retain exact values. The main numeric journey replaces its Close/Keep editing workaround with toolbar dismissal and requires the captured numeric draft, X2 and Canvas selection to remain. The hidden-invalid journey likewise captures a nonnil exact invalid string, dismisses through the toolbar and requires that string and Canvas selection to remain before its existing preview/save/repair/Undo/Redo checks.
+
+Final command after all edits, from the recovered repository:
+
+```sh
+swiftc -parse App/Features/Editor/FlexibleWorkspaceView.swift App/Features/Editor/LocalPageEditorView.swift App/Features/Editor/NativeTemplateTextView.swift Tests/UITests/DemoUITests.swift > /tmp/fb-flexible-fixed-keyboard-parse.log 2>&1
+```
+
+The command exited0 with no diagnostics (empty log); both unstaged and staged diff checks exited0. No native build or simulator run was performed by this implementer. Source was handed back stable at the exact commit above for controller compilation, phone/tablet reruns and screenshot acceptance. This is a narrow correction within round4; keyboard/runtime success is pending those fresh runs. No remaining authorization or access blocker.
