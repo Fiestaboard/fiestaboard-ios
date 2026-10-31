@@ -169,3 +169,12 @@ swiftc -parse App/Features/Editor/FlexibleWorkspaceView.swift App/Features/Edito
 ```
 
 The parse log is copied to `../mobile-beta-discovery/evidence/flexible-editor/`. `git diff --check` and staged checks passed before commit. The preceding pure-package results (Documents50, EditorState69, Kit176) remain the applicable model/service evidence; this round's behavior requires the controller's real phone/tablet rerun, not redundant unrelated package tests. Source was handed back stable for that native rebuild/rerun; no runtime success is claimed before those results. No filesystem, approval or tool-access blocker remains.
+
+
+## Native runtime test correction round 3 — actual caret result
+
+Controller's phone5 and iPad2 runs passed the hidden-invalid/repair/undo journey (phone134.765s, iPad101.430s). Both main journeys completed real text/Canvas editing, width adjustment and Undo, preview, acknowledged conditional save and reopen; each then failed only the hard-coded reopened-width assertion: expected101, actual110. Evidence is `/tmp/fb-ios-flexible-evidence/ui-phone-5.log` and `/tmp/fb-ios-flexible-evidence/ui-ipad-2.log`. The real native caret landed inside the existing10, so typing1 produced110 and the saved/reopened value correctly retained110.
+
+Test-only commit `32e91c4fa47f0d1980d5465daa8e42c5b0da0eed` leaves `width.tap(); width.typeText("1")` intact. Immediately afterward it captures `typedWidth` and requires one of the exact valid insertion results101 or110; this excludes unchanged10, invalid numeric strings, arbitrary nonempty text and other values. It also rechecks X remains2. Reopen must equal that exact captured value. Earlier deterministic10→11→Undo10, text retention, preview/save acknowledgement gates, keyboard isolation and hidden-invalid assertions remain intact. Product behavior and native caret placement are unchanged.
+
+`swiftc -parse Tests/UITests/DemoUITests.swift` exited0 with no diagnostics; output is `/tmp/fb-flexible-runtime-width-parse.log`, also copied into `../mobile-beta-discovery/evidence/flexible-editor/`. `git diff --check` and staged checks passed. The only source delta is4 insertions/1 deletion in the existing UI test file. Controller will rerun only the failed main journey per device; the already-passing hidden journey does not need repetition absent relevant changes. Full end-to-end runtime acceptance awaits those two corrected runs.
