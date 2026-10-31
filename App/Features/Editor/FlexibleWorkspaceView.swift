@@ -188,14 +188,9 @@ import FiestaBoardEditorState
                         insertionRange = range; expression = source; finishTyping(); showExpression = true
                     }
                     .id(block.id).frame(height: 150).accessibilityIdentifier("flexibleTextEditor")
-                    HStack {
-                        Button("Insert variable or expression", systemImage: "curlybraces") {
-                            finishTyping(); insertionRange = selection.range; showExpression = true
-                        }.accessibilityIdentifier("insertFlexibleExpression")
-                        Spacer()
-                        Button("Hide keyboard", systemImage: "keyboard.chevron.compact.down") { finishTyping() }
-                            .labelStyle(.iconOnly).accessibilityIdentifier("flexibleHideKeyboard")
-                    }
+                    Button("Insert variable or expression", systemImage: "curlybraces") {
+                        finishTyping(); insertionRange = selection.range; showExpression = true
+                    }.accessibilityIdentifier("insertFlexibleExpression")
                 } else if block.kind == "canvas" {
                     canvasInspector(block.id)
                 } else if block.kind == "spacer" {

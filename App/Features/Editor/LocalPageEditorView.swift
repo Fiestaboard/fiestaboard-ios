@@ -105,6 +105,12 @@ public struct LocalPageEditorView: View {
                 }.disabled(model.isSaving || model.editingFrozen)
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
+                if model.supportsFlexibleEditing {
+                    // Remain reachable above the keyboard for both UIKit block text and
+                    // SwiftUI fields, independently of the inspector's scroll position.
+                    Button("Hide keyboard", systemImage: "keyboard.chevron.compact.down") { commitTextInput() }
+                        .labelStyle(.iconOnly).accessibilityIdentifier("flexibleHideKeyboard")
+                }
                 Button("Undo", systemImage: "arrow.uturn.backward") { commitTextInput(); model.undo() }
                     .help(model.undoActionName.map { "Undo " + $0 } ?? "Undo")
                     .disabled(!model.canUndo || model.editingFrozen).keyboardShortcut("z", modifiers: .command)

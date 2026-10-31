@@ -422,6 +422,8 @@ final class ConnectionUITests: XCTestCase {
         reveal(color, app); color.tap(); color.typeText("white")
         assertVisibleFlexibleField(app, label: "Color", identifier: "flexibleField_color", value: "white")
         attachFlexibleInspector(app, name: "Populated text style retains Color label with keyboard")
+        dismissFlexibleKeyboard(app)
+        XCTAssertEqual(color.value as? String, "white")
         reveal(blockStyle, app); blockStyle.tap()
         let pageOptions = app.buttons["Page style, layout and targets"]
         reveal(pageOptions, app); pageOptions.tap()
@@ -429,6 +431,8 @@ final class ConnectionUITests: XCTestCase {
         reveal(targets, app); targets.tap(); targets.typeText("contract-board")
         assertVisibleFlexibleField(app, label: "Allowed board IDs", identifier: "flexibleTargets_boards", value: "contract-board")
         attachFlexibleInspector(app, name: "Populated target restriction retains label with keyboard")
+        dismissFlexibleKeyboard(app)
+        XCTAssertEqual(targets.value as? String, "contract-board")
         reveal(pageOptions, app); pageOptions.tap()
 
         let canvasBlock = app.buttons["flexibleBlock_drawing"]
@@ -467,10 +471,10 @@ final class ConnectionUITests: XCTestCase {
         XCTAssertEqual(xPosition.value as? String, "2", "Typing width must not move the shape")
         assertVisibleFlexibleField(app, label: "Width", identifier: "flexibleField_w", value: typedWidth)
         attachFlexibleInspector(app, name: "Edited rectangle Width retains label with keyboard")
-        app.buttons["Close"].tap()
-        let keep = app.buttons["Keep editing"]
-        if keep.exists && keep.isHittable { keep.tap() }
-        else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap() }
+        dismissFlexibleKeyboard(app)
+        XCTAssertEqual(width.value as? String, typedWidth, "Keyboard dismissal must preserve the numeric draft")
+        XCTAssertEqual(xPosition.value as? String, "2")
+        XCTAssertTrue(canvasBlock.isSelected)
         reveal(width, app)
         let canvasEvidence = XCTAttachment(screenshot: app.screenshot())
         canvasEvidence.name = "Editable rectangle inspector"; canvasEvidence.lifetime = .keepAlways; add(canvasEvidence)
@@ -540,10 +544,10 @@ final class ConnectionUITests: XCTestCase {
         reveal(rectangle, app); rectangle.tap()
         let width = app.descendants(matching: .any).matching(identifier: "flexibleField_w").firstMatch
         reveal(width, app); width.tap(); width.typeText(".")
-        app.buttons["Close"].tap()
-        let keep = app.buttons["Keep editing"]
-        if keep.exists && keep.isHittable { keep.tap() }
-        else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap() }
+        let invalidWidth = try XCTUnwrap(width.value as? String)
+        dismissFlexibleKeyboard(app)
+        XCTAssertEqual(width.value as? String, invalidWidth, "Keyboard dismissal must preserve the invalid intermediate draft")
+        XCTAssertTrue(canvas.isSelected)
         reveal(preview, app); XCTAssertFalse(preview.isEnabled)
         reveal(save, app); XCTAssertFalse(save.isEnabled)
         let text = app.buttons["flexibleBlock_welcome"]
@@ -692,6 +696,18 @@ final class ConnectionUITests: XCTestCase {
         evidence.name = name; evidence.lifetime = .keepAlways; add(evidence)
     }
 
+    @MainActor private func dismissFlexibleKeyboard(_ app: XCUIApplication, file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), file: file, line: line)
+        let actions = app.buttons.matching(identifier: "flexibleHideKeyboard")
+        XCTAssertEqual(actions.count, 1, "Exactly one app dismissal action should own this identifier", file: file, line: line)
+        let hide = actions.firstMatch
+        XCTAssertTrue(hide.isHittable, "Keyboard dismissal must be reachable without scrolling the editor", file: file, line: line)
+        hide.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5), app.debugDescription, file: file, line: line)
+        XCTAssertFalse(app.navigationBars["Insert expression"].exists, file: file, line: line)
+        XCTAssertFalse(app.buttons["Keep editing"].exists, "Dismissing the keyboard must not initiate closing the draft", file: file, line: line)
+    }
+
     @MainActor private func hideFlexibleKeyboard(_ app: XCUIApplication, text: XCUIElement) throws {
         let expectedText = try XCTUnwrap(text.value as? String)
         let selectedBlock = app.buttons["flexibleBlock_welcome"]
@@ -700,9 +716,7 @@ final class ConnectionUITests: XCTestCase {
         let pageAlignment = app.descendants(matching: .any).matching(identifier: "flexibleChoice_valign").firstMatch
         XCTAssertFalse(blockFont.exists, "Block styles start collapsed")
         XCTAssertFalse(pageAlignment.exists, "Page styles start collapsed")
-        let hide = app.buttons["flexibleHideKeyboard"]
-        reveal(hide, app); XCTAssertTrue(hide.exists, app.debugDescription); hide.tap()
-        XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5), app.debugDescription)
+        dismissFlexibleKeyboard(app)
         XCTAssertFalse(app.navigationBars["Insert expression"].exists, "Hide keyboard must not open the expression sheet")
         XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "flexibleExpressionSource").firstMatch.exists)
         XCTAssertEqual(text.value as? String, expectedText, "Dismissing input must preserve exact text")
