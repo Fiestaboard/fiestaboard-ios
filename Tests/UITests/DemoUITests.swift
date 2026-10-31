@@ -740,6 +740,20 @@ final class ConnectionUITests: XCTestCase {
     @MainActor private func assertVisibleFlexibleField(_ app: XCUIApplication, label: String, identifier: String, value: String, matchingContexts: Int = 1, file: StaticString = #filePath, line: UInt = #line) {
         let names = app.staticTexts.matching(identifier: identifier + "_label")
         let fields = app.descendants(matching: .any).matching(identifier: identifier)
+        if names.count != matchingContexts || fields.count != matchingContexts {
+            let matches = names.allElementsBoundByIndex.enumerated().map { index, element in
+                "Label match \(index):\n\(element.debugDescription)"
+            } + fields.allElementsBoundByIndex.enumerated().map { index, element in
+                "Field match \(index):\n\(element.debugDescription)"
+            }
+            let detail = XCTAttachment(string: "Expected \(matchingContexts) contexts for \(identifier), visible label \(label), value \(value).\n\n" + matches.joined(separator: "\n\n"))
+            detail.name = "Flexible label and field match diagnostics - \(identifier)"
+            detail.lifetime = .keepAlways; add(detail)
+            let hierarchy = XCTAttachment(string: app.debugDescription)
+            hierarchy.name = "Full accessibility hierarchy before context assertion - \(identifier)"
+            hierarchy.lifetime = .keepAlways; add(hierarchy)
+            attachFlexibleInspector(app, name: "Context count mismatch before assertion - \(identifier)")
+        }
         XCTAssertEqual(names.count, matchingContexts, "Verify the expected inspector contexts before choosing their first field", file: file, line: line)
         XCTAssertEqual(fields.count, matchingContexts, "Verify shared field IDs are from the expected disclosure state", file: file, line: line)
         // Canvas precedes Block style in the native inspector. Exact value and geometry
