@@ -46,6 +46,7 @@ import XCTest
             #"{"id":"created","name":"Flexible","type":"flexible","edit_protocol":"page-revision-v1","document_protocol":"page-document-v2","revision":"original"}"#,
             #"{"id":"created","name":"Future","type":"future-family","edit_protocol":"page-revision-v1","document_protocol":"page-document-v99","revision":"original"}"#,
             original.replacingOccurrences(of: "page-document-v1", with: "page-document-v99"),
+            original.replacingOccurrences(of: #","document_protocol":"page-document-v1""#, with: ""),
             original.replacingOccurrences(of: #""document_protocol":"page-document-v1""#, with: #""document_protocol":{}"#),
         ]
         for raw in documents {

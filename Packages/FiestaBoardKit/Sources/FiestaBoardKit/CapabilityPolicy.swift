@@ -36,3 +36,16 @@ public extension CapabilityPolicy {
         return numbers[1] < 3 || (numbers[1] == 3 && numbers[2] <= 2)
     }
 }
+
+
+public extension CapabilityPolicy {
+    /// Explicit document capability takes precedence over server version. The
+    /// absent-field adapter is confined to the captured 10.1.2 revision contract
+    /// (page-revision-v1.json; backend dadbc191e). This is document compatibility
+    /// only: callers must still require opt-in, revision protocol and revision.
+    static func supportsTemplateDocument(_ page: Page, version: String?, isDev: Bool) -> Bool {
+        guard page.supportsTemplateEditing else { return false }
+        if page.documentProtocol == "page-document-v1" { return true }
+        return page.documentProtocol == nil && version == "10.1.2" && !isDev
+    }
+}

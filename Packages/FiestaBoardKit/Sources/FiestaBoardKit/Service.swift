@@ -350,7 +350,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard DeploymentURL.validSegment(id) else { throw FiestaBoardError.invalidPath }
         try patch.validate()
         guard pageWritesOptedIn, let baseline = knownPages[id], baseline.editProtocol == "page-revision-v1",
-              baseline.revision?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false, baseline.supportsTemplateEditing else { throw FiestaBoardError.pageWritesDisabled }
+              baseline.revision?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false, CapabilityPolicy.supportsTemplateDocument(baseline, version: controlVersion?.runningVersion, isDev: controlVersion?.isDev ?? true) else { throw FiestaBoardError.pageWritesDisabled }
         guard !savingPages.contains(id), !pageReadbacks.contains(id) else { throw FiestaBoardError.pageReadbackRequired }
         pageWriteGenerations[id, default: 0] &+= 1
         deletionContexts = deletionContexts.filter { $0.value.page.id != id }
@@ -751,7 +751,7 @@ extension LiveFiestaBoardService {
         guard result.status == 200, (try? RawJSONObject.members(result.data)) != nil,
               let page = try? JSONDecoder().decode(Page.self, from: result.data), page.id == id,
               PageCreationReceipt.validPage(page) else { throw FiestaBoardError.invalidResponse }
-        guard page.supportsTemplateEditing else { throw FiestaBoardError.pageWritesDisabled }
+        guard CapabilityPolicy.supportsTemplateDocument(page, version: controlVersion?.runningVersion, isDev: controlVersion?.isDev ?? true) else { throw FiestaBoardError.pageWritesDisabled }
         let context = PageDeletionContext(deployment: deployment, page: page, pageData: result.data, generation: session, token: UUID())
         pageReadbacks.remove(id)
         deletionContexts[context.token] = context

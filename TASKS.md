@@ -7,6 +7,7 @@ This is the short current queue and durable milestone history. Full web-app feat
 The current [requirements/design](docs/mobile-beta/requirements-design.md), [execution plan](docs/mobile-beta/execution-plan.md) and [refreshed parity inventory](docs/mobile-beta/parity-inventory.json) incorporate current web main and flexible-page PR2395. The older inventory remains historical evidence; no release readiness is implied.
 
 - Reader and physical-preview slice: d77cc59, independently reviewed by Astra; 328 package tests, project/contract checks, generic iOS build, and focused iPhone/iPad simulator journeys pass.
+- Legacy document fallback follow-up: stable 10.1.2 captured adapter only; explicit v1 remains capability-driven on newer servers. Kit 154 and AppState 85 tests pass, including local refusal before transport and extreme physical dimensions. See [verification](docs/mobile-beta/legacy-adapter-verification.md).
 - Next: verified connection-scoped durable draft identity and explicit legacy recovery, minimal adaptive navigation, then one native flexible text/Canvas preview-save-reopen journey.
 - Broad settings/integrations/schedules and native accessibility/device acceptance remain open. Original checkout, physical app, and production displays are preserved. No publication or physical install in this phase.
 

@@ -155,6 +155,8 @@ public struct Page: Decodable, Sendable, Identifiable, Equatable {
     public let revision: String?
     public let editProtocol: String?
     public let documentProtocol: String?
+    /// Structural projection support only. Mutation eligibility additionally
+    /// requires CapabilityPolicy, session opt-in and the revision contract.
     public let supportsTemplateEditing: Bool
     public let notesWide: Int?
     public let notesTall: Int?

@@ -49,6 +49,7 @@ final class PhysicalFramePreviewTests: XCTestCase {
         let valid = layer(1, 1, [0, 0, 0, 255])
         let changes: [[String: Any]] = [
             ["width": 0], ["width": 513], ["height": -1], ["height": 513],
+            ["width": Int.max], ["height": Int.max], ["width": UInt64.max],
             ["width": 1.5], ["x": 1], ["y": -1], ["rgba": "!"],
             ["rgba": Data([0, 0, 0]).base64EncodedString()],
             ["rgba": Data([0, 0, 0, 0]).base64EncodedString()],

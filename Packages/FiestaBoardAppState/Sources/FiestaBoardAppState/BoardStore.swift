@@ -461,7 +461,7 @@ public struct PreparedAction: Identifiable, Sendable {
         let page = try JSONDecoder().decode(Page.self, from: data)
         guard page.id == id else { throw FiestaBoardError.invalidResponse }
         let context = PageEditingContext(pageID: id, deployment: deployment, originalRevision: page.revision,
-                                         editProtocol: page.editProtocol, supportsTemplateEditing: page.supportsTemplateEditing, generation: generation, documentID: UUID())
+                                         editProtocol: page.editProtocol, supportsTemplateEditing: CapabilityPolicy.supportsTemplateDocument(page, version: status?.version.runningVersion, isDev: status?.version.isDev ?? true), generation: generation, documentID: UUID())
         pageContexts[id] = context.documentID
         if let index = pages.firstIndex(where: { $0.id == id }) { pages[index] = page }
         return PageDocumentSnapshot(id: id, deployment: deployment, data: data, context: context, editingAccess: pageEditingAccess(context: context), incompatibleReferenceCount: incompatibleReferenceCount)

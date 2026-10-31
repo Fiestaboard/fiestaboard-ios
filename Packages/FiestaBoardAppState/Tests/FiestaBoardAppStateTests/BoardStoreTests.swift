@@ -292,6 +292,11 @@ private actor SessionFaultService: FiestaBoardService {
     private let demo: DemoFiestaBoardService
     private var rejectRead = false
     private var pageFailure: FiestaBoardError?
+    private var documentContract: (version: String?, advertised: Bool, dev: Bool, hasRevision: Bool)?
+    private(set) var pageSaveCount = 0
+    func configureDocumentContract(version: String?, advertised: Bool, dev: Bool, hasRevision: Bool) {
+        documentContract = (version, advertised, dev, hasRevision)
+    }
     private var detailFailure: FiestaBoardError?
     private var emptyBoards = false
     private var delayPages = false
@@ -342,6 +347,11 @@ private actor SessionFaultService: FiestaBoardService {
         // Only the UI permission projection differs from demo; service data/actions remain real and isolated.
         var value = try JSONSerialization.jsonObject(with: JSONEncoder().encode(status)) as! [String: Any]
         value["access"] = "candidateWrites"; value["isDemo"] = false
+        if let documentContract, var version = value["version"] as? [String: Any] {
+            version["running_version"] = documentContract.version
+            version["is_dev"] = documentContract.dev
+            value["version"] = version
+        }
         return try JSONDecoder().decode(ConnectionStatus.self, from: JSONSerialization.data(withJSONObject: value))
     }
     func boards() async throws -> [BoardSummary] { if emptyBoards { return [] }; return try await demo.boards() }
@@ -357,9 +367,15 @@ private actor SessionFaultService: FiestaBoardService {
     func page(id: String) async throws -> Page { try await demo.page(id: id) }
     func pageDocumentData(id: String) async throws -> Data {
         if rejectRead { rejectRead = false; throw FiestaBoardError.unauthenticated }
-        return try await demo.pageDocumentData(id: id)
+        let data = try await demo.pageDocumentData(id: id)
+        guard let documentContract else { return data }
+        var object = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        if !documentContract.advertised { object.removeValue(forKey: "document_protocol") }
+        if !documentContract.hasRevision { object.removeValue(forKey: "revision") }
+        return try JSONSerialization.data(withJSONObject: object)
     }
     func savePage(id: String, patch: PageSavePatch) async throws -> PageSaveReceipt {
+        pageSaveCount += 1
         if rejectRead { rejectRead = false; throw FiestaBoardError.unauthenticated }
         return try await demo.savePage(id: id, patch: patch)
     }
@@ -910,5 +926,34 @@ extension BoardStoreTests {
         XCTAssertNil(store.board?.defaultPageID)
         XCTAssertEqual(store.board?.activePageID, selection)
         XCTAssertFalse(store.needsReadback)
+    }
+}
+
+
+extension BoardStoreTests {
+    func testSavePermissionMatchesLegacyAdapterAndAdvertisedDocumentCapability() async throws {
+        let cases: [(String?, Bool, Bool, Bool, Bool)] = [
+            ("10.1.2", false, false, true, true), ("10.1.2", false, true, true, false),
+            ("11.0.0", false, false, true, false), (nil, false, false, true, false),
+            ("11.0.0", true, false, true, true), ("11.0.0", true, false, false, false),
+            ("10.1.2", false, false, false, false)
+        ]
+        for (version, advertised, dev, hasRevision, allowed) in cases {
+            let service = try SessionFaultService(), store = BoardStore()
+            await service.configureDocumentContract(version: version, advertised: advertised, dev: dev, hasRevision: hasRevision)
+            await store.connect(service, allowCandidateWrites: true).value
+            let snapshot = try await store.loadPageDocument(id: "page-selected")
+            XCTAssertEqual(store.status?.version.runningVersion, version)
+            XCTAssertEqual(snapshot.editingAccess.canSave, allowed)
+            XCTAssertEqual(store.pageEditingAccess(context: snapshot.context).canSave, allowed)
+            if !allowed {
+                do {
+                    _ = try await store.savePage(patch: PageSavePatch(name: "Blocked", expectedRevision: "original"), context: snapshot.context)
+                    XCTFail("Store must reject before calling the permissive service")
+                } catch { XCTAssertEqual(error as? FiestaBoardError, .pageWritesDisabled) }
+                let count = await service.pageSaveCount
+                XCTAssertEqual(count, 0)
+            }
+        }
     }
 }
