@@ -1,6 +1,6 @@
 # Native iOS beta execution plan
 
-Status: Astra approved architecture and corrected sequence, 2026-10-31. This is a sustained beta project; reader/physical-preview slice is verified; broader parity is pending. Requirements: requirements-design.md. Traceability: parity-inventory.json (84 existing rows plus flexible deltas). Implementation: ios-beta, branch codex/mobile-beta, isolated clone of b2e49f9; latest verified navigation checkpoint df6a6af. Original checkout and installed app remain preserved.
+Status: Astra approved architecture and corrected sequence, 2026-10-31. This is a sustained beta project; reader/physical-preview slice is verified; broader parity is pending. Requirements: requirements-design.md. Traceability: parity-inventory.json (84 existing rows plus flexible deltas). Implementation: /Users/jeffre/workspace/fiestaboard-ios-beta-recovered-20261031, branch codex/mobile-beta, isolated clone of b2e49f9; latest verified navigation checkpoint df6a6af. Original checkout and installed app remain preserved.
 
 ## Delivery rule
 
@@ -13,7 +13,7 @@ Use existing native SwiftUI navigation, Foundation networking, bounded lossless 
 - Inventory existing source, dirty overlay, web main/next and PR2395, prior plans, hardware, installed tools, organization repositories.
 - Record exact provenance and existing limitations. No duplicate iOS repository publication.
 - Existing four Swift package suites: 314 tests passed. Tooling/contract suites: 71 passed. Project, contract, fixture checks and unsigned generic device build passed.
-- Native managed-worktree request did not return an operation ID/path; isolated local clone used. Check pending request without repeating it.
+- Native managed-worktree request timed out after3600seconds without an operation ID/path; isolated local clone used. No repeated creation request.
 
 ## P1a — Minimum safe content contract (completed baseline; flexible adapter expands in P3/P4)
 
@@ -38,7 +38,7 @@ Navigation checkpoint 20b2ecd + a381dc4 + df6a6af: current package suites Kit169
 ## P3/P4 first vertical slice — Physical preview plus flexible text/Canvas
 
 1. Consume backend preview/layout. Explicit physical_frame_version:1, width/height and opaque RGBA determine the surface; character grid dimensions never do. Golden32×8,52×16,64×64 frames verify full bytes and pixel geometry; legacy projection remains unchanged. Unknown physical versions display unsupported without false fallback.
-2. Capture targetID + draft generation + session epoch on each preview. Preserve the draft and require target reselection if the selected board is deleted; include deletion while a preview is in flight. Core explicit-target rejection semantics are being updated; do not freeze fixtures against the previous primary fallback. Reject stale/out-of-order replies after edits, target changes or reconnect. Preview and validation have independent visible states.
+2. Capture targetID + draft generation + session epoch on each preview. Preserve the draft and require target reselection if the selected board is deleted; include deletion while a preview is in flight. Core target semantics are verified at864cfa6b: explicit unknown/empty board_id returns404, omitted/null retains primary default. Pin fixtures to that source; no deployment inferred. Reject stale/out-of-order replies after edits, target changes or reconnect. Preview and validation have independent visible states.
 3. Implement one actual flexible text block and Canvas authoring path end to end: read → edit → preview → revision-conditional save → reopen → exact preservation assertion on isolated fixture/server. No raw JSON-only completion claim.
 4. First Canvas slice: select source; add text, rectangle and line shapes supported by actual schema; select shape; native inspector; accessible numeric position/size; move/resize buttons equivalent to drag; add/remove/reorder; one undo action per user operation. Native text selection/IME supports variable insertion at current selection. Preserve unsupported shapes/blocks read-only with labels.
 5. Numeric fields retain intermediate empty/minus/decimal text while editing. Invalid hidden/collapsed fields keep Save disabled and expose a visible route to the error. Short windows/keyboard allow scroll access to focused controls.
@@ -77,4 +77,6 @@ Recovery matrix: offline launch/drafts, session expiry, same-origin account swit
 
 ## Current restrictions and independent progress
 
-No new software/runtimes/security settings, physical install, live deployment, merge or production mutations in this phase. Build/test local implementation and isolated fixtures continuously. Native worktree request remains pending/uncertain; this does not block isolated clone work. All broad parity and actual UI validation remain pending until demonstrated.
+No new software/runtimes/security settings, physical install, live deployment, merge or production mutations in this phase. Build/test local implementation and isolated fixtures continuously. Native worktree tool timed out without a success receipt; the isolated clone works normally and no creation retry was made. All broad parity and actual UI validation remain pending until demonstrated.
+
+Recovery checkpoint: exact committed and dirty state moved by verified copy out of Documents after cloud-file stalls. Original checkout remains frozen; all1511 files, Git history and dirty diff verified. Evidence /tmp/fb-ios-recovered-git-verification.json. First flexible editor implementation resumed with known compile/test corrections pending; no beta/build completion claim.
