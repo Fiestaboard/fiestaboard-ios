@@ -428,6 +428,9 @@ final class ConnectionUITests: XCTestCase {
         app.buttons["Undo"].tap()
         XCTAssertEqual(width.value as? String, "10")
         width.tap(); width.typeText("1")
+        let typedWidth = try XCTUnwrap(width.value as? String)
+        XCTAssertTrue(["101", "110"].contains(typedWidth), "Typing 1 into 10 must produce an exact valid insertion result; received \(typedWidth)")
+        XCTAssertEqual(xPosition.value as? String, "2", "Typing width must not move the shape")
         app.buttons["Close"].tap()
         let keep = app.buttons["Keep editing"]
         if keep.exists && keep.isHittable { keep.tap() }
@@ -460,7 +463,7 @@ final class ConnectionUITests: XCTestCase {
         app.buttons["flexibleBlock_drawing"].tap()
         reveal(app.buttons["canvasShape_1"], app); app.buttons["canvasShape_1"].tap()
         let reopenedWidth = app.descendants(matching: .any).matching(identifier: "flexibleField_w").firstMatch
-        reveal(reopenedWidth, app); XCTAssertEqual(reopenedWidth.value as? String, "101")
+        reveal(reopenedWidth, app); XCTAssertEqual(reopenedWidth.value as? String, typedWidth, "Reopen must retain the exact width produced by real typing")
         app.buttons["Close"].tap()
         app.navigationBars.buttons["Pages"].tap()
         selectTab("Settings", in: app)
