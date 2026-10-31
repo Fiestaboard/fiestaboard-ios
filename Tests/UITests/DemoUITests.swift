@@ -406,6 +406,8 @@ final class ConnectionUITests: XCTestCase {
         XCTAssertEqual(blockTextLabel.label, "Block text")
         revealFlexibleEditor([blockTextLabel], app); XCTAssertTrue(blockTextLabel.isHittable)
         XCTAssertTrue((text.value as? String)?.contains("UI text") == true)
+        // Native caret placement decides where typing lands; the captured result is the exact value reopen must return.
+        let typedText = try XCTUnwrap(text.value as? String)
         let textEvidence = XCTAttachment(screenshot: app.screenshot())
         textEvidence.name = "Editable flexible text"; textEvidence.lifetime = .keepAlways; add(textEvidence)
         defer { XCUIDevice.shared.orientation = .portrait }
@@ -536,7 +538,19 @@ final class ConnectionUITests: XCTestCase {
         app.buttons["editLocalDraft"].tap()
         let reopenedText = app.textViews["flexibleTextEditor"]
         reveal(reopenedText, app); XCTAssertTrue(reopenedText.waitForExistence(timeout: 5), app.debugDescription)
-        XCTAssertTrue((reopenedText.value as? String)?.contains("UI text") == true)
+        XCTAssertEqual(reopenedText.value as? String, typedText, "Reopen must retain the exact block text produced by real typing")
+        // Acknowledged style and target text must also survive reopen exactly.
+        revealFlexibleEditor([blockStyle], app); blockStyle.tap()
+        XCTAssertEqual(blockStyle.value as? String, "Expanded")
+        assertVisibleFlexibleField(app, label: "Color", identifier: "flexibleField_color", value: "white")
+        revealFlexibleEditor([blockStyle], app); blockStyle.tap()
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "flexibleField_color").firstMatch.waitForNonExistence(timeout: 5))
+        revealFlexibleEditor([pageOptions], app); pageOptions.tap()
+        XCTAssertEqual(pageOptions.value as? String, "Expanded")
+        assertVisibleFlexibleField(app, label: "Allowed board IDs", identifier: "flexibleTargets_boards", value: "contract-board")
+        attachFlexibleInspector(app, name: "Reopened page retains exact block color and board target")
+        revealFlexibleEditor([pageOptions], app); pageOptions.tap()
+        XCTAssertTrue(app.textFields["flexibleTargets_boards"].waitForNonExistence(timeout: 5))
         revealFlexibleEditor([canvasBlock], app); canvasBlock.tap()
         revealFlexibleEditor([rectangle], app); rectangle.tap()
         let reopenedWidth = app.descendants(matching: .any).matching(identifier: "flexibleField_w").firstMatch
