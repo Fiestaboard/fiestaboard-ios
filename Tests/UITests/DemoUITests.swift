@@ -402,6 +402,9 @@ final class ConnectionUITests: XCTestCase {
         reveal(text, app); XCTAssertTrue(text.waitForExistence(timeout: 5), app.debugDescription)
         text.tap(); text.typeText(" UI text")
         try hideFlexibleKeyboard(app, text: text)
+        let blockTextLabel = app.staticTexts["Block text"]
+        reveal(blockTextLabel, app); XCTAssertTrue(blockTextLabel.isHittable)
+        XCTAssertTrue((text.value as? String)?.contains("UI text") == true)
         let textEvidence = XCTAttachment(screenshot: app.screenshot())
         textEvidence.name = "Editable flexible text"; textEvidence.lifetime = .keepAlways; add(textEvidence)
         defer { XCUIDevice.shared.orientation = .portrait }
@@ -412,10 +415,41 @@ final class ConnectionUITests: XCTestCase {
         adapted.name = "Flexible editor retains text across width change"; adapted.lifetime = .keepAlways; add(adapted)
         XCUIDevice.shared.orientation = .portrait
 
+        // A populated style field must keep a visible name, independent of its placeholder.
+        let blockStyle = app.buttons["Block style"]
+        reveal(blockStyle, app); blockStyle.tap()
+        let color = app.descendants(matching: .any).matching(identifier: "flexibleField_color").firstMatch
+        reveal(color, app); color.tap(); color.typeText("white")
+        assertVisibleFlexibleField(app, label: "Color", identifier: "flexibleField_color", value: "white")
+        attachFlexibleInspector(app, name: "Populated text style retains Color label with keyboard")
+        reveal(blockStyle, app); blockStyle.tap()
+        let pageOptions = app.buttons["Page style, layout and targets"]
+        reveal(pageOptions, app); pageOptions.tap()
+        let targets = app.textFields["flexibleTargets_boards"]
+        reveal(targets, app); targets.tap(); targets.typeText("contract-board")
+        assertVisibleFlexibleField(app, label: "Allowed board IDs", identifier: "flexibleTargets_boards", value: "contract-board")
+        attachFlexibleInspector(app, name: "Populated target restriction retains label with keyboard")
+        reveal(pageOptions, app); pageOptions.tap()
+
         let canvasBlock = app.buttons["flexibleBlock_drawing"]
         reveal(canvasBlock, app); canvasBlock.tap()
+        assertVisibleFlexibleField(app, label: "Canvas Width", identifier: "canvasSize_0", value: "32")
+        assertVisibleFlexibleField(app, label: "Canvas Height", identifier: "canvasSize_1", value: "16")
+        assertVisibleFlexibleField(app, label: "Background", identifier: "flexibleField_background", value: "black")
+        attachFlexibleInspector(app, name: "Populated Canvas dimensions and background labels")
+        let textShape = app.buttons["canvasShape_0"]
+        reveal(textShape, app); textShape.tap()
+        assertVisibleFlexibleField(app, label: "Shape text", identifier: "flexibleField_text", value: "Canvas")
+        assertVisibleFlexibleField(app, label: "Text color", identifier: "flexibleField_color", value: "white")
+        attachFlexibleInspector(app, name: "Populated shape text and color labels")
         let rectangle = app.buttons["canvasShape_1"]
         reveal(rectangle, app); rectangle.tap()
+        for (label, key, value) in [("X position", "x", "2"), ("Y position", "y", "9"), ("Width", "w", "10"), ("Height", "h", "5"), ("Fill", "fill", "red")] {
+            assertVisibleFlexibleField(app, label: label, identifier: "flexibleField_\(key)", value: value)
+        }
+        let strokeLabel = app.staticTexts["Stroke"]
+        reveal(strokeLabel, app); XCTAssertTrue(strokeLabel.isHittable)
+        attachFlexibleInspector(app, name: "Populated rectangle dimensions and fill labels")
         let width = app.descendants(matching: .any).matching(identifier: "flexibleField_w").firstMatch
         reveal(width, app); XCTAssertTrue(width.exists)
         let increaseWidth = app.buttons["Increase Width"]
@@ -431,6 +465,8 @@ final class ConnectionUITests: XCTestCase {
         let typedWidth = try XCTUnwrap(width.value as? String)
         XCTAssertTrue(["101", "110"].contains(typedWidth), "Typing 1 into 10 must produce an exact valid insertion result; received \(typedWidth)")
         XCTAssertEqual(xPosition.value as? String, "2", "Typing width must not move the shape")
+        assertVisibleFlexibleField(app, label: "Width", identifier: "flexibleField_w", value: typedWidth)
+        attachFlexibleInspector(app, name: "Edited rectangle Width retains label with keyboard")
         app.buttons["Close"].tap()
         let keep = app.buttons["Keep editing"]
         if keep.exists && keep.isHittable { keep.tap() }
@@ -464,6 +500,8 @@ final class ConnectionUITests: XCTestCase {
         reveal(app.buttons["canvasShape_1"], app); app.buttons["canvasShape_1"].tap()
         let reopenedWidth = app.descendants(matching: .any).matching(identifier: "flexibleField_w").firstMatch
         reveal(reopenedWidth, app); XCTAssertEqual(reopenedWidth.value as? String, typedWidth, "Reopen must retain the exact width produced by real typing")
+        assertVisibleFlexibleField(app, label: "Width", identifier: "flexibleField_w", value: typedWidth)
+        attachFlexibleInspector(app, name: "Reopened rectangle retains Width label and exact edited value")
         app.buttons["Close"].tap()
         app.navigationBars.buttons["Pages"].tap()
         selectTab("Settings", in: app)
@@ -516,6 +554,8 @@ final class ConnectionUITests: XCTestCase {
         reveal(issue, app); XCTAssertTrue(issue.exists); issue.tap()
         XCTAssertTrue(width.waitForExistence(timeout: 5))
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        let widthLabel = app.staticTexts["Width"]
+        XCTAssertTrue(widthLabel.exists && widthLabel.isHittable, "Invalid focused drafts must retain their visible field name")
         let evidence = XCTAttachment(screenshot: app.screenshot())
         evidence.name = "Hidden invalid Canvas field revealed for repair"; evidence.lifetime = .keepAlways; add(evidence)
         app.buttons["Undo"].tap()
@@ -634,6 +674,22 @@ final class ConnectionUITests: XCTestCase {
         let disconnect = app.buttons["Disconnect"]
         reveal(disconnect, app); disconnect.tap()
         removeSaved(alias, app)
+    }
+
+    @MainActor private func assertVisibleFlexibleField(_ app: XCUIApplication, label: String, identifier: String, value: String, file: StaticString = #filePath, line: UInt = #line) {
+        let name = app.staticTexts[label].firstMatch
+        reveal(name, app)
+        XCTAssertTrue(name.exists && name.isHittable, "Populated field must retain visible label: \(label)", file: file, line: line)
+        let field = app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+        reveal(field, app)
+        XCTAssertTrue(field.isHittable, file: file, line: line)
+        XCTAssertEqual(field.value as? String, value, file: file, line: line)
+        XCTAssertTrue(name.isHittable, "Label and populated value must be visible together", file: file, line: line)
+    }
+
+    @MainActor private func attachFlexibleInspector(_ app: XCUIApplication, name: String) {
+        let evidence = XCTAttachment(screenshot: app.screenshot())
+        evidence.name = name; evidence.lifetime = .keepAlways; add(evidence)
     }
 
     @MainActor private func hideFlexibleKeyboard(_ app: XCUIApplication, text: XCUIElement) throws {

@@ -103,9 +103,12 @@ import FiestaBoardEditorState
         .sheet(isPresented: $showExpression) {
             NavigationStack {
                 Form {
-                    TextField("Expression source", text: $expression, axis: .vertical)
-                        .font(.body.monospaced()).autocorrectionDisabled().textInputAutocapitalization(.never)
-                        .accessibilityIdentifier("flexibleExpressionSource")
+                    VStack(alignment: .leading, spacing: 4) {
+                        fieldLabel("Expression source")
+                        TextField("Expression source", text: $expression, axis: .vertical)
+                            .font(.body.monospaced()).autocorrectionDisabled().textInputAutocapitalization(.never)
+                            .accessibilityIdentifier("flexibleExpressionSource")
+                    }
                 }
                 .navigationTitle("Insert expression").navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -180,6 +183,7 @@ import FiestaBoardEditorState
                 }
                 if block.kind == "text" {
                     Picker("Text mode", selection: $rich) { Text("Rich").tag(true); Text("Source").tag(false) }.pickerStyle(.segmented)
+                    fieldLabel("Block text")
                     NativeTemplateTextView(text: Binding(get: { model.flexibleText(.block(block.id), key: "text") }, set: { model.setFlexible(.block(block.id), key: "text", value: .string($0)) }), isEditing: $isTextInputActive, rich: rich, selection: selection, allowsMultiline: true, documentUndo: true) { source, range in
                         insertionRange = range; expression = source; finishTyping(); showExpression = true
                     }
@@ -270,7 +274,7 @@ import FiestaBoardEditorState
             if ["text", "rect", "line"].contains(kind) {
                 let keys = kind == "line" ? ["x1", "y1", "x2", "y2", "width"] : (kind == "rect" ? ["x", "y", "w", "h"] : ["x", "y"])
                 ForEach(keys, id: \.self) { key in
-                    HStack {
+                    HStack(alignment: .lastTextBaseline) {
                         draftField(fieldTitle(key), location, key, numeric: true)
                         Button("Decrease \(fieldTitle(key))", systemImage: "minus.circle") { adjust(location, key, by: -1) }.labelStyle(.iconOnly)
                         Button("Increase \(fieldTitle(key))", systemImage: "plus.circle") { adjust(location, key, by: 1) }.labelStyle(.iconOnly)
@@ -301,17 +305,20 @@ import FiestaBoardEditorState
         }
     }
     private func draftField(_ title: String, _ location: FlexibleLocation, _ key: String, numeric: Bool = false, named: [String] = []) -> some View {
-        HStack(alignment: .firstTextBaseline) {
-            TextField(title, text: Binding(get: { model.flexibleText(location, key: key) }, set: { text in
-                let value: LosslessJSON = numeric && !named.contains(text) ? FlexibleNumber.draft(text) : .string(text)
-                model.setFlexible(location, key: key, value: value)
-            }), axis: .vertical)
-            .textInputAutocapitalization(.never).autocorrectionDisabled()
-            .focused($fieldFocus, equals: fieldID(location, key))
-            .accessibilityLabel(title).accessibilityIdentifier("flexibleField_\(key)")
-            if model.flexibleValue(location, key: key) != nil {
-                Button("Inherit \(title)", systemImage: "arrow.uturn.backward") { finishTyping(); model.setFlexible(location, key: key, value: nil) }
-                    .labelStyle(.iconOnly).accessibilityIdentifier("inheritFlexible_\(key)")
+        VStack(alignment: .leading, spacing: 4) {
+            fieldLabel(title)
+            HStack(alignment: .firstTextBaseline) {
+                TextField(title, text: Binding(get: { model.flexibleText(location, key: key) }, set: { text in
+                    let value: LosslessJSON = numeric && !named.contains(text) ? FlexibleNumber.draft(text) : .string(text)
+                    model.setFlexible(location, key: key, value: value)
+                }), axis: .vertical)
+                .textInputAutocapitalization(.never).autocorrectionDisabled()
+                .focused($fieldFocus, equals: fieldID(location, key))
+                .accessibilityLabel(title).accessibilityIdentifier("flexibleField_\(key)")
+                if model.flexibleValue(location, key: key) != nil {
+                    Button("Inherit \(title)", systemImage: "arrow.uturn.backward") { finishTyping(); model.setFlexible(location, key: key, value: nil) }
+                        .labelStyle(.iconOnly).accessibilityIdentifier("inheritFlexible_\(key)")
+                }
             }
         }
     }
@@ -324,22 +331,32 @@ import FiestaBoardEditorState
         }.accessibilityIdentifier("flexibleChoice_\(key)")
     }
     private func targetField(_ title: String, key: String) -> some View {
-        HStack {
-            TextField(title, text: Binding(get: {
-                if case .array(let list) = model.flexibleValue(.targets, key: key) { list.map { FlexibleNumber.display($0) }.joined(separator: ", ") } else { model.flexibleText(.targets, key: key) }
-            }, set: { text in model.setFlexible(.targets, key: key, value: .array(text.isEmpty ? [] : text.components(separatedBy: ",").map { .string($0.trimmingCharacters(in: .whitespaces)) })) }))
-                .autocorrectionDisabled().textInputAutocapitalization(.never).focused($fieldFocus, equals: fieldID(.targets, key))
-                .accessibilityIdentifier("flexibleTargets_\(key)")
-            Button("Inherit \(title)", systemImage: "arrow.uturn.backward") { model.setFlexible(.targets, key: key, value: nil) }.labelStyle(.iconOnly)
+        VStack(alignment: .leading, spacing: 4) {
+            fieldLabel(title)
+            HStack {
+                TextField(title, text: Binding(get: {
+                    if case .array(let list) = model.flexibleValue(.targets, key: key) { list.map { FlexibleNumber.display($0) }.joined(separator: ", ") } else { model.flexibleText(.targets, key: key) }
+                }, set: { text in model.setFlexible(.targets, key: key, value: .array(text.isEmpty ? [] : text.components(separatedBy: ",").map { .string($0.trimmingCharacters(in: .whitespaces)) })) }))
+                    .autocorrectionDisabled().textInputAutocapitalization(.never).focused($fieldFocus, equals: fieldID(.targets, key))
+                    .accessibilityIdentifier("flexibleTargets_\(key)")
+                Button("Inherit \(title)", systemImage: "arrow.uturn.backward") { model.setFlexible(.targets, key: key, value: nil) }.labelStyle(.iconOnly)
+            }
         }
     }
     private func contentSize(_ id: String, axis: Int, title: String) -> some View {
-        TextField(title, text: Binding(get: {
-            if case .array(let values) = model.flexibleValue(.content(id), key: "size"), values.indices.contains(axis) { FlexibleNumber.display(values[axis]) } else { "" }
-        }, set: { model.setContentSize(id, axis: axis, text: $0) }))
-        .autocorrectionDisabled().textInputAutocapitalization(.never)
-        .focused($fieldFocus, equals: fieldID(.content(id), axis == 0 ? "size" : "sizeHeight"))
-        .accessibilityLabel("Canvas \(title)").accessibilityIdentifier("canvasSize_\(axis)")
+        VStack(alignment: .leading, spacing: 4) {
+            fieldLabel("Canvas \(title)")
+            TextField(title, text: Binding(get: {
+                if case .array(let values) = model.flexibleValue(.content(id), key: "size"), values.indices.contains(axis) { FlexibleNumber.display(values[axis]) } else { "" }
+            }, set: { model.setContentSize(id, axis: axis, text: $0) }))
+            .autocorrectionDisabled().textInputAutocapitalization(.never)
+            .focused($fieldFocus, equals: fieldID(.content(id), axis == 0 ? "size" : "sizeHeight"))
+            .accessibilityLabel("Canvas \(title)").accessibilityIdentifier("canvasSize_\(axis)")
+        }
+    }
+    private func fieldLabel(_ title: String) -> some View {
+        Text(title).font(.subheadline).foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
     @ViewBuilder private func containerControls(_ location: FlexibleLocation, title: String, optional: Bool) -> some View {
         let value = model.flexibleContainerValue(location)
