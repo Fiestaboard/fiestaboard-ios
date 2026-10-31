@@ -50,6 +50,7 @@ public actor DemoFiestaBoardService: FiestaBoardService {
     public func deletePage(context: PageDeletionContext) async throws -> PageDeletionReceipt { try await service.deletePage(context: context) }
     public func disconnect() async { await service.disconnect() }
     public func pages() async throws -> [Page] { try await service.pages() }
+    public func scopedPageDocument(id: String) async throws -> ScopedPageDocument { try await service.scopedPageDocument(id: id) }
     public func pageDocumentData(id: String) async throws -> Data { try await service.pageDocumentData(id: id) }
     public func page(id: String) async throws -> Page { try await service.page(id: id) }
     public func savePage(id: String, patch: PageSavePatch) async throws -> PageSaveReceipt { try await service.savePage(id: id, patch: patch) }

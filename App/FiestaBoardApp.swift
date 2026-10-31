@@ -335,6 +335,10 @@ struct DraftScene: View {
                         Button("Apply change setting") { store.reconnect(allowCandidateWrites: candidateWrites) }.disabled(store.commandBusy || store.connecting)
                     }
                 }
+                Section("Local drafts") {
+                    NavigationLink("Draft recovery & export") { LocalDraftRecoveryView() }
+                        .accessibilityIdentifier("localDraftRecovery")
+                }
                 Section("About this draft") {
                     DraftScopeView()
                     NavigationLink("Open-source notices") {

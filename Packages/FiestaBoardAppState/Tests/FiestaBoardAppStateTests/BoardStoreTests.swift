@@ -249,6 +249,11 @@ private actor DelayedService: FiestaBoardService {
     }
     func pages() async throws -> [Page] { try await demo.pages() }
     func page(id: String) async throws -> Page { try await demo.page(id: id) }
+    func scopedPageDocument(id: String) async throws -> ScopedPageDocument {
+        let value = try await demo.scopedPageDocument(id: id)
+        if delayPage { delayPage = false; await hold() }
+        return value
+    }
     func pageDocumentData(id: String) async throws -> Data {
         let value = try await demo.pageDocumentData(id: id)
         if delayPage { delayPage = false; await hold() }
@@ -365,6 +370,10 @@ private actor SessionFaultService: FiestaBoardService {
         if let pageFailure { throw pageFailure }; return try await demo.pages()
     }
     func page(id: String) async throws -> Page { try await demo.page(id: id) }
+    func scopedPageDocument(id: String) async throws -> ScopedPageDocument {
+        let scope = try await demo.scopedPageDocument(id: id).scope
+        return ScopedPageDocument(data: try await pageDocumentData(id: id), scope: scope)
+    }
     func pageDocumentData(id: String) async throws -> Data {
         if rejectRead { rejectRead = false; throw FiestaBoardError.unauthenticated }
         let data = try await demo.pageDocumentData(id: id)
@@ -458,6 +467,9 @@ extension BoardStoreTests {
         let snapshot = try await store.loadPageDocument(id: "page-selected")
         XCTAssertEqual(snapshot.id, "page-selected")
         XCTAssertEqual(snapshot.deployment, demo.deployment)
+        XCTAssertEqual(snapshot.scope.deployment, demo.deployment)
+        XCTAssertTrue(snapshot.scope.isDemo)
+        XCTAssertEqual(snapshot.context.scope, snapshot.scope)
         XCTAssertEqual((try JSONSerialization.jsonObject(with: snapshot.data) as? [String: Any])?["id"] as? String, "page-selected")
         XCTAssertFalse(snapshot.data.isEmpty)
     }
@@ -955,5 +967,63 @@ extension BoardStoreTests {
                 XCTAssertEqual(count, 0)
             }
         }
+    }
+}
+
+private actor ReconnectIdentityTransport: APITransport {
+    var installation = "original-installation"
+    func replaceInstallation() { installation = "replacement-installation" }
+    func resetSession() {}
+    func send(_ request: APIRequest) async throws -> APIResponse {
+        let page = #"{"id":"p","name":"Page","type":"template","device_type":"panel","template":["raw"],"unknown":null}"#
+        let raw: String
+        switch request.path {
+        case ["health"]: raw = #"{"status":"ok","service_running":true,"version":"10.1.20"}"#
+        case ["discover"]: raw = "{\"product\":\"FiestaBoard\",\"version\":\"10.1.20\",\"id\":\"\(installation)\",\"name\":\"Test\"}"
+        case ["auth", "status"]: raw = #"{"enabled":false,"setup_required":false,"authenticated":false,"mode":"disabled","first_run":false}"#
+        case ["version"]: raw = #"{"package_version":"10.1.20","build_version":"test","running_version":"10.1.20","is_dev":false}"#
+        case ["v1", "boards"]: raw = #"{"boards":[],"total":0}"#
+        case ["v1", "pages"]: raw = "{\"pages\":[\(page)],\"total\":1}"
+        case ["v1", "pages", "p"]: raw = page
+        default: throw FiestaBoardError.invalidPath
+        }
+        return APIResponse(status: 200, data: Data(raw.utf8))
+    }
+}
+
+extension BoardStoreTests {
+    func testActualReconnectRetainsSameInstallationAndRotatesReplacedInstallationScope() async throws {
+        let transport = ReconnectIdentityTransport()
+        let service = LiveFiestaBoardService(deployment: try DeploymentURL("https://board.test"), transport: transport)
+        let store = BoardStore()
+        _ = try await service.bootstrap()
+        await store.connect(service).value
+        let original = try await store.loadPageDocument(id: "p")
+        await store.reconnect(allowCandidateWrites: false).value
+        let same = try await store.loadPageDocument(id: "p")
+        XCTAssertEqual(original.scope, same.scope)
+        await transport.replaceInstallation()
+        await store.reconnect(allowCandidateWrites: false).value
+        let replacement = try await store.loadPageDocument(id: "p")
+        XCTAssertEqual(replacement.scope.installationID, "replacement-installation")
+        XCTAssertNotEqual(original.scope.connectionID, replacement.scope.connectionID)
+        do { _ = try await store.readbackPage(context: original.context); XCTFail("Old editor context") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+    }
+}
+
+
+extension BoardStoreTests {
+    func testReadbackRefusesScopeChangedInsideRetainedService() async throws {
+        let transport = ReconnectIdentityTransport()
+        let service = LiveFiestaBoardService(deployment: try DeploymentURL("https://board.test"), transport: transport)
+        let store = BoardStore()
+        _ = try await service.bootstrap()
+        await store.connect(service).value
+        let original = try await store.loadPageDocument(id: "p")
+        await transport.replaceInstallation()
+        _ = try await service.bootstrap()
+        do { _ = try await store.readbackPage(context: original.context); XCTFail("Readback cannot move an editor into another scope") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
     }
 }

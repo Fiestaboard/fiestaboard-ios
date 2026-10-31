@@ -132,6 +132,8 @@ actor SessionVaultCoordinator: SessionVaultCoordinating {
 }
 
 public extension FiestaBoardService {
+    /// Adapters must supply verified identity; a deployment URL alone cannot create a durable scope.
+    func scopedPageDocument(id: String) async throws -> ScopedPageDocument { throw FiestaBoardError.staleSession }
     func configureSessionPersistence(rememberMe: Bool, installationID: String?) async {}
     func restoreRememberedSession(observedInstallationID: String) async throws -> Bool { false }
     func forgetRememberedSession() async {}

@@ -7,7 +7,7 @@ import FiestaBoardEditorState
 private typealias LoaderState<Value> = SwiftUI.State<Value>
 
 /// All windows share one file actor so editors serialize access to local draft files.
-@MainActor private enum LocalDraftResources {
+@MainActor enum LocalDraftResources {
     static let store = Result { LocalDraftStore(directory: try LocalDraftStore.defaultDirectory()) }
 }
 
@@ -55,7 +55,7 @@ private typealias LoaderState<Value> = SwiftUI.State<Value>
                 try Task.checkCancellation()
                 // BoardStore validates the captured session generation before returning.
                 guard store.status != nil else { return }
-                let identity = DraftIdentity(deploymentID: snapshot.deployment.description, pageID: snapshot.id)
+                let identity = DraftIdentity(deploymentID: snapshot.scope.deployment.description, installationID: snapshot.scope.installationID, connectionID: snapshot.scope.connectionID, pageID: snapshot.id)
                 let context = RemoteEditorContext(snapshot.context)
                 let boardStore = store
                 let actions = EditorRemoteActions(isSimulated: store.status?.isDemo == true, disabledReason: {
@@ -90,6 +90,66 @@ private typealias LoaderState<Value> = SwiftUI.State<Value>
                 guard !Task.isCancelled, store.status != nil else { return }
                 failure = "The full page could not be loaded or its document format is unsupported. Close this sheet and try again. \(error.localizedDescription)"
             }
+        }
+    }
+}
+
+/// Recovery is deliberately an inventory and export route. It never installs an old
+/// revision as the baseline of an editor belonging to another connection.
+@MainActor struct LocalDraftRecoveryView: View {
+    @LoaderState private var entries: [DraftRecoveryEntry] = []
+    @LoaderState private var failure: String?
+    @LoaderState private var loaded = false
+    var body: some View {
+        List {
+            Section {
+                Text("Drafts from previous sign-ins and older app versions stay on this device. Inspect and export their original files here. Exported content can be recovered locally; no server changes are made.")
+            }
+            if let failure { Section { Text(failure) } }
+            if loaded && entries.isEmpty { Text("No saved local drafts.").foregroundStyle(.secondary) }
+            ForEach(entries) { entry in
+                NavigationLink {
+                    List {
+                        if let snapshot = entry.snapshot {
+                            Section("Saved draft") {
+                                LabeledContent("Server", value: snapshot.identity.deploymentID)
+                                LabeledContent("Page", value: snapshot.identity.pageID)
+                                LabeledContent("Scope", value: snapshot.identity.isScoped ? "Connection-scoped draft" : "Unassigned legacy draft")
+                                if let installation = snapshot.identity.installationID { LabeledContent("Installation", value: installation) }
+                                LabeledContent("Saved", value: snapshot.savedAt.formatted())
+                            }
+                            Section("Local content") {
+                                Text(String(decoding: snapshot.documentData, as: UTF8.self))
+                                    .font(.caption.monospaced()).textSelection(.enabled)
+                            }
+                        }
+                        if let reason = entry.corruptionReason {
+                            Section("File needs recovery") {
+                                Text("The saved file could not be read as a valid draft. Its original bytes are preserved.")
+                                Text(reason).font(.caption).textSelection(.enabled)
+                            }
+                        }
+                        Section {
+                            LabeledContent("File", value: entry.fileURL.lastPathComponent)
+                            ShareLink("Export original draft file", item: entry.fileURL)
+                            Text("The original export includes the saved content and its historical baseline for local recovery. It is never applied to the active server session.").font(.footnote)
+                        }
+                    }
+                    .navigationTitle("Draft details")
+                } label: {
+                    VStack(alignment: .leading) {
+                        Text(entry.snapshot?.identity.pageID ?? "Damaged draft")
+                        Text(entry.snapshot?.identity.isScoped == true ? "Connection draft" : "Unassigned or damaged draft")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .navigationTitle("Draft recovery & export")
+        .task {
+            do { entries = try await LocalDraftResources.store.get().recoveryInventory() }
+            catch { failure = error.localizedDescription }
+            loaded = true
         }
     }
 }

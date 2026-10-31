@@ -38,8 +38,14 @@ public protocol APITransport: Sendable {
     func restoreRememberedSession(observedInstallationID: String) async -> Bool
     func forgetRememberedSession() async
     func sessionPersistenceState() async -> SessionPersistenceState
+    func provisionalConnectionID() async -> UUID?
+    func verifyConnectionID(_ proposed: UUID, installationID: String) async -> UUID?
+    func ownsConnectionID(_ id: UUID) async -> Bool
 }
 public extension APITransport {
+    func provisionalConnectionID() async -> UUID? { nil }
+    func verifyConnectionID(_ proposed: UUID, installationID: String) async -> UUID? { proposed }
+    func ownsConnectionID(_ id: UUID) async -> Bool { true }
     func configureSessionPersistence(rememberMe: Bool, installationID: String?) async {}
     func restoreRememberedSession(observedInstallationID: String) async -> Bool { false }
     func forgetRememberedSession() async {}
@@ -57,6 +63,7 @@ public actor URLSessionTransport: APITransport {
     private var persistence = SessionPersistenceState()
     private var persistenceEpoch: UInt64 = 0
     private var installationID: String?
+    private var connectionID: UUID?
 
     public init(deployment: DeploymentURL, protocolClasses: [AnyClass] = [], vault: (any SessionVault)? = nil) {
         self.deployment = deployment
@@ -90,6 +97,7 @@ public actor URLSessionTransport: APITransport {
     public func resetSession() {
         generation &+= 1
         cookies = SessionCookieJar()
+        connectionID = nil
         persistence.restored = false
     }
 
@@ -99,6 +107,7 @@ public actor URLSessionTransport: APITransport {
         let epoch = persistenceEpoch
         persistence = .init(rememberMe: rememberMe)
         self.installationID = Self.validIdentity(installationID)
+        connectionID = UUID()
         guard let vault else {
             if rememberMe { persistence.warning = .unavailable }
             return
@@ -134,7 +143,9 @@ public actor URLSessionTransport: APITransport {
             guard let restored = SessionCookieJar.restore(data, deployment: deployment, installationID: identity) else {
                 persistence.warning = .invalidStoredSession; return false
             }
-            cookies = restored; installationID = identity
+            cookies = restored
+            connectionID = SessionCookieJar.storedConnectionID(data)
+            installationID = identity
             persistence = .init(rememberMe: true, restored: true)
             return true
         } catch {
@@ -160,6 +171,56 @@ public actor URLSessionTransport: APITransport {
         catch { if token == generation && epoch == persistenceEpoch { persistence.warning = .unavailable; persistence.cleanupPending = true } }
     }
 
+    public func provisionalConnectionID() -> UUID? { connectionID }
+
+    /// The UUID imported from disk is provisional until the service has verified discovery and auth.
+    public func verifyConnectionID(_ proposed: UUID, installationID verifiedInstallation: String) async -> UUID? {
+        let token = generation, epoch = persistenceEpoch
+        if let lease, !(await coordinator.isCurrent(lease)) { return nil }
+        guard token == generation, epoch == persistenceEpoch else { return nil }
+        let migrating = connectionID == nil && persistence.restored
+        var confirmed = proposed
+        self.installationID = Self.validIdentity(verifiedInstallation)
+        if migrating, let installationID, let vault, let lease {
+            // Serialize migration with other windows. A second verified importer uses
+            // the UUID already committed by the first, rather than minting another identity.
+            let candidate = cookies.persisted(deployment: deployment, installationID: installationID, connectionID: proposed)
+            do {
+                let committed = try await coordinator.perform(lease) {
+                    if let existing = try await vault.load(for: self.deployment),
+                       SessionCookieJar.restore(existing, deployment: self.deployment, installationID: installationID) != nil,
+                       SessionCookieJar.storedConnectionID(existing) != nil { return existing }
+                    if let candidate { try await vault.save(candidate, for: self.deployment) }
+                    return candidate
+                }
+                guard token == generation, epoch == persistenceEpoch else { return nil }
+                if let committed, let existingID = SessionCookieJar.storedConnectionID(committed) { confirmed = existingID }
+            } catch {
+                guard token == generation, epoch == persistenceEpoch else { return nil }
+                persistence.warning = .unavailable
+            }
+        }
+        guard token == generation, epoch == persistenceEpoch else { return nil }
+        connectionID = confirmed
+        if !migrating { await persistCookies(generation: token, epoch: epoch) }
+        guard token == generation, epoch == persistenceEpoch, connectionID == confirmed else { return nil }
+        if let lease {
+            let current = await coordinator.isCurrent(lease)
+            guard current, token == generation, epoch == persistenceEpoch, connectionID == confirmed else { return nil }
+        }
+        return confirmed
+    }
+
+    public func ownsConnectionID(_ id: UUID) async -> Bool {
+        let token = generation, epoch = persistenceEpoch
+        guard connectionID == id else { return false }
+        if let lease {
+            let current = await coordinator.isCurrent(lease)
+            return current && token == generation && epoch == persistenceEpoch && connectionID == id
+        }
+        return true
+    }
+
     private static func validIdentity(_ value: String?) -> String? {
         guard let value, !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               value.utf8.count <= 256, !value.unicodeScalars.contains(where: { $0.value < 32 || $0.value == 127 }) else { return nil }
@@ -170,7 +231,9 @@ public actor URLSessionTransport: APITransport {
         guard epoch == persistenceEpoch, persistence.rememberMe else { return }
         guard let installationID else { persistence.warning = .identityRequired; return }
         guard let vault, let lease else { persistence.warning = .unavailable; return }
-        guard let data = cookies.persisted(deployment: deployment, installationID: installationID) else {
+        // A v1 import is not migrated until the service verifies it.
+        guard let connectionID else { return }
+        guard let data = cookies.persisted(deployment: deployment, installationID: installationID, connectionID: connectionID) else {
             persistence.warning = .noPersistentCookie
             do { _ = try await coordinator.perform(lease) { try await vault.remove(for: self.deployment); return nil } }
             catch { if token == generation && epoch == persistenceEpoch { persistence.warning = .unavailable; persistence.cleanupPending = true } }
@@ -339,16 +402,22 @@ struct SessionCookieJar: Sendable {
         let deployment: String
         let installationID: String
         let cookies: [Cookie]
+        let connectionID: UUID?
     }
-    func persisted(deployment: DeploymentURL, installationID: String, now: Date = Date()) -> Data? {
+    func persisted(deployment: DeploymentURL, installationID: String, connectionID: UUID, now: Date = Date()) -> Data? {
         let persistent = entries.filter { $0.expires.map { $0 > now } ?? false }
         guard !persistent.isEmpty, persistent.count <= 16 else { return nil }
-        return try? JSONEncoder().encode(StoredSession(version: 1, deployment: deployment.description,
-            installationID: installationID, cookies: persistent))
+        return try? JSONEncoder().encode(StoredSession(version: 2, deployment: deployment.description,
+            installationID: installationID, cookies: persistent, connectionID: connectionID))
+    }
+    static func storedConnectionID(_ data: Data) -> UUID? {
+        guard let stored = try? JSONDecoder().decode(StoredSession.self, from: data), stored.version == 2 else { return nil }
+        return stored.connectionID
     }
     static func restore(_ data: Data, deployment: DeploymentURL, installationID: String, now: Date = Date()) -> Self? {
         guard data.count <= 65_536,
-              let stored = try? JSONDecoder().decode(StoredSession.self, from: data), stored.version == 1,
+              let stored = try? JSONDecoder().decode(StoredSession.self, from: data), [1, 2].contains(stored.version),
+              (stored.version == 1 || stored.connectionID != nil),
               stored.deployment == deployment.description, stored.installationID == installationID,
               !stored.cookies.isEmpty, stored.cookies.count <= 16,
               let url = try? deployment.apiURL(["auth", "status"]), let host = url.host?.lowercased() else { return nil }

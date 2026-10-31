@@ -1,22 +1,31 @@
 import Foundation
 import CryptoKit
 
-/// Use the deployment's immutable canonical identity, never its display name or a credential.
-/// Both components participate in the SHA-256 filename through unambiguous JSON framing.
+/// V2 scopes include a verified installation and a random, nonsecret connection UUID.
+/// The legacy initializer exists only for reading/exporting unassigned v1 files.
 public struct DraftIdentity: Codable, Hashable, Sendable {
     public let deploymentID: String
     public let pageID: String
+    public let installationID: String?
+    public let connectionID: UUID?
+    public var isScoped: Bool { installationID != nil && connectionID != nil }
     public init(deploymentID: String, pageID: String) {
-        self.deploymentID = deploymentID
-        self.pageID = pageID
+        self.deploymentID = deploymentID; self.pageID = pageID
+        installationID = nil; connectionID = nil
+    }
+    public init(deploymentID: String, installationID: String, connectionID: UUID, pageID: String) {
+        self.deploymentID = deploymentID; self.installationID = installationID
+        self.connectionID = connectionID; self.pageID = pageID
     }
     public static func == (lhs: Self, rhs: Self) -> Bool {
         LosslessJSON.stringsEqual(lhs.deploymentID, rhs.deploymentID)
             && LosslessJSON.stringsEqual(lhs.pageID, rhs.pageID)
+            && lhs.installationID.map(ExactUnicodeString.init) == rhs.installationID.map(ExactUnicodeString.init)
+            && lhs.connectionID == rhs.connectionID
     }
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(ExactUnicodeString(deploymentID))
-        hasher.combine(ExactUnicodeString(pageID))
+        hasher.combine(ExactUnicodeString(deploymentID)); hasher.combine(ExactUnicodeString(pageID))
+        hasher.combine(installationID.map(ExactUnicodeString.init)); hasher.combine(connectionID)
     }
 }
 
@@ -29,7 +38,7 @@ public struct DraftSnapshot: Codable, Equatable, Sendable {
     public let savedAt: Date
 
     public init(identity: DraftIdentity, revision: UInt64, baselineData: Data, documentData: Data, savedAt: Date = Date()) {
-        schemaVersion = 1
+        schemaVersion = identity.isScoped ? 2 : 1
         self.identity = identity
         self.revision = revision
         self.baselineData = baselineData
@@ -38,7 +47,9 @@ public struct DraftSnapshot: Codable, Equatable, Sendable {
     }
 
     public func validate() throws {
-        guard schemaVersion == 1 else { throw DraftError.unsupportedVersion(schemaVersion) }
+        guard schemaVersion == 1 || schemaVersion == 2 else { throw DraftError.unsupportedVersion(schemaVersion) }
+        guard (schemaVersion == 2) == identity.isScoped,
+              (identity.installationID == nil) == (identity.connectionID == nil) else { throw DraftError.identityMismatch }
         _ = try PageDocument(data: baselineData)
         _ = try PageDocument(data: documentData)
     }
@@ -47,6 +58,15 @@ public struct DraftSnapshot: Codable, Equatable, Sendable {
 public struct DraftCorruption: Equatable, Sendable {
     public let fileURL: URL
     public let reason: String
+}
+
+/// An explicit export inventory, including other connections, legacy files, and damaged bytes.
+/// No inventory entry is an editing baseline for the active connection.
+public struct DraftRecoveryEntry: Identifiable, Sendable {
+    public var id: URL { fileURL }
+    public let fileURL: URL
+    public let snapshot: DraftSnapshot?
+    public let corruptionReason: String?
 }
 
 public enum DraftLoadResult: Equatable, Sendable {
@@ -87,10 +107,30 @@ public actor LocalDraftStore {
     public func fileURL(for identity: DraftIdentity) -> URL {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys]
-        // Encoding this fixed string-only value cannot fail.
+        // Sorted JSON frames every component unambiguously and preserves exact Unicode.
+        // Absent v2 fields retain the original two-key v1 encoding and filename.
         let framed = try! encoder.encode(identity)
         let hash = SHA256.hash(data: framed).map { String(format: "%02x", $0) }.joined()
         return directory.appendingPathComponent(hash + ".json", isDirectory: false)
+    }
+
+    /// Inventory never renames, adopts, or deletes files. Exporting the original file is local-only recovery.
+    public func recoveryInventory() throws -> [DraftRecoveryEntry] {
+        guard FileManager.default.fileExists(atPath: directory.path) else { return [] }
+        return try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.isRegularFileKey])
+            .filter { (try? $0.resourceValues(forKeys: [.isRegularFileKey]).isRegularFile) == true }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+            .map { discoveredURL in
+                let url = directory.appendingPathComponent(discoveredURL.lastPathComponent)
+                do {
+                    let snapshot = try JSONDecoder().decode(DraftSnapshot.self, from: Data(contentsOf: url))
+                    try snapshot.validate()
+                    guard fileURL(for: snapshot.identity) == url else { throw DraftError.identityMismatch }
+                    return DraftRecoveryEntry(fileURL: url, snapshot: snapshot, corruptionReason: nil)
+                } catch {
+                    return DraftRecoveryEntry(fileURL: url, snapshot: nil, corruptionReason: error.localizedDescription)
+                }
+            }
     }
 
     public func load(_ identity: DraftIdentity) throws -> DraftLoadResult {
