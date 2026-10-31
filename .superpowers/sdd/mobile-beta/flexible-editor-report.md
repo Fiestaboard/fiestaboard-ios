@@ -248,3 +248,19 @@ xcrun swiftc -typecheck -sdk /Applications/Xcode.app/Contents/Developer/Platform
 ```
 
 Both commands exited0; both logs are0 bytes (no diagnostics). Owned diff and staged checks passed before commit. No simulator or native test run was performed by this implementer. Controller owns isolated rebuild/reruns and final runtime/UX acceptance. Parallel collection work remains untouched and uncommitted by this task; no authorization/access blocker.
+
+
+### Bounded selector task round 1 — capture actual context ownership
+
+Phone10 and iPad7 both failed the unchanged expected-context count at DemoUITests424 with2 matches for the explicit ID `flexibleField_color_label` (`ui-phone-10.log:1250`, `ui-ipad-7.log:1209`). Therefore the earlier generic-placeholder explanation was insufficient: an explicit leaf-ID duplicate remains, and its actual hierarchy/ownership must be established before further product changes.
+
+Diagnostic-only commit `708974c6b2229357f2a1a6d8ec5d18438de96a9d` adds14 lines solely to DemoUITests.swift. On a count mismatch, before either unchanged count assertion, it saves three keepAlways attachments: every matching label and field debugDescription (with expected identifier/name/value/context count), full app.debugDescription, and a screenshot. No product code, identity, filtering, expected counts, scrolling, typing or saved-value assertions changed.
+
+Validation commands:
+
+```sh
+swiftc -parse Tests/UITests/DemoUITests.swift > /tmp/fb-flexible-context-diagnostics-parse.log 2>&1
+xcrun swiftc -typecheck -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.1.sdk -target arm64-apple-ios18.0-simulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -I /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -module-cache-path /tmp/fb-flexible-viewport-typecheck-cache Tests/UITests/DemoUITests.swift > /tmp/fb-flexible-context-diagnostics-typecheck.log 2>&1
+```
+
+Both exited0 with no diagnostics; owned diff and staged checks passed. No native simulator command or test run was performed. Controller will run the single iPad diagnostic; product diagnosis and acceptance remain open pending those attachments. Unrelated review/report work and collection files were not changed by this commit.
