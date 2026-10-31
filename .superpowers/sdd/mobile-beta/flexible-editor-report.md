@@ -232,3 +232,19 @@ xcrun swiftc -typecheck -sdk /Applications/Xcode.app/Contents/Developer/Platform
 ```
 
 Both final commands exited0 with no diagnostics. An initial standalone typecheck omitted the XCTest Swift-overlay `-I` path and failed with missing XCTAssert functions throughout the unchanged test file; `/tmp/fb-flexible-visible-viewport-typecheck.log` preserves that invocation failure. Supplying the installed overlay path produced the clean full-file typecheck above. Owned diff and staged checks passed. xcresulttool attachment export first hit its normal local TestReport cache sandbox restriction; normal escalation succeeded, with no remaining permission blocker. No simulator/test run or native app build was performed by this implementer; controller owns those reruns and final UX acceptance. Parallel collection implementation files were left untouched and excluded from this commit.
+
+
+## Bounded native acceptance follow-up — visible-label leaf identity
+
+Controller's completed iPad6 run passed hidden-invalid115.048s, then main failed DemoUITests423 immediately after typeText("white"): the global `staticTexts.matching(identifier: "Color")` query returned2 instead of1 (`/tmp/fb-ios-flexible-evidence/ui-ipad-6.log:2642`). Exported the completed result recording and inspected `/tmp/fb-round5-ipad6-last.png` (last frame of `/tmp/fb-round5-ipad6-all/A55B92D8-9296-4505-8CF0-DE97796E91D5.mp4`). Both the persistent Color heading and the native Color placeholder are rendered while the keyboard appears. Thus a global visible-string query does not uniquely identify the added label. The test failed before asserting exact white value; white retention is not claimed from this run. Controller reported phone9 hidden-invalid143.387s passing; its main journey was still running at task handoff.
+
+Commit `4871e0770ed1c520f4863a6bfcec91bca3649da6` changes only FlexibleWorkspaceView.swift and DemoUITests.swift. Native label Text leaves now own a distinct ID derived from their existing control ID plus `_label`, including shared drafts/targets/Canvas sizes and block/expression text. No enclosing container receives an ID, and existing field/button IDs, accessibility labels, layout, focus and bindings are unchanged. Tests select those exact label IDs and additionally assert the literal visible name. Shared field/label context counts remain exact, including2 Background contexts in the deliberately expanded Canvas Block style scenario. Actual viewport scrolling, element tap/typeText, exact populated values, keyboard dismissal, saved/reopened width, Undo and repair/gating assertions are unchanged.
+
+Validation:
+
+```sh
+swiftc -parse App/Features/Editor/FlexibleWorkspaceView.swift Tests/UITests/DemoUITests.swift > /tmp/fb-flexible-label-identity-parse.log 2>&1
+xcrun swiftc -typecheck -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.1.sdk -target arm64-apple-ios18.0-simulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -I /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -module-cache-path /tmp/fb-flexible-viewport-typecheck-cache Tests/UITests/DemoUITests.swift > /tmp/fb-flexible-label-identity-typecheck.log 2>&1
+```
+
+Both commands exited0; both logs are0 bytes (no diagnostics). Owned diff and staged checks passed before commit. No simulator or native test run was performed by this implementer. Controller owns isolated rebuild/reruns and final runtime/UX acceptance. Parallel collection work remains untouched and uncommitted by this task; no authorization/access blocker.
