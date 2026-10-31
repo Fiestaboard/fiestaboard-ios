@@ -38,11 +38,11 @@ public enum BoardFont {
     }
 }
 
-/// Resources live in one `Resources` folder in both the SwiftPM target and the
+/// Resources live in one `RenderAssets` folder (a top-level `Resources` dir makes iOS installd read a shallow framework as a deep bundle) in both the SwiftPM target and the
 /// XcodeGen framework (`App/PackageResources.swift` supplies `Bundle.module`).
 public enum RenderResources {
     public static func url(_ name: String, _ ext: String) -> URL? {
-        Bundle.module.url(forResource: name, withExtension: ext, subdirectory: "Resources")
+        Bundle.module.url(forResource: name, withExtension: ext, subdirectory: "RenderAssets")
             ?? Bundle.module.url(forResource: name, withExtension: ext)
     }
     public static func data(_ name: String, _ ext: String) -> Data? {

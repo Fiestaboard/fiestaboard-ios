@@ -33,9 +33,9 @@ targets:
     platform: iOS
     sources:
       - path: Packages/FiestaBoardRender/Sources/FiestaBoardRender
-        excludes: [Resources]
+        excludes: [RenderAssets]
       - path: App/PackageResources.swift
-      - path: Packages/FiestaBoardRender/Sources/FiestaBoardRender/Resources
+      - path: Packages/FiestaBoardRender/Sources/FiestaBoardRender/RenderAssets
         type: folder
         buildPhase: resources
     settings:

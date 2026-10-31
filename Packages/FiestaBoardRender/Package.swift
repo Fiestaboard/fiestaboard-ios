@@ -9,7 +9,7 @@ let package = Package(
     platforms: [.iOS("26.0"), .macOS(.v15)],
     products: [.library(name: "FiestaBoardRender", targets: ["FiestaBoardRender"])],
     targets: [
-        .target(name: "FiestaBoardRender", resources: [.copy("Resources")]),
+        .target(name: "FiestaBoardRender", resources: [.copy("RenderAssets")]),
         .testTarget(name: "FiestaBoardRenderTests", dependencies: ["FiestaBoardRender"])
     ]
 )
