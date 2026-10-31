@@ -1,6 +1,6 @@
 # Native iOS beta execution plan
 
-Status: Astra approved architecture and corrected sequence, 2026-10-31. This is a sustained beta project; reader/physical-preview slice is verified; broader parity is pending. Requirements: requirements-design.md. Traceability: parity-inventory.json (84 existing rows plus flexible deltas). Implementation: ios-beta, branch codex/mobile-beta, isolated clone of b2e49f9; code commit d77cc59. Original checkout and installed app remain preserved.
+Status: Astra approved architecture and corrected sequence, 2026-10-31. This is a sustained beta project; reader/physical-preview slice is verified; broader parity is pending. Requirements: requirements-design.md. Traceability: parity-inventory.json (84 existing rows plus flexible deltas). Implementation: ios-beta, branch codex/mobile-beta, isolated clone of b2e49f9; latest verified navigation checkpoint df6a6af. Original checkout and installed app remain preserved.
 
 ## Delivery rule
 
@@ -15,7 +15,7 @@ Use existing native SwiftUI navigation, Foundation networking, bounded lossless 
 - Existing four Swift package suites: 314 tests passed. Tooling/contract suites: 71 passed. Project, contract, fixture checks and unsigned generic device build passed.
 - Native managed-worktree request did not return an operation ID/path; isolated local clone used. Check pending request without repeating it.
 
-## P1a — Minimum safe content contract (in progress)
+## P1a — Minimum safe content contract (completed baseline; flexible adapter expands in P3/P4)
 
 1. Intake prepared reader patch once after base/hash and apply checks. Regression first for mixed template/flexible/future families. Strict legacy template geometry remains unchanged. Preserve raw document separately.
 2. Review supported document family and protocol at every edit/delete boundary, including store contexts and UI. Missing legacy protocol is explicit backward compatibility; present null/malformed/unknown protocol is unsupported. Future flexible editing enables only its verified protocol.
@@ -25,18 +25,20 @@ Use existing native SwiftUI navigation, Foundation networking, bounded lossless 
 
 Completed reader/preview slice d77cc59: reader patch integrated once; unsupported edit/delete guards, Decodable-only projection, unknown-template read compatibility and explicit physical frames implemented with regression-first tests and Astra review. 328 package tests passed (Kit 153, AppState 84, Editor 55, Documents 36). Project/contract integrity and final unsigned iOS build passed. Mixed-library and physical-preview interactions passed on iPhone 17 Pro Max and iPad Air 11 M4 simulators, iOS 27.0. Synthetic fixtures prove native behavior, not deployed backend or hardware output. Earlier unsigned-Keychain and offscreen test failures were diagnosed and corrected without changing credentials/security.
 
-Evidence lives at /Users/jeffre/Documents/Codex/2026-10-29/task-4/mobile-beta-discovery/evidence/reader-intake; screenshots are local prepared artifacts, not uploaded. iPhone screenshot shows complete pixel frame; iPad screenshot records caption-scroll reachability. Legacy template evaluation now uses reviewed stable running versions 10.0.0 through 10.3.2 only, since that endpoint has no advertised capability. This is a bounded contract inference, not testing every intervening release. Flexible preview adapter and durable connection-scoped drafts remain pending.
+Evidence lives at /Users/jeffre/Documents/Codex/2026-10-29/task-4/mobile-beta-discovery/evidence/reader-intake; two representative screenshots have confirmed Library uploads (IDs in the local share/library-uploads.json manifest). iPhone screenshot shows complete pixel frame; iPad screenshot records caption-scroll reachability. Legacy template evaluation now uses reviewed stable running versions 10.0.0 through 10.3.2 only, since that endpoint has no advertised capability. This is a bounded contract inference, not testing every intervening release. Durable connection-scoped drafts and explicit recovery/export are reviewed and verified in 000324a + d3021da. The flexible preview adapter remains part of P3/P4.
 
-## Minimal P2 — Native adaptive shell
+## Minimal P2 — Native adaptive shell (verified checkpoint)
 
 Keep NavigationSplitView with existing content on regular widths; compact uses an accessible destination list and native navigation stacks. Destinations follow web: Home, Displays, Pages, Collections, Schedule, Integrations, Settings; Staff Picks/help and conditional AI are traceability rows. Separate server Settings from app connection settings. Avoid web chrome, nested decorative cards, and excessive borders.
 
 Validate two real journeys before polishing: Pages→Collections→Schedule and Displays→Playback→back. Preserve destination selection, draft and focus during resize. Use actual window size, not device-name or orientation assumptions. iPhone/iPad required. Duo profile/runtime availability must be verified before claiming coverage; lack of iOS26 runtime is not a Duo conclusion.
 
+Navigation checkpoint 20b2ecd + a381dc4 + df6a6af: current package suites Kit169/AppState94/Documents38/Editor55 = 356 tests pass. Both required cross-section journeys, recovery access connected/disconnected, and editor draft preservation through rotation pass on iPhone 17 Pro Max and iPad Air 11 M4 with iOS 27.0. Schedule is a real read-only list/detail; mutations remain P5. Tablet window resizing and Duo folding are not claimed. The installed Duo device profile requires runtime27.1, while installed iOS runtimes are27.0; no software installation attempted.
+
 ## P3/P4 first vertical slice — Physical preview plus flexible text/Canvas
 
 1. Consume backend preview/layout. Explicit physical_frame_version:1, width/height and opaque RGBA determine the surface; character grid dimensions never do. Golden32×8,52×16,64×64 frames verify full bytes and pixel geometry; legacy projection remains unchanged. Unknown physical versions display unsupported without false fallback.
-2. Capture targetID + draft generation + session epoch on each preview. Reject stale/out-of-order replies after edits, target changes or reconnect. Preview and validation have independent visible states.
+2. Capture targetID + draft generation + session epoch on each preview. Preserve the draft and require target reselection if the selected board is deleted; include deletion while a preview is in flight. Core explicit-target rejection semantics are being updated; do not freeze fixtures against the previous primary fallback. Reject stale/out-of-order replies after edits, target changes or reconnect. Preview and validation have independent visible states.
 3. Implement one actual flexible text block and Canvas authoring path end to end: read → edit → preview → revision-conditional save → reopen → exact preservation assertion on isolated fixture/server. No raw JSON-only completion claim.
 4. First Canvas slice: select source; add text, rectangle and line shapes supported by actual schema; select shape; native inspector; accessible numeric position/size; move/resize buttons equivalent to drag; add/remove/reorder; one undo action per user operation. Native text selection/IME supports variable insertion at current selection. Preserve unsupported shapes/blocks read-only with labels.
 5. Numeric fields retain intermediate empty/minus/decimal text while editing. Invalid hidden/collapsed fields keep Save disabled and expose a visible route to the error. Short windows/keyboard allow scroll access to focused controls.

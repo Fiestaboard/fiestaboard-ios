@@ -1,5 +1,5 @@
 {
-  "status": "discovery draft, inherited 84 stable IDs; not a refreshed operation contract",
+  "status": "84 stable IDs with checkpoint evidence; broad beta acceptance and remaining operation refreshes pending",
   "rows": [
     {
       "id": "connection_boot",
@@ -1153,8 +1153,8 @@
       "id": "schedule_entries",
       "area": "schedule",
       "required_workflow": "Board-scoped schedule CRUD/toggle; weekly/annual/one-off recurrence, day patterns, start/end/sun offsets, page/collection targets and compatibility warnings.",
-      "ios_status": "no complete native implementation evidenced",
-      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "ios_status": "read-only native list/detail implemented and verified; CRUD remains pending",
+      "ios_evidence": "App/Features/Control/SchedulesView.swift; Packages/FiestaBoardKit/Sources/FiestaBoardKit/Schedules.swift",
       "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
       "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
       "web_sources": [
@@ -1189,13 +1189,14 @@
         "delete_v1_schedules_schedule_id",
         "put_v1_schedules_schedule_id"
       ],
-      "beta_acceptance": "pending",
+      "beta_acceptance": "partial: reads only; CRUD/calendar acceptance open",
       "owner": "iOS feature owner pending assignment",
       "android_equivalent": "share semantic requirements; Android owner to audit independently",
       "native_destination": "Schedule / display Playback",
       "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
-      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
-      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+      "automated_test": "DemoUITests/testDestinationJourneysAndActualReadOnlyScheduleDetails; BoardStoreTests/testScheduleListIsBoundToSelectedDisplayAndRejectsLateOldDisplay; BoardStoreTests/testScheduleLateResponseCannotCrossReconnectAndErrorsStayVisible",
+      "actual_ux_evidence": "navigation/ui-phone-fix1.log and ui-ipad.log; explicit08:00/weekdays assertions",
+      "acceptance_scenario": "selected-board list/detail preserves server time/day semantics; stale replies rejected"
     },
     {
       "id": "schedule_validation",
@@ -2505,8 +2506,8 @@
       "id": "route_navigation",
       "area": "adaptive",
       "required_workflow": "All browser route destinations and nested layouts, back navigation and durable selection",
-      "ios_status": "partial implementation; full acceptance open",
-      "ios_evidence": "App/FiestaBoardApp.swift; Tests/UITests/DemoUITests.swift; docs/research/2026-10-29-creative-editor-verification.md",
+      "ios_status": "implemented native destinations; two cross-section journeys verified; full parity remains open",
+      "ios_evidence": "App/FiestaBoardApp.swift; commits20b2ecd,a381dc4,df6a6af",
       "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
       "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
       "web_sources": [
@@ -2518,13 +2519,14 @@
         }
       ],
       "operation_ids": [],
-      "beta_acceptance": "pending",
+      "beta_acceptance": "partial: native destinations verified; all workflows not complete",
       "owner": "iOS feature owner pending assignment",
       "android_equivalent": "share semantic requirements; Android owner to audit independently",
       "native_destination": "Cross-cutting navigation/platform",
       "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
-      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
-      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+      "automated_test": "DemoUITests/testDestinationJourneysAndActualReadOnlyScheduleDetails; DemoUITests/testEditorSheetAndSelectionSurviveWindowAdaptation",
+      "actual_ux_evidence": "navigation/ui-phone-fix1.log and ui-ipad.log; actual iPhone17ProMax/iPadAir11M4 iOS27.0; rotation phone earlier ui-phone.log",
+      "acceptance_scenario": "Pages\u2192Collections\u2192Schedule; Displays\u2192Playback\u2192back; maintain editor across rotation"
     },
     {
       "id": "deep_links",
@@ -2750,8 +2752,8 @@
       "id": "editor_drafts",
       "area": "editor",
       "required_workflow": "Draft recovery, unsaved navigation protection and page/new editor state",
-      "ios_status": "partial implementation; full acceptance open",
-      "ios_evidence": "App/Features/Editor; Packages/FiestaBoardDocuments; Packages/FiestaBoardEditorState",
+      "ios_status": "verified connection-scoped durable drafts and legacy recovery/export implemented; broader editor acceptance open",
+      "ios_evidence": "commits000324a,d3021da; LocalDraftRecoveryView; LocalDraftStore; VerifiedConnectionScope",
       "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
       "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
       "web_sources": [
@@ -2763,13 +2765,14 @@
         }
       ],
       "operation_ids": [],
-      "beta_acceptance": "pending",
+      "beta_acceptance": "partial: identity/recovery routing verified; flexible invalid-draft workflow pending",
       "owner": "iOS feature owner pending assignment",
       "android_equivalent": "share semantic requirements; Android owner to audit independently",
       "native_destination": "Pages / native editor",
       "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
-      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
-      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+      "automated_test": "SessionPersistenceTests/testConnectionScopeSeparatesFreshLoginsAndRetainsVerifiedRestartAndReconnect; DraftTests/testScopedIdentityNeverAdoptsLegacyAndInventoryPreservesOriginalBytes; DemoUITests/testRecoveryInventoryReachableConnectedAndDisconnected",
+      "actual_ux_evidence": "navigation/ui-phone-fix1.log and ui-ipad.log verify reachable recovery inventory; populated export UI success not yet verified",
+      "acceptance_scenario": "fresh login isolates; verified remembered restart retains; legacy/corrupt entries stay recoverable without silent adoption"
     },
     {
       "id": "editor_undo",
@@ -3466,7 +3469,7 @@
       "id": "adaptive_device_poses",
       "area": "adaptive",
       "required_workflow": "Preserve every workflow across compact/expanded/resized/folded/seated/standing layouts",
-      "ios_status": "partial implementation; full acceptance open",
+      "ios_status": "phone/tablet rotation preserves draft; resize/folding acceptance pending",
       "ios_evidence": "App/FiestaBoardApp.swift; Tests/UITests/DemoUITests.swift; docs/research/2026-10-29-creative-editor-verification.md",
       "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
       "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
@@ -3479,13 +3482,13 @@
         }
       ],
       "operation_ids": [],
-      "beta_acceptance": "pending",
+      "beta_acceptance": "partial: Duo installed profile requires missing27.1 runtime; no actual fold claim",
       "owner": "iOS feature owner pending assignment",
       "android_equivalent": "share semantic requirements; Android owner to audit independently",
       "native_destination": "Cross-cutting navigation/platform",
       "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
-      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
-      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+      "automated_test": "DemoUITests/testEditorSheetAndSelectionSurviveWindowAdaptation",
+      "actual_ux_evidence": "navigation/ui-phone.log and ui-ipad.log; iPhone17ProMax and iPadAir11M4 iOS27.0"
     },
     {
       "id": "plugin_color_rules",
