@@ -18,6 +18,12 @@ public struct ScopedPageDocument: Sendable {
     public init(data: Data, scope: VerifiedConnectionScope) { self.data = data; self.scope = scope }
 }
 
+public struct ScopedCollectionDocument: Sendable {
+    public let collection: PageCollection?
+    public let scope: VerifiedConnectionScope
+    public init(collection: PageCollection?, scope: VerifiedConnectionScope) { self.collection = collection; self.scope = scope }
+}
+
 public protocol FiestaBoardService: Sendable {
     var deployment: DeploymentURL { get }
     var isDemo: Bool { get }
@@ -38,6 +44,7 @@ public protocol FiestaBoardService: Sendable {
     func board(_ target: BoardTarget) async throws -> BoardDetail
     func collectionAccess() async -> CollectionWriteAccess
     func collections() async throws -> [PageCollection]
+    func scopedCollectionDocument(id: String?) async throws -> ScopedCollectionDocument
     func collection(id: String) async throws -> PageCollection
     func acknowledgeCollectionCreationReview() async throws
     func createCollection(_ input: CollectionInput) async throws -> PageCollection
@@ -405,6 +412,17 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         let owned = scope.isDemo ? true : await transport.ownsConnectionID(scope.connectionID)
         guard token == generation, activeScope == scope, owned else { throw FiestaBoardError.staleSession }
         return ScopedPageDocument(data: data, scope: scope)
+    }
+
+    /// Capture content and verified ownership under one service epoch, including new collections.
+    public func scopedCollectionDocument(id: String?) async throws -> ScopedCollectionDocument {
+        let token = generation
+        guard let scope = activeScope else { throw FiestaBoardError.staleSession }
+        let value: PageCollection?
+        if let id { value = try await collection(id: id) } else { value = nil }
+        let owned = scope.isDemo ? true : await transport.ownsConnectionID(scope.connectionID)
+        guard token == generation, activeScope == scope, owned else { throw FiestaBoardError.staleSession }
+        return ScopedCollectionDocument(collection: value, scope: scope)
     }
 
     /// Returns the exact public document bytes, preserving fields outside the read-only Page projection.

@@ -1,4 +1,5 @@
 import XCTest
+import CryptoKit
 import FiestaBoardKit
 @testable import FiestaBoardEditorState
 
@@ -15,9 +16,34 @@ import FiestaBoardKit
                        time: .init(intervalSeconds: 30), variable: nil, random: nil,
                        revision: revision, editProtocol: protocolValue, createdAt: nil, updatedAt: nil)
     }
+    private func identity(deploymentID: String = "https://example.test", collectionID: String? = "c") -> CollectionDraftIdentity {
+        .init(deploymentID: deploymentID, installationID: "fixture-installation", connectionID: UUID(uuidString: "00000000-0000-4000-8000-000000000011")!, collectionID: collectionID)
+    }
     private func model(_ baseline: PageCollection? = nil, actions: CollectionEditorActions? = nil) -> CollectionEditorModel {
-        CollectionEditorModel(deploymentID: "https://example.test", collection: baseline, canSave: true,
+        CollectionEditorModel(identity: identity(collectionID: baseline?.id), collection: baseline, canSave: true,
                               archive: archive, actions: actions ?? .init(save: { _, _ in throw FiestaBoardError.networkUnavailable }, delete: { _ in }, compare: { nil }))
+    }
+    func testUnassignedCheckpointCannotEnterActiveRecovery() throws {
+        let legacy = CollectionDraftCheckpoint(id: UUID(), deploymentID: "https://example.test", collectionID: "c", baseline: collection(), draft: CollectionDraft(collection: collection("Foreign archive")), sourceSupportsEditing: true, status: .idle)
+        try archive.save(legacy)
+        let current = model(collection())
+        current.checkRecovery()
+        XCTAssertFalse(current.canRecover, "Deployment-only archives cannot prove ownership of an active connection")
+    }
+    func testScopedIdentitySeparatesConnectionsInstallationsAndNilCreationWithExactUTF8() throws {
+        let a = CollectionDraftIdentity(deploymentID: "https://example.test", installationID: "cafe\u{301}", connectionID: UUID(), collectionID: nil)
+        let same = a
+        let otherLogin = CollectionDraftIdentity(deploymentID: a.deploymentID, installationID: a.installationID, connectionID: UUID(), collectionID: nil)
+        let otherInstall = CollectionDraftIdentity(deploymentID: a.deploymentID, installationID: "café", connectionID: a.connectionID, collectionID: nil)
+        XCTAssertEqual(a, same); XCTAssertNotEqual(a, otherLogin); XCTAssertNotEqual(a, otherInstall)
+        XCTAssertEqual(Set([a, same, otherLogin, otherInstall]).count, 3)
+        var draft = CollectionDraft(collection: nil); draft.name = "Owned new draft"; draft.pageIDs = ["a"]
+        try archive.save(.init(id: UUID(), identity: a, baseline: nil, draft: draft, sourceSupportsEditing: true, status: .unknownOutcome))
+        XCTAssertEqual(try archive.load(identity: same).count, 1)
+        XCTAssertTrue(try archive.load(identity: otherLogin).isEmpty)
+        XCTAssertTrue(try archive.load(identity: otherInstall).isEmpty)
+        let assigned = CollectionDraftIdentity(deploymentID: a.deploymentID, installationID: a.installationID, connectionID: a.connectionID, collectionID: "c")
+        XCTAssertTrue(try archive.load(identity: assigned).isEmpty)
     }
     func testAllModesPreserveMembershipRuleOrderAndInvalidNumericText() throws {
         let model = model()
@@ -39,11 +65,11 @@ import FiestaBoardKit
             XCTAssertEqual(revision, "r1"); XCTAssertEqual(input.name, "Edited"); return receipt
         }, delete: { _ in }, compare: { nil }))
         model.edit { $0.name = "Edited" }
-        XCTAssertEqual(try archive.load(deploymentID: "https://example.test", collectionID: "c").count, 1)
+        XCTAssertEqual(try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c")).count, 1)
         await model.save()
         XCTAssertEqual(model.originalRevision, "r2")
         XCTAssertFalse(model.hasChanges)
-        XCTAssertTrue(try archive.load(deploymentID: "https://example.test", collectionID: "c").isEmpty)
+        XCTAssertTrue(try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c")).isEmpty)
     }
     func testCompareDoesNotAdoptOrRetokenDirtyDraft() async {
         let fresh = collection("Server", revision: "r2")
@@ -63,7 +89,7 @@ import FiestaBoardKit
         fresh.recoverDraft()
         XCTAssertEqual(fresh.originalRevision, "old"); XCTAssertEqual(fresh.draft.intervalText, "-")
         XCTAssertNil(fresh.validatedInput)
-        XCTAssertTrue(try archive.load(deploymentID: "https://another.test", collectionID: "c").isEmpty)
+        XCTAssertTrue(try archive.load(identity: identity(deploymentID: "https://another.test", collectionID: "c")).isEmpty)
     }
     func testUnknownCreateCannotAutomaticallyRetryEvenAfterRecoveryOrComparison() async {
         var calls = 0
@@ -81,7 +107,7 @@ import FiestaBoardKit
         model.edit { $0.name = "Keep" }; await model.compare()
         XCTAssertEqual(model.status, .missing); XCTAssertFalse(model.canSave); XCTAssertFalse(model.canDelete)
         XCTAssertTrue(model.localCopyText.contains("Keep"))
-        XCTAssertEqual(try archive.load(deploymentID: "https://example.test", collectionID: "c").count, 1)
+        XCTAssertEqual(try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c")).count, 1)
     }
     func testDeleteInUseIsActionableAndDoesNotDiscardDraft() async {
         let model = model(collection(), actions: .init(save: { _, _ in throw FiestaBoardError.invalidResponse }, delete: { revision in
@@ -121,7 +147,7 @@ import FiestaBoardKit
     }
     func testDiscardClearsCheckpointAndEndsEditing() throws {
         let model = model(collection()); model.edit { $0.name = "Discard" }; model.discard()
-        XCTAssertTrue(try archive.load(deploymentID: "https://example.test", collectionID: "c").isEmpty)
+        XCTAssertTrue(try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c")).isEmpty)
         model.edit { $0.name = "Resurrected" }; XCTAssertEqual(model.status, .ended)
     }
     func testUnknownFieldsCannotBecomeWritableThroughLocalArchive() throws {
@@ -152,7 +178,7 @@ import FiestaBoardKit
             XCTAssertEqual(revision, "r2"); throw FiestaBoardError.unknownMutationOutcome
         }, compare: { nil }))
         model.edit { $0.name = "Edited" }; await model.save(); await model.delete()
-        let checkpoints = try archive.load(deploymentID: "https://example.test", collectionID: "c")
+        let checkpoints = try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c"))
         XCTAssertEqual(checkpoints.first?.status, .unknownOutcome)
         let restored = self.model(receipt)
         restored.checkRecovery(); restored.recoverDraft()
@@ -196,7 +222,7 @@ import FiestaBoardKit
         let server = collection("Fresh", revision: "r2")
         let model = model(collection(), actions: .init(save: { _, _ in throw FiestaBoardError.invalidResponse }, delete: { _ in }, compare: { server }))
         model.edit { $0.name = "Prior local work" }; await model.compare(); model.adoptComparison(); model.preserve()
-        let checkpoints = try archive.load(deploymentID: "https://example.test", collectionID: "c")
+        let checkpoints = try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c"))
         XCTAssertEqual(checkpoints.first?.draft.name, "Prior local work")
         XCTAssertEqual(checkpoints.first?.baseline?.revision, "r1")
     }
@@ -211,19 +237,19 @@ import FiestaBoardKit
     func testClosingUnchangedEditorDoesNotCreateARecoveryDraft() throws {
         let model = model(collection())
         XCTAssertTrue(model.closeKeepingDraft())
-        XCTAssertTrue(try archive.load(deploymentID: "https://example.test", collectionID: "c").isEmpty)
+        XCTAssertTrue(try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c")).isEmpty)
     }
 
     func testComparisonSessionLossKeepsDraftAndBlocksStaleWrites() async throws {
         let model = model(collection(), actions: .init(save: { _, _ in throw FiestaBoardError.invalidResponse }, delete: { _ in }, compare: { throw FiestaBoardError.unauthenticated }))
         model.edit { $0.name = "Keep on logout" }; await model.compare()
         XCTAssertFalse(model.canSave); XCTAssertFalse(model.canDelete)
-        XCTAssertEqual(try archive.load(deploymentID: "https://example.test", collectionID: "c").first?.draft.name, "Keep on logout")
+        XCTAssertEqual(try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c")).first?.draft.name, "Keep on logout")
     }
 
     func testRecoveredWindowsOwnIndependentCheckpointsOnDiscardAndAcknowledgement() async throws {
         let original = model(collection()); original.edit { $0.name = "Source draft" }; XCTAssertTrue(original.closeKeepingDraft())
-        let sourceID = try XCTUnwrap(archive.load(deploymentID: "https://example.test", collectionID: "c").first?.id)
+        let sourceID = try XCTUnwrap(archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c")).first?.id)
         let sourceURL = directory.appendingPathComponent(sourceID.uuidString).appendingPathExtension("json")
         let sourceBytes = try Data(contentsOf: sourceURL)
         let windowA = model(collection())
@@ -234,10 +260,10 @@ import FiestaBoardKit
         windowA.recoverDraft(); windowB.recoverDraft(); windowC.recoverDraft()
         windowA.edit { $0.name = "Window A" }; windowB.edit { $0.name = "Window B" }
         await windowB.save()
-        var remaining = try archive.load(deploymentID: "https://example.test", collectionID: "c")
+        var remaining = try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c"))
         XCTAssertTrue(remaining.contains { $0.draft.name == "Window A" })
         windowC.edit { $0.name = "Window C" }; windowC.discard()
-        remaining = try archive.load(deploymentID: "https://example.test", collectionID: "c")
+        remaining = try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c"))
         XCTAssertTrue(remaining.contains { $0.draft.name == "Window A" })
         XCTAssertFalse(remaining.contains { $0.draft.name == "Source draft" })
         XCTAssertEqual(try Data(contentsOf: sourceURL), sourceBytes)
@@ -246,14 +272,14 @@ import FiestaBoardKit
         let other = model(collection()); other.edit { $0.name = "Other window" }
         let current = model(collection()); current.edit { $0.name = "Temporary" }; current.edit { $0.name = "Original" }
         XCTAssertFalse(current.hasChanges); XCTAssertTrue(current.closeKeepingDraft())
-        let remaining = try archive.load(deploymentID: "https://example.test", collectionID: "c")
+        let remaining = try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c"))
         XCTAssertEqual(remaining.count, 1); XCTAssertEqual(remaining.first?.draft.name, "Other window")
     }
     func testRevertAfterConflictRetainsWriteBarrier() async throws {
         let current = model(collection(), actions: .init(save: { _, _ in throw FiestaBoardError.collectionConflict }, delete: { _ in }, compare: { nil }))
         current.edit { $0.name = "Temporary" }; await current.save(); current.edit { $0.name = "Original" }
         XCTAssertFalse(current.hasChanges); XCTAssertFalse(current.canSave); XCTAssertFalse(current.canDelete)
-        let remaining = try archive.load(deploymentID: "https://example.test", collectionID: "c")
+        let remaining = try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c"))
         XCTAssertEqual(remaining.first?.draft.name, "Original"); XCTAssertEqual(remaining.first?.status, .conflict)
     }
     func testScalarDistinctNamesAndRuleExpressionsRemainDirtyAndRecoverExactly() throws {
@@ -295,7 +321,7 @@ import FiestaBoardKit
         current.edit { $0.name = "Prior local work" }; await current.compare(); current.adoptComparison()
         current.edit { $0.name = "Cafe\u{0301}" }
         XCTAssertTrue(current.hasChanges)
-        let stored = try archive.load(deploymentID: "https://example.test", collectionID: "c")
+        let stored = try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c"))
         XCTAssertEqual(stored.first?.baseline?.revision, "r2")
         XCTAssertEqual(stored.first.map { Array($0.draft.name.unicodeScalars).map(\.value) }, [67, 97, 102, 101, 769])
     }
@@ -314,7 +340,7 @@ import FiestaBoardKit
             let recovered = model(collection(), actions: .init(save: { _, _ in receipt }, delete: { _ in }, compare: { nil }))
             recovered.checkRecovery(); recovered.recoverDraft()
             if deleting { await recovered.delete() } else { await recovered.save() }
-            XCTAssertTrue(try archive.load(deploymentID: "https://example.test", collectionID: "c").isEmpty)
+            XCTAssertTrue(try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c")).isEmpty)
         }
     }
     func testRetiringRecoveredSourceVersionKeepsNewerSourceAndConcurrentClone() throws {
@@ -324,7 +350,7 @@ import FiestaBoardKit
         windowA.edit { $0.name = "Window A" }
         original.edit { $0.name = "Source version 2" }
         windowB.discard()
-        let remaining = try archive.load(deploymentID: "https://example.test", collectionID: "c")
+        let remaining = try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c"))
         XCTAssertTrue(remaining.contains { $0.draft.name == "Window A" })
         XCTAssertTrue(remaining.contains { $0.draft.name == "Source version 2" })
         XCTAssertFalse(remaining.contains { $0.draft.name == "Source version 1" })
@@ -334,7 +360,7 @@ import FiestaBoardKit
         let recovered = model(collection(), actions: .init(save: { _, _ in throw FiestaBoardError.unknownMutationOutcome }, delete: { _ in }, compare: { nil }))
         recovered.checkRecovery(); recovered.recoverDraft(); recovered.edit { $0.name = "Uncertain work" }; await recovered.save()
         XCTAssertTrue(recovered.closeKeepingDraft())
-        let remaining = try archive.load(deploymentID: "https://example.test", collectionID: "c")
+        let remaining = try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c"))
         XCTAssertTrue(remaining.contains { $0.draft.name == "Source version" })
         XCTAssertTrue(remaining.contains { $0.draft.name == "Uncertain work" && $0.status == .unknownOutcome })
     }
@@ -345,11 +371,11 @@ import FiestaBoardKit
             let receipt = collection("New work", revision: "r3")
             let current = model(collection(), actions: .init(save: { _, _ in receipt }, delete: { _ in }, compare: { fresh }))
             current.checkRecovery(); current.recoverDraft(); await current.compare()
-            let preservedID = try XCTUnwrap(archive.load(deploymentID: "https://example.test", collectionID: "c").first?.id)
+            let preservedID = try XCTUnwrap(archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c")).first?.id)
             current.adoptComparison()
             current.edit { $0.name = "New work" }
             if saving { await current.save() } else { current.discard() }
-            let remaining = try archive.load(deploymentID: "https://example.test", collectionID: "c")
+            let remaining = try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c"))
             XCTAssertTrue(remaining.contains { $0.id == preservedID && $0.draft.name == "Keep prior" && $0.baseline?.revision == "r1" })
             XCTAssertFalse(remaining.contains { $0.draft.name == "New work" })
         }
@@ -358,7 +384,7 @@ import FiestaBoardKit
         for deleting in [false, true] {
             let isolated = directory.appendingPathComponent(UUID().uuidString)
             let failingArchive = CollectionDraftArchive(directory: isolated)
-            let original = CollectionEditorModel(deploymentID: "https://example.test", collection: collection(), canSave: true, archive: failingArchive,
+            let original = CollectionEditorModel(identity: identity(), collection: collection(), canSave: true, archive: failingArchive,
                 actions: .init(save: { _, _ in throw FiestaBoardError.invalidResponse }, delete: { _ in }, compare: { nil }))
             original.edit { $0.name = "Recover" }; XCTAssertTrue(original.closeKeepingDraft())
             let receipt = collection("Recover", revision: "r2")
@@ -366,7 +392,7 @@ import FiestaBoardKit
             let blockCleanup: @MainActor @Sendable () throws -> Void = {
                 try Data("block marker directory".utf8).write(to: isolated.appendingPathComponent("retired"))
             }
-            let current = CollectionEditorModel(deploymentID: "https://example.test", collection: collection(), canSave: true, archive: failingArchive,
+            let current = CollectionEditorModel(identity: identity(), collection: collection(), canSave: true, archive: failingArchive,
                 actions: .init(save: { _, _ in saves += 1; try blockCleanup(); return receipt }, delete: { _ in try blockCleanup() }, compare: { nil }))
             current.checkRecovery(); current.recoverDraft()
             if deleting {
@@ -392,24 +418,112 @@ import FiestaBoardKit
         try legacyBytes.write(to: legacyURL)
         let corruptURL = directory.appendingPathComponent("damaged.json")
         let corruptBytes = Data("{broken archive".utf8); try corruptBytes.write(to: corruptURL)
-        let loaded = try archive.load(deploymentID: "https://example.test", collectionID: "c")
-        XCTAssertEqual(loaded.count, 1); XCTAssertNil(loaded.first?.sourceVersions)
+        let loaded = try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c"))
+        XCTAssertTrue(loaded.isEmpty, "Legacy unassigned archives are export-only")
         let recovered = model(collection()); recovered.checkRecovery(); recovered.recoverDraft(); recovered.discard()
-        XCTAssertTrue(try archive.load(deploymentID: "https://example.test", collectionID: "c").isEmpty)
+        XCTAssertTrue(try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c")).isEmpty)
         XCTAssertEqual(try Data(contentsOf: legacyURL), legacyBytes)
         XCTAssertEqual(try Data(contentsOf: corruptURL), corruptBytes)
     }
     func testVersionMarkerDoesNotHideNewerWriteToSameArchiveID() throws {
         let id = UUID()
-        let first = CollectionDraftCheckpoint(id: id, deploymentID: "https://example.test", collectionID: "c", baseline: collection(), draft: CollectionDraft(collection: collection("Version 1")), sourceSupportsEditing: true, status: .idle)
+        let first = CollectionDraftCheckpoint(id: id, identity: identity(), baseline: collection(), draft: CollectionDraft(collection: collection("Version 1")), sourceSupportsEditing: true, status: .idle)
         try archive.save(first)
-        let version = try XCTUnwrap(archive.load(deploymentID: "https://example.test", collectionID: "c").first?.archiveVersion)
-        try archive.retire([version]); try archive.retire([version])
-        XCTAssertTrue(try archive.load(deploymentID: "https://example.test", collectionID: "c").isEmpty)
-        let next = CollectionDraftCheckpoint(id: id, deploymentID: "https://example.test", collectionID: "c", baseline: collection(), draft: CollectionDraft(collection: collection("Version 2")), sourceSupportsEditing: true, status: .idle)
+        let version = try XCTUnwrap(archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c")).first?.archiveVersion)
+        try archive.retire([version], identity: identity()); try archive.retire([version], identity: identity())
+        XCTAssertTrue(try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c")).isEmpty)
+        let next = CollectionDraftCheckpoint(id: id, identity: identity(), baseline: collection(), draft: CollectionDraft(collection: collection("Version 2")), sourceSupportsEditing: true, status: .idle)
         try archive.save(next)
-        XCTAssertEqual(try archive.load(deploymentID: "https://example.test", collectionID: "c").first?.draft.name, "Version 2")
+        XCTAssertEqual(try archive.load(identity: identity(deploymentID: "https://example.test", collectionID: "c")).first?.draft.name, "Version 2")
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: directory.appendingPathComponent("retired").path).count, 1)
+    }
+
+    func testCreationAcknowledgementRetiresNilLineageThenRecoversAssignedDraft() async throws {
+        let original = model()
+        original.edit { $0.name = "New"; $0.pageIDs = ["a"] }
+        let receipt = collection("New", revision: "created-original")
+        let recovered = model(actions: .init(save: { _, expected in XCTAssertNil(expected); return receipt }, delete: { _ in }, compare: { nil }))
+        recovered.checkRecovery(); recovered.recoverDraft()
+        await recovered.save()
+        XCTAssertEqual(recovered.identity, identity())
+        XCTAssertTrue(try archive.load(identity: identity(collectionID: nil)).isEmpty)
+        recovered.edit { $0.name = "Assigned dirty"; $0.intervalText = "-" }
+        let restarted = model(receipt)
+        restarted.checkRecovery(); restarted.recoverDraft()
+        XCTAssertEqual(restarted.identity, identity())
+        XCTAssertEqual(restarted.originalRevision, "created-original")
+        XCTAssertEqual(restarted.draft.name, "Assigned dirty"); XCTAssertEqual(restarted.draft.intervalText, "-")
+    }
+    func testRecoveryRechecksExactIdentityAndVersionBeforeInstallingCachedChoice() throws {
+        let original = model(collection()); original.edit { $0.name = "Old owned draft" }
+        let fresh = model(collection("Fetched", revision: "fresh")); fresh.checkRecovery()
+        let cached = try XCTUnwrap(fresh.recovery.first)
+        let foreign = CollectionDraftIdentity(deploymentID: identity().deploymentID, installationID: identity().installationID, connectionID: UUID(), collectionID: "c")
+        let replacement = CollectionDraftCheckpoint(id: cached.id, identity: foreign, baseline: collection(), draft: CollectionDraft(collection: collection("Different connection")), sourceSupportsEditing: true, status: .idle)
+        let bytes = try JSONEncoder().encode(replacement)
+        let path = directory.appendingPathComponent(cached.id.uuidString).appendingPathExtension("json")
+        try bytes.write(to: path)
+        fresh.recoverDraft(id: cached.id)
+        XCTAssertEqual(fresh.draft.name, "Fetched"); XCTAssertEqual(fresh.originalRevision, "fresh")
+        XCTAssertEqual(fresh.identity, identity()); XCTAssertFalse(fresh.canRecover)
+        XCTAssertEqual(try Data(contentsOf: path), bytes)
+    }
+    func testForgedLineageCannotRetireOtherScopeLegacyFutureOrNewerBytes() throws {
+        let owned = identity()
+        let foreign = CollectionDraftIdentity(deploymentID: owned.deploymentID, installationID: owned.installationID, connectionID: UUID(), collectionID: "c")
+        let foreignID = UUID()
+        let foreignVersion = try archive.save(.init(id: foreignID, identity: foreign, baseline: collection(), draft: CollectionDraft(collection: collection("Foreign")), sourceSupportsEditing: true, status: .idle))
+        let legacyID = UUID()
+        let legacyVersion = try archive.save(.init(id: legacyID, deploymentID: owned.deploymentID, collectionID: "c", baseline: collection(), draft: CollectionDraft(collection: collection("Unassigned")), sourceSupportsEditing: true, status: .idle))
+        let futureID = UUID()
+        var future = try JSONSerialization.jsonObject(with: JSONEncoder().encode(CollectionDraftCheckpoint(id: futureID, identity: owned, baseline: collection(), draft: CollectionDraft(collection: collection("Future")), sourceSupportsEditing: true, status: .idle))) as! [String: Any]
+        future["formatVersion"] = 99
+        let futureBytes = try JSONSerialization.data(withJSONObject: future)
+        let futureURL = directory.appendingPathComponent(futureID.uuidString).appendingPathExtension("json")
+        try futureBytes.write(to: futureURL)
+        let futureVersion = CollectionDraftVersion(id: futureID, fingerprint: SHA256.hash(data: futureBytes).map { String(format: "%02x", $0) }.joined())
+        let sourceID = UUID()
+        let oldVersion = try archive.save(.init(id: sourceID, identity: owned, baseline: collection(), draft: CollectionDraft(collection: collection("Old version")), sourceSupportsEditing: true, status: .idle))
+        try archive.save(.init(id: sourceID, identity: owned, baseline: collection(), draft: CollectionDraft(collection: collection("Newer version")), sourceSupportsEditing: true, status: .idle))
+        let poisonID = UUID()
+        try archive.save(.init(id: poisonID, identity: owned, baseline: collection(), draft: CollectionDraft(collection: collection("Recovered")), sourceSupportsEditing: true, status: .idle, sourceVersions: [foreignVersion, legacyVersion, futureVersion, oldVersion]))
+        let current = model(collection()); current.checkRecovery(); current.recoverDraft(id: poisonID); current.discard()
+        XCTAssertEqual(try archive.load(identity: foreign).count, 1)
+        XCTAssertEqual(try archive.load(identity: owned).map(\.draft.name), ["Newer version"])
+        XCTAssertEqual(try Data(contentsOf: futureURL), futureBytes)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: directory.appendingPathComponent(legacyID.uuidString).appendingPathExtension("json").path))
+    }
+    func testMalformedScopedIdentityIsIgnoredWithoutChangingOriginalBytes() throws {
+        let id = UUID()
+        var object = try JSONSerialization.jsonObject(with: JSONEncoder().encode(CollectionDraftCheckpoint(id: id, identity: identity(), baseline: collection(), draft: CollectionDraft(collection: collection("Broken")), sourceSupportsEditing: true, status: .idle))) as! [String: Any]
+        var scope = object["identity"] as! [String: Any]; scope["installationID"] = ""; object["identity"] = scope
+        let bytes = try JSONSerialization.data(withJSONObject: object)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let url = directory.appendingPathComponent(id.uuidString).appendingPathExtension("json")
+        try bytes.write(to: url)
+        XCTAssertTrue(try archive.load(identity: identity()).isEmpty)
+        XCTAssertEqual(try Data(contentsOf: url), bytes)
+    }
+
+    func testDeploymentAndCollectionIdentityStringsUseExactUTF8AndNilIsDistinct() throws {
+        let scope = identity()
+        let deploymentA = CollectionDraftIdentity(deploymentID: "https://example.test/cafe\u{301}", installationID: scope.installationID, connectionID: scope.connectionID, collectionID: "c")
+        let deploymentB = CollectionDraftIdentity(deploymentID: "https://example.test/café", installationID: scope.installationID, connectionID: scope.connectionID, collectionID: "c")
+        let collectionA = identity(collectionID: "cafe\u{301}"), collectionB = identity(collectionID: "café")
+        XCTAssertNotEqual(deploymentA, deploymentB); XCTAssertNotEqual(collectionA, collectionB)
+        XCTAssertNotEqual(identity(collectionID: nil), identity(collectionID: ""))
+        XCTAssertThrowsError(try identity(collectionID: "").validate())
+    }
+    func testScopedSaveCannotOverwriteUnassignedOriginalArchive() throws {
+        let id = UUID()
+        let legacy = CollectionDraftCheckpoint(id: id, deploymentID: identity().deploymentID, collectionID: "c", baseline: collection(), draft: CollectionDraft(collection: collection("Original unassigned")), sourceSupportsEditing: true, status: .idle)
+        try archive.save(legacy)
+        let url = directory.appendingPathComponent(id.uuidString).appendingPathExtension("json")
+        let original = try Data(contentsOf: url)
+        let replacement = CollectionDraftCheckpoint(id: id, identity: identity(), baseline: collection(), draft: CollectionDraft(collection: collection("Retagging")), sourceSupportsEditing: true, status: .idle)
+        XCTAssertThrowsError(try archive.save(replacement))
+        XCTAssertEqual(try Data(contentsOf: url), original)
+        XCTAssertTrue(try archive.load(identity: identity()).isEmpty)
     }
 
 }

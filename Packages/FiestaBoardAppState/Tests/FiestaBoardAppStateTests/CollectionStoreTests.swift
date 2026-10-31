@@ -1,5 +1,5 @@
 import XCTest
-import FiestaBoardKit
+@testable import FiestaBoardKit
 @testable import FiestaBoardAppState
 
 @MainActor final class CollectionStoreTests: XCTestCase {
@@ -216,6 +216,10 @@ private actor CollectionStoreFixture: FiestaBoardService {
     private let demo: DemoFiestaBoardService
     private var writes = false
     private var stored: PageCollection? = collectionFixtureValue()
+    private var replacementScope: VerifiedConnectionScope?
+    func replaceConnectionScope() {
+        replacementScope = VerifiedConnectionScope(deployment: deployment, installationID: "replacement-fixture", connectionID: UUID())
+    }
     private var readLatch: CollectionLatch?
     private var updateLatch: CollectionLatch?
     private var unknownCreate = false
@@ -246,6 +250,14 @@ private actor CollectionStoreFixture: FiestaBoardService {
         if let latch = readLatch { readLatch = nil; await latch.block() }
         guard let captured else { throw FiestaBoardError.rejected(status: 404) }
         return captured
+    }
+    func scopedCollectionDocument(id: String?) async throws -> ScopedCollectionDocument {
+        let scope: VerifiedConnectionScope
+        if let replacementScope { scope = replacementScope }
+        else { scope = try await demo.scopedPageDocument(id: "page-selected").scope }
+        let value: PageCollection?
+        if let id { value = try await collection(id: id) } else { value = nil }
+        return ScopedCollectionDocument(collection: value, scope: scope)
     }
     func createCollection(_ input: CollectionInput) async throws -> PageCollection {
         createCount += 1
@@ -289,4 +301,42 @@ private actor CollectionStoreFixture: FiestaBoardService {
     func restoreBoard(_ target: BoardTarget) async throws -> BoardRestoreReceipt { try await demo.restoreBoard(target) }
     func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult { try await demo.sendText(text, to: target) }
     func selectPage(id: String, on target: BoardTarget) async throws -> MutationResult { try await demo.selectPage(id: id, on: target) }
+}
+
+extension CollectionStoreTests {
+    func testReplacedOwnershipCannotDispatchOriginalContextSaveDeleteOrCompare() async throws {
+        for operation in ["save", "delete", "compare"] {
+            let service = try CollectionStoreFixture(), store = BoardStore()
+            await store.connect(service, allowCandidateWrites: true).value
+            let original = try await store.beginCollectionEditor(id: collectionFixtureID)
+            await service.replaceConnectionScope()
+            do {
+                switch operation {
+                case "save": _ = try await store.saveCollection(collectionFixtureInput("Wrong connection"), expectedRevision: original.context.originalRevision, context: original.context)
+                case "delete": try await store.deleteCollection(expectedRevision: original.context.originalRevision!, context: original.context)
+                default: _ = try await store.readbackCollection(context: original.context)
+                }
+                XCTFail("A replacement scope cannot inherit the old editor")
+            } catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+            let updates = await service.updateCount, deletes = await service.deleteCount
+            XCTAssertEqual(updates, 0); XCTAssertEqual(deletes, 0)
+        }
+    }
+    func testLateCompareAndSaveCannotAdoptReplacementScope() async throws {
+        for saving in [false, true] {
+            let service = try CollectionStoreFixture(), store = BoardStore()
+            await store.connect(service, allowCandidateWrites: true).value
+            let original = try await store.beginCollectionEditor(id: collectionFixtureID)
+            let latch = CollectionLatch()
+            if saving { await service.delayNextUpdate(latch) } else { await service.delayNextRead(latch) }
+            let pending = Task {
+                if saving { return try await store.saveCollection(collectionFixtureInput("Pending"), expectedRevision: original.context.originalRevision, context: original.context) }
+                return try await store.readbackCollection(context: original.context)
+            }
+            await latch.waitUntilStarted()
+            await service.replaceConnectionScope(); await latch.release()
+            do { _ = try await pending.value; XCTFail("Late response cannot be retagged") }
+            catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+        }
+    }
 }

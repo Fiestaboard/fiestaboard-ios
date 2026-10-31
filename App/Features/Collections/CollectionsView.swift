@@ -114,7 +114,7 @@ private struct CollectionDestination: Identifiable {
                     } catch FiestaBoardError.rejected(status: 404) { return nil }
                 })
                 pages = snapshot.pages.filter { $0.type != "collection" }
-                model = CollectionEditorModel(deploymentID: snapshot.context.deployment.description, collection: snapshot.collection,
+                model = CollectionEditorModel(identity: CollectionDraftIdentity(scope: snapshot.scope, collectionID: snapshot.context.collectionID), collection: snapshot.collection,
                     canSave: snapshot.canSave, isSimulated: snapshot.isDemo, archive: try CollectionDraftResources.archive.get(), actions: actions)
             } catch is CancellationError {
             } catch { failure = error.localizedDescription }

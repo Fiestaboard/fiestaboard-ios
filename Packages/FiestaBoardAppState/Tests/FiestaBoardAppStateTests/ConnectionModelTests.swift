@@ -303,6 +303,7 @@ private final class AuthDisabledConnectionURLProtocol: URLProtocol, @unchecked S
         case "version": body = #"{"package_version":"10.1.20","build_version":"test","running_version":"10.1.20","is_dev":false}"#
         case "boards": body = #"{"boards":[],"total":0}"#
         case "pages": body = "{\"pages\":[\(page)],\"total\":1}"
+        case "collection:00000000-0000-4000-8000-000000000022": body = #"{"id":"collection:00000000-0000-4000-8000-000000000022","name":"Collection","page_ids":["p"],"selection_mode":"time","time":{"interval_seconds":30},"revision":"original","edit_protocol":"collection-revision-v1"}"#
         case "p": body = page
         default:
             client?.urlProtocol(self, didFailWithError: URLError(.badURL)); return
@@ -334,9 +335,18 @@ extension ConnectionModelTests {
             XCTAssertEqual(snapshot.scope.deployment, deployment)
             XCTAssertFalse(snapshot.scope.isDemo)
             XCTAssertNotNil(store.status, "Opening an editor must keep the connection active")
+            let creation = try await store.beginCollectionEditor(id: nil)
+            let collection = try await store.beginCollectionEditor(id: "collection:00000000-0000-4000-8000-000000000022")
+            XCTAssertEqual(creation.scope, snapshot.scope); XCTAssertNil(creation.collection)
+            XCTAssertEqual(collection.scope, snapshot.scope); XCTAssertEqual(collection.context.scope, snapshot.scope)
+            XCTAssertEqual(collection.collection?.revision, "original")
             await store.reconnect(allowCandidateWrites: false).value
             let reconnected = try await store.loadPageDocument(id: "p")
             XCTAssertEqual(snapshot.scope, reconnected.scope)
+            let restoredCollection = try await store.beginCollectionEditor(id: "collection:00000000-0000-4000-8000-000000000022")
+            XCTAssertEqual(collection.scope, restoredCollection.scope)
+            do { _ = try await store.readbackCollection(context: collection.context); XCTFail("Durable scope must not revive an old live context") }
+            catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
         }
     }
 }

@@ -583,6 +583,7 @@ extension SessionPersistenceTests {
             case "logout": return (200, [:], Data(#"{"status":"ok"}"#.utf8))
             case "version": return (200, [:], Data(#"{"package_version":"10.1.20","build_version":"test","running_version":"10.1.20","is_dev":false}"#.utf8))
             case "boards": return (200, [:], Data(#"{"boards":[],"total":0}"#.utf8))
+            case "collection:00000000-0000-4000-8000-000000000022": return (200, [:], Data(#"{"id":"collection:00000000-0000-4000-8000-000000000022","name":"Scoped","page_ids":["p"],"selection_mode":"time","time":{"interval_seconds":30},"revision":"original","edit_protocol":"collection-revision-v1"}"#.utf8))
             default: return (200, [:], Data(#"{"id":"p","name":"Page","type":"template","device_type":"panel","template":["raw"],"unknown":null}"#.utf8))
             }
         }
@@ -730,5 +731,44 @@ extension SessionPersistenceTests {
                 do { _ = try await service.scopedPageDocument(id: "p"); XCTFail("Invalid discovery must withdraw scope: \(replacement)") } catch {}
             }
         }
+    }
+}
+
+extension SessionPersistenceTests {
+    func testScopedCollectionCreateAndReadShareOnlyVerifiedCurrentConnection() async throws {
+        let vault = MemorySessionVault(); identityFixture()
+        let service = LiveFiestaBoardService(deployment: deployment, transport: transport(vault))
+        do { _ = try await service.scopedCollectionDocument(id: nil); XCTFail("Unverified creation cannot acquire a scope") } catch {}
+        _ = try await service.bootstrap()
+        _ = try await service.login(username: "contract_admin", password: "fixture", rememberMe: true)
+        let first = try await service.scopedCollectionDocument(id: nil)
+        XCTAssertNil(first.collection)
+        let read = try await service.scopedCollectionDocument(id: "collection:00000000-0000-4000-8000-000000000022")
+        XCTAssertEqual(first.scope, read.scope); XCTAssertEqual(read.collection?.revision, "original")
+        let restarted = LiveFiestaBoardService(deployment: deployment, transport: transport(vault))
+        let didRestore = try await restarted.restoreRememberedSession(observedInstallationID: "id-1"); XCTAssertTrue(didRestore)
+        let restored = try await restarted.scopedCollectionDocument(id: nil)
+        XCTAssertEqual(first.scope, restored.scope)
+        _ = try await restarted.login(username: "contract_admin", password: "fixture", rememberMe: false)
+        let newLogin = try await restarted.scopedCollectionDocument(id: nil)
+        XCTAssertNotEqual(first.scope.connectionID, newLogin.scope.connectionID)
+        do { _ = try await service.scopedCollectionDocument(id: nil); XCTFail("Old transport lease cannot issue a creation scope") } catch {}
+        identityFixture(installation: "replacement")
+        _ = try await restarted.bootstrap()
+        let changed = try await restarted.scopedCollectionDocument(id: nil)
+        XCTAssertEqual(changed.scope.installationID, "replacement")
+        XCTAssertNotEqual(changed.scope.connectionID, newLogin.scope.connectionID)
+    }
+    func testLateScopedCollectionReadDoesNotAcquireReplacementLoginScope() async throws {
+        let gate = PersistenceResponseGate(endpoint: "collection:00000000-0000-4000-8000-000000000022")
+        PersistenceURLProtocol.gate = gate
+        let service = LiveFiestaBoardService(deployment: deployment, transport: URLSessionTransport(deployment: deployment, protocolClasses: [PersistenceURLProtocol.self]))
+        _ = try await service.bootstrap()
+        let pending = Task { try await service.scopedCollectionDocument(id: "collection:00000000-0000-4000-8000-000000000022") }
+        await gate.wait()
+        _ = try await service.login(username: "contract_admin", password: "fixture", rememberMe: false)
+        gate.release(cookie: "fiestaboard_session=old; Path=/; Secure", data: Data(#"{"id":"collection:00000000-0000-4000-8000-000000000022","name":"Old","page_ids":["p"],"selection_mode":"time","time":{"interval_seconds":30},"revision":"original","edit_protocol":"collection-revision-v1"}"#.utf8))
+        do { _ = try await pending.value; XCTFail("Late content cannot inherit a new login identity") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
     }
 }

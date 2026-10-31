@@ -36,6 +36,7 @@ public actor DemoFiestaBoardService: FiestaBoardService {
         return .init(writesOptedIn: access.writesOptedIn, canCreate: access.canCreate, isSimulated: true)
     }
     public func collections() async throws -> [PageCollection] { try await service.collections() }
+    public func scopedCollectionDocument(id: String?) async throws -> ScopedCollectionDocument { try await service.scopedCollectionDocument(id: id) }
     public func collection(id: String) async throws -> PageCollection { try await service.collection(id: id) }
     public func acknowledgeCollectionCreationReview() async throws { try await service.acknowledgeCollectionCreationReview() }
     public func createCollection(_ input: CollectionInput) async throws -> PageCollection { try await service.createCollection(input) }

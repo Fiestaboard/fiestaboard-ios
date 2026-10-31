@@ -5,6 +5,7 @@ import FiestaBoardKit
 /// The revision remains the one from that document, even after a list refresh.
 public struct CollectionEditingContext: Sendable, Equatable {
     public let deployment: DeploymentURL
+    public let scope: VerifiedConnectionScope
     public let generation: UInt64
     public let documentToken: UUID
     public let collectionID: String?
@@ -13,6 +14,7 @@ public struct CollectionEditingContext: Sendable, Equatable {
 }
 
 public struct CollectionEditorSnapshot: Sendable {
+    public var scope: VerifiedConnectionScope { context.scope }
     public let context: CollectionEditingContext
     public let collection: PageCollection?
     public let pages: [Page]

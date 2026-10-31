@@ -689,6 +689,9 @@ private enum StoreError: LocalizedError {
     }
 
     public func beginCollectionEditor(id: String?) async throws -> CollectionEditorSnapshot {
+        try await loadCollectionEditor(id: id, expectedScope: nil)
+    }
+    private func loadCollectionEditor(id: String?, expectedScope: VerifiedConnectionScope?) async throws -> CollectionEditorSnapshot {
         guard let service, status != nil, !connecting else { throw FiestaBoardError.staleSession }
         let session = generation
         let deployment = service.deployment
@@ -702,10 +705,13 @@ private enum StoreError: LocalizedError {
         }
         let epoch = collectionWriteGenerations[identity, default: 0]
         do {
+            let document = try await service.scopedCollectionDocument(id: id)
+            guard document.scope.deployment == deployment, expectedScope == nil || document.scope == expectedScope else { throw FiestaBoardError.staleSession }
+            let value = document.collection
             let library = try await service.pages()
-            let value: PageCollection?
-            if let id { value = try await service.collection(id: id) } else { value = nil }
             let access = await service.collectionAccess()
+            let verified = try await service.scopedCollectionDocument(id: nil)
+            guard verified.scope == document.scope else { throw FiestaBoardError.staleSession }
             guard session == generation, self.service?.deployment == deployment, status != nil else { throw FiestaBoardError.staleSession }
             try Task.checkCancellation()
             guard epoch == collectionWriteGenerations[identity, default: 0], !collectionMutating.contains(identity) else {
@@ -714,7 +720,7 @@ private enum StoreError: LocalizedError {
             if let id, value?.id != id { throw FiestaBoardError.invalidResponse }
             collectionReadbacks.remove(identity)
             pages = library
-            return acceptCollection(value, deployment: deployment, pages: library, access: access)
+            return acceptCollection(value, scope: document.scope, pages: library, access: access)
         } catch {
             guard session == generation else { throw FiestaBoardError.staleSession }
             _ = handleAuthenticationLoss(error)
@@ -724,13 +730,15 @@ private enum StoreError: LocalizedError {
 
     public func readbackCollection(context: CollectionEditingContext) async throws -> CollectionEditorSnapshot {
         try requireCollectionContext(context, permitConsumedCreate: true)
+        guard let service else { throw FiestaBoardError.staleSession }
+        try await verifyCollectionOwnership(context, service: service, permitConsumedCreate: true)
         guard let id = context.collectionID else {
             // A list can help a person inspect an uncertain create; it cannot
             // determine which new resource, if any, came from that POST.
             await refreshCollections().value
             throw FiestaBoardError.collectionReadbackRequired
         }
-        do { return try await beginCollectionEditor(id: id) }
+        do { return try await loadCollectionEditor(id: id, expectedScope: context.scope) }
         catch FiestaBoardError.rejected(status: 404) {
             collectionDocumentTokens[id] = nil; collectionContexts[context.documentToken] = nil
             collections.removeAll { $0.id == id }
@@ -746,6 +754,7 @@ private enum StoreError: LocalizedError {
         try input.validate()
         guard input.pageIDs.allSatisfy({ member in pages.contains { $0.id == member } }) else { throw FiestaBoardError.collectionWritesDisabled }
         let identity = collectionIdentity(context)
+        try await verifyCollectionOwnership(context, service: service)
         guard !collectionMutating.contains(identity), !collectionReadbacks.contains(identity) else {
             throw FiestaBoardError.collectionReadbackRequired
         }
@@ -772,10 +781,12 @@ private enum StoreError: LocalizedError {
                 throw FiestaBoardError.unknownMutationOutcome
             }
             let access = await service.collectionAccess()
+            let verified = try await service.scopedCollectionDocument(id: nil)
+            guard verified.scope == context.scope else { throw FiestaBoardError.staleSession }
             try requireCollectionContext(context, permitConsumedCreate: true)
             collectionReadbacks.remove(identity)
             collectionContexts[context.documentToken] = nil
-            return acceptCollection(result, deployment: context.deployment, pages: pages, access: access)
+            return acceptCollection(result, scope: context.scope, pages: pages, access: access)
         } catch {
             guard context.generation == generation else { throw FiestaBoardError.staleSession }
             _ = handleAuthenticationLoss(error)
@@ -794,6 +805,7 @@ private enum StoreError: LocalizedError {
             throw FiestaBoardError.collectionWritesDisabled
         }
         let identity = collectionIdentity(context)
+        try await verifyCollectionOwnership(context, service: service)
         guard !collectionMutating.contains(identity), !collectionReadbacks.contains(identity) else {
             throw FiestaBoardError.collectionReadbackRequired
         }
@@ -801,6 +813,8 @@ private enum StoreError: LocalizedError {
         defer { collectionMutating.remove(identity); bumpCollectionWrite(identity) }
         do {
             try await service.deleteCollection(id: id, expectedRevision: expectedRevision)
+            let verified = try await service.scopedCollectionDocument(id: nil)
+            guard verified.scope == context.scope else { throw FiestaBoardError.staleSession }
             try requireCollectionContext(context)
             collectionReadbacks.remove(identity)
             collectionDocumentTokens[id] = nil; collectionContexts[context.documentToken] = nil
@@ -813,8 +827,8 @@ private enum StoreError: LocalizedError {
         }
     }
 
-    private func acceptCollection(_ value: PageCollection?, deployment: DeploymentURL, pages: [Page], access: CollectionWriteAccess) -> CollectionEditorSnapshot {
-        let context = CollectionEditingContext(deployment: deployment, generation: generation,
+    private func acceptCollection(_ value: PageCollection?, scope: VerifiedConnectionScope, pages: [Page], access: CollectionWriteAccess) -> CollectionEditorSnapshot {
+        let context = CollectionEditingContext(deployment: scope.deployment, scope: scope, generation: generation,
             documentToken: UUID(), collectionID: value?.id, originalRevision: value?.revision,
             writeAllowed: pageSessionOptedIn && access.writesOptedIn && (value.map {
                 $0.supportsEditing && $0.editProtocol == "collection-revision-v1"
@@ -829,6 +843,17 @@ private enum StoreError: LocalizedError {
         }
         return CollectionEditorSnapshot(context: context, collection: value, pages: pages,
                                         canSave: context.writeAllowed, isDemo: status?.isDemo == true)
+    }
+
+    private func verifyCollectionOwnership(_ context: CollectionEditingContext, service: any FiestaBoardService, permitConsumedCreate: Bool = false) async throws {
+        do {
+            let verified = try await service.scopedCollectionDocument(id: nil)
+            try requireCollectionContext(context, permitConsumedCreate: permitConsumedCreate)
+            guard verified.scope == context.scope else { throw FiestaBoardError.staleSession }
+        } catch {
+            if context.generation == generation { _ = handleAuthenticationLoss(error) }
+            throw error
+        }
     }
 
     private func requireCollectionSession(_ context: CollectionEditingContext) throws {

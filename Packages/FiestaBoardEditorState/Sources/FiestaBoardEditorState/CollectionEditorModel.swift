@@ -15,6 +15,7 @@ public struct CollectionEditorActions: Sendable {
 
 @MainActor public final class CollectionEditorModel: ObservableObject {
     public let deploymentID: String
+    public private(set) var identity: CollectionDraftIdentity
     public let isSimulated: Bool
     @Published public private(set) var draft: CollectionDraft
     @Published public private(set) var baseline: PageCollection?
@@ -27,12 +28,14 @@ public struct CollectionEditorActions: Sendable {
     private let writeAccess: Bool
     private var sourceSupportsEditing: Bool
     private var checkpointID = UUID()
+    private var checkpointVersion: CollectionDraftVersion?
     private var sourceVersions: [CollectionDraftVersion] = []
     private var recoveryChecked = false
     private var preservationBarrier: CollectionDraft?
-    public init(deploymentID: String, collection: PageCollection?, canSave: Bool, isSimulated: Bool = false,
+    public init(identity: CollectionDraftIdentity, collection: PageCollection?, canSave: Bool, isSimulated: Bool = false,
                 archive: CollectionDraftArchive, actions: CollectionEditorActions) {
-        self.deploymentID = deploymentID; baseline = collection; draft = CollectionDraft(collection: collection)
+        self.identity = identity; deploymentID = identity.deploymentID
+        baseline = collection; draft = CollectionDraft(collection: collection)
         sourceSupportsEditing = collection?.supportsEditing ?? true
         writeAccess = canSave; self.isSimulated = isSimulated; self.archive = archive; self.actions = actions
     }
@@ -42,7 +45,7 @@ public struct CollectionEditorActions: Sendable {
     public var canRecover: Bool { !recovery.isEmpty }
     public var editingFrozen: Bool { [.saving, .deleting, .reading, .ended].contains(status) }
     public var supportsEditing: Bool {
-        sourceSupportsEditing && CollectionSelectionMode(rawValue: draft.selectionMode) != nil &&
+        (try? identity.validate()) != nil && CollectionDraftIdentity.exact(identity.collectionID, baseline?.id) && sourceSupportsEditing && CollectionSelectionMode(rawValue: draft.selectionMode) != nil &&
         (baseline == nil || (baseline?.editProtocol == "collection-revision-v1" && !(originalRevision ?? "").isEmpty))
     }
     public var validatedInput: CollectionInput? { try? draft.input() }
@@ -88,22 +91,33 @@ public struct CollectionEditorActions: Sendable {
         if hasChanges || status != .idle { _ = preserve() }
         else {
             // A deliberate full revert must not resurrect an earlier intermediate edit.
-            // Only this editor's file is removed; recovered sources and other windows remain.
-            do { try archive.remove(checkpointID) }
+            // Only this editor's exact version is retired; original bytes and other windows remain.
+            do { try archive.retire(checkpointVersion.map { [$0] } ?? [], identity: identity) }
             catch { message = "Could not reconcile the reverted local draft: \(error.localizedDescription)" }
         }
     }
     public func checkRecovery() {
         guard !recoveryChecked else { return }
         do {
-            recovery = try archive.load(deploymentID: deploymentID, collectionID: collectionID).filter { $0.id != checkpointID }
+            recovery = try archive.load(identity: identity).filter { $0.id != checkpointID }
             recoveryChecked = true
         } catch { message = "Could not check local drafts: \(error.localizedDescription)" }
     }
     public func recoverDraft(id: UUID? = nil) {
         guard !editingFrozen, !hasChanges, let value = recovery.first(where: { id == nil || $0.id == id }) else { return }
-        baseline = value.baseline; sourceSupportsEditing = value.sourceSupportsEditing; draft = value.draft; checkpointID = UUID()
-        sourceVersions = value.sourceVersions ?? []
+        do {
+            guard value.identity == identity,
+                  let fresh = try archive.load(identity: identity).first(where: { $0.id == value.id && $0.archiveVersion == value.archiveVersion }) else {
+                recovery = try archive.load(identity: identity)
+                message = "The recovery file changed. Choose its current owned version explicitly."; return
+            }
+            installRecovery(fresh)
+        } catch { message = "Could not recheck recovery ownership: \(error.localizedDescription)" }
+    }
+    private func installRecovery(_ value: CollectionDraftCheckpoint) {
+        baseline = value.baseline; sourceSupportsEditing = value.sourceSupportsEditing && (value.baseline?.supportsEditing ?? true)
+        draft = value.draft; checkpointID = UUID(); checkpointVersion = nil
+        sourceVersions = archive.eligibleVersions(value.sourceVersions ?? [], identity: identity)
         if let version = value.archiveVersion, !sourceVersions.contains(version) { sourceVersions.append(version) }
         // Interrupted dispatched mutations remain uncertain after app termination.
         status = [.saving, .deleting, .reading].contains(value.status) ? .unknownOutcome : value.status
@@ -120,7 +134,7 @@ public struct CollectionEditorActions: Sendable {
         // Explicit adoption retains the prior checkpoint under a separate identity.
         // An unchanged adopted baseline needs no replacement checkpoint.
         guard preservationBarrier != draft else { return true }
-        do { try archive.save(checkpoint()); return true }
+        do { checkpointVersion = try archive.save(checkpoint()); return true }
         catch { message = "Could not preserve this draft. Copy its text before closing. \(error.localizedDescription)"; return false }
     }
     public func discard() {
@@ -140,12 +154,16 @@ public struct CollectionEditorActions: Sendable {
         guard preserve() else { status = .idle; return }
         do {
             let receipt = try await actions.save(input, originalRevision)
-            guard receipt.editProtocol == "collection-revision-v1", !(receipt.revision ?? "").isEmpty,
+            guard (identity.collectionID == nil || CollectionDraftIdentity.exact(receipt.id, identity.collectionID)), receipt.editProtocol == "collection-revision-v1", !(receipt.revision ?? "").isEmpty,
                   CollectionSelectionMode(rawValue: receipt.selectionMode) != nil else { throw FiestaBoardError.unknownMutationOutcome }
+            // Retire the captured old identity (including nil-ID creation) before adopting the receipt ID.
+            let cleanupFailure = acknowledgedCleanupFailure()
+            identity = identity.assigningCollectionID(receipt.id)
+            checkpointID = UUID(); checkpointVersion = nil; sourceVersions = []
             baseline = receipt; sourceSupportsEditing = receipt.supportsEditing; draft = CollectionDraft(collection: receipt); comparison = nil; status = .idle
             preservationBarrier = draft
             message = (isSimulated ? "Simulated: " : "") + "Collection storage acknowledged. Display output is not confirmed; board selection remains a separate action."
-            finishAcknowledgedCleanup()
+            if let cleanupFailure { message = (message ?? "") + cleanupFailure }
         } catch { handle(error, operation: "save") }
     }
     public func delete() async {
@@ -168,6 +186,7 @@ public struct CollectionEditorActions: Sendable {
                 status = .unknownOutcome
                 message = "Review the collection list. A possibly completed creation cannot be retried from this draft."
             } else if let fetched {
+                guard CollectionDraftIdentity.exact(fetched.id, identity.collectionID) else { throw FiestaBoardError.staleCollectionContext }
                 comparison = fetched; status = .comparison
                 message = "Server content fetched for comparison. Your draft and original revision are unchanged."
             } else {
@@ -188,25 +207,23 @@ public struct CollectionEditorActions: Sendable {
         baseline = comparison; sourceSupportsEditing = comparison.supportsEditing; draft = CollectionDraft(collection: comparison); self.comparison = nil; status = .idle
         // The pre-adoption checkpoint is an explicitly retained independent copy.
         // New edits and acknowledgements must own and retire a different lineage.
-        checkpointID = UUID(); sourceVersions = []
+        checkpointID = UUID(); checkpointVersion = nil; sourceVersions = []
         preservationBarrier = draft
         message = "Adopted the compared server revision. Your prior local draft remains preserved."
     }
     private func checkpoint() -> CollectionDraftCheckpoint {
-        .init(id: checkpointID, deploymentID: deploymentID, collectionID: collectionID, baseline: baseline, draft: draft, sourceSupportsEditing: sourceSupportsEditing, status: status, sourceVersions: sourceVersions)
+        .init(id: checkpointID, identity: identity, baseline: baseline, draft: draft, sourceSupportsEditing: sourceSupportsEditing, status: status, sourceVersions: sourceVersions)
     }
     private func cleanupAcknowledgedDraft() throws {
-        try archive.retire(sourceVersions)
-        try archive.remove(checkpointID)
-        sourceVersions = []
+        try archive.retire(sourceVersions + (checkpointVersion.map { [$0] } ?? []), identity: identity)
+        sourceVersions = []; checkpointVersion = nil
+    }
+    private func acknowledgedCleanupFailure() -> String? {
+        do { try cleanupAcknowledgedDraft(); return nil }
+        catch { return " Local draft cleanup failed. The acknowledged action will not be retried. " + error.localizedDescription }
     }
     private func finishAcknowledgedCleanup() {
-        do { try cleanupAcknowledgedDraft() }
-        catch {
-            // The server acknowledgement has already advanced the baseline or ended
-            // deletion. Local cleanup failure must never turn it into an uncertain write.
-            message = (message ?? "Storage acknowledged.") + " Local draft cleanup failed. The acknowledged action will not be retried. " + error.localizedDescription
-        }
+        if let failure = acknowledgedCleanupFailure() { message = (message ?? "Storage acknowledged.") + failure }
     }
     private func handle(_ error: any Error, operation: String) {
         switch error {

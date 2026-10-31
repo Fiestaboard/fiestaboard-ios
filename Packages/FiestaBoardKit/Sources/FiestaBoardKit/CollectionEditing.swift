@@ -142,6 +142,7 @@ public struct CollectionWriteAccess: Codable, Sendable, Equatable {
 }
 
 extension FiestaBoardService {
+    public func scopedCollectionDocument(id: String?) async throws -> ScopedCollectionDocument { throw FiestaBoardError.staleSession }
     public func collectionAccess() async -> CollectionWriteAccess { .init(writesOptedIn: false, canCreate: false, isSimulated: isDemo) }
     public func collections() async throws -> [PageCollection] { throw FiestaBoardError.collectionWritesDisabled }
     public func collection(id: String) async throws -> PageCollection { throw FiestaBoardError.collectionWritesDisabled }
