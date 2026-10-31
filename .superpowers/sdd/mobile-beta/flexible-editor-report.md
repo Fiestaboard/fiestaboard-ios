@@ -264,3 +264,22 @@ xcrun swiftc -typecheck -sdk /Applications/Xcode.app/Contents/Developer/Platform
 ```
 
 Both exited0 with no diagnostics; owned diff and staged checks passed. No native simulator command or test run was performed. Controller will run the single iPad diagnostic; product diagnosis and acceptance remain open pending those attachments. Unrelated review/report work and collection files were not changed by this commit.
+
+
+### Proven disclosure action coupling — isolated inspector headers
+
+The iPad8 diagnostic resolves the duplicate-context cause. `/tmp/fb-ios-flexible-evidence/ui-ipad-8.log` records a single Block style tap at44.88s, then white typing at49.56s; no Page options tap precedes the failure. Full AX attachment `/tmp/fb-flexible-ipad8-attachments/9E31978B-366E-41F7-9AD6-D00C7E6FBA0D.txt:319–377` shows BOTH disclosure chevrons expanded. Block style's Color label is at y711 and its focused field at y733 contains white; Page style's second Color label is at y1123 and its field at y1145 is empty. Screenshot `B948A07F-E399-48B1-8473-54C8AA02D833.png` corroborates the populated field. This disproves the placeholder hypothesis: native sibling disclosure actions were coupled inside the single Form row. The existing main test is an observed red regression; its counts were not weakened.
+
+Astra's reviewed narrow design received PROCEED, and product/UI commit `2e238667c5ed7e730a5cfc82af6deec732515e1f` implements it in FlexibleWorkspaceView.swift and DemoUITests.swift. Only Block style and Page style/layout/targets use the custom DisclosureGroupStyle. Each header is one explicit borderless native Button toggling only its existing configuration.isExpanded binding, with a noninteractive decorative chevron and an Expanded/Collapsed accessibility value. There are no nested chevron buttons, enclosing accessibility IDs, mutual-exclusion state or model changes. Existing repair-driven expansion, field focus, scroll anchors, frozen-state disabling, leaf identifiers and labels remain.
+
+Regression assertions were added before the product change. The main journey now verifies both collapsed initially; opening Block style leaves Page options collapsed and its layout fields absent; closing Block style leaves Page options unchanged; opening Page options leaves Block style collapsed. It also deliberately opens both, requires two Color label/field contexts, closes only Block style and requires Page options to remain open. The deliberately expanded Canvas Block style still requires the two Background contexts and readable exact black value. Real viewport scrolling/taps/typing, keyboard and exact saved/reopened value checks,10→11→Undo10/X2, preview/save gates and hidden-invalid repair remain intact. Existing failure diagnostics remain available.
+
+Targeted validation:
+
+```sh
+swiftc -parse App/Features/Editor/FlexibleWorkspaceView.swift Tests/UITests/DemoUITests.swift > /tmp/fb-flexible-disclosure-parse.log 2>&1
+xcrun swiftc -typecheck -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.1.sdk -target arm64-apple-ios18.0-simulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -I /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -module-cache-path /tmp/fb-flexible-viewport-typecheck-cache Tests/UITests/DemoUITests.swift > /tmp/fb-flexible-disclosure-tests-typecheck.log 2>&1
+xcrun swiftc -typecheck -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator27.1.sdk -target arm64-apple-ios18.0-simulator -module-cache-path /tmp/fb-flexible-viewport-typecheck-cache /tmp/fb-disclosure-style-typecheck.swift > /tmp/fb-flexible-disclosure-style-typecheck.log 2>&1
+```
+
+The standalone style file is `import SwiftUI` followed by the exact committed FlexibleInspectorDisclosureStyle declaration, extracted for SDK API/type verification without building the app. All three commands exited0 and all three logs are0 bytes; owned/staged diff checks passed. This is parser, UI-file and style typecheck evidence, not a full app build or runtime pass. Controller and Astra received the immutable commit for isolated native rerun/review. No simulator command was run by this implementer; final acceptance remains pending. Disjoint collection implementation/recovery tests and unrelated review artifacts were untouched.
