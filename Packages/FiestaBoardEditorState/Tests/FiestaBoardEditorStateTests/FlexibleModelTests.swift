@@ -104,3 +104,16 @@ extension FlexibleModelTests {
         XCTAssertEqual(model.flexibleText(.block("t"), key: "text"), "Pending")
     }
 }
+
+extension FlexibleModelTests {
+    func testShapeReorderUndoRevealsOriginalIndexAndRedoRevealsDestination() throws {
+        let model = try make()
+        model.addShape("text", blockID: "c")
+        model.moveShape(0, to: 1, blockID: "c")
+        XCTAssertEqual(model.historyFocus, .shape("c", 1))
+        model.undo()
+        XCTAssertEqual(model.historyFocus, .shape("c", 0))
+        model.redo()
+        XCTAssertEqual(model.historyFocus, .shape("c", 1))
+    }
+}

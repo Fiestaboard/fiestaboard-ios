@@ -13,12 +13,13 @@ public struct DocumentEditingSession: Sendable {
         let baseline: PageDocument
         let action: String
         let focus: FlexibleLocation?
+        let oppositeFocus: FlexibleLocation?
     }
     public private(set) var historyFocus: FlexibleLocation?
     public var undoActionName: String? { undoHistory.last?.action }
     public var redoActionName: String? { redoHistory.last?.action }
-    private func version(action: String = "Edit document", focus: FlexibleLocation? = nil) -> Version {
-        Version(document: document, baseline: baseline, action: action, focus: focus)
+    private func version(action: String = "Edit document", focus: FlexibleLocation? = nil, oppositeFocus: FlexibleLocation? = nil) -> Version {
+        Version(document: document, baseline: baseline, action: action, focus: focus, oppositeFocus: oppositeFocus)
     }
     private var undoHistory: [Version] = []
     private var redoHistory: [Version] = []
@@ -74,16 +75,16 @@ public struct DocumentEditingSession: Sendable {
         try candidate.setLineWrap(at: index, wrap: wrap)
         try adopt(candidate)
     }
-    public mutating func editFlexible(action: String = "Edit flexible content", focus: FlexibleLocation? = nil, _ operation: (inout PageDocument) throws -> Void) throws {
+    public mutating func editFlexible(action: String = "Edit flexible content", focus: FlexibleLocation? = nil, undoFocus: FlexibleLocation? = nil, _ operation: (inout PageDocument) throws -> Void) throws {
         guard document.supportsFlexibleEditing else { throw FlexibleEditError.unsupported }
         var candidate = document
         try operation(&candidate)
-        try adopt(candidate, action: action, focus: focus)
+        try adopt(candidate, action: action, focus: focus, undoFocus: undoFocus)
     }
-    private mutating func adopt(_ candidate: PageDocument, action: String = "Edit document", focus: FlexibleLocation? = nil) throws {
+    private mutating func adopt(_ candidate: PageDocument, action: String = "Edit document", focus: FlexibleLocation? = nil, undoFocus: FlexibleLocation? = nil) throws {
         guard candidate != document else { return }
         try advanceRevision()
-        undoHistory.append(version(action: action, focus: focus))
+        undoHistory.append(version(action: action, focus: undoFocus ?? focus, oppositeFocus: focus))
         trim(&undoHistory)
         redoHistory.removeAll()
         document = candidate
@@ -93,7 +94,7 @@ public struct DocumentEditingSession: Sendable {
         guard let prior = undoHistory.last else { return }
         try advanceRevision()
         undoHistory.removeLast()
-        redoHistory.append(version(action: prior.action, focus: prior.focus))
+        redoHistory.append(version(action: prior.action, focus: prior.oppositeFocus, oppositeFocus: prior.focus))
         trim(&redoHistory)
         document = prior.document
         baseline = prior.baseline
@@ -103,7 +104,7 @@ public struct DocumentEditingSession: Sendable {
         guard let next = redoHistory.last else { return }
         try advanceRevision()
         redoHistory.removeLast()
-        undoHistory.append(version(action: next.action, focus: next.focus))
+        undoHistory.append(version(action: next.action, focus: next.oppositeFocus, oppositeFocus: next.focus))
         trim(&undoHistory)
         document = next.document
         baseline = next.baseline
@@ -136,6 +137,7 @@ public struct DocumentEditingSession: Sendable {
         document = recovered
         savedDocument = recovered
         savedBaseline = recoveredBaseline
+        historyFocus = nil
     }
     /// Acknowledged server storage establishes a new baseline. Old history is deliberately
     /// cleared: undo must never restore an obsolete server concurrency token.

@@ -66,9 +66,12 @@ public final class LocalPageEditorModel: ObservableObject {
     public func removeBlock(_ id: String) { mutate { try $0.editFlexible(action: "Remove block", focus: .block(id)) { try $0.removeFlexibleBlock(id: id) } } }
     public func moveBlock(_ id: String, to index: Int) { mutate { try $0.editFlexible(action: "Move block", focus: .block(id)) { try $0.moveFlexibleBlock(id: id, to: index) } } }
     public func insertText(_ source: String, blockID: String, selection: NSRange) { mutate { try $0.editFlexible(action: "Insert expression", focus: .block(blockID)) { try $0.insertFlexibleText(blockID: blockID, source: source, selection: selection) } } }
-    public func addShape(_ kind: String, blockID: String) { mutate { try $0.editFlexible(action: "Add \(kind) shape", focus: .content(blockID)) { try $0.insertFlexibleShape(blockID: blockID, kind: kind) } } }
+    public func addShape(_ kind: String, blockID: String) {
+        let index = shapes(blockID).count
+        mutate { try $0.editFlexible(action: "Add \(kind) shape", focus: .shape(blockID, index)) { try $0.insertFlexibleShape(blockID: blockID, kind: kind) } }
+    }
     public func removeShape(_ index: Int, blockID: String) { mutate { try $0.editFlexible(action: "Remove shape", focus: .shape(blockID, index)) { try $0.removeFlexibleShape(blockID: blockID, at: index) } } }
-    public func moveShape(_ index: Int, to destination: Int, blockID: String) { mutate { try $0.editFlexible(action: "Move shape", focus: .shape(blockID, destination)) { try $0.moveFlexibleShape(blockID: blockID, from: index, to: destination) } } }
+    public func moveShape(_ index: Int, to destination: Int, blockID: String) { mutate { try $0.editFlexible(action: "Move shape", focus: .shape(blockID, destination), undoFocus: .shape(blockID, index)) { try $0.moveFlexibleShape(blockID: blockID, from: index, to: destination) } } }
     public func setContentSize(_ blockID: String, axis: Int, text: String) { mutate { try $0.editFlexible(action: "Resize Canvas", focus: .content(blockID)) { try $0.setFlexibleContentSize(blockID: blockID, axis: axis, text: text) } } }
     public var serverSnapshotStatus: String {
         switch remoteStatus {
