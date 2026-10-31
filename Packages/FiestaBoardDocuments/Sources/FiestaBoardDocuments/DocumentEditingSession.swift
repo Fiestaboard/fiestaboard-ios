@@ -65,6 +65,12 @@ public struct DocumentEditingSession: Sendable {
         try candidate.duplicateTemplateLine(at: index)
         try adopt(candidate)
     }
+    /// One undo step for a burst of document typing (rows inserted, joined or edited together).
+    public mutating func replaceTemplateRows(_ rows: [String], action: String = "Typing") throws {
+        var candidate = document
+        try candidate.replaceTemplateRows(rows)
+        try adopt(candidate, action: action)
+    }
     public mutating func setLineAlignment(at index: Int, alignment: String) throws {
         var candidate = document
         try candidate.setLineAlignment(at: index, alignment: alignment)

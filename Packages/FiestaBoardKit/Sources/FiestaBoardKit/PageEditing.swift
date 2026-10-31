@@ -154,6 +154,11 @@ public struct TemplatePreviewResult: Sendable {
     public let hasLayers: Bool
     public let rawData: Data
     public let isSimulated: Bool
+    /// Full decodes of the optional members (PLAN §2.3, §3.3). Elements that do not match the
+    /// verified 10.3.2 shapes are skipped, never fatal; the counts above stay exact.
+    public let charsetIssues: [TemplateCharsetIssue]
+    public let canvasIssues: [TemplateCanvasIssue]
+    public let layers: [TemplatePreviewLayer]
     public init(rawData: Data, isSimulated: Bool = false) throws {
         struct Reply: Decodable { let rendered: String; let lines: [String]; let line_count: Int; let charset: String? }
         guard let reply = try? JSONDecoder().decode(Reply.self, from: rawData), reply.line_count == reply.lines.count,
@@ -164,7 +169,50 @@ public struct TemplatePreviewResult: Sendable {
         canvasIssueCount = try RawJSONObject.arrayCount(members["canvas_issues"])
         hasLayers = try RawJSONObject.arrayCount(members["layers"]) > 0
         surface = try PreviewSurface.read(members["layers"])
+        charsetIssues = LenientArray.decode(members["charset_issues"])
+        canvasIssues = LenientArray.decode(members["canvas_issues"])
+        layers = LenientArray.decode(members["layers"])
         self.rawData = rawData; self.isSimulated = isSimulated
+    }
+}
+
+/// `charset_issues[]` entry: FiestaUI `CharsetValidationIssue` (`S:src/led/charsets.py:385`).
+public struct TemplateCharsetIssue: Decodable, Sendable, Equatable {
+    public struct Token: Decodable, Sendable, Equatable {
+        public let kind: String?
+        public let value: String?
+        public let color: String?
+    }
+    public let row: Int
+    public let col: Int
+    public let token: Token?
+    public let reason: String?
+    public let fallback: Token?
+}
+/// `canvas_issues[]` entry (`S:src/canvas/evaluate.py:75`).
+public struct TemplateCanvasIssue: Decodable, Sendable, Equatable {
+    public let canvasID: String?
+    public let path: String?
+    public let message: String
+    public init(canvasID: String?, path: String?, message: String) { self.canvasID = canvasID; self.path = path; self.message = message }
+    enum CodingKeys: String, CodingKey { case canvasID = "canvas_id", path, message }
+}
+/// `layers[]` entry: FiestaUI `LedBitmapLayer` `{x, y, width, height, rgba}` (`S:src/canvas/layer.py:57`).
+public struct TemplatePreviewLayer: Decodable, Sendable, Equatable {
+    public let x: Int
+    public let y: Int
+    public let width: Int
+    public let height: Int
+    public let rgba: String
+}
+private enum LenientArray {
+    private struct Element<T: Decodable>: Decodable {
+        let value: T?
+        init(from decoder: any Decoder) throws { value = try? T(from: decoder) }
+    }
+    static func decode<T: Decodable>(_ data: Data?) -> [T] {
+        guard let data, let elements = try? JSONDecoder().decode([Element<T>].self, from: data) else { return [] }
+        return elements.compactMap(\.value)
     }
 }
 

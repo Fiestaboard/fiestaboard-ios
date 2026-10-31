@@ -22,6 +22,13 @@ public final class LocalPageEditorModel: ObservableObject {
     @Published public private(set) var validation: TemplateValidationResult?
     @Published public private(set) var flexiblePreview: FlexiblePreviewResult?
     @Published public private(set) var preview: TemplatePreviewResult?
+    /// The last accepted preview survives edits (hold-last-frame); `previewStale` says it no
+    /// longer describes the document. `preview` keeps its clear-on-edit contract.
+    @Published public private(set) var lastPreview: TemplatePreviewResult?
+    @Published public private(set) var previewStale = false
+    /// Remembers the stage's display per page (PLAN B20). `nil` disables persistence.
+    private let boardMemory: UserDefaults?
+    private var draftSaveTask: Task<Void, Never>?
     @Published public private(set) var isEvaluating = false
     @Published public private(set) var remoteComparisonText: String?
     private var remoteComparisonData: Data?
@@ -35,7 +42,8 @@ public final class LocalPageEditorModel: ObservableObject {
     // checkpoint/adoption. Metadata-only local dirty state after reload is not new local work.
     private var recoveryPreservationBarrier: PageDocument
 
-    public init(rawDocumentData: Data, identity: DraftIdentity, draftStore: LocalDraftStore, remote: EditorRemoteActions? = nil, boards: [EditorBoardChoice] = []) throws {
+    public init(rawDocumentData: Data, identity: DraftIdentity, draftStore: LocalDraftStore, remote: EditorRemoteActions? = nil, boards: [EditorBoardChoice] = [], boardMemory: UserDefaults? = nil) throws {
+        self.boardMemory = boardMemory
         self.remote = remote
         self.boards = boards
         self.identity = identity
@@ -280,12 +288,72 @@ public final class LocalPageEditorModel: ObservableObject {
     public func chooseBoard(_ id: String?) {
         guard id != selectedBoardID, id == nil || boards.contains(where: { $0.id == id }) else { return }
         selectedBoardID = id
+        if let boardMemory {
+            if let id { boardMemory.set(id, forKey: boardMemoryKey) } else { boardMemory.removeObject(forKey: boardMemoryKey) }
+        }
         targetEvidenceGeneration &+= 1
         invalidateEvaluation()
+    }
+    /// The display remembered for this page on this connection, if it is still offered.
+    public var rememberedBoardID: String? {
+        guard let id = boardMemory?.string(forKey: boardMemoryKey), boards.contains(where: { $0.id == id }) else { return nil }
+        return id
+    }
+    private var boardMemoryKey: String {
+        "editor.stageBoard." + identity.deploymentID + "|" + identity.pageID
     }
     private func invalidateEvaluation() {
         evaluationGeneration &+= 1
         validation = nil; preview = nil; flexiblePreview = nil; isEvaluating = false
+        // Hold the last frame; it is merely stale now.
+        if lastPreview != nil { previewStale = true }
+    }
+
+    // MARK: Document editor (PLAN §2.2, §3.3)
+
+    /// Commits the document surface's rows as one undo step ("Typing").
+    public func commitRows(_ rows: [String]) {
+        guard let current = lines, current != rows else { return }
+        mutate { try $0.replaceTemplateRows(rows) }
+    }
+
+    /// One render of the committed document for the pinned stage. `.local` when no request can
+    /// be made (empty document, no display chosen, no render route). Never retried here.
+    public func renderStage() async throws -> PreviewRender {
+        guard !supportsFlexibleEditing, let lines, lines.contains(where: { !$0.isEmpty }) else { return .local }
+        guard let remote, let run = remote.preview, let target = selectedTarget, !editingFrozen else { return .local }
+        let data = try session.document.evaluationData(boardID: target.boardID, preview: true)
+        do {
+            let result = try await run(data, target)
+            guard selectedTarget == target else { throw CancellationError() }
+            lastPreview = result; previewStale = false
+            return .server(result)
+        } catch {
+            await preserveForConnectionLoss(error)
+            throw error
+        }
+    }
+
+    /// Debounced automatic local checkpoint (PLAN B25). Cancelled by a newer call.
+    public func scheduleDraftSave(after delay: Duration = .seconds(2)) {
+        draftSaveTask?.cancel()
+        draftSaveTask = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled, let self, !self.editingEnded, self.session.hasUnsavedChanges else { return }
+            await self.saveDraft()
+        }
+    }
+    /// Scene background / leaving: checkpoint now unless the work was deliberately discarded.
+    public func checkpointNow() async {
+        draftSaveTask?.cancel(); draftSaveTask = nil
+        guard !editingEnded, session.hasUnsavedChanges, !editingFrozen else { return }
+        await saveDraft()
+    }
+    public func cancelScheduledDraftSave() { draftSaveTask?.cancel(); draftSaveTask = nil }
+
+    /// The editor's single status word (PLAN B25).
+    public var saveStatus: SaveStatus {
+        SaveStatus(remote: remoteStatus, isPreparing: isPreparingRemoteSave, hasServerChanges: hasServerChanges)
     }
 
     /// Called only after the UI's explicit confirmation identifying the page and deployment.
@@ -435,4 +503,29 @@ public final class LocalPageEditorModel: ObservableObject {
         }
     }
 
+}
+
+/// The one status word beside Save (PLAN B25): `Saved` / `Unsaved changes` / `Saving…` /
+/// `Conflict` / `Save result unknown`. Derived only from server-save state; the local recovery
+/// checkpoint is automatic and never shown as a separate action.
+public enum SaveStatus: String, Equatable, Sendable, CaseIterable {
+    case saved = "Saved"
+    case unsaved = "Unsaved changes"
+    case saving = "Saving…"
+    case conflict = "Conflict"
+    case unknown = "Save result unknown"
+
+    public init(remote: EditorRemoteStatus, isPreparing: Bool, hasServerChanges: Bool) {
+        if isPreparing { self = .saving; return }
+        switch remote {
+        case .saving: self = .saving
+        case .conflict: self = .conflict
+        case .unknownOutcome: self = .unknown
+        case .comparison: self = .conflict
+        case .idle, .reading: self = hasServerChanges ? .unsaved : .saved
+        }
+    }
+    public var label: String { rawValue }
+    /// Conflict and unknown outcome need the banner's single primary action.
+    public var needsAttention: Bool { self == .conflict || self == .unknown }
 }
