@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		00683140C3C4C853585275C3 /* Service+Status.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08A7CF83290AB187BA76D6AE /* Service+Status.swift */; };
 		04E946E5828F8F24ACA3B84C /* BoardOutputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D5842953E51F07878D5A3BB /* BoardOutputView.swift */; };
 		078026B7E4D421E7148C5185 /* CollectionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4490F7035D0FAA8FEDE9402 /* CollectionContext.swift */; };
 		0913F75453BB18F0C0758E7C /* BoardGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32BB9863B236F028ECD38024 /* BoardGeometryTests.swift */; };
@@ -30,10 +31,11 @@
 		2962C6835DC311B89804BF0E /* Transport.swift in Sources */ = {isa = PBXBuildFile; fileRef = E86A00533E2B630F562A1AC0 /* Transport.swift */; };
 		2A84FF6991DFCC8759F254CF /* FlexibleWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88D20A64E911A3536D1F434B /* FlexibleWorkspaceView.swift */; };
 		2C92BA0D05E56BF49D9E47E1 /* SetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E13D9FC25380CF28F3243F05 /* SetupView.swift */; };
+		2D955A909400BB75C265B044 /* Models+Status.swift in Sources */ = {isa = PBXBuildFile; fileRef = F72D5E21E5D6A566C8AF4873 /* Models+Status.swift */; };
 		2ED7D4EA037EABFE8750B7F0 /* CollectionEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5028E15ABB1CBC95D7E77C44 /* CollectionEditorModel.swift */; };
 		2FAF47C85119C10C529A4D50 /* BoardFont.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFCDF676F77A00F5D87923D1 /* BoardFont.swift */; };
-		306E8475494F6F33D56377E5 /* Resources in Resources */ = {isa = PBXBuildFile; fileRef = 5CCA76464B8B87430DA9F0BC /* Resources */; };
 		3894FAE45E2E74C777A940B4 /* TemplateWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15369EFA8AC57EF5D1976CBE /* TemplateWorkspaceView.swift */; };
+		3925C07AC2DE62611C5593B2 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 303AB3F8B1E5C7F725129E4B /* HomeView.swift */; };
 		3A7D569AE67E9EF1DB06CE68 /* ServerAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABDE686F7FEDAE342474766 /* ServerAddress.swift */; };
 		3D4EF7AFC59B17AD185BD4A6 /* LocalPageEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C47F8AA33E9578A49496430F /* LocalPageEditorView.swift */; };
 		4297D9B53557AC20F3AB0E4E /* CollectionEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 507EEDE849D0C019D6F42A7E /* CollectionEditing.swift */; };
@@ -65,8 +67,10 @@
 		8D3AD7946A5C657AAF013D03 /* TemplateSyntax.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10B4ECDC3AC96A79FEB3E9B8 /* TemplateSyntax.swift */; };
 		8F4B85AC5A6D9B9B1D6092F7 /* RenderHarness.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEEB8028464574196027DECB /* RenderHarness.swift */; };
 		92535869889AB4DC8D9FF326 /* ServerCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33C9936205557D822BCDBC68 /* ServerCatalog.swift */; };
+		93667E6F6860BA1EC032359F /* BoardVisualsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0547B69CE895F2F4F57FCF6 /* BoardVisualsUITests.swift */; };
 		959C749DFE9F4E7AB741C703 /* CollectionDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = D933B63826F1D92E72A16357 /* CollectionDraft.swift */; };
 		97487A82619335454365F088 /* BoardCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F379EE8104D0AF1F1BA7473 /* BoardCanvas.swift */; };
+		9975FD001CF05E47D0BAABE2 /* RenderAssets in Resources */ = {isa = PBXBuildFile; fileRef = 393B993DA75AE7F6FBE2F623 /* RenderAssets */; };
 		9AFDDB28F53DFAB5386DEB95 /* LocalPageEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8086EA8450423EC1F62DCF79 /* LocalPageEditorModel.swift */; };
 		9BBDCF7617F8E4E9029C1AEE /* Schedules.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA413B675A8CABCA5E05C047 /* Schedules.swift */; };
 		9D1709931FA7D62B23615972 /* SpecDriftTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0DB5C5F04702C68AFB68B28 /* SpecDriftTests.swift */; };
@@ -95,6 +99,7 @@
 		E30F7894CC2DE1EE719BFA9C /* FiestaBoardEditorState.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0CE51B6E8E630F1CA0FAFFB0 /* FiestaBoardEditorState.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		E6BBBAB3BD99634882D9AAE5 /* Service.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F65FAC9659A00AF389AC325 /* Service.swift */; };
 		E72FF6F47E7D31900577B8CA /* BoardSpeech.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8E18FB72C4DF8369002FD5E /* BoardSpeech.swift */; };
+		E8F1676D2E7396FD25987850 /* StatusReaderRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F18CFA2EA2DBEE5C93C28AA /* StatusReaderRegistry.swift */; };
 		EA8C26DACBAA907A2F8B24C8 /* CapabilityPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3772403D0456CA285BF0FBC5 /* CapabilityPolicy.swift */; };
 		ECCD8C8DE3D983B4431AFAAE /* DeploymentURL.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DD4D3175C0AE6D2D868EC75 /* DeploymentURL.swift */; };
 		F0E438AE948797DB1BBE1634 /* BoardLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243B601AF6228C1D6B5AC497 /* BoardLayoutTests.swift */; };
@@ -225,6 +230,7 @@
 /* Begin PBXFileReference section */
 		0148624436D9E73C46C262C2 /* BoardLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardLayout.swift; sourceTree = "<group>"; };
 		07FC5948A1A2BF18D9D2F81A /* LocalDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDraftStore.swift; sourceTree = "<group>"; };
+		08A7CF83290AB187BA76D6AE /* Service+Status.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Service+Status.swift"; sourceTree = "<group>"; };
 		08CD0DA7C751195DD5C9810F /* FlapPhysics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlapPhysics.swift; sourceTree = "<group>"; };
 		0CE51B6E8E630F1CA0FAFFB0 /* FiestaBoardEditorState.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FiestaBoardEditorState.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		0CF8A0D71245FFA302EDD63D /* BoardTables.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardTables.swift; sourceTree = "<group>"; };
@@ -232,16 +238,19 @@
 		0F379EE8104D0AF1F1BA7473 /* BoardCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardCanvas.swift; sourceTree = "<group>"; };
 		10B4ECDC3AC96A79FEB3E9B8 /* TemplateSyntax.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateSyntax.swift; sourceTree = "<group>"; };
 		15369EFA8AC57EF5D1976CBE /* TemplateWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateWorkspaceView.swift; sourceTree = "<group>"; };
+		1F18CFA2EA2DBEE5C93C28AA /* StatusReaderRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusReaderRegistry.swift; sourceTree = "<group>"; };
 		1F4D28A6F5B7C2A79C4C5E93 /* BoardGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardGeometry.swift; sourceTree = "<group>"; };
 		243B601AF6228C1D6B5AC497 /* BoardLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardLayoutTests.swift; sourceTree = "<group>"; };
 		2615A02A1D84B9DCF6155935 /* LocalPageEditorLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalPageEditorLoader.swift; sourceTree = "<group>"; };
 		27FA85577B2370468BEDF1F7 /* CollectionEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionEditorView.swift; sourceTree = "<group>"; };
 		2E21A61E3064CBB07099A3E1 /* FiestaBoardAppState.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FiestaBoardAppState.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		303AB3F8B1E5C7F725129E4B /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		32BB9863B236F028ECD38024 /* BoardGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardGeometryTests.swift; sourceTree = "<group>"; };
 		33C9936205557D822BCDBC68 /* ServerCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerCatalog.swift; sourceTree = "<group>"; };
 		34371FDA1872CA71EDAA3256 /* FlexibleEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlexibleEditing.swift; sourceTree = "<group>"; };
 		3772403D0456CA285BF0FBC5 /* CapabilityPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapabilityPolicy.swift; sourceTree = "<group>"; };
 		39295C71C5ED93F6ABEFB0B4 /* FiestaBoardError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiestaBoardError.swift; sourceTree = "<group>"; };
+		393B993DA75AE7F6FBE2F623 /* RenderAssets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RenderAssets; path = Packages/FiestaBoardRender/Sources/FiestaBoardRender/RenderAssets; sourceTree = SOURCE_ROOT; };
 		394E901940C7FAA9D53AFA2C /* FlapAtlas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlapAtlas.swift; sourceTree = "<group>"; };
 		39882C2621927BF6BC8C856A /* BoardControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardControlsView.swift; sourceTree = "<group>"; };
 		3A04568998109174FE6CF424 /* FlapAtlasTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlapAtlasTests.swift; sourceTree = "<group>"; };
@@ -260,7 +269,6 @@
 		5417092099F25D7A2F04F3C6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		581F221F9A5F1033AD2FC07A /* BoardSpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardSpec.swift; sourceTree = "<group>"; };
 		5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FiestaBoardKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		5CCA76464B8B87430DA9F0BC /* Resources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Resources; path = Packages/FiestaBoardRender/Sources/FiestaBoardRender/Resources; sourceTree = SOURCE_ROOT; };
 		5DC63171EF43451C07069156 /* DocumentEditingSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentEditingSession.swift; sourceTree = "<group>"; };
 		5DD2B3159501C8F2330E6630 /* BoardSeamsAndModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardSeamsAndModelTests.swift; sourceTree = "<group>"; };
 		60CD69EE0A48BCB225F494E6 /* PageDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageDetailView.swift; sourceTree = "<group>"; };
@@ -278,6 +286,7 @@
 		918875B3FE2650F6F4E9D4CA /* FiestaBoardTV-MIT.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "FiestaBoardTV-MIT.txt"; sourceTree = "<group>"; };
 		971BC95938B395BCAF17CC76 /* SchedulesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulesView.swift; sourceTree = "<group>"; };
 		9F65FAC9659A00AF389AC325 /* Service.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Service.swift; sourceTree = "<group>"; };
+		A0547B69CE895F2F4F57FCF6 /* BoardVisualsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardVisualsUITests.swift; sourceTree = "<group>"; };
 		A0B00B96E005DAE7C0B39B09 /* PageEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageEditing.swift; sourceTree = "<group>"; };
 		A0DB5C5F04702C68AFB68B28 /* SpecDriftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpecDriftTests.swift; sourceTree = "<group>"; };
 		A3E7BE5F69B8B5D28D44AE0E /* EditorRemoteActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorRemoteActions.swift; sourceTree = "<group>"; };
@@ -310,6 +319,7 @@
 		EFCDF676F77A00F5D87923D1 /* BoardFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardFont.swift; sourceTree = "<group>"; };
 		F4490F7035D0FAA8FEDE9402 /* CollectionContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionContext.swift; sourceTree = "<group>"; };
 		F4AB195B07FBE0B1390B13E5 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		F72D5E21E5D6A566C8AF4873 /* Models+Status.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models+Status.swift"; sourceTree = "<group>"; };
 		F8E18FB72C4DF8369002FD5E /* BoardSpeech.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardSpeech.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -370,6 +380,7 @@
 				37F8F08E3A4E421001D308AD /* Connection */,
 				9D690EFA94B460BE285C4005 /* Control */,
 				5E5CD822A3DDB6BB84BBA845 /* Editor */,
+				3DDD8D4EB4FB7ABB684F1F1D /* Home */,
 				2CABCEC548FC81D096534FB5 /* Library */,
 			);
 			path = Features;
@@ -394,6 +405,15 @@
 			path = Connection;
 			sourceTree = "<group>";
 		};
+		3DDD8D4EB4FB7ABB684F1F1D /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				303AB3F8B1E5C7F725129E4B /* HomeView.swift */,
+				1F18CFA2EA2DBEE5C93C28AA /* StatusReaderRegistry.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
 		5214043506ED068863C92A82 /* FiestaBoardKit */ = {
 			isa = PBXGroup;
 			children = (
@@ -405,6 +425,7 @@
 				3DD4D3175C0AE6D2D868EC75 /* DeploymentURL.swift */,
 				39295C71C5ED93F6ABEFB0B4 /* FiestaBoardError.swift */,
 				B269490EAA2BC1900A3319B2 /* Models.swift */,
+				F72D5E21E5D6A566C8AF4873 /* Models+Status.swift */,
 				A0B00B96E005DAE7C0B39B09 /* PageEditing.swift */,
 				B111FC6C6933C9409006391C /* PageManagement.swift */,
 				BA413B675A8CABCA5E05C047 /* Schedules.swift */,
@@ -412,6 +433,7 @@
 				33C9936205557D822BCDBC68 /* ServerCatalog.swift */,
 				ADD3E20169D98490321CE3F4 /* ServerDiscovery.swift */,
 				9F65FAC9659A00AF389AC325 /* Service.swift */,
+				08A7CF83290AB187BA76D6AE /* Service+Status.swift */,
 				8D0769B4598394A149E221E8 /* SessionVault.swift */,
 				E86A00533E2B630F562A1AC0 /* Transport.swift */,
 			);
@@ -503,6 +525,7 @@
 		A8C381AA094EA08ED178D2A4 /* UITests */ = {
 			isa = PBXGroup;
 			children = (
+				A0547B69CE895F2F4F57FCF6 /* BoardVisualsUITests.swift */,
 				73B099CBC1D0A8C287BB5AD2 /* CollectionRecoveryUITests.swift */,
 				A7CD60F365F22213C8C5A3BD /* DemoUITests.swift */,
 			);
@@ -514,7 +537,7 @@
 			isa = PBXGroup;
 			children = (
 				CC201510D850CA3750B8128B /* DemoFixtures */,
-				5CCA76464B8B87430DA9F0BC /* Resources */,
+				393B993DA75AE7F6FBE2F623 /* RenderAssets */,
 				ECE34FF7EFE478C4DB307AF6 /* App */,
 				55F7EDF63B78B9F429159445 /* FiestaBoardAppState */,
 				DB5BE4616FD54354FB26F2D1 /* FiestaBoardDocuments */,
@@ -838,7 +861,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				306E8475494F6F33D56377E5 /* Resources in Resources */,
+				9975FD001CF05E47D0BAABE2 /* RenderAssets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -879,6 +902,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				93667E6F6860BA1EC032359F /* BoardVisualsUITests.swift in Sources */,
 				C5BB25DC588B573A3F696202 /* CollectionRecoveryUITests.swift in Sources */,
 				AD9743F499C713E7272DF91B /* DemoUITests.swift in Sources */,
 			);
@@ -895,6 +919,7 @@
 				F52BEDA807B1A9BAF303000E /* DemoService.swift in Sources */,
 				ECCD8C8DE3D983B4431AFAAE /* DeploymentURL.swift in Sources */,
 				B87FD124C751FC4DA14916E3 /* FiestaBoardError.swift in Sources */,
+				2D955A909400BB75C265B044 /* Models+Status.swift in Sources */,
 				1F17B659C5A4800BBD4066C0 /* Models.swift in Sources */,
 				1EDB6D6A37593CDC64B9C86B /* PackageResources.swift in Sources */,
 				216E17622D37BAC98E2FC3E7 /* PageEditing.swift in Sources */,
@@ -903,6 +928,7 @@
 				3A7D569AE67E9EF1DB06CE68 /* ServerAddress.swift in Sources */,
 				92535869889AB4DC8D9FF326 /* ServerCatalog.swift in Sources */,
 				8CFC43B3AA777E3F0EE5DD3F /* ServerDiscovery.swift in Sources */,
+				00683140C3C4C853585275C3 /* Service+Status.swift in Sources */,
 				E6BBBAB3BD99634882D9AAE5 /* Service.swift in Sources */,
 				1DC85EC6AD31351DCF715362 /* SessionVault.swift in Sources */,
 				2962C6835DC311B89804BF0E /* Transport.swift in Sources */,
@@ -972,6 +998,7 @@
 				18EB9C22DE4A28BA68F2AD14 /* ConnectionView.swift in Sources */,
 				7DBA4232691B74518CE13653 /* FiestaBoardApp.swift in Sources */,
 				2A84FF6991DFCC8759F254CF /* FlexibleWorkspaceView.swift in Sources */,
+				3925C07AC2DE62611C5593B2 /* HomeView.swift in Sources */,
 				688CA26A40A73EE7EB990A4C /* LocalPageEditorLoader.swift in Sources */,
 				9AFDDB28F53DFAB5386DEB95 /* LocalPageEditorModel.swift in Sources */,
 				3D4EF7AFC59B17AD185BD4A6 /* LocalPageEditorView.swift in Sources */,
@@ -980,6 +1007,7 @@
 				759447EBBA7619627DABB4D0 /* SchedulesView.swift in Sources */,
 				2C92BA0D05E56BF49D9E47E1 /* SetupView.swift in Sources */,
 				E05D4B423EE03A5812BAA09F /* SignInView.swift in Sources */,
+				E8F1676D2E7396FD25987850 /* StatusReaderRegistry.swift in Sources */,
 				3894FAE45E2E74C777A940B4 /* TemplateWorkspaceView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
