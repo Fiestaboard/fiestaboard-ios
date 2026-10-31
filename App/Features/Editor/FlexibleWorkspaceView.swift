@@ -45,7 +45,7 @@ import FiestaBoardEditorState
                                 .font(.footnote).multilineTextAlignment(.leading)
                         }.accessibilityIdentifier("flexibleIssue_\(issue.key)")
                     }
-                }.foregroundStyle(.red).accessibilityIdentifier("flexibleIssues")
+                }.foregroundStyle(.red)
             }
             let layout = widthClass == .regular
                 ? AnyLayout(HStackLayout(alignment: .top, spacing: 24))
@@ -203,7 +203,7 @@ import FiestaBoardEditorState
                         styleFields(.blockStyle(block.id))
                     }
                 }
-            }.id("flexibleInspector").accessibilityIdentifier("flexibleInspector")
+            }.id("flexibleInspector")
         } else {
             Text("Add or select a block to edit its content.").foregroundStyle(.secondary)
         }
@@ -251,7 +251,7 @@ import FiestaBoardEditorState
                 shapeInspector(id, index: index)
             }
             Text("Drawing brushes and palette editing are planned. Existing palettes, pixels and other known shapes are retained.").font(.caption).foregroundStyle(.secondary)
-        }.accessibilityIdentifier("canvasInspector")
+        }
     }
     @ViewBuilder private func shapeInspector(_ id: String, index: Int) -> some View {
         let kind = shapeKind(model.shapes(id)[index])
@@ -282,7 +282,7 @@ import FiestaBoardEditorState
             } else {
                 Text("This shape is preserved without conversion. Remove it explicitly to repair unsupported content, or use the web editor.").font(.footnote)
             }
-        }.padding(.top, 8).id("canvasShapeInspector").accessibilityIdentifier("canvasShapeInspector")
+        }.padding(.top, 8).id("canvasShapeInspector")
     }
     private func styleFields(_ location: FlexibleLocation) -> some View {
         VStack(alignment: .leading, spacing: 10) {
