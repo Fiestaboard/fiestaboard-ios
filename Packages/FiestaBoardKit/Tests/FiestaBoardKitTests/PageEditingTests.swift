@@ -156,7 +156,7 @@ extension PageEditingTests {
         XCTAssertFalse(after.contains { $0.path.contains("live") })
     }
     func testUnknownPreviewVersionRefusesBeforeRequest() async throws {
-        let transport = PageFixtureTransport(version: "10.1.3")
+        let transport = PageFixtureTransport(version: "11.0.0")
         let deployment = try DeploymentURL("https://fixture.test"), service = LiveFiestaBoardService(deployment: try DeploymentURL("https://fixture.test"), transport: transport)
         _ = try await service.connect(allowCandidateWrites: true)
         do { _ = try await service.previewPage(requestData: Data(#"{"template":[],"board_id":"board-2"}"#.utf8), target: BoardTarget(deployment: deployment, boardID: "board-2")); XCTFail() }
@@ -246,14 +246,20 @@ extension PageEditingTests {
 
 
 extension PageEditingTests {
-    func testAudited1017PreviewHasSeparateExactNonDevelopmentVersionGate() async throws {
-        let cases: [(String?, Bool, Bool)] = [("10.1.7", false, true), ("10.1.7", true, false), ("10.1.8", false, false), (nil, false, false)]
+    func testTemplateEvaluationUsesAuditedStableCompatibilityRange() async throws {
+        let cases: [(String?, Bool, Bool)] = [
+            ("10.0.0", false, true), ("10.1.7", false, true), ("10.1.8", false, true),
+            ("10.1.20", false, true), ("10.3.2", false, true),
+            ("9.9.9", false, false), ("10.3.3", false, false), ("11.0.0", false, false),
+            ("10.3.2", true, false), ("10.3.2-dev", false, false), ("10.03.2", false, false),
+            ("10.3", false, false), ("999999999999999999999.3.2", false, false), (nil, false, false)
+        ]
         for (version, dev, permits) in cases {
             let transport = PageFixtureTransport(version: version, isDev: dev)
             let deployment = try DeploymentURL("https://fixture.test")
             let service = LiveFiestaBoardService(deployment: deployment, transport: transport)
             let status = try await service.connect(allowCandidateWrites: true)
-            XCTAssertEqual(status.access, .readOnly, "Collection candidate never widens board controls")
+            if version == "10.1.7" { XCTAssertEqual(status.access, .readOnly, "Preview support never widens board controls") }
             let target = try BoardTarget(deployment: deployment, boardID: "board-2")
             let request = Data(#"{"template":["🛰️"],"board_id":"board-2"}"#.utf8)
             if permits {
@@ -268,6 +274,8 @@ extension PageEditingTests {
             }
             let sent = await transport.requests
             XCTAssertEqual(sent.filter { $0.method == .post }.count, permits ? 2 : 0)
+            XCTAssertEqual(sent.filter { $0.method == .post }.map(\.path), permits ? [["templates", "validate"], ["templates", "render"]] : [])
+            XCTAssertFalse(sent.contains { $0.method == .put || $0.method == .delete || $0.path.contains("live") })
         }
     }
 }

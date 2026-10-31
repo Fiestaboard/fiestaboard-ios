@@ -242,7 +242,7 @@ struct DraftScene: View {
                 Section("Pages · local drafts available") {
                     ForEach(store.pages.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }) { page in
                         NavigationLink { PageDetailView(page: page, store: store, prepare: { pending = store.prepare(.page(page.id)) }) } label: {
-                            Label { VStack(alignment: .leading, spacing: 4) { Text(page.name).font(.headline); Text("\(page.type) · \(page.deviceType)").font(.caption).foregroundStyle(.secondary) } } icon: { Image(systemName: "rectangle.stack").foregroundStyle(.orange) }.padding(.vertical, 6)
+                            Label { VStack(alignment: .leading, spacing: 4) { Text(page.name).font(.headline); Text("\(page.type) · \(page.deviceType ?? "no fixed grid")").font(.caption).foregroundStyle(.secondary) } } icon: { Image(systemName: "rectangle.stack").foregroundStyle(.orange) }.padding(.vertical, 6)
                         }
                     }
                     if store.pages.isEmpty { Text("No pages on this deployment.") }

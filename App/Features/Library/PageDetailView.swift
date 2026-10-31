@@ -14,21 +14,27 @@ struct PageDetailView: View {
 
     var body: some View {
         Form {
-            Section("Server template · read-only") {
+            Section("Page content · read-only") {
                 if let lines = page.template {
                     Text(lines.joined(separator: "\n")).font(.body.monospaced()).textSelection(.enabled)
                 } else {
                     Text("This page has no plain-text template projection. Use the web interface for its full preview.")
                 }
-                Text("Template expressions are shown as source. Plugins are not rendered here.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                if page.template != nil {
+                    Text("Template expressions are shown as source. Plugins are not rendered here.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
             }
             Section("Page editing") {
-                Button("Edit local draft") { editing = true }
-                    .disabled(store.status == nil || store.connecting)
-                    .accessibilityIdentifier("editLocalDraft")
-                Text("Edit the full page document, keep a local draft, and explicitly evaluate or save supported changes when the deployment allows it.")
-                    .font(.footnote).foregroundStyle(.secondary)
+                if !page.supportsTemplateEditing {
+                    Text("Use the web editor to edit this document and preview it for each display.")
+                } else {
+                    Button("Edit local draft") { editing = true }
+                        .disabled(store.status == nil || store.connecting)
+                        .accessibilityIdentifier("editLocalDraft")
+                    Text("Edit the full page document, keep a local draft, and explicitly evaluate or save supported changes when the deployment allows it.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
             }
             if let library = store.pageLibrary {
                 Section("Manage page") {
@@ -40,7 +46,7 @@ struct PageDetailView: View {
                         }
                     }
                     .accessibilityIdentifier("deleteLibraryPage")
-                    .disabled(!library.canDelete)
+                    .disabled(!library.canDelete || !page.supportsTemplateEditing)
                 }
             }
             Section {

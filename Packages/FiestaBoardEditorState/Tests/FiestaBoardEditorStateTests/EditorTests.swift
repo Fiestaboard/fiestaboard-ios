@@ -18,6 +18,23 @@ import FiestaBoardKit
     private func model(_ actions: EditorRemoteActions) throws -> LocalPageEditorModel {
         try LocalPageEditorModel(rawDocumentData: raw(), identity: identity, draftStore: store, remote: actions)
     }
+    func testUnsupportedDocumentProtocolsCannotSaveEvenWhenRemoteAllowsWrites() async throws {
+        for value in ["\"page-document-v99\"", "{}", "null"] {
+            let source = String(decoding: raw(), as: UTF8.self).dropLast() + ",\"document_protocol\":" + value + "}"
+            var calls = 0
+            let model = try LocalPageEditorModel(rawDocumentData: Data(source.utf8), identity: identity, draftStore: store,
+                remote: EditorRemoteActions(disabledReason: { nil }, save: { _ in
+                    calls += 1
+                    throw FiestaBoardError.invalidResponse
+                }))
+            model.setName("Edited")
+            XCTAssertNotNil(model.serverSaveDisabledReason)
+            XCTAssertFalse(model.canSaveToServer)
+            await model.saveToServer()
+            XCTAssertEqual(calls, 0)
+            XCTAssertEqual(model.name, "Edited")
+        }
+    }
     func testSaveSnapshotsBeforeFailureAndKeepsServerDirty() async throws {
         let model = try model(EditorRemoteActions(disabledReason: { nil }, save: { [store, identity] patch in
             guard case .recovered(let draft) = try await store!.load(identity) else { throw FiestaBoardError.invalidResponse }

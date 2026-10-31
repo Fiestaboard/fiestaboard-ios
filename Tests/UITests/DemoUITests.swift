@@ -308,6 +308,60 @@ extension DemoUITests {
 final class ConnectionUITests: XCTestCase {
     override func setUp() { super.setUp(); continueAfterFailure = false }
     @MainActor
+    func testMixedLibraryPreservesUnknownPagesAndShowsReadOnlyRoute() async throws {
+        try await requireFixture()
+        let app = XCUIApplication(); app.launchArguments = []; app.launch()
+        let alias = connect(app, scenario: "mixed")
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        selectTab("Library", in: app)
+        XCTAssertTrue(app.staticTexts["Document"].waitForExistence(timeout: 5))
+        for title in ["Flexible document", "Future document"] {
+            let row = app.staticTexts[title].firstMatch
+            XCTAssertTrue(row.waitForExistence(timeout: 5)); row.tap()
+            XCTAssertTrue(app.staticTexts["Use the web editor to edit this document and preview it for each display."].waitForExistence(timeout: 5))
+            XCTAssertFalse(app.buttons["editLocalDraft"].exists)
+            let deletion = app.buttons["deleteLibraryPage"]
+            reveal(deletion, app); XCTAssertFalse(deletion.isEnabled)
+            let evidence = XCTAttachment(screenshot: app.screenshot())
+            evidence.name = title; evidence.lifetime = .keepAlways; add(evidence)
+            app.navigationBars.buttons["Library"].tap()
+        }
+        selectTab("Settings", in: app)
+        let disconnect = app.buttons["Disconnect"]
+        reveal(disconnect, app); disconnect.tap()
+        removeSaved(alias, app)
+    }
+
+    @MainActor
+    func testExplicitPhysicalPreviewDisplaysItsPixelDimensions() async throws {
+        try await requireFixture()
+        let app = XCUIApplication(); app.launchArguments = []; app.launch()
+        let alias = connect(app, scenario: "mixed")
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        selectTab("Library", in: app)
+        app.staticTexts["Document"].tap()
+        app.buttons["editLocalDraft"].tap()
+        let picker = app.buttons["evaluationBoardPicker"]
+        reveal(picker, app); picker.tap()
+        app.buttons["Contract board"].tap()
+        let preview = app.buttons["previewPage"]
+        reveal(preview, app); XCTAssertTrue(preview.isEnabled); preview.tap()
+        let surface = app.descendants(matching: .any).matching(identifier: "physicalPreview").firstMatch
+        reveal(surface, app)
+        XCTAssertTrue(surface.waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertEqual(surface.label, "Server preview, 32 by 8 pixels")
+        let dimensions = app.staticTexts["32 × 8 pixels"]
+        reveal(dimensions, app); XCTAssertTrue(dimensions.exists)
+        let evidence = XCTAttachment(screenshot: app.screenshot())
+        evidence.name = "Physical preview 32 by 8"; evidence.lifetime = .keepAlways; add(evidence)
+        app.buttons["Close"].tap()
+        app.navigationBars.buttons["Library"].tap()
+        selectTab("Settings", in: app)
+        let disconnect = app.buttons["Disconnect"]
+        reveal(disconnect, app); disconnect.tap(); removeSaved(alias, app)
+    }
+
+    @MainActor
     func testFirstRunCreatesAdministratorAndLoadsShell() async throws {
         try await requireFixture()
         let app = XCUIApplication()
@@ -415,7 +469,7 @@ final class ConnectionUITests: XCTestCase {
         let confirm = app.buttons["Remove server & forget sign-in"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 3))
         confirm.tap()
-        XCTAssertTrue(row.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(row.waitForNonExistence(timeout: 5), app.debugDescription)
     }
 
     @MainActor @discardableResult
@@ -427,7 +481,7 @@ final class ConnectionUITests: XCTestCase {
         XCTAssertTrue(address.exists)
         address.tap(); address.typeText("http://127.0.0.1:18442/" + alias)
         let name = app.textFields["Server name (optional)"]
-        reveal(name, app); name.tap(); name.typeText(alias)
+        reveal(name, app); name.tap(); name.typeText(alias + "\n")
         let localHTTP = app.switches["connectionLocalHTTP"]
         reveal(localHTTP, app); localHTTP.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
         XCTAssertEqual(localHTTP.value as? String, "1")

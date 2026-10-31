@@ -177,6 +177,11 @@ public final class LocalPageEditorModel: ObservableObject {
     public var serverSaveDisabledReason: String? {
         guard let remote else { return "Server saving is unavailable for this local document." }
         if let reason = remote.disabledReason() { return reason }
+        let documentProtocol = session.baseline.root["document_protocol"]
+        guard session.baseline.root["type"] == .string("template"),
+              documentProtocol == nil || documentProtocol == .string("page-document-v1") else {
+            return "This document uses an unsupported editing protocol. Keep changes as a local draft."
+        }
         guard session.baseline.root["edit_protocol"] == .string("page-revision-v1"),
               let revision = baselineRevision, !revision.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return "This document has no supported page revision protocol. Keep changes as a local draft."

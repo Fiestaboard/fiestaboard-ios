@@ -144,21 +144,46 @@ public struct BoardDetail: Codable, Sendable {
     }
 }
 /// A read projection. Editing retains the original raw document separately.
-public struct Page: Codable, Sendable, Identifiable, Equatable {
+public struct Page: Decodable, Sendable, Identifiable, Equatable {
     public let id: String
     public let name: String
     public let type: String
-    public let deviceType: String
+    /// Flexible and future document families may have no fixed character grid.
+    /// This read projection must not make one such page invalidate the library.
+    public let deviceType: String?
     public let template: [String]?
     public let revision: String?
     public let editProtocol: String?
+    public let documentProtocol: String?
+    public let supportsTemplateEditing: Bool
     public let notesWide: Int?
     public let notesTall: Int?
     public let gridRows: Int?
     public let gridCols: Int?
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        type = try c.decode(String.self, forKey: .type)
+        // Unsupported families retain their full raw document elsewhere. Their
+        // projection fields must not invalidate the rest of a mixed library.
+        documentProtocol = try? c.decode(String.self, forKey: .documentProtocol)
+        // Older audited template documents omit this field. A present unknown,
+        // null or malformed protocol never inherits that legacy permission.
+        supportsTemplateEditing = type == "template" && (!c.contains(.documentProtocol) || documentProtocol == "page-document-v1")
+        let legacy = supportsTemplateEditing
+        deviceType = legacy ? try c.decode(String.self, forKey: .deviceType) : try? c.decodeIfPresent(String.self, forKey: .deviceType)
+        template = legacy ? try c.decodeIfPresent([String].self, forKey: .template) : try? c.decodeIfPresent([String].self, forKey: .template)
+        revision = legacy ? try c.decodeIfPresent(String.self, forKey: .revision) : try? c.decodeIfPresent(String.self, forKey: .revision)
+        editProtocol = legacy ? try c.decodeIfPresent(String.self, forKey: .editProtocol) : try? c.decodeIfPresent(String.self, forKey: .editProtocol)
+        notesWide = legacy ? try c.decodeIfPresent(Int.self, forKey: .notesWide) : try? c.decodeIfPresent(Int.self, forKey: .notesWide)
+        notesTall = legacy ? try c.decodeIfPresent(Int.self, forKey: .notesTall) : try? c.decodeIfPresent(Int.self, forKey: .notesTall)
+        gridRows = legacy ? try c.decodeIfPresent(Int.self, forKey: .gridRows) : try? c.decodeIfPresent(Int.self, forKey: .gridRows)
+        gridCols = legacy ? try c.decodeIfPresent(Int.self, forKey: .gridCols) : try? c.decodeIfPresent(Int.self, forKey: .gridCols)
+    }
     enum CodingKeys: String, CodingKey {
         case id, name, type, template, revision
-        case editProtocol = "edit_protocol"
+        case editProtocol = "edit_protocol", documentProtocol = "document_protocol"
         case deviceType = "device_type", notesWide = "notes_wide", notesTall = "notes_tall"
         case gridRows = "grid_rows", gridCols = "grid_cols"
     }

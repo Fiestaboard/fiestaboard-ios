@@ -151,7 +151,7 @@ public struct LocalPageEditorView: View {
             Picker("Board for evaluation", selection: Binding(get: { model.selectedBoardID }, set: { model.chooseBoard($0) })) {
                 Text("Choose a board").tag(String?.none)
                 ForEach(model.boards) { board in Text(board.name).tag(Optional(board.id)) }
-            }.disabled(model.editingFrozen)
+            }.disabled(model.editingFrozen).accessibilityIdentifier("evaluationBoardPicker")
             HStack {
                 Button("Validate") { commitTextInput(); Task { await model.evaluate(preview: false) } }
                     .accessibilityIdentifier("validatePage")
@@ -171,15 +171,21 @@ public struct LocalPageEditorView: View {
                 }
             }
             if let result = model.preview {
-                Text(result.isSimulated ? "Demo preview · simulated, expressions are not evaluated" : "Server-rendered text preview")
+                Text(result.isSimulated ? "Demo preview · simulated, expressions are not evaluated" : "Server preview")
                     .font(.caption).foregroundStyle(.secondary)
-                Text(result.lines.joined(separator: "\n")).font(.body.monospaced()).textSelection(.enabled)
+                switch result.surface {
+                case .physical(let frame):
+                    PhysicalFrameView(frame: frame)
+                case .unsupported:
+                    Text("This server uses a visual preview format this app does not support.")
+                case .legacy:
+                    Text(result.lines.joined(separator: "\n")).font(.body.monospaced()).textSelection(.enabled)
+                    if result.hasLayers {
+                        Text("This preview includes visual overlays. Use the web preview to inspect them.").font(.footnote)
+                    }
+                }
                 if let charset = result.charset { Text("Character set: \(charset)").font(.caption) }
                 Text("Character warnings: \(result.charsetIssueCount) · Canvas warnings: \(result.canvasIssueCount)").font(.footnote)
-                if result.hasLayers {
-                    Text("This result includes visual layers. This text-only preview cannot display those layers; use the web preview to inspect them.")
-                        .font(.footnote)
-                }
                 DisclosureGroup("Full evaluation result and warnings") {
                     Text(String(decoding: result.rawData, as: UTF8.self)).font(.caption.monospaced()).textSelection(.enabled)
                 }
@@ -189,5 +195,31 @@ public struct LocalPageEditorView: View {
 
     private func commitTextInput() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
+
+/// The backend supplies a complete opaque RGBA surface. Display its exact aspect
+/// ratio with nearest-neighbor sampling; no character-grid geometry participates.
+private struct PhysicalFrameView: View {
+    let frame: PhysicalPreviewFrame
+    private var image: CGImage? {
+        guard let provider = CGDataProvider(data: frame.rgba as CFData) else { return nil }
+        return CGImage(width: frame.width, height: frame.height, bitsPerComponent: 8,
+            bitsPerPixel: 32, bytesPerRow: frame.width * 4,
+            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.last.rawValue),
+            provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)
+    }
+    var body: some View {
+        if let image {
+            Image(decorative: image, scale: 1)
+                .resizable().interpolation(.none)
+                .aspectRatio(CGFloat(frame.width) / CGFloat(frame.height), contentMode: .fit)
+                .accessibilityHidden(false)
+                .accessibilityLabel("Server preview, \(frame.width) by \(frame.height) pixels")
+                .accessibilityIdentifier("physicalPreview")
+            Text("\(frame.width) × \(frame.height) pixels").font(.caption)
+        } else {
+            Text("The visual preview could not be displayed.")
+        }
     }
 }

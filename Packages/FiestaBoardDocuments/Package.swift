@@ -7,6 +7,6 @@ let package = Package(
     products: [.library(name: "FiestaBoardDocuments", targets: ["FiestaBoardDocuments"])],
     targets: [
         .target(name: "FiestaBoardDocuments"),
-        .testTarget(name: "FiestaBoardDocumentsTests", dependencies: ["FiestaBoardDocuments"])
+        .testTarget(name: "FiestaBoardDocumentsTests", dependencies: ["FiestaBoardDocuments"], resources: [.copy("Fixtures")])
     ]
 )

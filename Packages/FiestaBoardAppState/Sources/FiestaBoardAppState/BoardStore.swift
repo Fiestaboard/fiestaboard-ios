@@ -7,7 +7,7 @@ public struct PageEditingContext: Sendable, Equatable {
     public let deployment: DeploymentURL
     public let originalRevision: String?
     public let editProtocol: String?
-    fileprivate let pageType: String
+    fileprivate let supportsTemplateEditing: Bool
     fileprivate let generation: UInt64
     fileprivate let documentID: UUID
 }
@@ -419,7 +419,7 @@ public struct PreparedAction: Identifiable, Sendable {
         catch { return .disabled(error.localizedDescription) }
         let identity = PageIdentity(deployment: context.deployment, id: context.pageID)
         guard !savingPages.contains(identity), !pageReadbacks.contains(identity) else { return .disabled(FiestaBoardError.pageReadbackRequired.localizedDescription) }
-        guard pageSessionOptedIn, context.pageType == "template", context.editProtocol == "page-revision-v1", context.originalRevision?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else {
+        guard pageSessionOptedIn, context.supportsTemplateEditing, context.editProtocol == "page-revision-v1", context.originalRevision?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else {
             return .disabled(FiestaBoardError.pageWritesDisabled.localizedDescription)
         }
         return status?.isDemo == true ? .simulated : .enabled
@@ -461,7 +461,7 @@ public struct PreparedAction: Identifiable, Sendable {
         let page = try JSONDecoder().decode(Page.self, from: data)
         guard page.id == id else { throw FiestaBoardError.invalidResponse }
         let context = PageEditingContext(pageID: id, deployment: deployment, originalRevision: page.revision,
-                                         editProtocol: page.editProtocol, pageType: page.type, generation: generation, documentID: UUID())
+                                         editProtocol: page.editProtocol, supportsTemplateEditing: page.supportsTemplateEditing, generation: generation, documentID: UUID())
         pageContexts[id] = context.documentID
         if let index = pages.firstIndex(where: { $0.id == id }) { pages[index] = page }
         return PageDocumentSnapshot(id: id, deployment: deployment, data: data, context: context, editingAccess: pageEditingAccess(context: context), incompatibleReferenceCount: incompatibleReferenceCount)

@@ -5,6 +5,7 @@ Run before xcodebuild test. Each /signin-UUID or /setup-UUID prefix owns fresh
 state. Payload shapes come from the separately verified HTTP corpus; this
 server proves native UI/transport composition, not backend compatibility.
 """
+import base64
 import copy
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -32,11 +33,11 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == '/ready':
             return self.reply(200, {'fixture': 'native-onboarding'})
         parts = self.path.split('/api/', 1)
-        if len(parts) != 2 or not parts[0].startswith(('/signin-', '/setup-')):
+        if len(parts) != 2 or not parts[0].startswith(('/signin-', '/setup-', '/mixed-')):
             return self.reply(404, {})
         prefix, route = parts
         with LOCK:
-            state = STATES.setdefault(prefix, {'mode': 'undecided' if prefix.startswith('/setup-') else 'enabled',
+            state = STATES.setdefault(prefix, {'mode': 'disabled' if prefix.startswith('/mixed-') else ('undecided' if prefix.startswith('/setup-') else 'enabled'),
                                               'setup': prefix.startswith('/setup-'), 'sessions': set()})
             session = f'fiestaboard_session=fixture-{prefix[1:]}'
             authenticated = session in self.headers.get('Cookie', '') and session in state['sessions']
@@ -84,8 +85,27 @@ class Handler(BaseHTTPRequestHandler):
                 return self.reply(200, CASES['boards_list'])
             if method == 'GET' and route == 'v1/boards/contract-board':
                 return self.reply(200, CASES['boards_detail'])
+            if method == 'GET' and route == 'v1/pages/id-2':
+                return self.reply(200, CASES['page_get'])
+            if prefix.startswith('/mixed-') and method == 'POST' and route == 'templates/render':
+                pixels = bytearray([0, 0, 0, 255] * (32 * 8))
+                pixels[:4] = bytes([255, 128, 64, 255])
+                pixels[-4:] = bytes([64, 128, 255, 255])
+                return self.reply(200, {'rendered': '', 'lines': [''], 'line_count': 1,
+                    'charset': 'ascii', 'charset_issues': [], 'canvas_issues': [],
+                    'layers': [{'x': 0, 'y': 0, 'width': 32, 'height': 8,
+                        'physical_frame_version': 1, 'rgba': base64.b64encode(pixels).decode()}]})
             if method == 'GET' and route == 'v1/pages':
-                return self.reply(200, {'pages': [CASES['page_get']], 'total': 1})
+                pages = [CASES['page_get']]
+                if prefix.startswith('/mixed-'):
+                    pages += [
+                        {'id': 'flexible', 'name': 'Flexible document', 'type': 'flexible',
+                         'document_protocol': 'page-document-v2', 'edit_protocol': 'page-revision-v1',
+                         'revision': 'flex-r1', 'blocks': []},
+                        {'id': 'future', 'name': 'Future document', 'type': 'future',
+                         'document_protocol': 'page-document-v99', 'revision': 'future-r1'},
+                    ]
+                return self.reply(200, {'pages': pages, 'total': len(pages)})
             return self.reply(404, {})  # Every device/content mutation is deliberately absent.
 
     def reply(self, status, body, cookie=None):

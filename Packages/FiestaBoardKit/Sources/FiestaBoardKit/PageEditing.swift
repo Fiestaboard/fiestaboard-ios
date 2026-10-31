@@ -78,7 +78,57 @@ public struct TemplateValidationResult: Sendable {
         valid = value.valid; errors = value.errors; self.rawData = rawData; self.isSimulated = isSimulated
     }
 }
+public struct PhysicalPreviewFrame: Sendable, Equatable {
+    public let width: Int
+    public let height: Int
+    public let rgba: Data
+}
+public enum PreviewSurface: Sendable, Equatable {
+    case legacy, physical(PhysicalPreviewFrame), unsupported
+
+    fileprivate static func read(_ data: Data?) throws -> Self {
+        guard let data, data != Data("null".utf8) else { return .legacy }
+        let layers = try JSONDecoder().decode([Layer].self, from: data)
+        if layers.contains(where: { $0.surface == .unsupported }) { return .unsupported }
+        let frames = layers.compactMap { layer -> PhysicalPreviewFrame? in
+            if case .physical(let frame) = layer.surface { return frame }; return nil
+        }
+        guard !frames.isEmpty else { return .legacy }
+        // V1 is a complete surface, not an overlay in legacy character coordinates.
+        guard frames.count == 1, layers.count == 1 else { throw FiestaBoardError.invalidResponse }
+        return .physical(frames[0])
+    }
+
+    private struct Layer: Decodable {
+        let surface: PreviewSurface
+        enum CodingKeys: String, CodingKey { case x, y, width, height, rgba, version = "physical_frame_version" }
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            guard c.contains(.version) else {
+                surface = .legacy; return
+            }
+            guard (try? c.decode(Int.self, forKey: .version)) == 1 else {
+                surface = .unsupported; return
+            }
+            let width = try c.decode(Int.self, forKey: .width)
+            let height = try c.decode(Int.self, forKey: .height)
+            guard (1...512).contains(width), (1...512).contains(height),
+                  try c.decode(Int.self, forKey: .x) == 0, try c.decode(Int.self, forKey: .y) == 0 else {
+                throw FiestaBoardError.invalidResponse
+            }
+            let encoded = try c.decode(String.self, forKey: .rgba)
+            let count = width * height * 4
+            guard encoded.utf8.count == ((count + 2) / 3) * 4,
+                  let bytes = Data(base64Encoded: encoded), bytes.count == count,
+                  stride(from: 3, to: count, by: 4).allSatisfy({ bytes[$0] == 255 }) else {
+                throw FiestaBoardError.invalidResponse
+            }
+            surface = .physical(PhysicalPreviewFrame(width: width, height: height, rgba: bytes))
+        }
+    }
+}
 public struct TemplatePreviewResult: Sendable {
+    public let surface: PreviewSurface
     public let rendered: String
     public let lines: [String]
     public let charset: String?
@@ -96,6 +146,7 @@ public struct TemplatePreviewResult: Sendable {
         charsetIssueCount = try RawJSONObject.arrayCount(members["charset_issues"])
         canvasIssueCount = try RawJSONObject.arrayCount(members["canvas_issues"])
         hasLayers = try RawJSONObject.arrayCount(members["layers"]) > 0
+        surface = try PreviewSurface.read(members["layers"])
         self.rawData = rawData; self.isSimulated = isSimulated
     }
 }
