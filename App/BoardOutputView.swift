@@ -13,11 +13,12 @@ struct BoardOutputView: View {
     var size: BoardSize = .fit
     var animated = true
     var loading = false
+    var flapStepMs = 80
 
     var body: some View {
         let model = model ?? DisplayModel(summary: BoardSummaryFields(board.summary), stored: nil)
         BoardFrameView(frame: BoardFrame(board, expected: expected), model: model, size: size,
-                       animated: animated, loading: loading)
-            .accessibilityLabel(expected ? "Expected output" : "Server-reported output")
+                       animated: animated, loading: loading, flapStepMs: flapStepMs)
+            .accessibilityHint(expected ? "Expected output" : "Server-reported output")
     }
 }
