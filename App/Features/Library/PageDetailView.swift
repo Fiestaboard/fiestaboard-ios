@@ -18,7 +18,21 @@ struct PageDetailView: View {
                 if let lines = page.template {
                     Text(lines.joined(separator: "\n")).font(.body.monospaced()).textSelection(.enabled)
                 } else {
-                    Text("This page has no plain-text template projection. Use the web interface for its full preview.")
+                    LabeledContent("Content type", value: page.type)
+                    if let format = page.deviceType { LabeledContent("Display format", value: format) }
+                    if let blocks = page.blockSummaries {
+                        Text("\(blocks.count) content blocks").font(.caption).foregroundStyle(.secondary)
+                        ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
+                            if block.kind == "text", let text = block.text {
+                                Text(text).font(.body.monospaced()).textSelection(.enabled)
+                            } else {
+                                Label(block.kind == "canvas" ? "Canvas" : block.kind.capitalized,
+                                    systemImage: block.kind == "canvas" ? "paintpalette" : "square.dashed")
+                            }
+                        }
+                        Text("Content summary · expressions and visual blocks are not rendered.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
                 }
                 if page.template != nil {
                     Text("Template expressions are shown as source. Plugins are not rendered here.")
@@ -27,7 +41,10 @@ struct PageDetailView: View {
             }
             Section("Page editing") {
                 if !page.supportsTemplateEditing {
-                    Text("Use the web editor to edit this document and preview it for each display.")
+                    Text("This document cannot be edited in this native draft. Open the web editor for its full content and display previews.")
+                    if let url = store.webEditorURL(pageID: page.id) {
+                        Link("Open in web editor", destination: url).accessibilityIdentifier("openWebEditor")
+                    }
                 } else {
                     Button("Edit local draft") { editing = true }
                         .disabled(store.status == nil || store.connecting)
@@ -47,14 +64,22 @@ struct PageDetailView: View {
                     }
                     .accessibilityIdentifier("deleteLibraryPage")
                     .disabled(!library.canDelete || !page.supportsTemplateEditing)
+                    if !page.supportsTemplateEditing {
+                        Text("Deletion of this document type is unavailable in this app.").font(.footnote).foregroundStyle(.secondary)
+                    }
                 }
             }
             Section {
                 Text("Destination: \(store.boards.first(where: { $0.id == store.selectedBoardID })?.name ?? "No selected board")")
                 Button(store.status?.isDemo == true ? "Simulate showing on board" : "Show on board", action: prepare)
                     .disabled(!store.canWrite)
+                if let reason = store.boardActionDisabledReason {
+                    Text(reason.message).font(.footnote).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("showOnBoardDisabledReason")
+                }
             }
         }
+        .frame(maxWidth: 1000).frame(maxWidth: .infinity)
         .navigationTitle(page.name)
         .alert("Delete \(store.pageLibrary?.deletion?.page.name ?? page.name)?", isPresented: $confirmingDelete) {
             Button("Delete page", role: .destructive) {
@@ -90,8 +115,8 @@ struct PageLibraryFeedback: View {
                 Button("I reviewed the library · allow a new request") { store.acknowledgePageLibraryReview() }
             }
         }
-        if !library.capability.canCreate && !library.capability.canDelete {
-            Text("Page creation and deletion are available in Demo, or on FiestaBoard 10.1.20 after enabling changes in Settings.")
+        if let reason = store.pageManagementDisabledReason {
+            Text(reason.message)
                 .font(.footnote).foregroundStyle(.secondary)
         }
     }

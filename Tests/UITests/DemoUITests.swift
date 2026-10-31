@@ -2,13 +2,28 @@ import XCTest
 
 @MainActor
 private func selectTab(_ name: String, in app: XCUIApplication) {
-    XCTAssertTrue(app.descendants(matching: .any).matching(identifier: name).firstMatch.waitForExistence(timeout: 10))
-    let phoneTab = app.tabBars.buttons[name]
-    if phoneTab.exists { phoneTab.tap(); return }
-    // iPad floating tabs expose cells on current SDKs; sidebars can expose buttons.
-    let tabletTab = app.cells[name].firstMatch
-    if tabletTab.exists && tabletTab.isHittable { tabletTab.tap(); return }
-    app.buttons[name].firstMatch.tap()
+    let destination = app.descendants(matching: .any).matching(identifier: "destination-" + name).firstMatch
+    if destination.exists && destination.isHittable { destination.tap(); return }
+    let direct = app.cells["destination-" + name].firstMatch
+    if direct.exists && direct.isHittable { direct.tap(); return }
+    // Standard split views collapse to a destination list on compact windows.
+    for _ in 0..<5 {
+        if destination.exists && destination.isHittable { destination.tap(); return }
+        if direct.exists && direct.isHittable { direct.tap(); return }
+        let sidebar = app.buttons["Show Sidebar"].firstMatch
+        if sidebar.exists && sidebar.isHittable { sidebar.tap(); continue }
+        let routes: [(String, String)] = [
+            ("Schedule entry", "Schedule"), ("Welcome", "Pages"),
+            ("Demo Kitchen", "Displays"), ("Pages", "FiestaBoard"),
+            ("Collections", "FiestaBoard"), ("Schedule", "FiestaBoard"),
+            ("Displays", "FiestaBoard"), ("Settings", "FiestaBoard"),
+            ("FiestaBoard", "FiestaBoard")
+        ]
+        if let back = routes.map({ app.navigationBars[$0.0].buttons[$0.1] })
+            .first(where: { $0.exists && $0.isHittable }) { back.tap() }
+    }
+    XCTAssertTrue(destination.waitForExistence(timeout: 5), "Destination missing: " + name)
+    destination.tap()
 }
 final class DemoUITests: XCTestCase {
     @MainActor
@@ -41,7 +56,7 @@ final class DemoUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Confirm simulated action"].waitForExistence(timeout: 3))
         app.buttons["Confirm simulated action"].tap()
         XCTAssertTrue(app.staticTexts["Simulated — server acknowledged a send. Physical output is not verified."].waitForExistence(timeout: 5))
-        selectTab("Library", in: app)
+        selectTab("Pages", in: app)
         XCTAssertTrue(app.staticTexts["Welcome"].waitForExistence(timeout: 3))
         selectTab("Displays", in: app)
         XCTAssertTrue(app.staticTexts["Demo Kitchen"].waitForExistence(timeout: 3))
@@ -57,7 +72,7 @@ extension DemoUITests {
         app.launchArguments = ["--demo"]
         app.launch()
         XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
-        selectTab("Library", in: app)
+        selectTab("Pages", in: app)
         app.staticTexts["Welcome"].tap()
         app.buttons["editLocalDraft"].tap()
         XCTAssertTrue(app.buttons["templateCanvasRow0"].waitForExistence(timeout: 5))
@@ -249,7 +264,7 @@ extension DemoUITests {
 
     @MainActor
     private func openPageEditor(_ app: XCUIApplication) {
-        selectTab("Library", in: app)
+        selectTab("Pages", in: app)
         XCTAssertTrue(app.staticTexts["Welcome"].waitForExistence(timeout: 5))
         app.staticTexts["Welcome"].tap()
         app.buttons["editLocalDraft"].tap()
@@ -313,18 +328,19 @@ final class ConnectionUITests: XCTestCase {
         let app = XCUIApplication(); app.launchArguments = []; app.launch()
         let alias = connect(app, scenario: "mixed")
         XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
-        selectTab("Library", in: app)
+        selectTab("Pages", in: app)
         XCTAssertTrue(app.staticTexts["Document"].waitForExistence(timeout: 5))
         for title in ["Flexible document", "Future document"] {
             let row = app.staticTexts[title].firstMatch
             XCTAssertTrue(row.waitForExistence(timeout: 5)); row.tap()
-            XCTAssertTrue(app.staticTexts["Use the web editor to edit this document and preview it for each display."].waitForExistence(timeout: 5))
+            XCTAssertTrue(app.staticTexts["This document cannot be edited in this native draft. Open the web editor for its full content and display previews."].waitForExistence(timeout: 5))
+            XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "openWebEditor").firstMatch.exists)
             XCTAssertFalse(app.buttons["editLocalDraft"].exists)
             let deletion = app.buttons["deleteLibraryPage"]
             reveal(deletion, app); XCTAssertFalse(deletion.isEnabled)
             let evidence = XCTAttachment(screenshot: app.screenshot())
             evidence.name = title; evidence.lifetime = .keepAlways; add(evidence)
-            app.navigationBars.buttons["Library"].tap()
+            app.navigationBars.buttons["Pages"].tap()
         }
         selectTab("Settings", in: app)
         let disconnect = app.buttons["Disconnect"]
@@ -338,7 +354,7 @@ final class ConnectionUITests: XCTestCase {
         let app = XCUIApplication(); app.launchArguments = []; app.launch()
         let alias = connect(app, scenario: "mixed")
         XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
-        selectTab("Library", in: app)
+        selectTab("Pages", in: app)
         app.staticTexts["Document"].tap()
         app.buttons["editLocalDraft"].tap()
         let picker = app.buttons["evaluationBoardPicker"]
@@ -355,7 +371,7 @@ final class ConnectionUITests: XCTestCase {
         let evidence = XCTAttachment(screenshot: app.screenshot())
         evidence.name = "Physical preview 32 by 8"; evidence.lifetime = .keepAlways; add(evidence)
         app.buttons["Close"].tap()
-        app.navigationBars.buttons["Library"].tap()
+        app.navigationBars.buttons["Pages"].tap()
         selectTab("Settings", in: app)
         let disconnect = app.buttons["Disconnect"]
         reveal(disconnect, app); disconnect.tap(); removeSaved(alias, app)
@@ -385,7 +401,7 @@ final class ConnectionUITests: XCTestCase {
         reveal(create, app); create.tap()
         XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
         XCTAssertFalse(app.buttons["Compose text"].isEnabled, "Setup must not implicitly enable board changes.")
-        selectTab("Library", in: app)
+        selectTab("Pages", in: app)
         XCTAssertTrue(app.staticTexts["Document"].waitForExistence(timeout: 5))
         selectTab("Settings", in: app)
         let logout = app.buttons["Log out & disconnect"]
@@ -516,7 +532,7 @@ final class ConnectionUITests: XCTestCase {
     func testCreateLEDPageOpenEditorAndDeleteFromLibrary() {
         let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
         XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
-        selectTab("Library", in: app)
+        selectTab("Pages", in: app)
         let create = app.buttons["newLibraryPage"]
         XCTAssertTrue(create.waitForExistence(timeout: 3)); create.tap()
         let name = app.textFields["New page name"]
@@ -545,7 +561,7 @@ final class ConnectionUITests: XCTestCase {
     override func setUp() { super.setUp(); continueAfterFailure = false }
     func testRichTokenSourceRoundTripAndStructuralUndo() {
         let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
-        selectTab("Library", in: app)
+        selectTab("Pages", in: app)
         app.staticTexts["Welcome"].tap(); app.buttons["editLocalDraft"].tap()
         XCTAssertTrue(app.buttons["templateCanvasRow0"].waitForExistence(timeout: 8))
         reveal(app.buttons["addTemplateRow"], app); app.buttons["addTemplateRow"].tap()
@@ -589,7 +605,7 @@ final class ConnectionUITests: XCTestCase {
     }
     func testFreshSplitFlapPaletteAndFormattingSave() {
         let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
-        selectTab("Library", in: app)
+        selectTab("Pages", in: app)
         app.buttons["newLibraryPage"].tap()
         let name = app.textFields["New page name"]
         XCTAssertTrue(name.waitForExistence(timeout: 3)); name.tap(); name.typeText("Creative flap test")
@@ -618,5 +634,84 @@ final class ConnectionUITests: XCTestCase {
             if element.exists && element.isHittable { return }
             app.swipeUp(velocity: .slow)
         }
+    }
+}
+
+
+extension DemoUITests {
+    @MainActor
+    func testDestinationJourneysAndActualReadOnlyScheduleDetails() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo"]
+        app.launch()
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        selectTab("Pages", in: app)
+        XCTAssertTrue(app.staticTexts["Welcome"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["newLibraryPage"].isHittable)
+        selectTab("Collections", in: app)
+        XCTAssertTrue(app.buttons["createCollection"].waitForExistence(timeout: 3))
+        selectTab("Schedule", in: app)
+        let schedule = app.buttons["schedule-demo-morning"]
+        XCTAssertTrue(schedule.waitForExistence(timeout: 5))
+        schedule.tap()
+        XCTAssertTrue(app.staticTexts["Server time semantics"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["weekdays"].exists)
+        XCTAssertTrue(app.staticTexts["08:00"].firstMatch.exists)
+        XCTAssertFalse(app.buttons["Save schedule"].exists)
+        selectTab("Displays", in: app)
+        app.staticTexts["Demo Kitchen"].firstMatch.tap()
+        app.buttons["displayPlayback"].tap()
+        XCTAssertTrue(app.buttons["Pause updates"].waitForExistence(timeout: 3))
+        let playbackBack = app.navigationBars["Playback"].buttons["Demo Kitchen"]
+        XCTAssertTrue(playbackBack.isHittable); playbackBack.tap()
+        XCTAssertTrue(app.buttons["displayPlayback"].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testEditorSheetAndSelectionSurviveWindowAdaptation() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo"]
+        app.launch()
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        selectTab("Pages", in: app)
+        app.staticTexts["Welcome"].tap()
+        app.buttons["editLocalDraft"].tap()
+        let name = app.textFields["Name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap(); name.typeText(" resize")
+        let before = name.value as? String
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        XCTAssertEqual(name.value as? String, before)
+        XCTAssertTrue(app.buttons["Close"].isHittable)
+        XCUIDevice.shared.orientation = .portrait
+        XCTAssertEqual(name.value as? String, before)
+        app.buttons["Close"].tap()
+        XCTAssertTrue(app.buttons["Discard unsaved changes"].waitForExistence(timeout: 3))
+        app.buttons["Discard unsaved changes"].tap()
+        XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testRecoveryInventoryReachableConnectedAndDisconnected() throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo"]
+        app.launch()
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        selectTab("Settings", in: app)
+        let entry = app.buttons["localDraftRecovery"]
+        if !entry.isHittable { app.swipeUp() }
+        XCTAssertTrue(entry.isHittable); entry.tap()
+        XCTAssertTrue(app.navigationBars["Draft recovery & export"].waitForExistence(timeout: 3))
+        let recoveryBack = app.navigationBars["Draft recovery & export"].buttons["Settings"]
+        XCTAssertTrue(recoveryBack.isHittable); recoveryBack.tap()
+        XCTAssertTrue(app.buttons["Disconnect"].waitForExistence(timeout: 3))
+        if !app.buttons["Disconnect"].isHittable { app.swipeDown() }
+        app.buttons["Disconnect"].tap()
+        let disconnectedEntry = app.buttons["localDraftRecovery"]
+        XCTAssertTrue(disconnectedEntry.waitForExistence(timeout: 5))
+        if !disconnectedEntry.isHittable { app.swipeUp() }
+        disconnectedEntry.tap()
+        XCTAssertTrue(app.navigationBars["Draft recovery & export"].waitForExistence(timeout: 3))
     }
 }

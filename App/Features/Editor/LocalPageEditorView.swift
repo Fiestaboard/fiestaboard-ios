@@ -57,16 +57,15 @@ public struct LocalPageEditorView: View {
                         .textSelection(.enabled)
                 }
             }
-            Section {
-                Label("Local draft", systemImage: "internaldrive")
-                Text("Save local draft keeps changes on this device. A separate confirmed server save updates stored page content. Use the design canvas and row tools to edit text, tokens, and formatting.")
-                    .font(.footnote).foregroundStyle(.secondary)
-                Text(model.hasUnsavedChanges ? "Unsaved local changes" : "No unsaved local changes")
-                    .font(.footnote)
-                Text(model.hasServerChanges ? "Changed from server baseline" : "Matches server baseline")
-                    .font(.footnote)
-            }
             evaluationSection
+            Section("Draft status") {
+                LabeledContent("Local", value: model.hasUnsavedChanges ? "Unsaved local changes" : "No unsaved local changes")
+                LabeledContent("Server", value: model.hasServerChanges ? "Changed from server baseline" : "Matches server baseline")
+                DisclosureGroup("Saving and evaluation help") {
+                    Text("Save local draft keeps a recovery copy on this device. A confirmed server save updates stored page content. Evaluation uses the current document and selected display without updating stored content or sending to hardware.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+            }.font(.footnote)
             serverSection
             if let message = model.message {
                 Section { Text(message).foregroundStyle(.secondary) }
@@ -79,6 +78,8 @@ public struct LocalPageEditorView: View {
                     .disabled(model.isSaving || model.editingFrozen)
             }
         }
+        .frame(maxWidth: 1120)
+        .frame(maxWidth: .infinity)
         .presentationSizing(.page)
         .navigationTitle("Page editor")
         .navigationBarTitleDisplayMode(.inline)
@@ -159,8 +160,6 @@ public struct LocalPageEditorView: View {
                 Button("Preview") { commitTextInput(); Task { await model.evaluate(preview: true) } }
                     .accessibilityIdentifier("previewPage")
             }.disabled(!model.canEvaluate || model.isEvaluating)
-            Text("Evaluation uses the current raw document and selected board. It does not update the page or send content to a display.")
-                .font(.footnote).foregroundStyle(.secondary)
             if model.isEvaluating { ProgressView("Evaluating…") }
             if let result = model.validation {
                 Text(result.isSimulated ? "Demo validation · simulated" : "Server validation")

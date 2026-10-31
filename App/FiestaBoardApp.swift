@@ -11,7 +11,22 @@ import FiestaBoardAppState
 // Select the standard property-wrapper type explicitly; SDK 27 also overloads @State as a macro.
 private typealias DraftState<Value> = SwiftUI.State<Value>
 
-enum DraftTab: Hashable { case home, library, displays, settings }
+enum DraftTab: String, CaseIterable, Hashable, Identifiable {
+    case home = "Home", displays = "Displays", pages = "Pages", collections = "Collections"
+    case schedule = "Schedule", integrations = "Integrations", settings = "Settings"
+    var id: Self { self }
+    var symbol: String {
+        switch self {
+        case .home: "house"
+        case .displays: "rectangle.on.rectangle"
+        case .pages: "doc.on.doc"
+        case .collections: "rectangle.stack"
+        case .schedule: "calendar"
+        case .integrations: "puzzlepiece.extension"
+        case .settings: "gearshape"
+        }
+    }
+}
 
 struct DraftScene: View {
     @StateObject private var store: BoardStore
@@ -23,7 +38,8 @@ struct DraftScene: View {
             store: store, catalog: persistence.catalog, discovery: BonjourServerDiscovery(),
             preferences: .standard, serviceFactory: { LiveFiestaBoardService(deployment: $0, vault: KeychainSessionVault()) }))
     }
-    @DraftState private var tab = DraftTab.home
+    @DraftState private var tab: DraftTab? = .home
+    @DraftState private var compactColumn = NavigationSplitViewColumn.detail
     @DraftState private var search = ""
     @DraftState private var creatingPage = false
     @DraftState private var composing = false
@@ -41,13 +57,18 @@ struct DraftScene: View {
             if store.status == nil {
                 ConnectionView(model: connection, store: store)
             } else {
-                TabView(selection: $tab) {
-                    Tab("Home", systemImage: "house", value: .home) { home }
-                    Tab("Library", systemImage: "square.grid.2x2", value: .library) { library }
-                    Tab("Displays", systemImage: "rectangle.on.rectangle", value: .displays) { displays }
-                    Tab("Settings", systemImage: "gearshape", value: .settings) { settings }
+                NavigationSplitView(preferredCompactColumn: $compactColumn) {
+                    List(DraftTab.allCases, selection: $tab) { destination in
+                        NavigationLink(value: destination) {
+                            Label(destination.rawValue, systemImage: destination.symbol)
+                        }.accessibilityIdentifier("destination-" + destination.rawValue)
+                    }
+                    .navigationTitle("FiestaBoard")
+                    .navigationSplitViewColumnWidth(min: 190, ideal: 230, max: 280)
+                } detail: {
+                    destination
                 }
-                .tabViewStyle(.sidebarAdaptable)
+                .navigationSplitViewStyle(.balanced)
             }
         }
         .tint(accent)
@@ -122,6 +143,23 @@ struct DraftScene: View {
         }
     }
 
+    @ViewBuilder private var destination: some View {
+        switch tab ?? .home {
+        case .home: home
+        case .displays: displays
+        case .pages: library
+        case .collections: NavigationStack { CollectionsView(store: store) }
+        case .schedule: NavigationStack { SchedulesView(store: store) }
+        case .integrations:
+            NavigationStack {
+                ContentUnavailableView("Integrations", systemImage: "puzzlepiece.extension",
+                    description: Text("Integration management is not available in this native draft. Use the server web interface to configure plugins and integrations."))
+                    .navigationTitle("Integrations")
+            }
+        case .settings: settings
+        }
+    }
+
     private var connectionBanner: some View {
         VStack(alignment: .leading, spacing: 8) {
             Label(store.connectionLabel, systemImage: store.status?.isDemo == true ? "sparkles" : "network")
@@ -164,7 +202,7 @@ struct DraftScene: View {
                                 Label("Make room for a little joy.", systemImage: "sun.max").font(.title2.bold())
                                 Button { composing = true } label: { Label("Compose text", systemImage: "square.and.pencil").frame(maxWidth: .infinity, minHeight: 36) }
                                     .buttonStyle(.borderedProminent).disabled(!store.canWrite)
-                                if store.status?.access == .readOnly { Text("Board controls are read-only. Enable supported changes in Settings to control this display.").font(.callout).foregroundStyle(.secondary) }
+                                if let reason = store.boardActionDisabledReason { Text(reason.message).font(.callout).foregroundStyle(.secondary) }
                                 if store.needsReadback { Text("Refresh output before another action.").font(.callout).foregroundStyle(.orange) }
                                 if let board = store.board {
                                     selectionDetails(board)
@@ -189,9 +227,8 @@ struct DraftScene: View {
         Form {
             Section("Connection & action status") {
                 connectionBanner
-                if store.status?.access == .readOnly {
-                    Text("Board controls are read-only. Enable supported changes in Settings to control this display.")
-                        .font(.callout).foregroundStyle(.secondary)
+                if let reason = store.boardActionDisabledReason {
+                    Text(reason.message).font(.callout).foregroundStyle(.secondary)
                 }
             }
             Section("Read current board state") {
@@ -206,7 +243,19 @@ struct DraftScene: View {
             }
             BoardControlsView(store: store)
         }
+        .frame(maxWidth: 1000).frame(maxWidth: .infinity)
         .navigationTitle("Board controls")
+    }
+    private func playback(for boardID: String) -> some View {
+        Group {
+            if store.selectedBoardID == boardID {
+                boardControlsDestination
+            } else {
+                ProgressView("Selecting display…")
+            }
+        }
+        .navigationTitle("Playback")
+        .task { if store.selectedBoardID != boardID { await store.selectBoard(boardID).value } }
     }
     private var boardPicker: some View {
         Picker("Display", selection: Binding(get: { store.selectedBoardID ?? "" }, set: { store.selectBoard($0) })) {
@@ -230,12 +279,6 @@ struct DraftScene: View {
         NavigationStack {
             List {
                 Section { connectionBanner }
-                Section {
-                    NavigationLink { CollectionsView(store: store) } label: {
-                        Label("Collections", systemImage: "rectangle.stack.fill")
-                    }
-                    .accessibilityIdentifier("openCollections")
-                }
                 if let library = store.pageLibrary {
                     Section { PageLibraryFeedback(library: library, store: store) }
                 }
@@ -247,7 +290,7 @@ struct DraftScene: View {
                     }
                     if store.pages.isEmpty { Text("No pages on this deployment.") }
                 }
-            }.navigationTitle("Library").searchable(text: $search, prompt: "Find a page")
+            }.navigationTitle("Pages").searchable(text: $search, prompt: "Find a page")
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
                         Button("New page", systemImage: "plus") { creatingPage = true }
@@ -289,8 +332,15 @@ struct DraftScene: View {
                                     LabeledContent("Schedule", value: board.scheduleEnabled ? "Enabled" : "Disabled")
                                     LabeledContent("Paused", value: board.paused ? "Yes" : "No")
                                 }
-                                Section { Button("Use this display") { store.selectBoard(board.id); tab = .home }.disabled(store.commandBusy) }
-                            }.navigationTitle(board.name)
+                                Section {
+                                    Button("Use this display") { store.selectBoard(board.id); tab = .home }.disabled(store.commandBusy)
+                                    NavigationLink {
+                                        playback(for: board.id)
+                                    } label: { Label("Playback", systemImage: "play.rectangle") }
+                                        .accessibilityIdentifier("displayPlayback")
+                                        .disabled(store.commandBusy)
+                                }
+                            }.frame(maxWidth: 1000).frame(maxWidth: .infinity).navigationTitle(board.name)
                         } label: {
                             HStack { Label(board.name, systemImage: "rectangle.on.rectangle"); Spacer(); if store.selectedBoardID == board.id { Image(systemName: "checkmark.circle.fill").foregroundStyle(.orange).accessibilityLabel("Selected") } }
                         }
@@ -335,6 +385,10 @@ struct DraftScene: View {
                         Button("Apply change setting") { store.reconnect(allowCandidateWrites: candidateWrites) }.disabled(store.commandBusy || store.connecting)
                     }
                 }
+                Section("Server administration") {
+                    Text("System settings and integration administration are not yet available here. Use the server web interface for those settings.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
                 Section("Local drafts") {
                     NavigationLink("Draft recovery & export") { LocalDraftRecoveryView() }
                         .accessibilityIdentifier("localDraftRecovery")
@@ -345,7 +399,7 @@ struct DraftScene: View {
                         ScrollView { Text(licenseText).font(.footnote.monospaced()).padding().textSelection(.enabled) }.navigationTitle("Notices")
                     }
                 }
-            }.navigationTitle("Settings")
+            }.frame(maxWidth: 1000).frame(maxWidth: .infinity).navigationTitle("Settings")
         }
     }
     private var licenseText: String {
@@ -362,7 +416,7 @@ struct DraftScene: View {
 private struct DraftScopeView: View {
     var body: some View {
         Text("Native draft: manual connection, page library, on-device drafts, supported page name and fixed template edits, explicit template validation and text preview, revision-checked server page saves, display selection, text and page actions, pause, schedule following, fallback page and restore controls. Refresh is manual; there is no background polling. Demo saves, evaluations and board actions are entirely simulated.")
-        Text("Save local draft keeps a recovery copy on this device. A separate confirmed server save updates supported stored page fields when the server advertises the known page protocol and this session opts in. Native discovery, sign-in and initial server setup are available as a testable draft. Collections support revision-checked editing where available. Rich split-flap and LED editing, canvas editing, OAuth, schedule editing, plugins, administration and pixel rendering remain planned. Use the web interface for those features and full visual previews.")
+        Text("Save local draft keeps a recovery copy on this device. A separate confirmed server save updates supported stored page fields when the server advertises the known page protocol and this session opts in. Native discovery, sign-in and initial server setup are available as a testable draft. Collections support revision-checked editing where available. Schedule lists and details are read-only. Flexible text and Canvas editing, OAuth, schedule editing, plugins and administration remain planned. Use the web interface for those features and full visual previews.")
         Text("No supported release pairing or full web/TV renderer parity is claimed.").font(.footnote).foregroundStyle(.secondary)
     }
 }

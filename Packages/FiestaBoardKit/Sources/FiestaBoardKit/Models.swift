@@ -143,6 +143,11 @@ public struct BoardDetail: Codable, Sendable {
         guard ["manual", "schedule", "none"].contains(source) else { throw FiestaBoardError.invalidResponse }
     }
 }
+/// A content summary for unsupported flexible pages; never an authoring representation.
+public struct PageBlockSummary: Decodable, Sendable, Equatable {
+    public let kind: String
+    public let text: String?
+}
 /// A read projection. Editing retains the original raw document separately.
 public struct Page: Decodable, Sendable, Identifiable, Equatable {
     public let id: String
@@ -152,6 +157,7 @@ public struct Page: Decodable, Sendable, Identifiable, Equatable {
     /// This read projection must not make one such page invalidate the library.
     public let deviceType: String?
     public let template: [String]?
+    public let blockSummaries: [PageBlockSummary]?
     public let revision: String?
     public let editProtocol: String?
     public let documentProtocol: String?
@@ -173,6 +179,8 @@ public struct Page: Decodable, Sendable, Identifiable, Equatable {
         // Older audited template documents omit this field. A present unknown,
         // null or malformed protocol never inherits that legacy permission.
         supportsTemplateEditing = type == "template" && (!c.contains(.documentProtocol) || documentProtocol == "page-document-v1")
+        blockSummaries = type == "flexible" && documentProtocol == "page-document-v2"
+            ? try? c.decodeIfPresent([PageBlockSummary].self, forKey: .blocks) : nil
         let legacy = supportsTemplateEditing
         deviceType = legacy ? try c.decode(String.self, forKey: .deviceType) : try? c.decodeIfPresent(String.self, forKey: .deviceType)
         template = legacy ? try c.decodeIfPresent([String].self, forKey: .template) : try? c.decodeIfPresent([String].self, forKey: .template)
@@ -184,7 +192,7 @@ public struct Page: Decodable, Sendable, Identifiable, Equatable {
         gridCols = legacy ? try c.decodeIfPresent(Int.self, forKey: .gridCols) : try? c.decodeIfPresent(Int.self, forKey: .gridCols)
     }
     enum CodingKeys: String, CodingKey {
-        case id, name, type, template, revision
+        case id, name, type, template, revision, blocks
         case editProtocol = "edit_protocol", documentProtocol = "document_protocol"
         case deviceType = "device_type", notesWide = "notes_wide", notesTall = "notes_tall"
         case gridRows = "grid_rows", gridCols = "grid_cols"

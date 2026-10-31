@@ -100,6 +100,12 @@ public struct PreparedAction: Identifiable, Sendable {
     @Published public private(set) var status: ConnectionStatus?
     @Published public private(set) var boards: [BoardSummary] = []
     @Published public private(set) var pages: [Page] = []
+    @Published public private(set) var scheduleList: ScheduleList?
+    @Published public private(set) var scheduleTarget: BoardTarget?
+    @Published public private(set) var schedulesLoading = false
+    @Published public private(set) var scheduleMessage: String?
+    private var scheduleTask: Task<Void, Never>?
+    private var scheduleRequest = UUID()
     @Published public private(set) var collections: [PageCollection] = []
     @Published public private(set) var collectionsLoading = false
     @Published public private(set) var collectionMessage: String?
@@ -149,6 +155,30 @@ public struct PreparedAction: Identifiable, Sendable {
     public var commandBusy: Bool { target.map { inFlight.contains($0) } ?? false }
     public var canWrite: Bool {
         board != nil && status != nil && status?.access != .readOnly && target != nil && !connecting && !refreshing && !commandBusy && !needsReadback && pageLibrary?.busy != true && pageLibrary?.needsReview != true
+    }
+    public var boardActionDisabledReason: ActionDisabledReason? {
+        guard let status else { return .disconnected }
+        guard selectedBoardID != nil else { return .noDisplay }
+        if connecting || refreshing || commandBusy || pageLibrary?.busy == true { return .busy }
+        if needsReadback || pageLibrary?.needsReview == true { return .readbackRequired }
+        guard board != nil else { return .readbackRequired }
+        if status.isDemo { return nil }
+        if let reason = CapabilityPolicy.boardActionDisabledReason(version: status.version.runningVersion,
+            isDev: status.version.isDev, optedIn: pageSessionOptedIn) { return reason }
+        return status.access == .readOnly ? .unsupportedOperation : nil
+    }
+    public var pageManagementDisabledReason: ActionDisabledReason? {
+        guard let status else { return .disconnected }
+        if connecting || pageLibrary?.busy == true { return .busy }
+        if pageLibrary?.needsReview == true { return .readbackRequired }
+        if status.isDemo { return nil }
+        if let reason = CapabilityPolicy.pageManagementDisabledReason(version: status.version.runningVersion,
+            isDev: status.version.isDev, optedIn: pageSessionOptedIn) { return reason }
+        return pageLibrary?.capability.canCreate == true || pageLibrary?.capability.canDelete == true ? nil : .unsupportedOperation
+    }
+    public func webEditorURL(pageID: String) -> URL? {
+        guard let service, let status, !connecting else { return nil }
+        return try? service.deployment.webEditorURL(pageID: pageID, isDemo: status.isDemo)
     }
     private var target: BoardTarget? {
         guard let service, let id = selectedBoardID else { return nil }
@@ -248,6 +278,7 @@ public struct PreparedAction: Identifiable, Sendable {
     public func waitForSessionCleanup() async { await retirementTask?.value }
     private func resetConnection() {
         generation &+= 1
+        clearSchedules()
         pageLibraryObservation = nil; pageLibrary = nil; pageLibraryEpoch &+= 1
         connectionTask?.cancel(); refreshTask?.cancel(); commandTask?.cancel(); collectionListTask?.cancel()
         connectionTask = nil; refreshTask = nil; commandTask = nil
@@ -298,6 +329,7 @@ public struct PreparedAction: Identifiable, Sendable {
     @discardableResult public func selectBoard(_ id: String) -> Task<Void, Never> {
         guard boards.contains(where: { $0.id == id }), !connecting else { return Task {} }
         generation &+= 1
+        clearSchedules()
         refreshTask?.cancel(); commandTask?.cancel()
         selectedBoardID = id; board = nil; defaultPageContext = nil; message = nil; usedActions = []
         return refresh()
@@ -954,5 +986,47 @@ extension BoardStore {
         }
         library.deletionRecoveryEpochs.removeAll()
         library.blocked = false; library.deletion = nil; library.phase = .idle
+    }
+}
+
+
+@MainActor extension BoardStore {
+    private func clearSchedules() {
+        scheduleTask?.cancel(); scheduleTask = nil; scheduleRequest = UUID()
+        scheduleList = nil; scheduleTarget = nil; scheduleMessage = nil; schedulesLoading = false
+    }
+    /// One read bound to this selected display, session generation and request.
+    @discardableResult public func refreshSchedules() -> Task<Void, Never> {
+        clearSchedules()
+        guard let service, status != nil, !connecting else {
+            scheduleMessage = ActionDisabledReason.disconnected.message
+            return Task {}
+        }
+        guard let target else {
+            scheduleMessage = ActionDisabledReason.noDisplay.message
+            return Task {}
+        }
+        let session = generation, request = UUID()
+        scheduleRequest = request; schedulesLoading = true
+        let task = Task { [weak self] in
+            guard let self else { return }
+            defer { if scheduleRequest == request { schedulesLoading = false } }
+            do {
+                let value = try await service.schedules(on: target)
+                guard valid(session), scheduleRequest == request, self.target == target else { return }
+                scheduleTarget = target; scheduleList = value
+            } catch {
+                guard valid(session), scheduleRequest == request, self.target == target else { return }
+                if !handleAuthenticationLoss(error) {
+                    switch error as? FiestaBoardError {
+                    case .rejected(status: 404), .unsupportedOperation:
+                        scheduleMessage = "Schedule reading is unavailable for this display or server. No schedule changes are supported here."
+                    default: scheduleMessage = safeDescription(error)
+                    }
+                }
+            }
+        }
+        scheduleTask = task
+        return task
     }
 }

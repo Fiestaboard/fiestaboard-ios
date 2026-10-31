@@ -47,6 +47,7 @@ public protocol FiestaBoardService: Sendable {
     func createPage(context: PageCreationContext) async throws -> PageCreationReceipt
     func readPageForDeletion(id: String) async throws -> PageDeletionContext
     func deletePage(context: PageDeletionContext) async throws -> PageDeletionReceipt
+    func schedules(on target: BoardTarget) async throws -> ScheduleList
     func pages() async throws -> [Page]
     func scopedPageDocument(id: String) async throws -> ScopedPageDocument
     func pageDocumentData(id: String) async throws -> Data
@@ -360,6 +361,13 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         try detail.validate()
         guard detail.summary.id == target.boardID else { throw FiestaBoardError.invalidResponse }
         return detail
+    }
+
+    public func schedules(on target: BoardTarget) async throws -> ScheduleList {
+        try validateTarget(target)
+        let result = try await response(APIRequest(path: ["v1", "schedules"],
+            queryItems: [URLQueryItem(name: "board_id", value: target.boardID)], cachePolicy: .noStore))
+        return try ScheduleList(data: result.data, boardID: target.boardID)
     }
 
     public func pages() async throws -> [Page] {

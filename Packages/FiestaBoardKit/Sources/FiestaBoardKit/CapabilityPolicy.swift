@@ -49,3 +49,28 @@ public extension CapabilityPolicy {
         return page.documentProtocol == nil && version == "10.1.2" && !isDev
     }
 }
+
+
+public enum ActionDisabledReason: Sendable, Equatable {
+    case disconnected, noDisplay, unsupportedOperation, changesDisabled, busy, readbackRequired
+    public var message: String {
+        switch self {
+        case .disconnected: "Connect to a server to use this action."
+        case .noDisplay: "Select a display before using this action."
+        case .unsupportedOperation: "This server does not provide an operation or protocol supported by this app for this action. Use its web interface."
+        case .changesDisabled: "Changes are turned off for this connection. Enable changes in Settings to use this supported action."
+        case .busy: "Wait for the current request to finish before using this action."
+        case .readbackRequired: "The previous result needs review. Read current state before starting another action."
+        }
+    }
+}
+public extension CapabilityPolicy {
+    static func boardActionDisabledReason(version: String?, isDev: Bool, optedIn: Bool) -> ActionDisabledReason? {
+        guard allows(.selectPage, version: version, isDev: isDev, optedIn: true) else { return .unsupportedOperation }
+        return optedIn ? nil : .changesDisabled
+    }
+    static func pageManagementDisabledReason(version: String?, isDev: Bool, optedIn: Bool) -> ActionDisabledReason? {
+        guard allowsPageManagement(.create, version: version, isDev: isDev, optedIn: true) else { return .unsupportedOperation }
+        return optedIn ? nil : .changesDisabled
+    }
+}

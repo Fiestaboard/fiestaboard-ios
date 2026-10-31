@@ -214,6 +214,16 @@ private actor DelayedService: FiestaBoardService {
     nonisolated let isDemo = true
     private let demo: DemoFiestaBoardService
     private let delayConnection: Bool
+    private var delaySchedule = false
+    private var scheduleFailure: FiestaBoardError?
+    func delayNextSchedule() { delaySchedule = true }
+    func failSchedule(_ error: FiestaBoardError?) { scheduleFailure = error }
+    func schedules(on target: BoardTarget) async throws -> ScheduleList {
+        let result = try await demo.schedules(on: target)
+        if delaySchedule { delaySchedule = false; await hold() }
+        if let scheduleFailure { throw scheduleFailure }
+        return result
+    }
     private var delayRead = false
     private var delayMutation = false
     private var delayPage = false
@@ -1025,5 +1035,109 @@ extension BoardStoreTests {
         _ = try await service.bootstrap()
         do { _ = try await store.readbackPage(context: original.context); XCTFail("Readback cannot move an editor into another scope") }
         catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+    }
+}
+
+
+extension BoardStoreTests {
+    func testScheduleListIsBoundToSelectedDisplayAndRejectsLateOldDisplay() async throws {
+        let service = try DelayedService(delayConnection: false)
+        let store = BoardStore()
+        await store.connect(service).value
+        await store.refreshSchedules().value
+        XCTAssertEqual(store.scheduleTarget?.boardID, "board-2")
+        XCTAssertEqual(store.scheduleList?.schedules.first?.boardID, "board-2")
+        await service.delayNextSchedule()
+        let old = store.refreshSchedules()
+        await service.waitUntilBlocked()
+        await store.selectBoard("board-led").value
+        XCTAssertNil(store.scheduleList)
+        await store.refreshSchedules().value
+        await service.release()
+        await old.value
+        XCTAssertEqual(store.scheduleTarget?.boardID, "board-led")
+        XCTAssertEqual(store.scheduleList?.schedules.first?.boardID, "board-led")
+        let writes = await service.sentCount
+        XCTAssertEqual(writes, 0)
+    }
+
+    func testLateScheduleFailureCannotReplaceNewerSameDisplayRead() async throws {
+        let service = try DelayedService(delayConnection: false)
+        let store = BoardStore()
+        await store.connect(service).value
+        await service.delayNextSchedule()
+        let old = store.refreshSchedules()
+        await service.waitUntilBlocked()
+        await store.refreshSchedules().value
+        XCTAssertNotNil(store.scheduleList)
+        await service.failSchedule(.networkUnavailable)
+        await service.release(); await old.value
+        XCTAssertNotNil(store.scheduleList)
+        XCTAssertNil(store.scheduleMessage)
+        XCTAssertFalse(store.schedulesLoading)
+    }
+
+    func testScheduleLateResponseCannotCrossReconnectAndErrorsStayVisible() async throws {
+        let service = try DelayedService(delayConnection: false)
+        let store = BoardStore()
+        await store.connect(service).value
+        await service.delayNextSchedule()
+        let old = store.refreshSchedules()
+        await service.waitUntilBlocked()
+        await store.reconnect(allowCandidateWrites: false).value
+        await service.release()
+        await old.value
+        XCTAssertNil(store.scheduleList)
+        XCTAssertFalse(store.schedulesLoading)
+        for error in [FiestaBoardError.rejected(status: 404), .unsupportedOperation, .networkUnavailable] {
+            await service.failSchedule(error)
+            await store.refreshSchedules().value
+            XCTAssertNil(store.scheduleList)
+            XCTAssertNotNil(store.scheduleMessage)
+            XCTAssertNotNil(store.status)
+        }
+        await service.failSchedule(nil)
+        await store.refreshSchedules().value
+        XCTAssertEqual(store.scheduleList?.total, 1)
+        store.disconnect()
+        XCTAssertNil(store.scheduleList)
+        XCTAssertNil(store.scheduleTarget)
+    }
+
+    func testActionReasonsTrackDisconnectedNoDisplayBusyAndUncertainReadback() async throws {
+        let store = BoardStore()
+        XCTAssertEqual(store.boardActionDisabledReason, .disconnected)
+        let empty = try SessionFaultService()
+        await empty.setEmptyBoards()
+        await store.connect(empty).value
+        XCTAssertEqual(store.boardActionDisabledReason, .noDisplay)
+        let service = try DelayedService(delayConnection: false)
+        await store.connect(service).value
+        XCTAssertNil(store.boardActionDisabledReason)
+        await service.delayNextMutation()
+        let command = store.confirm(try XCTUnwrap(store.prepare(.text("ONCE"))))
+        await service.waitUntilBlocked()
+        XCTAssertEqual(store.boardActionDisabledReason, .busy)
+        await service.release(); await command.value
+        let demo = try DemoFiestaBoardService()
+        await store.connect(demo).value
+        await demo.setSimulation(.unknown)
+        await store.confirm(try XCTUnwrap(store.prepare(.text("MAYBE")))).value
+        XCTAssertEqual(store.boardActionDisabledReason, .readbackRequired)
+    }
+
+    func testPageManagementUnsupportedReasonDoesNotSuggestSettingsAndDemoHasNoWebEscape() async throws {
+        let store = BoardStore()
+        let service = try SessionFaultService()
+        await service.configureDocumentContract(version: "10.3.2", advertised: true, dev: false, hasRevision: true)
+        await store.connect(service, allowCandidateWrites: false).value
+        XCTAssertEqual(store.pageManagementDisabledReason, .unsupportedOperation)
+        XCTAssertEqual(store.boardActionDisabledReason, .unsupportedOperation)
+        await service.configureDocumentContract(version: "10.1.20", advertised: true, dev: false, hasRevision: true)
+        await store.connect(service, allowCandidateWrites: false).value
+        XCTAssertEqual(store.pageManagementDisabledReason, .changesDisabled)
+        await store.connect(try DemoFiestaBoardService()).value
+        XCTAssertNil(store.pageManagementDisabledReason)
+        XCTAssertNil(store.webEditorURL(pageID: "page-selected"))
     }
 }

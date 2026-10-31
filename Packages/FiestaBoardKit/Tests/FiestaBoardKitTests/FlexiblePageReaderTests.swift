@@ -14,6 +14,16 @@ final class FlexiblePageReaderTests: XCTestCase {
         XCTAssertNil(pages[1].template)
     }
 
+    func testReadOnlyFlexibleSummaryIncludesTextAndCanvasWithoutGrantingEditing() throws {
+        let raw = Data(#"{"id":"flex","name":"Flexible","type":"flexible","document_protocol":"page-document-v2","blocks":[{"id":"a","kind":"text","text":"HELLO {{weather.temperature}}","unknown":null},{"id":"b","kind":"canvas","canvas":{"unknown":"retained only in author document"}}]}"#.utf8)
+        let page = try JSONDecoder().decode(Page.self, from: raw)
+        XCTAssertEqual(page.blockSummaries?.map(\.kind), ["text", "canvas"])
+        XCTAssertEqual(page.blockSummaries?.first?.text, "HELLO {{weather.temperature}}")
+        XCTAssertFalse(page.supportsTemplateEditing)
+        let unknown = try JSONDecoder().decode(Page.self, from: Data(#"{"id":"p","name":"P","type":"flexible","document_protocol":"future","blocks":{}}"#.utf8))
+        XCTAssertNil(unknown.blockSummaries)
+    }
+
     func testUnknownPageFamilyDoesNotBreakTheReadProjection() throws {
         let data = Data(#"{"id":"future","name":"Future","type":"future-family","document_protocol":"page-document-v3"}"#.utf8)
         let page = try JSONDecoder().decode(Page.self, from: data)
