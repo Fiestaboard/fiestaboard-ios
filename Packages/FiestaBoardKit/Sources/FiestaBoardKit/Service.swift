@@ -324,9 +324,10 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         pageWritesOptedIn = false; previewAudited = false; knownPages = [:]
         knownBoards = [:]
         controlVersion = nil; controlOptIn = false; defaultContexts = [:]; defaultWriting = false; defaultWriteGeneration &+= 1
-        // BoardStore reconnect keeps this service and its cookie. Reverify discovery
-        // before retaining its UUID: the same URL may now host another installation.
-        if !allowsSimulatedCollectionWrites, activeScope != nil {
+        // Reverify every discovered live connection, including an auth-disabled
+        // selection whose empty remembered-session restore withdrew its first scope.
+        // Reconnect retains a UUID only when discovery still identifies the same install.
+        if !allowsSimulatedCollectionWrites, observedInstallationID != nil {
             _ = try await bootstrapSnapshot(invalidateUnauthenticated: true)
             guard token == generation else { throw FiestaBoardError.staleSession }
         }
