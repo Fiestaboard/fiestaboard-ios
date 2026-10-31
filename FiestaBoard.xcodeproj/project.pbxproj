@@ -59,6 +59,7 @@
 		BAD482CED31067DA3AED1957 /* FiestaBoardKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */; };
 		C2D85F68D9BB735590FE3C6A /* Bootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43E15996708A4A5B2F939B0C /* Bootstrap.swift */; };
 		C46722FA41E6A76CE9DFCA28 /* FiestaBoardAppState.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2E21A61E3064CBB07099A3E1 /* FiestaBoardAppState.framework */; };
+		C5BB25DC588B573A3F696202 /* CollectionRecoveryUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73B099CBC1D0A8C287BB5AD2 /* CollectionRecoveryUITests.swift */; };
 		C60C83F52F1EDEF3766EED47 /* FiestaBoardKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		D04415239B53F363AD383EA2 /* FiestaBoardAppState.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 2E21A61E3064CBB07099A3E1 /* FiestaBoardAppState.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		DEFC5055EE9E6A49BEB57D05 /* NativeTemplateTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D155B6CED8ADFAC77D0F0E6 /* NativeTemplateTextView.swift */; };
@@ -185,6 +186,7 @@
 		5DC63171EF43451C07069156 /* DocumentEditingSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentEditingSession.swift; sourceTree = "<group>"; };
 		60CD69EE0A48BCB225F494E6 /* PageDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageDetailView.swift; sourceTree = "<group>"; };
 		678A2B4C279B5B863E7FB900 /* BoardStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardStore.swift; sourceTree = "<group>"; };
+		73B099CBC1D0A8C287BB5AD2 /* CollectionRecoveryUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionRecoveryUITests.swift; sourceTree = "<group>"; };
 		8086EA8450423EC1F62DCF79 /* LocalPageEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalPageEditorModel.swift; sourceTree = "<group>"; };
 		80B7025A77DB33DB399EC12D /* FiestaBoard.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FiestaBoard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8624ABBD546279E8133D9396 /* FiestaBoardUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FiestaBoardUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -371,6 +373,7 @@
 		A8C381AA094EA08ED178D2A4 /* UITests */ = {
 			isa = PBXGroup;
 			children = (
+				73B099CBC1D0A8C287BB5AD2 /* CollectionRecoveryUITests.swift */,
 				A7CD60F365F22213C8C5A3BD /* DemoUITests.swift */,
 			);
 			name = UITests;
@@ -668,6 +671,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C5BB25DC588B573A3F696202 /* CollectionRecoveryUITests.swift in Sources */,
 				AD9743F499C713E7272DF91B /* DemoUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
