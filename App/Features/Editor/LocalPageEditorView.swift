@@ -25,6 +25,7 @@ public struct LocalPageEditorView: View {
     }
 
     public var body: some View {
+        ScrollViewReader { proxy in
         Form {
             if let recovery = model.recoveryNotice {
                 Section("Draft recovery") {
@@ -42,9 +43,20 @@ public struct LocalPageEditorView: View {
             Section("Page name") {
                 TextField("Name", text: Binding(get: { model.name }, set: { model.setName($0) }))
                     .autocorrectionDisabled()
-                    .disabled(model.editingFrozen)
+                    .disabled(model.editingFrozen || !model.supportsLocalAuthoring).id("pageName")
             }
-            if model.lines != nil {
+            if model.supportsFlexibleEditing {
+                Section {
+                    FlexibleWorkspaceView(model: model, isTextInputActive: $isTextInputActive) { issue in
+                        let destination: String
+                        if issue.key == "name" { destination = "pageName" }
+                        else if issue.blockID == nil { destination = "flexiblePageOptions" }
+                        else if issue.shapeIndex != nil { destination = "canvasShapeInspector" }
+                        else { destination = "flexibleInspector" }
+                        DispatchQueue.main.async { withAnimation { proxy.scrollTo(destination, anchor: .top) } }
+                    }
+                }
+            } else if model.lines != nil {
                 Section {
                     TemplateWorkspaceView(model: model, isTextInputActive: $isTextInputActive)
                 }
@@ -60,7 +72,7 @@ public struct LocalPageEditorView: View {
             evaluationSection
             Section("Draft status") {
                 LabeledContent("Local", value: model.hasUnsavedChanges ? "Unsaved local changes" : "No unsaved local changes")
-                LabeledContent("Server", value: model.hasServerChanges ? "Changed from server baseline" : "Matches server baseline")
+                LabeledContent("Server", value: model.serverSnapshotStatus)
                 DisclosureGroup("Saving and evaluation help") {
                     Text("Save local draft keeps a recovery copy on this device. A confirmed server save updates stored page content. Evaluation uses the current document and selected display without updating stored content or sending to hardware.")
                         .font(.footnote).foregroundStyle(.secondary)
@@ -94,9 +106,11 @@ public struct LocalPageEditorView: View {
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
                 Button("Undo", systemImage: "arrow.uturn.backward") { commitTextInput(); model.undo() }
-                    .disabled(!model.canUndo || model.editingFrozen)
+                    .help(model.undoActionName.map { "Undo " + $0 } ?? "Undo")
+                    .disabled(!model.canUndo || model.editingFrozen).keyboardShortcut("z", modifiers: .command)
                 Button("Redo", systemImage: "arrow.uturn.forward") { commitTextInput(); model.redo() }
-                    .disabled(!model.canRedo || model.editingFrozen)
+                    .help(model.redoActionName.map { "Redo " + $0 } ?? "Redo")
+                    .disabled(!model.canRedo || model.editingFrozen).keyboardShortcut("z", modifiers: [.command, .shift])
             }
         }
         .confirmationDialog("Keep your local changes?", isPresented: $confirmClose, titleVisibility: .visible) {
@@ -121,6 +135,7 @@ public struct LocalPageEditorView: View {
             Text("Your current local work will be saved before replacing the editor. Undo history will be cleared so an old server revision cannot return.")
         }
         .task { await model.checkRecovery() }
+        }
     }
 
     @ViewBuilder private var serverSection: some View {
@@ -148,14 +163,16 @@ public struct LocalPageEditorView: View {
     }
 
     @ViewBuilder private var evaluationSection: some View {
-        Section("Template evaluation") {
+        Section(model.supportsFlexibleEditing ? "Flexible preview" : "Template evaluation") {
             Picker("Board for evaluation", selection: Binding(get: { model.selectedBoardID }, set: { model.chooseBoard($0) })) {
                 Text("Choose a board").tag(String?.none)
                 ForEach(model.boards) { board in Text(board.name).tag(Optional(board.id)) }
             }.disabled(model.editingFrozen).accessibilityIdentifier("evaluationBoardPicker")
             HStack {
-                Button("Validate") { commitTextInput(); Task { await model.evaluate(preview: false) } }
-                    .accessibilityIdentifier("validatePage")
+                if !model.supportsFlexibleEditing {
+                    Button("Validate") { commitTextInput(); Task { await model.evaluate(preview: false) } }
+                        .accessibilityIdentifier("validatePage")
+                }
                 Spacer()
                 Button("Preview") { commitTextInput(); Task { await model.evaluate(preview: true) } }
                     .accessibilityIdentifier("previewPage")
@@ -167,6 +184,27 @@ public struct LocalPageEditorView: View {
                 Text(result.valid ? "No template syntax errors reported." : "Template syntax errors")
                 ForEach(Array(result.errors.enumerated()), id: \.offset) { _, issue in
                     Text("Line \(issue.line), column \(issue.column): \(issue.message)").font(.footnote)
+                }
+            }
+            if let result = model.flexiblePreview {
+                Text("Server preview · requested board: \(model.boards.first(where: { $0.id == model.selectedBoardID })?.name ?? "Unselected")")
+                    .font(.caption).foregroundStyle(.secondary)
+                switch result.surface {
+                case .physical(let frame): PhysicalFrameView(frame: frame)
+                case .unsupported: Text("This server uses an unsupported visual preview format.")
+                case .legacy:
+                    Text(result.lines.joined(separator: "\n")).font(.body.monospaced()).textSelection(.enabled)
+                    if result.hasLayers { Text("Visual overlays are retained; inspect the full result or web preview.").font(.footnote) }
+                }
+                Text("Layout warnings: \(result.layoutIssueCount) · Canvas warnings: \(result.canvasIssueCount)").font(.footnote)
+                ForEach(Array(result.layoutWarnings.enumerated()), id: \.offset) { _, warning in
+                    Label(warning, systemImage: "exclamationmark.triangle").font(.footnote)
+                }
+                ForEach(Array(result.canvasWarnings.enumerated()), id: \.offset) { _, warning in
+                    Label(warning, systemImage: "paintbrush").font(.footnote)
+                }
+                DisclosureGroup("Full preview and warnings") {
+                    Text(String(decoding: result.rawData, as: UTF8.self)).font(.caption.monospaced()).textSelection(.enabled)
                 }
             }
             if let result = model.preview {

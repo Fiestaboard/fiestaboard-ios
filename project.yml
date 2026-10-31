@@ -26,6 +26,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft.core
         GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: FiestaBoardDocuments
   FiestaBoardAppState:
     type: framework
     platform: iOS

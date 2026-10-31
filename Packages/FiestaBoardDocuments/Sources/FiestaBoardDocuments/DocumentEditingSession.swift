@@ -11,8 +11,15 @@ public struct DocumentEditingSession: Sendable {
     private struct Version: Sendable {
         let document: PageDocument
         let baseline: PageDocument
+        let action: String
+        let focus: FlexibleLocation?
     }
-    private var version: Version { Version(document: document, baseline: baseline) }
+    public private(set) var historyFocus: FlexibleLocation?
+    public var undoActionName: String? { undoHistory.last?.action }
+    public var redoActionName: String? { redoHistory.last?.action }
+    private func version(action: String = "Edit document", focus: FlexibleLocation? = nil) -> Version {
+        Version(document: document, baseline: baseline, action: action, focus: focus)
+    }
     private var undoHistory: [Version] = []
     private var redoHistory: [Version] = []
 
@@ -67,31 +74,40 @@ public struct DocumentEditingSession: Sendable {
         try candidate.setLineWrap(at: index, wrap: wrap)
         try adopt(candidate)
     }
-    private mutating func adopt(_ candidate: PageDocument) throws {
+    public mutating func editFlexible(action: String = "Edit flexible content", focus: FlexibleLocation? = nil, _ operation: (inout PageDocument) throws -> Void) throws {
+        guard document.supportsFlexibleEditing else { throw FlexibleEditError.unsupported }
+        var candidate = document
+        try operation(&candidate)
+        try adopt(candidate, action: action, focus: focus)
+    }
+    private mutating func adopt(_ candidate: PageDocument, action: String = "Edit document", focus: FlexibleLocation? = nil) throws {
         guard candidate != document else { return }
         try advanceRevision()
-        undoHistory.append(version)
+        undoHistory.append(version(action: action, focus: focus))
         trim(&undoHistory)
         redoHistory.removeAll()
         document = candidate
+        historyFocus = focus
     }
     public mutating func undo() throws {
         guard let prior = undoHistory.last else { return }
         try advanceRevision()
         undoHistory.removeLast()
-        redoHistory.append(version)
+        redoHistory.append(version(action: prior.action, focus: prior.focus))
         trim(&redoHistory)
         document = prior.document
         baseline = prior.baseline
+        historyFocus = prior.focus
     }
     public mutating func redo() throws {
         guard let next = redoHistory.last else { return }
         try advanceRevision()
         redoHistory.removeLast()
-        undoHistory.append(version)
+        undoHistory.append(version(action: next.action, focus: next.focus))
         trim(&undoHistory)
         document = next.document
         baseline = next.baseline
+        historyFocus = next.focus
     }
     /// Use the captured document that completed the write, not a newer in-flight editor value.
     public mutating func markSaved(_ document: PageDocument, baseline capturedBaseline: PageDocument? = nil) {
@@ -112,7 +128,7 @@ public struct DocumentEditingSession: Sendable {
         let recovered = try PageDocument(data: snapshot.documentData)
         let nextRevision = max(revision, snapshot.revision)
         guard nextRevision < .max else { throw DraftError.revisionExhausted }
-        undoHistory.append(version)
+        undoHistory.append(version(action: "Recover local draft"))
         trim(&undoHistory)
         redoHistory.removeAll()
         revision = nextRevision + 1
@@ -131,6 +147,7 @@ public struct DocumentEditingSession: Sendable {
         baseline = accepted
         undoHistory.removeAll()
         redoHistory.removeAll()
+        historyFocus = nil
     }
 
     private mutating func advanceRevision() throws {

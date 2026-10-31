@@ -32,7 +32,7 @@ import FiestaBoardKit
             XCTAssertFalse(model.canSaveToServer)
             await model.saveToServer()
             XCTAssertEqual(calls, 0)
-            XCTAssertEqual(model.name, "Edited")
+            XCTAssertEqual(model.name, "Original")
         }
     }
     func testSaveSnapshotsBeforeFailureAndKeepsServerDirty() async throws {

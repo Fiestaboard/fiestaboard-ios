@@ -14,12 +14,16 @@ struct NativeTemplateTextView: UIViewRepresentable {
     @Binding var isEditing: Bool
     var rich: Bool
     var selection: TemplateTextSelection
+    var allowsMultiline = false
+    var documentUndo = false
     var onEditToken: (String, NSRange) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeUIView(context: Context) -> TemplateUITextView {
         let view = TemplateUITextView(usingTextLayoutManager: false)
         view.delegate = context.coordinator
+        view.allowsMultiline = allowsMultiline
+        view.usesDocumentUndo = documentUndo
         view.font = .preferredFont(forTextStyle: .body)
         view.adjustsFontForContentSizeCategory = true
         view.backgroundColor = .secondarySystemGroupedBackground
@@ -29,7 +33,7 @@ struct NativeTemplateTextView: UIViewRepresentable {
         view.autocapitalizationType = .none
         view.smartQuotesType = .no; view.smartDashesType = .no; view.smartInsertDeleteType = .no
         view.accessibilityIdentifier = "templateRowText"
-        view.accessibilityLabel = "Row text"
+        view.accessibilityLabel = allowsMultiline ? "Block text" : "Row text"
         view.tokenTapped = { [weak coordinator = context.coordinator] source, range in coordinator?.parent.onEditToken(source, range) }
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.tapToken(_:)))
         tap.cancelsTouchesInView = false
@@ -86,6 +90,7 @@ struct NativeTemplateTextView: UIViewRepresentable {
             let source = view.templateSource
             let selection = view.sourceSelection
             parent.text = source
+            parent.selection.range = selection
             // Tokenization after committed text input only; no uppercase/Unicode normalization.
             if !LosslessJSON.stringsEqual(source, parent.text) { render(view, source: parent.text, sourceSelection: selection) }
             else if parent.rich && TemplateSyntax.fragments(source).reduce(0, { $0 + $1.displayLength }) != view.attributedText.length {
@@ -95,10 +100,10 @@ struct NativeTemplateTextView: UIViewRepresentable {
         }
         func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
             // Multiline authoring uses explicit row operations; never silently flatten paste.
-            !text.contains("\n") && !text.contains("\r")
+            parent.allowsMultiline || (!text.contains("\n") && !text.contains("\r"))
         }
         @objc func tapToken(_ gesture: UITapGestureRecognizer) {
-            guard let view = gesture.view as? TemplateUITextView, parent.rich else { return }
+            guard let view = gesture.view as? TemplateUITextView, view.markedTextRange == nil, parent.rich else { return }
             let point = gesture.location(in: view)
             guard let position = view.closestPosition(to: point) else { return }
             let index = view.offset(from: view.beginningOfDocument, to: position)
@@ -118,6 +123,10 @@ struct NativeTemplateTextView: UIViewRepresentable {
 }
 
 final class TemplateUITextView: UITextView {
+    var allowsMultiline = false
+    var usesDocumentUndo = false
+    override var undoManager: UndoManager? { usesDocumentUndo ? nil : super.undoManager }
+
     override func layoutSubviews() {
         super.layoutSubviews()
         // A short row must not consume vertical gestures intended for the surrounding
@@ -148,14 +157,14 @@ final class TemplateUITextView: UITextView {
     override func cut(_ sender: Any?) { copy(sender); insertText("") }
     override func paste(_ sender: Any?) {
         guard let source = UIPasteboard.general.string else { return }
-        guard !source.contains("\n"), !source.contains("\r") else {
+        guard allowsMultiline || (!source.contains("\n") && !source.contains("\r")) else {
             UIAccessibility.post(notification: .announcement, argument: "Use separate rows for multiline text.")
             return
         }
         insertTemplate(source)
     }
     func insertTemplate(_ source: String) {
-        guard !source.contains("\n"), !source.contains("\r") else { return }
+        guard allowsMultiline || (!source.contains("\n") && !source.contains("\r")) else { return }
         insertText(source)
     }
 }

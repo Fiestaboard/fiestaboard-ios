@@ -2,7 +2,7 @@ import Foundation
 
 /// Full page document. Projections are for display; all writes use the retained tree.
 public struct PageDocument: Equatable, Sendable {
-    public private(set) var root: LosslessJSONObject
+    public internal(set) var root: LosslessJSONObject
 
     public init(data: Data) throws {
         guard case .object(let object) = try LosslessJSON.parse(data) else { throw DocumentError.pageMustBeObject }

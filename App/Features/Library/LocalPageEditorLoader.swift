@@ -77,6 +77,9 @@ private typealias LoaderState<Value> = SwiftUI.State<Value>
                 }, preview: { data, target in
                     let capturedContext = context.value
                     return try await boardStore.previewPage(requestData: data, context: capturedContext, target: target)
+                }, previewFlexible: { data, target in
+                    let capturedContext = context.value
+                    return try await boardStore.previewFlexiblePage(requestData: data, context: capturedContext, target: target)
                 })
                 let boards = store.boards.compactMap { board -> EditorBoardChoice? in
                     guard let target = try? BoardTarget(deployment: snapshot.deployment, boardID: board.id) else { return nil }

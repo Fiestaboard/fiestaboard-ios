@@ -333,9 +333,13 @@ final class ConnectionUITests: XCTestCase {
         for title in ["Flexible document", "Future document"] {
             let row = app.staticTexts[title].firstMatch
             XCTAssertTrue(row.waitForExistence(timeout: 5)); row.tap()
-            XCTAssertTrue(app.staticTexts["This document cannot be edited in this native draft. Open the web editor for its full content and display previews."].waitForExistence(timeout: 5))
-            XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "openWebEditor").firstMatch.exists)
-            XCTAssertFalse(app.buttons["editLocalDraft"].exists)
+            if title == "Flexible document" {
+                XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 5))
+            } else {
+                XCTAssertTrue(app.staticTexts["This document cannot be edited in this native draft. Open the web editor for its full content and display previews."].waitForExistence(timeout: 5))
+                XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "openWebEditor").firstMatch.exists)
+                XCTAssertFalse(app.buttons["editLocalDraft"].exists)
+            }
             let deletion = app.buttons["deleteLibraryPage"]
             reveal(deletion, app); XCTAssertFalse(deletion.isEnabled)
             let evidence = XCTAttachment(screenshot: app.screenshot())
@@ -373,6 +377,150 @@ final class ConnectionUITests: XCTestCase {
         app.buttons["Close"].tap()
         app.navigationBars.buttons["Pages"].tap()
         selectTab("Settings", in: app)
+        let disconnect = app.buttons["Disconnect"]
+        reveal(disconnect, app); disconnect.tap(); removeSaved(alias, app)
+    }
+
+    /// Runs on both controller-selected iPhone and iPad destinations. Test server is synthetic.
+    @MainActor
+    func testFlexibleTextCanvasPreviewConditionalSaveAndReopen() async throws {
+        try await requireFixture()
+        let app = XCUIApplication(); app.launchArguments = []; app.launch()
+        let alias = connect(app, scenario: "flexible")
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        selectTab("Settings", in: app)
+        let writes = app.switches["Enable changes on this server"]
+        reveal(writes, app); writes.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+        let apply = app.buttons["Apply change setting"]
+        reveal(apply, app); apply.tap()
+        XCTAssertTrue(app.buttons["Disconnect"].waitForExistence(timeout: 10))
+        selectTab("Pages", in: app)
+        let row = app.staticTexts["Flexible document"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
+        app.buttons["editLocalDraft"].tap()
+        let text = app.textViews["templateRowText"]
+        reveal(text, app); XCTAssertTrue(text.waitForExistence(timeout: 5))
+        text.tap(); text.typeText(" UI text")
+        app.buttons["Hide keyboard"].tap()
+        let textEvidence = XCTAttachment(screenshot: app.screenshot())
+        textEvidence.name = "Editable flexible text"; textEvidence.lifetime = .keepAlways; add(textEvidence)
+        defer { XCUIDevice.shared.orientation = .portrait }
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertTrue(text.waitForExistence(timeout: 5))
+        XCTAssertTrue((text.value as? String)?.contains("UI text") == true)
+        let adapted = XCTAttachment(screenshot: app.screenshot())
+        adapted.name = "Flexible editor retains text across width change"; adapted.lifetime = .keepAlways; add(adapted)
+        XCUIDevice.shared.orientation = .portrait
+
+        let canvasBlock = app.buttons["flexibleBlock_drawing"]
+        reveal(canvasBlock, app); canvasBlock.tap()
+        let rectangle = app.buttons["canvasShape_1"]
+        reveal(rectangle, app); rectangle.tap()
+        let width = app.descendants(matching: .any).matching(identifier: "flexibleField_w").firstMatch
+        reveal(width, app); XCTAssertTrue(width.exists)
+        width.tap(); width.typeText("1")
+        app.buttons["Close"].tap()
+        let keep = app.buttons["Keep editing"]
+        if keep.exists && keep.isHittable { keep.tap() }
+        else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap() }
+        reveal(width, app)
+        let canvasEvidence = XCTAttachment(screenshot: app.screenshot())
+        canvasEvidence.name = "Editable rectangle inspector"; canvasEvidence.lifetime = .keepAlways; add(canvasEvidence)
+        let picker = app.buttons["evaluationBoardPicker"]
+        reveal(picker, app); picker.tap(); app.buttons["Contract board"].tap()
+        let preview = app.buttons["previewPage"]
+        reveal(preview, app); XCTAssertTrue(preview.isEnabled); preview.tap()
+        let dimensions = app.staticTexts["32 × 16 pixels"]
+        reveal(dimensions, app); XCTAssertTrue(dimensions.waitForExistence(timeout: 8))
+        let previewEvidence = XCTAttachment(screenshot: app.screenshot())
+        previewEvidence.name = "Flexible server preview and warnings"; previewEvidence.lifetime = .keepAlways; add(previewEvidence)
+        let save = app.buttons["savePageOnServer"]
+        reveal(save, app); XCTAssertTrue(save.isEnabled); save.tap()
+        app.buttons["Save page on server"].tap()
+        let acknowledged = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Page storage acknowledged.")).firstMatch
+        reveal(acknowledged, app); XCTAssertTrue(acknowledged.waitForExistence(timeout: 8))
+        reveal(save, app); XCTAssertFalse(save.isEnabled)
+        app.buttons["Close"].tap()
+        let saveLocal = app.buttons["Save local draft and close"]
+        if saveLocal.waitForExistence(timeout: 2) { saveLocal.tap() }
+        XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 5))
+        app.buttons["editLocalDraft"].tap()
+        let reopenedText = app.textViews["templateRowText"]
+        reveal(reopenedText, app); XCTAssertTrue(reopenedText.waitForExistence(timeout: 5))
+        XCTAssertTrue((reopenedText.value as? String)?.contains("UI text") == true)
+        app.buttons["flexibleBlock_drawing"].tap()
+        reveal(app.buttons["canvasShape_1"], app); app.buttons["canvasShape_1"].tap()
+        let reopenedWidth = app.descendants(matching: .any).matching(identifier: "flexibleField_w").firstMatch
+        reveal(reopenedWidth, app); XCTAssertEqual(reopenedWidth.value as? String, "101")
+        app.buttons["Close"].tap()
+        app.navigationBars.buttons["Pages"].tap()
+        selectTab("Settings", in: app)
+        let disconnect = app.buttons["Disconnect"]
+        reveal(disconnect, app); disconnect.tap(); removeSaved(alias, app)
+    }
+
+    @MainActor
+    func testFlexibleInvalidHiddenCanvasRoutesBackToRepairAndUndo() async throws {
+        try await requireFixture()
+        let app = XCUIApplication(); app.launchArguments = []; app.launch()
+        let alias = connect(app, scenario: "flexible")
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        selectTab("Settings", in: app)
+        let writes = app.switches["Enable changes on this server"]
+        reveal(writes, app); writes.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+        let apply = app.buttons["Apply change setting"]
+        reveal(apply, app); apply.tap()
+        selectTab("Pages", in: app)
+        let flexible = app.staticTexts["Flexible document"].firstMatch
+        XCTAssertTrue(flexible.waitForExistence(timeout: 8)); flexible.tap()
+        app.buttons["editLocalDraft"].tap()
+        let source = app.textViews["templateRowText"]
+        reveal(source, app); XCTAssertTrue(source.waitForExistence(timeout: 5))
+        source.tap(); source.typeText(" valid dirty edit")
+        app.buttons["Hide keyboard"].tap()
+        let picker = app.buttons["evaluationBoardPicker"]
+        reveal(picker, app); picker.tap(); app.buttons["Contract board"].tap()
+        let preview = app.buttons["previewPage"]
+        reveal(preview, app); XCTAssertTrue(preview.isEnabled)
+        let save = app.buttons["savePageOnServer"]
+        reveal(save, app); XCTAssertTrue(save.isEnabled)
+        let canvas = app.buttons["flexibleBlock_drawing"]
+        reveal(canvas, app); canvas.tap()
+        let rectangle = app.buttons["canvasShape_1"]
+        reveal(rectangle, app); rectangle.tap()
+        let width = app.descendants(matching: .any).matching(identifier: "flexibleField_w").firstMatch
+        reveal(width, app); width.tap(); width.typeText(".")
+        app.buttons["Close"].tap()
+        let keep = app.buttons["Keep editing"]
+        if keep.exists && keep.isHittable { keep.tap() }
+        else { app.coordinate(withNormalizedOffset: CGVector(dx: 0.97, dy: 0.5)).tap() }
+        reveal(preview, app); XCTAssertFalse(preview.isEnabled)
+        reveal(save, app); XCTAssertFalse(save.isEnabled)
+        let text = app.buttons["flexibleBlock_welcome"]
+        reveal(text, app); text.tap()
+        reveal(preview, app); XCTAssertFalse(preview.isEnabled, "Hidden invalid Canvas still gates preview")
+        reveal(save, app); XCTAssertFalse(save.isEnabled, "Hidden invalid Canvas still gates save")
+        let issue = app.buttons["flexibleIssue_w"]
+        reveal(issue, app); XCTAssertTrue(issue.exists); issue.tap()
+        XCTAssertTrue(width.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        let evidence = XCTAttachment(screenshot: app.screenshot())
+        evidence.name = "Hidden invalid Canvas field revealed for repair"; evidence.lifetime = .keepAlways; add(evidence)
+        app.buttons["Undo"].tap()
+        XCTAssertTrue(issue.waitForNonExistence(timeout: 5))
+        reveal(preview, app); XCTAssertTrue(preview.isEnabled)
+        reveal(save, app); XCTAssertTrue(save.isEnabled, "Earlier valid text edit remains unsaved")
+        app.buttons["Redo"].tap(); XCTAssertTrue(issue.waitForExistence(timeout: 5))
+        reveal(preview, app); XCTAssertFalse(preview.isEnabled)
+        reveal(save, app); XCTAssertFalse(save.isEnabled)
+        app.buttons["Undo"].tap()
+        reveal(preview, app); XCTAssertTrue(preview.isEnabled)
+        reveal(save, app); XCTAssertTrue(save.isEnabled)
+        app.buttons["Close"].tap()
+        let discard = app.buttons["Discard unsaved changes"]
+        if discard.waitForExistence(timeout: 2) { discard.tap() }
+        XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 5))
+        app.navigationBars.buttons["Pages"].tap(); selectTab("Settings", in: app)
         let disconnect = app.buttons["Disconnect"]
         reveal(disconnect, app); disconnect.tap(); removeSaved(alias, app)
     }

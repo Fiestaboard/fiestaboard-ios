@@ -1,4 +1,5 @@
 import Foundation
+import FiestaBoardDocuments
 
 /// A partial page update. Unknown document fields never enter the write body.
 public struct PageSavePatch: Encodable, Sendable, Equatable {
@@ -6,21 +7,39 @@ public struct PageSavePatch: Encodable, Sendable, Equatable {
     public let template: [String]?
     public let expectedRevision: String
     public let lineMetadataData: Data?
-    public init(name: String? = nil, template: [String]? = nil, lineMetadataData: Data? = nil, expectedRevision: String) {
-        self.name = name; self.template = template; self.lineMetadataData = lineMetadataData; self.expectedRevision = expectedRevision
+    public let blocksData: Data?
+    public let styleData: Data?
+    public let layoutData: Data?
+    public let targetsData: Data?
+    public var hasFlexibleFields: Bool { blocksData != nil || styleData != nil || layoutData != nil || targetsData != nil }
+    public init(name: String? = nil, template: [String]? = nil, lineMetadataData: Data? = nil,
+                blocksData: Data? = nil, styleData: Data? = nil, layoutData: Data? = nil, targetsData: Data? = nil,
+                expectedRevision: String) {
+        self.name = name; self.template = template; self.lineMetadataData = lineMetadataData
+        self.blocksData = blocksData; self.styleData = styleData; self.layoutData = layoutData; self.targetsData = targetsData
+        self.expectedRevision = expectedRevision
     }
     enum CodingKeys: String, CodingKey { case name, template, expectedRevision = "expected_revision" }
     public func validate() throws {
-        guard name != nil || template != nil || lineMetadataData != nil, !expectedRevision.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-              name.map({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) ?? true else {
-            throw FiestaBoardError.pageWritesDisabled
-        }
+        guard name != nil || template != nil || lineMetadataData != nil || hasFlexibleFields,
+              !expectedRevision.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              name.map({ (1...100).contains($0.unicodeScalars.count) && !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) ?? true,
+              !hasFlexibleFields || (template == nil && lineMetadataData == nil) else { throw FiestaBoardError.pageWritesDisabled }
         if let lineMetadataData { try RawJSONObject.validateObjectArray(lineMetadataData) }
+        if hasFlexibleFields {
+            var root: LosslessJSONObject = ["name": .string(name ?? "Page"), "type": .string("flexible"), "document_protocol": .string("page-document-v2"), "blocks": .array([.object(["id": .string("default"), "kind": .string("spacer")])])]
+            for (key, bytes) in rawFields {
+                root[key] = try LosslessJSON.parse(bytes)
+            }
+            let document = try PageDocument(data: LosslessJSON.object(root).serializedData())
+            guard document.flexibleIssues.isEmpty else { throw FiestaBoardError.pageWritesDisabled }
+        }
     }
-    /// JSONEncoder cannot preserve arbitrary JSON number spellings. Use serializedData for
-    /// metadata patches; refusing regular Encodable prevents accidental lossy transport.
+    private var rawFields: [(String, Data)] {
+        [("line_metadata", lineMetadataData), ("blocks", blocksData), ("style", styleData), ("layout", layoutData), ("targets", targetsData)].compactMap { key, value in value.map { (key, $0) } }
+    }
     public func encode(to encoder: any Encoder) throws {
-        guard lineMetadataData == nil else { throw FiestaBoardError.pageWritesDisabled }
+        guard rawFields.isEmpty else { throw FiestaBoardError.pageWritesDisabled }
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encodeIfPresent(name, forKey: .name)
         try container.encodeIfPresent(template, forKey: .template)
@@ -28,14 +47,12 @@ public struct PageSavePatch: Encodable, Sendable, Equatable {
     }
     public func serializedData() throws -> Data {
         try validate()
-        let ordinary = PageSavePatch(name: name, template: template, expectedRevision: expectedRevision)
-        let encoded = try JSONEncoder().encode(ordinary)
-        _ = try RawJSONObject.members(encoded)
-        guard let lineMetadataData else { return encoded }
+        let encoded = try JSONEncoder().encode(PageSavePatch(name: name, template: template, expectedRevision: expectedRevision))
         guard encoded.last == 125 else { throw FiestaBoardError.invalidResponse }
         var result = Data(encoded.dropLast())
-        result.append(Data(",\"line_metadata\":".utf8))
-        result.append(lineMetadataData)
+        for (key, data) in rawFields {
+            result.append(Data((",\"" + key + "\":").utf8)); result.append(data)
+        }
         result.append(125)
         _ = try RawJSONObject.members(result)
         return result
@@ -86,7 +103,7 @@ public struct PhysicalPreviewFrame: Sendable, Equatable {
 public enum PreviewSurface: Sendable, Equatable {
     case legacy, physical(PhysicalPreviewFrame), unsupported
 
-    fileprivate static func read(_ data: Data?) throws -> Self {
+    static func read(_ data: Data?) throws -> Self {
         guard let data, data != Data("null".utf8) else { return .legacy }
         let layers = try JSONDecoder().decode([Layer].self, from: data)
         if layers.contains(where: { $0.surface == .unsupported }) { return .unsupported }
@@ -148,6 +165,41 @@ public struct TemplatePreviewResult: Sendable {
         hasLayers = try RawJSONObject.arrayCount(members["layers"]) > 0
         surface = try PreviewSurface.read(members["layers"])
         self.rawData = rawData; self.isSimulated = isSimulated
+    }
+}
+
+/// Wire contract of POST /pages/preview/flexible, distinct from legacy template rendering.
+public struct FlexiblePreviewResult: Sendable {
+    public let surface: PreviewSurface
+    public let lines: [String]
+    public let displayType: String
+    public let layoutIssueCount: Int
+    public let layoutWarnings: [String]
+    public let canvasWarnings: [String]
+    public let canvasIssueCount: Int
+    public let hasLayers: Bool
+    public let rawData: Data
+    public init(rawData: Data) throws {
+        struct Reply: Decodable { let available: Bool; let page_id: String; let message: String; let lines: [String]; let display_type: String }
+        guard let reply = try? JSONDecoder().decode(Reply.self, from: rawData), reply.available, reply.page_id == "unsaved",
+              reply.message == reply.lines.joined(separator: "\n"),
+              let members = try? RawJSONObject.members(rawData), members["layout_issues"] != nil, let raw = members["raw"],
+              (try? RawJSONObject.members(raw)) != nil else { throw FiestaBoardError.invalidResponse }
+        lines = reply.lines; displayType = reply.display_type
+        layoutIssueCount = try RawJSONObject.arrayCount(members["layout_issues"])
+        canvasIssueCount = try RawJSONObject.arrayCount(members["canvas_issues"])
+        func messages(_ bytes: Data?) throws -> [String] {
+            guard let bytes, bytes != Data("null".utf8), case .array(let values) = try LosslessJSON.parse(bytes) else { return [] }
+            return try values.map { value in
+                if case .object(let object) = value, case .string(let text) = object["message"] { return text }
+                return String(decoding: try value.serializedData(), as: UTF8.self)
+            }
+        }
+        layoutWarnings = try messages(members["layout_issues"])
+        canvasWarnings = try messages(members["canvas_issues"])
+        hasLayers = try RawJSONObject.arrayCount(members["layers"]) > 0
+        surface = try PreviewSurface.read(members["layers"])
+        self.rawData = rawData
     }
 }
 
@@ -230,6 +282,7 @@ enum RawJSONObject {
 }
 
 extension FiestaBoardService {
+    public func previewFlexiblePage(requestData: Data, target: BoardTarget) async throws -> FlexiblePreviewResult { throw FiestaBoardError.previewUnsupported }
     public func savePage(id: String, patch: PageSavePatch) async throws -> PageSaveReceipt { throw FiestaBoardError.pageWritesDisabled }
     public func validatePage(requestData: Data, target: BoardTarget) async throws -> TemplateValidationResult { throw FiestaBoardError.previewUnsupported }
     public func previewPage(requestData: Data, target: BoardTarget) async throws -> TemplatePreviewResult { throw FiestaBoardError.previewUnsupported }

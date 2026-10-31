@@ -94,3 +94,13 @@ public extension CapabilityPolicy {
         return isSimulated || optedIn ? nil : .changesDisabled
     }
 }
+
+public extension CapabilityPolicy {
+    /// Explicit v2 family permission; never inferred from the legacy evaluation version bound.
+    static func supportsFlexibleDocument(_ page: Page) -> Bool {
+        page.type == "flexible" && page.documentProtocol == "page-document-v2"
+    }
+    static func supportsEditableDocument(_ page: Page, version: String?, isDev: Bool) -> Bool {
+        supportsTemplateDocument(page, version: version, isDev: isDev) || supportsFlexibleDocument(page)
+    }
+}

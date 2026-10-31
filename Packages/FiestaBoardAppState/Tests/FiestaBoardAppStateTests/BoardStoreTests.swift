@@ -228,6 +228,8 @@ private actor DelayedService: FiestaBoardService {
     private var delayMutation = false
     private var delayPage = false
     private var delayPreview = false
+    private var flexibleDocument = false
+    func useFlexibleDocument() { flexibleDocument = true }
     private var previewFailure: FiestaBoardError?
     func failNextPreview() { previewFailure = .networkUnavailable }
     func delayNextPreview() { delayPreview = true }
@@ -262,6 +264,10 @@ private actor DelayedService: FiestaBoardService {
     func scopedPageDocument(id: String) async throws -> ScopedPageDocument {
         let value = try await demo.scopedPageDocument(id: id)
         if delayPage { delayPage = false; await hold() }
+        if flexibleDocument {
+            let data = Data(#"{"id":"page-selected","name":"Flexible","type":"flexible","document_protocol":"page-document-v2","edit_protocol":"page-revision-v1","revision":"original","blocks":[{"id":"text","kind":"text","text":"Text"}]}"#.utf8)
+            return ScopedPageDocument(data: data, scope: value.scope)
+        }
         return value
     }
     func pageDocumentData(id: String) async throws -> Data {
@@ -283,6 +289,11 @@ private actor DelayedService: FiestaBoardService {
         let value = try await demo.previewPage(requestData: requestData, target: target)
         if delayPreview { delayPreview = false; await hold() }
         return value
+    }
+    func previewFlexiblePage(requestData: Data, target: BoardTarget) async throws -> FlexiblePreviewResult {
+        if let error = previewFailure { previewFailure = nil; throw error }
+        if delayPreview { delayPreview = false; await hold() }
+        return try FlexiblePreviewResult(rawData: Data(#"{"available":true,"page_id":"unsaved","message":"Text","lines":["Text"],"display_type":"template","raw":{},"layout_issues":[]}"#.utf8))
     }
     func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult {
         sentCount += 1
@@ -1179,5 +1190,45 @@ extension BoardStoreTests {
             }
             XCTAssertEqual(store.pageDeletionDisabledReason(for: try page()), optedIn ? nil : .changesDisabled)
         }
+    }
+}
+
+extension BoardStoreTests {
+    func testFlexiblePreviewAndSaveAccessStayBoundToDocumentTargetAndSession() async throws {
+        for transition in ["document", "board", "disconnect"] {
+            let service = try DelayedService(delayConnection: false), store = BoardStore()
+            await service.useFlexibleDocument()
+            await store.connect(service).value
+            let original = try await store.loadPageDocument(id: "page-selected")
+            XCTAssertTrue(original.editingAccess.canSave)
+            let target = try BoardTarget(deployment: service.deployment, boardID: "board-led")
+            let body = Data(#"{"page":{"name":"Flexible","type":"flexible","blocks":[{"id":"text","kind":"text","text":"Text"}]},"board_id":"board-led"}"#.utf8)
+            let result = try await store.previewFlexiblePage(requestData: body, context: original.context, target: target)
+            XCTAssertEqual(result.lines, ["Text"])
+            await service.delayNextPreview()
+            let pending = Task { try await store.previewFlexiblePage(requestData: body, context: original.context, target: target) }
+            await service.waitUntilBlocked()
+            switch transition {
+            case "document": _ = try await store.loadPageDocument(id: original.id)
+            case "board": await store.selectBoard("board-led").value
+            default: store.disconnect()
+            }
+            await service.release()
+            do { _ = try await pending.value; XCTFail("Stale preview cannot be adopted") }
+            catch { XCTAssertEqual(error as? FiestaBoardError, transition == "document" ? .stalePageContext : .staleSession) }
+        }
+    }
+}
+
+extension BoardStoreTests {
+    func testTemplateContextCannotAcquireFlexiblePreviewPermission() async throws {
+        let service = try DelayedService(delayConnection: false), store = BoardStore()
+        await store.connect(service).value
+        let original = try await store.loadPageDocument(id: "page-selected")
+        let target = try BoardTarget(deployment: service.deployment, boardID: "board-led")
+        do {
+            _ = try await store.previewFlexiblePage(requestData: Data("{}".utf8), context: original.context, target: target)
+            XCTFail("A template context does not advertise the flexible endpoint")
+        } catch { XCTAssertEqual(error as? FiestaBoardError, .previewUnsupported) }
     }
 }

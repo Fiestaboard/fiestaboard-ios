@@ -16,10 +16,11 @@ public final class LocalPageEditorModel: ObservableObject {
     private var recoveryChecked = false
 
     private let remote: EditorRemoteActions?
-    public let boards: [EditorBoardChoice]
+    @Published public private(set) var boards: [EditorBoardChoice]
     @Published public private(set) var remoteStatus: EditorRemoteStatus = .idle
     @Published public private(set) var selectedBoardID: String?
     @Published public private(set) var validation: TemplateValidationResult?
+    @Published public private(set) var flexiblePreview: FlexiblePreviewResult?
     @Published public private(set) var preview: TemplatePreviewResult?
     @Published public private(set) var isEvaluating = false
     @Published public private(set) var remoteComparisonText: String?
@@ -40,15 +41,58 @@ public final class LocalPageEditorModel: ObservableObject {
         session = initialSession
         recoveryPreservationBarrier = initialSession.document
     }
+    public var supportsFlexibleEditing: Bool { session.document.supportsFlexibleEditing }
+    public var supportsLocalAuthoring: Bool {
+        supportsFlexibleEditing || (session.document.editableTemplateLines != nil &&
+            (session.document.root["document_protocol"] == nil || session.document.root["document_protocol"] == .string("page-document-v1")))
+    }
+    public var blocks: [FlexibleBlock] { session.document.flexibleBlocks }
+    public var flexibleIssues: [FlexibleIssue] { supportsFlexibleEditing ? session.document.flexibleIssues : [] }
+    public func flexibleValue(_ location: FlexibleLocation, key: String) -> LosslessJSON? { session.document.flexibleValue(location, key: key) }
+    public func flexibleText(_ location: FlexibleLocation, key: String) -> String { FlexibleNumber.display(flexibleValue(location, key: key)) }
+    public func shapes(_ blockID: String) -> [LosslessJSON] { session.document.flexibleShapes(blockID: blockID) }
+    public func flexibleContainerValue(_ location: FlexibleLocation) -> LosslessJSON? { session.document.flexibleContainerValue(location) }
+    public func resetFlexibleContainer(_ location: FlexibleLocation, inherit: Bool) {
+        mutate { try $0.editFlexible(action: "Reset field", focus: location) { try $0.resetFlexibleContainer(location, inherit: inherit) } }
+    }
+    public func setFlexible(_ location: FlexibleLocation, key: String, value: LosslessJSON?) {
+        mutate { try $0.editFlexible(action: "Edit \(key)", focus: location) { try $0.setFlexibleValue(location, key: key, value: value) } }
+    }
+    public func addBlock(_ kind: String) -> String {
+        let id = "b_" + UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(24)
+        mutate { try $0.editFlexible(action: "Add \(kind) block", focus: .block(id)) { try $0.insertFlexibleBlock(kind: kind, id: id, at: $0.flexibleBlocks.count) } }
+        return id
+    }
+    public func removeBlock(_ id: String) { mutate { try $0.editFlexible(action: "Remove block", focus: .block(id)) { try $0.removeFlexibleBlock(id: id) } } }
+    public func moveBlock(_ id: String, to index: Int) { mutate { try $0.editFlexible(action: "Move block", focus: .block(id)) { try $0.moveFlexibleBlock(id: id, to: index) } } }
+    public func insertText(_ source: String, blockID: String, selection: NSRange) { mutate { try $0.editFlexible(action: "Insert expression", focus: .block(blockID)) { try $0.insertFlexibleText(blockID: blockID, source: source, selection: selection) } } }
+    public func addShape(_ kind: String, blockID: String) { mutate { try $0.editFlexible(action: "Add \(kind) shape", focus: .content(blockID)) { try $0.insertFlexibleShape(blockID: blockID, kind: kind) } } }
+    public func removeShape(_ index: Int, blockID: String) { mutate { try $0.editFlexible(action: "Remove shape", focus: .shape(blockID, index)) { try $0.removeFlexibleShape(blockID: blockID, at: index) } } }
+    public func moveShape(_ index: Int, to destination: Int, blockID: String) { mutate { try $0.editFlexible(action: "Move shape", focus: .shape(blockID, destination)) { try $0.moveFlexibleShape(blockID: blockID, from: index, to: destination) } } }
+    public func setContentSize(_ blockID: String, axis: Int, text: String) { mutate { try $0.editFlexible(action: "Resize Canvas", focus: .content(blockID)) { try $0.setFlexibleContentSize(blockID: blockID, axis: axis, text: text) } } }
+    public var serverSnapshotStatus: String {
+        switch remoteStatus {
+        case .saving: return "Saving"
+        case .conflict: return "Conflict"
+        case .unknownOutcome: return "Unknown save result"
+        case .reading: return "Reading"
+        case .comparison: return "Comparison pending"
+        case .idle: return hasServerChanges ? "Unsaved" : "Saved"
+        }
+    }
     public var name: String { session.document.name ?? "" }
     public var authoringGeometry: TemplateGeometry? { TemplateGeometry(document: session.document) }
     public var pageType: String { session.document.pageType ?? "Unknown page type" }
-    public var lines: [String]? { session.document.editableTemplateLines }
+    public var lines: [String]? { supportsLocalAuthoring ? session.document.editableTemplateLines : nil }
     public var readOnlyDocumentText: String {
         guard let data = try? session.document.serializedData() else { return "Document unavailable" }
         return String(decoding: data, as: UTF8.self)
     }
     public var hasUnsavedChanges: Bool { session.hasUnsavedChanges }
+    public var historyFocus: FlexibleLocation? { session.historyFocus }
+    public var documentRevision: UInt64 { session.revision }
+    public var undoActionName: String? { session.undoActionName }
+    public var redoActionName: String? { session.redoActionName }
     public var canUndo: Bool { session.canUndo }
     public var canRedo: Bool { session.canRedo }
     public var canRecover: Bool { recovery != nil }
@@ -71,10 +115,18 @@ public final class LocalPageEditorModel: ObservableObject {
     public func setLineWrap(_ index: Int, wrap: Bool) { mutate { try $0.setLineWrap(at: index, wrap: wrap) } }
     public func lineAlignment(_ index: Int) -> String { session.document.lineAlignment(at: index) }
     public func lineWrap(_ index: Int) -> Bool { session.document.lineWrap(at: index) }
-    public func undo() { mutate { try $0.undo() } }
-    public func redo() { mutate { try $0.redo() } }
+    public func undo() {
+        let action = session.undoActionName
+        mutate { try $0.undo() }
+        if let action { message = "Undid \(action.lowercased())." }
+    }
+    public func redo() {
+        let action = session.redoActionName
+        mutate { try $0.redo() }
+        if let action { message = "Redid \(action.lowercased())." }
+    }
     private func mutate(_ operation: (inout DocumentEditingSession) throws -> Void) {
-        guard !editingFrozen else { return }
+        guard !editingFrozen, supportsLocalAuthoring else { return }
         do {
             let oldRevision = session.revision
             try operation(&session); message = nil
@@ -169,17 +221,14 @@ public final class LocalPageEditorModel: ObservableObject {
     public var baselineRevision: String? {
         if case .string(let value) = session.baseline.root["revision"] { value } else { nil }
     }
-    public var hasServerChanges: Bool {
-        session.document.root["name"] != session.baseline.root["name"] ||
-        session.document.root["template"] != session.baseline.root["template"] ||
-        session.document.root["line_metadata"] != session.baseline.root["line_metadata"]
-    }
+    private var editableFields: [String] { supportsFlexibleEditing ? ["name", "blocks", "style", "layout", "targets"] : ["name", "template", "line_metadata"] }
+    public var hasServerChanges: Bool { editableFields.contains { session.document.root[$0] != session.baseline.root[$0] } }
     public var serverSaveDisabledReason: String? {
         guard let remote else { return "Server saving is unavailable for this local document." }
         if let reason = remote.disabledReason() { return reason }
         let documentProtocol = session.baseline.root["document_protocol"]
-        guard session.baseline.root["type"] == .string("template"),
-              documentProtocol == nil || documentProtocol == .string("page-document-v1") else {
+        let legacy = session.baseline.pageType == "template" && (documentProtocol == nil || documentProtocol == .string("page-document-v1"))
+        guard legacy || session.baseline.supportsFlexibleEditing else {
             return "This document uses an unsupported editing protocol. Keep changes as a local draft."
         }
         guard session.baseline.root["edit_protocol"] == .string("page-revision-v1"),
@@ -187,19 +236,18 @@ public final class LocalPageEditorModel: ObservableObject {
             return "This document has no supported page revision protocol. Keep changes as a local draft."
         }
         guard case .object(let changes) = try? session.document.changedFields(from: session.baseline),
-              changes.keys.allSatisfy({ ["name", "template", "line_metadata"].contains($0) }) else {
-            return "This local document includes changes outside supported name, template, and line metadata fields. Preserve it as a local draft; use the web editor for those changes."
+              changes.keys.allSatisfy({ editableFields.contains($0) }) else {
+            return "This local document includes changes outside supported author fields. Keep it as a local draft."
         }
-        if session.document.root["line_metadata"] != session.baseline.root["line_metadata"] {
-            guard case .array = session.document.root["line_metadata"] else {
-                return "Only complete line metadata arrays can be saved. Keep this metadata change as a local draft."
+        if supportsFlexibleEditing {
+            if let issue = flexibleIssues.first { return "Repair \(issue.key): \(issue.message)" }
+        } else {
+            if session.document.root["line_metadata"] != session.baseline.root["line_metadata"], case .array = session.document.root["line_metadata"] {} else if session.document.root["line_metadata"] != session.baseline.root["line_metadata"] { return "Only complete line metadata arrays can be saved." }
+            guard let lines = session.document.editableTemplateLines, session.baseline.editableTemplateLines != nil else {
+                return "This template or its metadata cannot be safely saved. Keep it as a local draft."
             }
+            guard !lines.isEmpty else { return "Add at least one template line before saving to the server." }
         }
-        guard let lines = session.document.editableTemplateLines,
-              session.baseline.editableTemplateLines != nil else {
-            return "This template or its metadata cannot be safely saved. Keep it as a local draft."
-        }
-        guard !lines.isEmpty else { return "Add at least one template line before saving to the server." }
         if remoteStatus == .conflict { return "The page changed on the server. Fetch it for comparison before choosing a reload." }
         if remoteStatus == .unknownOutcome { return "The save result is unknown. Fetch the server page and choose a reload before another save." }
         if remoteStatus == .comparison { return "Choose whether to reload the compared page. Local work stays preserved in the draft." }
@@ -209,7 +257,10 @@ public final class LocalPageEditorModel: ObservableObject {
         !editingFrozen && !isSaving && hasServerChanges && serverSaveDisabledReason == nil && remoteStatus == .idle
     }
     public var canFetchRemote: Bool { remote?.fetch != nil && !editingFrozen && !isSaving }
-    public var canEvaluate: Bool { remote?.validate != nil && remote?.preview != nil && selectedTarget != nil && !editingFrozen }
+    public var canEvaluate: Bool {
+        let available = supportsFlexibleEditing ? remote?.previewFlexible != nil && flexibleIssues.isEmpty : remote?.validate != nil && remote?.preview != nil
+        return supportsLocalAuthoring && available && selectedTarget != nil && !editingFrozen
+    }
     private var selectedTarget: BoardTarget? { boards.first { $0.id == selectedBoardID }?.target }
 
     /// Call on an explicit Close/Discard decision. Late authentication callbacks must not turn
@@ -220,13 +271,13 @@ public final class LocalPageEditorModel: ObservableObject {
     }
 
     public func chooseBoard(_ id: String?) {
-        guard id != selectedBoardID else { return }
+        guard id != selectedBoardID, id == nil || boards.contains(where: { $0.id == id }) else { return }
         selectedBoardID = id
         invalidateEvaluation()
     }
     private func invalidateEvaluation() {
         evaluationGeneration &+= 1
-        validation = nil; preview = nil; isEvaluating = false
+        validation = nil; preview = nil; flexiblePreview = nil; isEvaluating = false
     }
 
     /// Called only after the UI's explicit confirmation identifying the page and deployment.
@@ -237,7 +288,12 @@ public final class LocalPageEditorModel: ObservableObject {
         let template = session.document.root["template"] != session.baseline.root["template"] ? session.document.editableTemplateLines : nil
         let metadata = session.document.root["line_metadata"] != session.baseline.root["line_metadata"]
             ? (try? session.document.root["line_metadata"]?.serializedData()) : nil
-        let patch = PageSavePatch(name: name, template: template, lineMetadataData: metadata, expectedRevision: revision)
+        func changedRaw(_ key: String) throws -> Data? {
+            guard session.document.root[key] != session.baseline.root[key] else { return nil }
+            return try session.document.root[key]?.serializedData()
+        }
+        guard let patch = try? PageSavePatch(name: name, template: template, lineMetadataData: metadata,
+            blocksData: changedRaw("blocks"), styleData: changedRaw("style"), layoutData: changedRaw("layout"), targetsData: changedRaw("targets"), expectedRevision: revision) else { return }
         isPreparingRemoteSave = true
         guard await saveDraft() else { isPreparingRemoteSave = false; return }
         isPreparingRemoteSave = false
@@ -247,7 +303,9 @@ public final class LocalPageEditorModel: ObservableObject {
             let receipt = try await remote.save(patch)
             let data = receipt.data
             let accepted = try PageDocument(data: data)
-            guard accepted.root["revision"] != nil, accepted.root["edit_protocol"] == .string("page-revision-v1") else {
+            guard case .string(let acceptedRevision) = accepted.root["revision"], !acceptedRevision.isEmpty, acceptedRevision != revision,
+                  accepted.root["edit_protocol"] == .string("page-revision-v1"), accepted.pageType == session.baseline.pageType,
+                  accepted.root["document_protocol"] == session.baseline.root["document_protocol"] else {
                 throw FiestaBoardError.unknownMutationOutcome
             }
             try session.adoptServerDocument(data)
@@ -313,8 +371,12 @@ public final class LocalPageEditorModel: ObservableObject {
         isEvaluating = true
         defer { if generation == evaluationGeneration { isEvaluating = false } }
         do {
-            let data = try session.document.evaluationData(boardID: target.boardID, preview: wantsPreview)
-            if wantsPreview, let run = remote.preview {
+            let data = try supportsFlexibleEditing ? session.document.flexibleEvaluationData(boardID: target.boardID) : session.document.evaluationData(boardID: target.boardID, preview: wantsPreview)
+            if supportsFlexibleEditing, let run = remote.previewFlexible {
+                let result = try await run(data, target)
+                guard generation == evaluationGeneration, session.revision == revision, selectedTarget == target else { return }
+                flexiblePreview = result
+            } else if wantsPreview, let run = remote.preview {
                 let result = try await run(data, target)
                 guard generation == evaluationGeneration, session.revision == revision, selectedTarget == target else { return }
                 preview = result
@@ -325,6 +387,14 @@ public final class LocalPageEditorModel: ObservableObject {
             }
         } catch {
             await preserveForConnectionLoss(error)
+            if !editingEnded, supportsFlexibleEditing, selectedTarget == target,
+               error as? FiestaBoardError == .rejected(status: 404) || error as? FiestaBoardError == .invalidTarget {
+                selectedBoardID = nil
+                boards.removeAll { $0.target == target }
+                invalidateEvaluation()
+                message = "The requested board is no longer available. Your draft is preserved. Choose a current board before previewing again."
+                return
+            }
             guard generation == evaluationGeneration, session.revision == revision, selectedTarget == target else { return }
             message = "Evaluation unavailable: \(error.localizedDescription)"
         }

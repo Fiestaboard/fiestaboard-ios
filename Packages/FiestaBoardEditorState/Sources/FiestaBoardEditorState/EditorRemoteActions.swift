@@ -9,15 +9,17 @@ public struct EditorRemoteActions {
     public let save: @MainActor (PageSavePatch) async throws -> EditorSaveResult
     public let fetch: (@MainActor () async throws -> Data)?
     public let validate: (@MainActor (Data, BoardTarget) async throws -> TemplateValidationResult)?
+    public let previewFlexible: (@MainActor (Data, BoardTarget) async throws -> FlexiblePreviewResult)?
     public let preview: (@MainActor (Data, BoardTarget) async throws -> TemplatePreviewResult)?
     public init(isSimulated: Bool = false, disabledReason: @escaping @MainActor () -> String?,
                 save: @escaping @MainActor (PageSavePatch) async throws -> EditorSaveResult,
                 fetch: (@MainActor () async throws -> Data)? = nil,
                 validate: (@MainActor (Data, BoardTarget) async throws -> TemplateValidationResult)? = nil,
-                preview: (@MainActor (Data, BoardTarget) async throws -> TemplatePreviewResult)? = nil) {
+                preview: (@MainActor (Data, BoardTarget) async throws -> TemplatePreviewResult)? = nil,
+                previewFlexible: (@MainActor (Data, BoardTarget) async throws -> FlexiblePreviewResult)? = nil) {
         self.isSimulated = isSimulated
         self.disabledReason = disabledReason; self.save = save; self.fetch = fetch
-        self.validate = validate; self.preview = preview
+        self.validate = validate; self.preview = preview; self.previewFlexible = previewFlexible
     }
 }
 

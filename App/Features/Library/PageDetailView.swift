@@ -40,7 +40,7 @@ struct PageDetailView: View {
                 }
             }
             Section("Page editing") {
-                if !page.supportsTemplateEditing {
+                if !page.supportsTemplateEditing && !CapabilityPolicy.supportsFlexibleDocument(page) {
                     Text("This document cannot be edited in this native draft. Open the web editor for its full content and display previews.")
                     if let url = store.webEditorURL(pageID: page.id) {
                         Link("Open in web editor", destination: url).accessibilityIdentifier("openWebEditor")
