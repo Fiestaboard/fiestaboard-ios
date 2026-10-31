@@ -55,7 +55,7 @@ struct PageDetailView: View {
             }
             if let library = store.pageLibrary {
                 Section("Manage page") {
-                    PageLibraryFeedback(library: library, store: store)
+                    PageLibraryFeedback(library: library, store: store, showsCreationCapability: false)
                     Button("Delete page", role: .destructive) {
                         Task {
                             do { try await store.preparePageDeletion(id: page.id); confirmingDelete = true }
@@ -63,9 +63,9 @@ struct PageDetailView: View {
                         }
                     }
                     .accessibilityIdentifier("deleteLibraryPage")
-                    .disabled(!library.canDelete || !page.supportsTemplateEditing)
-                    if !page.supportsTemplateEditing {
-                        Text("Deletion of this document type is unavailable in this app.").font(.footnote).foregroundStyle(.secondary)
+                    .disabled(store.pageDeletionDisabledReason(for: page) != nil)
+                    if let reason = store.pageDeletionDisabledReason(for: page) {
+                        Text(reason.message).font(.footnote).foregroundStyle(.secondary)
                     }
                 }
             }
@@ -103,6 +103,7 @@ struct PageDetailView: View {
 struct PageLibraryFeedback: View {
     @ObservedObject var library: PageLibraryState
     @ObservedObject var store: BoardStore
+    var showsCreationCapability = true
     var body: some View {
         if library.busy { ProgressView("Updating library…") }
         if let message = library.phase.message {
@@ -115,7 +116,7 @@ struct PageLibraryFeedback: View {
                 Button("I reviewed the library · allow a new request") { store.acknowledgePageLibraryReview() }
             }
         }
-        if let reason = store.pageManagementDisabledReason {
+        if showsCreationCapability, let reason = store.pageManagementDisabledReason {
             Text(reason.message)
                 .font(.footnote).foregroundStyle(.secondary)
         }

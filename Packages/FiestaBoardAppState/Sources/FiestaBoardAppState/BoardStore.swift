@@ -176,6 +176,17 @@ public struct PreparedAction: Identifiable, Sendable {
             isDev: status.version.isDev, optedIn: pageSessionOptedIn) { return reason }
         return pageLibrary?.capability.canCreate == true || pageLibrary?.capability.canDelete == true ? nil : .unsupportedOperation
     }
+    public func pageDeletionDisabledReason(for page: Page) -> ActionDisabledReason? {
+        guard let status, let service else { return .disconnected }
+        let eligibility = CapabilityPolicy.pageDeletionDisabledReason(page, version: status.version.runningVersion,
+            isDev: status.version.isDev, optedIn: pageSessionOptedIn, isSimulated: status.isDemo)
+        if let eligibility, eligibility != .changesDisabled { return eligibility }
+        let identity = PageIdentity(deployment: service.deployment, id: page.id)
+        if connecting || pageLibrary?.busy == true || savingPages.contains(identity) { return .busy }
+        if pageLibrary?.needsReview == true || pageReadbacks.contains(identity) { return .readbackRequired }
+        if let eligibility { return eligibility }
+        return pageLibrary?.canDelete == true ? nil : .unsupportedOperation
+    }
     public func webEditorURL(pageID: String) -> URL? {
         guard let service, let status, !connecting else { return nil }
         return try? service.deployment.webEditorURL(pageID: pageID, isDemo: status.isDemo)
@@ -875,9 +886,10 @@ extension BoardStore {
 
     public func preparePageDeletion(id: String) async throws {
         let (service, library) = try requirePageLibrary()
-        guard library.canDelete, pages.contains(where: { $0.id == id }) else { throw FiestaBoardError.pageWritesDisabled }
+        guard library.canDelete, let page = pages.first(where: { $0.id == id }) else { throw FiestaBoardError.pageWritesDisabled }
         let identity = PageIdentity(deployment: service.deployment, id: id)
         guard !savingPages.contains(identity), !pageReadbacks.contains(identity) else { throw FiestaBoardError.pageReadbackRequired }
+        guard pageDeletionDisabledReason(for: page) == nil else { throw FiestaBoardError.pageWritesDisabled }
         let token = generation; let writeEpoch = pageWriteGenerations[identity, default: 0]
         library.phase = .working; library.deletion = nil
         do {

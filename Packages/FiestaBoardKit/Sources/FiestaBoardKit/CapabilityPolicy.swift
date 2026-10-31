@@ -53,11 +53,15 @@ public extension CapabilityPolicy {
 
 public enum ActionDisabledReason: Sendable, Equatable {
     case disconnected, noDisplay, unsupportedOperation, changesDisabled, busy, readbackRequired
+    case unsupportedDocument, unsupportedRevisionProtocol, missingRevision
     public var message: String {
         switch self {
         case .disconnected: "Connect to a server to use this action."
         case .noDisplay: "Select a display before using this action."
         case .unsupportedOperation: "This server does not provide an operation or protocol supported by this app for this action. Use its web interface."
+        case .unsupportedDocument: "Deletion of this document type or document protocol is unavailable in this app. Use the web interface."
+        case .unsupportedRevisionProtocol: "This page does not provide a revision protocol supported for deletion. Use the web interface."
+        case .missingRevision: "This page does not report a valid revision for safe deletion. Read the current page or use the web interface."
         case .changesDisabled: "Changes are turned off for this connection. Enable changes in Settings to use this supported action."
         case .busy: "Wait for the current request to finish before using this action."
         case .readbackRequired: "The previous result needs review. Read current state before starting another action."
@@ -72,5 +76,21 @@ public extension CapabilityPolicy {
     static func pageManagementDisabledReason(version: String?, isDev: Bool, optedIn: Bool) -> ActionDisabledReason? {
         guard allowsPageManagement(.create, version: version, isDev: isDev, optedIn: true) else { return .unsupportedOperation }
         return optedIn ? nil : .changesDisabled
+    }
+}
+
+public extension CapabilityPolicy {
+    /// Document eligibility precedes session opt-in: enabling changes cannot repair a document contract.
+    static func pageDeletionDisabledReason(_ page: Page, version: String?, isDev: Bool,
+                                          optedIn: Bool, isSimulated: Bool = false) -> ActionDisabledReason? {
+        guard supportsTemplateDocument(page, version: version, isDev: isDev) else { return .unsupportedDocument }
+        guard page.editProtocol == "page-revision-v1" else { return .unsupportedRevisionProtocol }
+        guard let revision = page.revision, !revision.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              revision.count <= 256 else { return .missingRevision }
+        guard DeploymentURL.validSegment(page.id),
+              isSimulated || allowsPageManagement(.delete, version: version, isDev: isDev, optedIn: true) else {
+            return .unsupportedOperation
+        }
+        return isSimulated || optedIn ? nil : .changesDisabled
     }
 }

@@ -312,6 +312,11 @@ private actor SessionFaultService: FiestaBoardService {
     func configureDocumentContract(version: String?, advertised: Bool, dev: Bool, hasRevision: Bool) {
         documentContract = (version, advertised, dev, hasRevision)
     }
+    private var managementAccess: PageManagementCapability?
+    func setManagementAccess(_ value: PageManagementCapability) { managementAccess = value }
+    func pageManagementCapability() async -> PageManagementCapability {
+        managementAccess ?? .init(canCreate: false, canDelete: false)
+    }
     private var detailFailure: FiestaBoardError?
     private var emptyBoards = false
     private var delayPages = false
@@ -1139,5 +1144,40 @@ extension BoardStoreTests {
         await store.connect(try DemoFiestaBoardService()).value
         XCTAssertNil(store.pageManagementDisabledReason)
         XCTAssertNil(store.webEditorURL(pageID: "page-selected"))
+    }
+}
+
+
+extension BoardStoreTests {
+    func testDeletionGuidanceChecksDocumentProtocolAndRevisionBeforeOptIn() async throws {
+        func page(type: String = "template", document: String? = "page-document-v1", revision: String? = "r1", edit: String? = "page-revision-v1") throws -> Page {
+            var value: [String: Any] = ["id": "page-selected", "name": "Page", "type": type,
+                "device_type": "flagship"]
+            value["document_protocol"] = document; value["revision"] = revision; value["edit_protocol"] = edit
+            return try JSONDecoder().decode(Page.self, from: JSONSerialization.data(withJSONObject: value))
+        }
+        let unsupported: [(Page, ActionDisabledReason)] = [
+            (try page(type: "flexible", document: "page-document-v2"), .unsupportedDocument),
+            (try page(document: nil), .unsupportedDocument),
+            (try page(revision: nil), .missingRevision),
+            (try page(revision: "  "), .missingRevision),
+            (try page(revision: String(repeating: "r", count: 257)), .missingRevision),
+            (try page(edit: nil), .unsupportedRevisionProtocol),
+            (try page(edit: "future-protocol"), .unsupportedRevisionProtocol)
+        ]
+        for optedIn in [false, true] {
+            let service = try SessionFaultService(), store = BoardStore()
+            await service.configureDocumentContract(version: "10.1.20", advertised: true, dev: false, hasRevision: true)
+            await service.setManagementAccess(.init(canCreate: optedIn, canDelete: optedIn))
+            await store.connect(service, allowCandidateWrites: optedIn).value
+            XCTAssertEqual(store.pageManagementDisabledReason, optedIn ? nil : .changesDisabled,
+                "Library-wide creation guidance remains independent of the current page")
+            for (page, expected) in unsupported {
+                let reason = store.pageDeletionDisabledReason(for: page)
+                XCTAssertEqual(reason, expected)
+                XCTAssertFalse(reason?.message.contains("Enable changes") == true)
+            }
+            XCTAssertEqual(store.pageDeletionDisabledReason(for: try page()), optedIn ? nil : .changesDisabled)
+        }
     }
 }

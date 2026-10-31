@@ -655,8 +655,12 @@ extension DemoUITests {
         XCTAssertTrue(schedule.waitForExistence(timeout: 5))
         schedule.tap()
         XCTAssertTrue(app.staticTexts["Server time semantics"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.staticTexts["weekdays"].exists)
-        XCTAssertTrue(app.staticTexts["08:00"].firstMatch.exists)
+        let dayPattern = app.descendants(matching: .any).matching(identifier: "scheduleDayPattern").firstMatch
+        let start = app.descendants(matching: .any).matching(identifier: "scheduleStart").firstMatch
+        XCTAssertTrue(dayPattern.waitForExistence(timeout: 3))
+        XCTAssertEqual(dayPattern.value as? String, "weekdays")
+        XCTAssertTrue(start.exists)
+        XCTAssertEqual(start.value as? String, "08:00")
         XCTAssertFalse(app.buttons["Save schedule"].exists)
         selectTab("Displays", in: app)
         app.staticTexts["Demo Kitchen"].firstMatch.tap()
@@ -700,17 +704,19 @@ extension DemoUITests {
         XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
         selectTab("Settings", in: app)
         let entry = app.buttons["localDraftRecovery"]
-        if !entry.isHittable { app.swipeUp() }
+        scrollTo(entry, in: app)
         XCTAssertTrue(entry.isHittable); entry.tap()
         XCTAssertTrue(app.navigationBars["Draft recovery & export"].waitForExistence(timeout: 3))
         let recoveryBack = app.navigationBars["Draft recovery & export"].buttons["Settings"]
         XCTAssertTrue(recoveryBack.isHittable); recoveryBack.tap()
         XCTAssertTrue(app.buttons["Disconnect"].waitForExistence(timeout: 3))
-        if !app.buttons["Disconnect"].isHittable { app.swipeDown() }
+        scrollTo(app.buttons["Disconnect"], in: app, upwards: false)
         app.buttons["Disconnect"].tap()
+        XCTAssertTrue(app.buttons["findFiestaBoard"].waitForExistence(timeout: 5))
         let disconnectedEntry = app.buttons["localDraftRecovery"]
-        XCTAssertTrue(disconnectedEntry.waitForExistence(timeout: 5))
-        if !disconnectedEntry.isHittable { app.swipeUp() }
+        scrollTo(disconnectedEntry, in: app)
+        XCTAssertTrue(disconnectedEntry.exists)
+        XCTAssertTrue(disconnectedEntry.isHittable)
         disconnectedEntry.tap()
         XCTAssertTrue(app.navigationBars["Draft recovery & export"].waitForExistence(timeout: 3))
     }

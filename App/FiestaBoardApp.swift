@@ -209,7 +209,7 @@ struct DraftScene: View {
                                     NavigationLink { pageChooser } label: { Label("Choose a page", systemImage: "rectangle.stack") }
                                         .buttonStyle(.bordered).disabled(!store.canWrite)
                                     NavigationLink {
-                                        boardControlsDestination
+                                        boardControlsDestination()
                                     } label: { Label("Board controls", systemImage: "slider.horizontal.3") }
                                         .buttonStyle(.bordered)
                                         .accessibilityIdentifier("boardControlsEntry")
@@ -223,7 +223,7 @@ struct DraftScene: View {
             .toolbar { ToolbarItem(placement: .primaryAction) { refreshButton } }
         }
     }
-    private var boardControlsDestination: some View {
+    private func boardControlsDestination(title: String = "Board controls") -> some View {
         Form {
             Section("Connection & action status") {
                 connectionBanner
@@ -244,12 +244,12 @@ struct DraftScene: View {
             BoardControlsView(store: store)
         }
         .frame(maxWidth: 1000).frame(maxWidth: .infinity)
-        .navigationTitle("Board controls")
+        .navigationTitle(title)
     }
     private func playback(for boardID: String) -> some View {
         Group {
             if store.selectedBoardID == boardID {
-                boardControlsDestination
+                boardControlsDestination(title: "Playback")
             } else {
                 ProgressView("Selecting display…")
             }
