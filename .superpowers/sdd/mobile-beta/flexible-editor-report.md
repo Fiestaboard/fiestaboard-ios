@@ -147,3 +147,25 @@ swiftc -parse App/Features/Editor/FlexibleWorkspaceView.swift App/Features/Edito
 ```
 
 The parse log is also copied to `../mobile-beta-discovery/evidence/flexible-editor/`. `git diff --check` and staged checks passed before the commit. The latest affected-package evidence remains Documents50/50, EditorState69/69 and Kit176/176 from the preceding review-fix round; four AX-modifier removals do not justify repeating unrelated package suites. Controller owns native rebuild and real phone/tablet reruns to verify the leaf TextView/shape/field identities through actual editing, preview/save/reopen and hidden-field repair. Those runtime results remain pending; no runtime acceptance is inferred from parser success.
+
+
+## Native runtime fix round 2 — isolated Form actions
+
+Base `d496f7c` includes the controller-owned generated-project integration. Controller reported Astra's round1 source findings passed. Phone4 then reached actual text typing, but its Hide keyboard tap at31.43s (`/tmp/fb-ios-flexible-evidence/ui-phone-4.log`) was followed by an unintended expression sheet (Cancel/Insert controls) and expanded block/page style disclosures; the evaluation picker was consequently blocked. iPad1 likewise reached text typing, then failed because both the system keyboard and app action share the accessible label Hide keyboard (`/tmp/fb-ios-flexible-evidence/ui-ipad-1.log`, lines1932 and2164). Both original runs ended65. Controller preserved native evidence under `../mobile-beta-discovery/evidence/flexible-editor/native/`.
+
+Source inspection found `FlexibleWorkspaceView` is a single Form row with many default automatic sibling Button actions. Only its block rows had explicit plain styling; the working legacy TemplateWorkspace multibutton groups explicitly use a nonautomatic style. The narrow action-isolation correction is `4ca5a6173f2d4e4dd08c279adddb54facc18487a`, range `d496f7c..4ca5a6173f2d4e4dd08c279adddb54facc18487a`:
+
+- Apply `.buttonStyle(.borderless)` at the flexible workspace's root so every text/Canvas/adjustment/repair action resolves independently inside the Form row. Existing plain block-row styling, native control types, scroll anchors and leaf IDs are retained.
+- Give the app's Hide keyboard action a distinct leaf ID, `flexibleHideKeyboard`. Only the two new flexible scenarios use it; legacy tests and labels remain unchanged.
+- Before proceeding, those journeys assert the keyboard is gone, the expression sheet is absent, exact entered text and the selected block are unchanged, and block/page style controls remain collapsed. No typing/value/reopen or invalid-hidden-field assertions were removed.
+- The existing Canvas journey now increments rectangle Width from10 to11 while checking X stays2 and no remove/expression presentation occurs, then uses Undo to restore10 before continuing its original typed101/preview/save/reopen assertions. This directly exercises the same multibutton-row isolation for Canvas controls.
+
+Only `FlexibleWorkspaceView.swift` and the existing `DemoUITests.swift` changed (36 insertions,3 deletions). No model, transport, fixture, protocol, unrelated control or project settings changed.
+
+Actual native/UI parser verification exited0 with no diagnostics:
+
+```sh
+swiftc -parse App/Features/Editor/FlexibleWorkspaceView.swift App/Features/Editor/LocalPageEditorView.swift App/Features/Editor/NativeTemplateTextView.swift Tests/UITests/DemoUITests.swift > /tmp/fb-flexible-runtime-actions-parse.log 2>&1
+```
+
+The parse log is copied to `../mobile-beta-discovery/evidence/flexible-editor/`. `git diff --check` and staged checks passed before commit. The preceding pure-package results (Documents50, EditorState69, Kit176) remain the applicable model/service evidence; this round's behavior requires the controller's real phone/tablet rerun, not redundant unrelated package tests. Source was handed back stable for that native rebuild/rerun; no runtime success is claimed before those results. No filesystem, approval or tool-access blocker remains.
