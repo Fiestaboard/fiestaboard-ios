@@ -2,6 +2,14 @@
 
 This is the short current queue and durable milestone history. Full web-app feature parity is required before the first App Store release. Checkboxes mean the whole listed deliverable is accepted, not that a draft screen exists. `Contracts/parity.json` remains the source-bound release inventory; source/fixture tests alone do not make a workflow release-verified.
 
+## Mobile beta project — October 31
+
+The current [requirements/design](docs/mobile-beta/requirements-design.md), [execution plan](docs/mobile-beta/execution-plan.md) and [refreshed parity inventory](docs/mobile-beta/parity-inventory.json) incorporate current web main and flexible-page PR2395. The older inventory remains historical evidence; no release readiness is implied.
+
+- Reader and physical-preview slice: d77cc59, independently reviewed by Astra; 328 package tests, project/contract checks, generic iOS build, and focused iPhone/iPad simulator journeys pass.
+- Next: verified connection-scoped durable draft identity and explicit legacy recovery, minimal adaptive navigation, then one native flexible text/Canvas preview-save-reopen journey.
+- Broad settings/integrations/schedules and native accessibility/device acceptance remain open. Original checkout, physical app, and production displays are preserved. No publication or physical install in this phase.
+
 ## Latest editor work — October 29
 
 The new native creative-editor draft is implemented; its [verification report](docs/research/2026-10-29-creative-editor-verification.md) distinguishes tested authoring from the remaining LED/catalog/renderer/device work. The detailed remaining editor queue is at the end of this file. Full rich-editor parity remains open.
