@@ -70,6 +70,9 @@ import FiestaBoardEditorState
             }.id("flexiblePageOptions")
             if !announcement.isEmpty { Text(announcement).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("flexibleActionOutcome") }
         }
+        // This workspace is one Form row. Automatic styling promotes sibling actions
+        // to the whole row; borderless buttons keep each text/Canvas action independent.
+        .buttonStyle(.borderless)
         .disabled(model.editingFrozen)
         .onAppear { if selectedID == nil { selectedID = model.blocks.first?.id } }
         .onChange(of: model.blocks) { old, new in
@@ -186,7 +189,8 @@ import FiestaBoardEditorState
                             finishTyping(); insertionRange = selection.range; showExpression = true
                         }.accessibilityIdentifier("insertFlexibleExpression")
                         Spacer()
-                        Button("Hide keyboard", systemImage: "keyboard.chevron.compact.down") { finishTyping() }.labelStyle(.iconOnly)
+                        Button("Hide keyboard", systemImage: "keyboard.chevron.compact.down") { finishTyping() }
+                            .labelStyle(.iconOnly).accessibilityIdentifier("flexibleHideKeyboard")
                     }
                 } else if block.kind == "canvas" {
                     canvasInspector(block.id)

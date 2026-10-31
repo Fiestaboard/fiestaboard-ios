@@ -401,7 +401,7 @@ final class ConnectionUITests: XCTestCase {
         let text = app.textViews["flexibleTextEditor"]
         reveal(text, app); XCTAssertTrue(text.waitForExistence(timeout: 5), app.debugDescription)
         text.tap(); text.typeText(" UI text")
-        app.buttons["Hide keyboard"].tap()
+        try hideFlexibleKeyboard(app, text: text)
         let textEvidence = XCTAttachment(screenshot: app.screenshot())
         textEvidence.name = "Editable flexible text"; textEvidence.lifetime = .keepAlways; add(textEvidence)
         defer { XCUIDevice.shared.orientation = .portrait }
@@ -418,6 +418,15 @@ final class ConnectionUITests: XCTestCase {
         reveal(rectangle, app); rectangle.tap()
         let width = app.descendants(matching: .any).matching(identifier: "flexibleField_w").firstMatch
         reveal(width, app); XCTAssertTrue(width.exists)
+        let increaseWidth = app.buttons["Increase Width"]
+        reveal(increaseWidth, app); increaseWidth.tap()
+        XCTAssertEqual(width.value as? String, "11", "Only the selected width adjustment should run")
+        let xPosition = app.descendants(matching: .any).matching(identifier: "flexibleField_x").firstMatch
+        XCTAssertEqual(xPosition.value as? String, "2", "Resizing width must not also move the shape")
+        XCTAssertFalse(app.staticTexts["Remove selected shape?"].exists)
+        XCTAssertFalse(app.navigationBars["Insert expression"].exists)
+        app.buttons["Undo"].tap()
+        XCTAssertEqual(width.value as? String, "10")
         width.tap(); width.typeText("1")
         app.buttons["Close"].tap()
         let keep = app.buttons["Keep editing"]
@@ -477,7 +486,7 @@ final class ConnectionUITests: XCTestCase {
         let source = app.textViews["flexibleTextEditor"]
         reveal(source, app); XCTAssertTrue(source.waitForExistence(timeout: 5), app.debugDescription)
         source.tap(); source.typeText(" valid dirty edit")
-        app.buttons["Hide keyboard"].tap()
+        try hideFlexibleKeyboard(app, text: source)
         let picker = app.buttons["evaluationBoardPicker"]
         reveal(picker, app); picker.tap(); app.buttons["Contract board"].tap()
         let preview = app.buttons["previewPage"]
@@ -622,6 +631,26 @@ final class ConnectionUITests: XCTestCase {
         let disconnect = app.buttons["Disconnect"]
         reveal(disconnect, app); disconnect.tap()
         removeSaved(alias, app)
+    }
+
+    @MainActor private func hideFlexibleKeyboard(_ app: XCUIApplication, text: XCUIElement) throws {
+        let expectedText = try XCTUnwrap(text.value as? String)
+        let selectedBlock = app.buttons["flexibleBlock_welcome"]
+        XCTAssertTrue(selectedBlock.isSelected)
+        let blockFont = app.descendants(matching: .any).matching(identifier: "flexibleField_font").firstMatch
+        let pageAlignment = app.descendants(matching: .any).matching(identifier: "flexibleChoice_valign").firstMatch
+        XCTAssertFalse(blockFont.exists, "Block styles start collapsed")
+        XCTAssertFalse(pageAlignment.exists, "Page styles start collapsed")
+        let hide = app.buttons["flexibleHideKeyboard"]
+        reveal(hide, app); XCTAssertTrue(hide.exists, app.debugDescription); hide.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5), app.debugDescription)
+        XCTAssertFalse(app.navigationBars["Insert expression"].exists, "Hide keyboard must not open the expression sheet")
+        XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "flexibleExpressionSource").firstMatch.exists)
+        XCTAssertEqual(text.value as? String, expectedText, "Dismissing input must preserve exact text")
+        XCTAssertTrue(selectedBlock.isSelected, "Dismissing input must retain the selected block")
+        XCTAssertFalse(app.buttons["flexibleBlock_drawing"].isSelected)
+        XCTAssertFalse(blockFont.exists, "Hide keyboard must not expand block styles")
+        XCTAssertFalse(pageAlignment.exists, "Hide keyboard must not expand page styles")
     }
 
     @MainActor private func removeSaved(_ alias: String, _ app: XCUIApplication) {
