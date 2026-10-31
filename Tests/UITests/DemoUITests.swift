@@ -418,7 +418,13 @@ final class ConnectionUITests: XCTestCase {
 
         // A populated style field must keep a visible name, independent of its placeholder.
         let blockStyle = app.buttons["Block style"]
+        let pageOptions = app.buttons["Page style, layout and targets"]
+        XCTAssertEqual(blockStyle.value as? String, "Collapsed")
+        XCTAssertEqual(pageOptions.value as? String, "Collapsed")
         revealFlexibleEditor([blockStyle], app); blockStyle.tap()
+        XCTAssertEqual(blockStyle.value as? String, "Expanded")
+        XCTAssertEqual(pageOptions.value as? String, "Collapsed", "Opening Block style must not toggle Page options")
+        XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "flexibleChoice_valign").firstMatch.exists)
         let color = app.descendants(matching: .any).matching(identifier: "flexibleField_color").firstMatch
         revealFlexibleEditor([color], app); color.tap(); color.typeText("white")
         assertVisibleFlexibleField(app, label: "Color", identifier: "flexibleField_color", value: "white")
@@ -426,9 +432,12 @@ final class ConnectionUITests: XCTestCase {
         dismissFlexibleKeyboard(app)
         XCTAssertEqual(color.value as? String, "white")
         revealFlexibleEditor([blockStyle], app); blockStyle.tap()
+        XCTAssertEqual(blockStyle.value as? String, "Collapsed")
+        XCTAssertEqual(pageOptions.value as? String, "Collapsed")
         XCTAssertTrue(color.waitForNonExistence(timeout: 5), "Block style must actually collapse before querying page fields")
-        let pageOptions = app.buttons["Page style, layout and targets"]
         revealFlexibleEditor([pageOptions], app); pageOptions.tap()
+        XCTAssertEqual(pageOptions.value as? String, "Expanded")
+        XCTAssertEqual(blockStyle.value as? String, "Collapsed", "Opening Page options must not toggle Block style")
         let targets = app.textFields["flexibleTargets_boards"]
         revealFlexibleEditor([targets], app); targets.tap()
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "Target field tap must focus native input")
@@ -437,7 +446,18 @@ final class ConnectionUITests: XCTestCase {
         attachFlexibleInspector(app, name: "Populated target restriction retains label with keyboard")
         dismissFlexibleKeyboard(app)
         XCTAssertEqual(targets.value as? String, "contract-board")
+        // Both may be deliberately expanded; independence must not become mutual exclusion.
+        revealFlexibleEditor([blockStyle], app); blockStyle.tap()
+        XCTAssertEqual(blockStyle.value as? String, "Expanded")
+        XCTAssertEqual(pageOptions.value as? String, "Expanded")
+        XCTAssertEqual(app.staticTexts.matching(identifier: "flexibleField_color_label").count, 2)
+        XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "flexibleField_color").count, 2)
+        revealFlexibleEditor([blockStyle], app); blockStyle.tap()
+        XCTAssertEqual(blockStyle.value as? String, "Collapsed")
+        XCTAssertEqual(pageOptions.value as? String, "Expanded", "Closing Block style must leave Page options open")
         revealFlexibleEditor([pageOptions], app); pageOptions.tap()
+        XCTAssertEqual(pageOptions.value as? String, "Collapsed")
+        XCTAssertEqual(blockStyle.value as? String, "Collapsed")
         XCTAssertTrue(targets.waitForNonExistence(timeout: 5), "Page options must actually collapse before querying Canvas fields")
 
         let canvasBlock = app.buttons["flexibleBlock_drawing"]
@@ -450,6 +470,8 @@ final class ConnectionUITests: XCTestCase {
         // Expanded styles are a valid user state: their duplicate Background field
         // must not compress or obscure the populated Canvas Background above them.
         revealFlexibleEditor([blockStyle], app); blockStyle.tap()
+        XCTAssertEqual(blockStyle.value as? String, "Expanded")
+        XCTAssertEqual(pageOptions.value as? String, "Collapsed")
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "flexibleField_color").firstMatch.waitForExistence(timeout: 5))
         assertVisibleFlexibleField(app, label: "Background", identifier: "flexibleField_background", value: "black", matchingContexts: 2)
         attachFlexibleInspector(app, name: "Canvas Background remains readable with Block style expanded")

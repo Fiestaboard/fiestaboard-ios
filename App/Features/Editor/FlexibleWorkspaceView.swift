@@ -67,7 +67,8 @@ import FiestaBoardEditorState
                     targetField("Allowed technologies", key: "technology")
                     Text("Separate target IDs with commas. Empty means an empty restriction list; use Inherit to remove the restriction.").font(.caption).foregroundStyle(.secondary)
                 }.padding(.top, 8)
-            }.id("flexiblePageOptions")
+            }.disclosureGroupStyle(FlexibleInspectorDisclosureStyle())
+                .id("flexiblePageOptions")
             if !announcement.isEmpty { Text(announcement).font(.caption).foregroundStyle(.secondary).accessibilityIdentifier("flexibleActionOutcome") }
         }
         // This workspace is one Form row. Automatic styling promotes sibling actions
@@ -204,7 +205,7 @@ import FiestaBoardEditorState
                     DisclosureGroup("Block style", isExpanded: $showBlockStyle) {
                         containerControls(.blockStyle(block.id), title: "block style", optional: true)
                         styleFields(.blockStyle(block.id))
-                    }
+                    }.disclosureGroupStyle(FlexibleInspectorDisclosureStyle())
                 }
             }.id("flexibleInspector")
         } else {
@@ -382,5 +383,30 @@ import FiestaBoardEditorState
     private func adjust(_ location: FlexibleLocation, _ key: String, by offset: Int) {
         guard case .number(let source) = model.flexibleValue(location, key: key), let current = Decimal(string: source, locale: Locale(identifier: "en_US_POSIX")) else { announcement = "Enter a valid number before adjusting \(fieldTitle(key))."; return }
         finishTyping(); model.setFlexible(location, key: key, value: .number(NSDecimalNumber(decimal: current + Decimal(offset)).stringValue)); announcement = "Adjusted \(fieldTitle(key))."
+    }
+}
+
+/// Each inspector header owns one explicit action inside the shared Form row.
+/// Automatic DisclosureGroup headers can otherwise toggle sibling disclosures.
+private struct FlexibleInspectorDisclosureStyle: DisclosureGroupStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                withAnimation { configuration.isExpanded.toggle() }
+            } label: {
+                HStack {
+                    configuration.label
+                    Spacer(minLength: 8)
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .rotationEffect(.degrees(configuration.isExpanded ? 90 : 0))
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                }.foregroundStyle(.primary).contentShape(Rectangle())
+            }
+            .buttonStyle(.borderless)
+            .accessibilityValue(configuration.isExpanded ? "Expanded" : "Collapsed")
+            if configuration.isExpanded { configuration.content }
+        }
     }
 }
