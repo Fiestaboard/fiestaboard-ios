@@ -36,6 +36,7 @@
 		688CA26A40A73EE7EB990A4C /* LocalPageEditorLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2615A02A1D84B9DCF6155935 /* LocalPageEditorLoader.swift */; };
 		69FAE33C2ABCA25412B6CEEB /* FiestaBoardTV-MIT.txt in Resources */ = {isa = PBXBuildFile; fileRef = 918875B3FE2650F6F4E9D4CA /* FiestaBoardTV-MIT.txt */; };
 		6F7EE5175EA21722C7C5DEBB /* CollectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A770AE81F701112EE919E154 /* CollectionsView.swift */; };
+		759447EBBA7619627DABB4D0 /* SchedulesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 971BC95938B395BCAF17CC76 /* SchedulesView.swift */; };
 		78C410B9A2A2B444B993B0EB /* FiestaBoardKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */; };
 		7BC267E2CBE0C7B7D912FFBB /* EditorRemoteActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3E7BE5F69B8B5D28D44AE0E /* EditorRemoteActions.swift */; };
 		7DBA4232691B74518CE13653 /* FiestaBoardApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8F61E1D6DA7D9178AE932E5 /* FiestaBoardApp.swift */; };
@@ -47,6 +48,7 @@
 		92535869889AB4DC8D9FF326 /* ServerCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33C9936205557D822BCDBC68 /* ServerCatalog.swift */; };
 		959C749DFE9F4E7AB741C703 /* CollectionDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = D933B63826F1D92E72A16357 /* CollectionDraft.swift */; };
 		9AFDDB28F53DFAB5386DEB95 /* LocalPageEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8086EA8450423EC1F62DCF79 /* LocalPageEditorModel.swift */; };
+		9BBDCF7617F8E4E9029C1AEE /* Schedules.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA413B675A8CABCA5E05C047 /* Schedules.swift */; };
 		A1A3A42C2589FBD43FE6ABFD /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = F4AB195B07FBE0B1390B13E5 /* PrivacyInfo.xcprivacy */; };
 		AD9743F499C713E7272DF91B /* DemoUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7CD60F365F22213C8C5A3BD /* DemoUITests.swift */; };
 		B5B8A2C81696B22A127C8265 /* LocalPageEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53A1896783BB5D32A4807559 /* LocalPageEditorModel.swift */; };
@@ -178,6 +180,7 @@
 		8C2B0E6480EA5DA45AAE4DC4 /* PackageResources.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackageResources.swift; sourceTree = "<group>"; };
 		8D0769B4598394A149E221E8 /* SessionVault.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionVault.swift; sourceTree = "<group>"; };
 		918875B3FE2650F6F4E9D4CA /* FiestaBoardTV-MIT.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "FiestaBoardTV-MIT.txt"; sourceTree = "<group>"; };
+		971BC95938B395BCAF17CC76 /* SchedulesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulesView.swift; sourceTree = "<group>"; };
 		9F65FAC9659A00AF389AC325 /* Service.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Service.swift; sourceTree = "<group>"; };
 		A0B00B96E005DAE7C0B39B09 /* PageEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageEditing.swift; sourceTree = "<group>"; };
 		A3E7BE5F69B8B5D28D44AE0E /* EditorRemoteActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorRemoteActions.swift; sourceTree = "<group>"; };
@@ -187,6 +190,7 @@
 		ADD3E20169D98490321CE3F4 /* ServerDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerDiscovery.swift; sourceTree = "<group>"; };
 		B111FC6C6933C9409006391C /* PageManagement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageManagement.swift; sourceTree = "<group>"; };
 		B269490EAA2BC1900A3319B2 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		BA413B675A8CABCA5E05C047 /* Schedules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Schedules.swift; sourceTree = "<group>"; };
 		C3B380D9832C5FAA53AF1EDA /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
 		C47F8AA33E9578A49496430F /* LocalPageEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalPageEditorView.swift; sourceTree = "<group>"; };
 		C99AB94FD5D397EF2F36EFA1 /* BoardTables.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardTables.swift; sourceTree = "<group>"; };
@@ -278,6 +282,7 @@
 				B269490EAA2BC1900A3319B2 /* Models.swift */,
 				A0B00B96E005DAE7C0B39B09 /* PageEditing.swift */,
 				B111FC6C6933C9409006391C /* PageManagement.swift */,
+				BA413B675A8CABCA5E05C047 /* Schedules.swift */,
 				EABDE686F7FEDAE342474766 /* ServerAddress.swift */,
 				33C9936205557D822BCDBC68 /* ServerCatalog.swift */,
 				ADD3E20169D98490321CE3F4 /* ServerDiscovery.swift */,
@@ -337,6 +342,7 @@
 			isa = PBXGroup;
 			children = (
 				39882C2621927BF6BC8C856A /* BoardControlsView.swift */,
+				971BC95938B395BCAF17CC76 /* SchedulesView.swift */,
 			);
 			path = Control;
 			sourceTree = "<group>";
@@ -657,6 +663,7 @@
 				1EDB6D6A37593CDC64B9C86B /* PackageResources.swift in Sources */,
 				216E17622D37BAC98E2FC3E7 /* PageEditing.swift in Sources */,
 				1832C659D12996166FF88C1F /* PageManagement.swift in Sources */,
+				9BBDCF7617F8E4E9029C1AEE /* Schedules.swift in Sources */,
 				3A7D569AE67E9EF1DB06CE68 /* ServerAddress.swift in Sources */,
 				92535869889AB4DC8D9FF326 /* ServerCatalog.swift in Sources */,
 				8CFC43B3AA777E3F0EE5DD3F /* ServerDiscovery.swift in Sources */,
@@ -693,6 +700,7 @@
 				3D4EF7AFC59B17AD185BD4A6 /* LocalPageEditorView.swift in Sources */,
 				DEFC5055EE9E6A49BEB57D05 /* NativeTemplateTextView.swift in Sources */,
 				61ECA5F07357B6E51DA59555 /* PageDetailView.swift in Sources */,
+				759447EBBA7619627DABB4D0 /* SchedulesView.swift in Sources */,
 				2C92BA0D05E56BF49D9E47E1 /* SetupView.swift in Sources */,
 				E05D4B423EE03A5812BAA09F /* SignInView.swift in Sources */,
 				3894FAE45E2E74C777A940B4 /* TemplateWorkspaceView.swift in Sources */,
