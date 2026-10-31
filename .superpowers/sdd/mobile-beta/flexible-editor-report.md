@@ -108,3 +108,27 @@ This is the first executable slice, not broader editor parity. Brush painting, p
 The loopback fixture is synthetic, pinned to the reviewed source contract. Its physical image is deterministic test artwork, not a backend rendering/hardware observation. The core change is not assumed deployed anywhere. Legacy rich overlays without a supported physical full frame retain raw data and a web-inspection note; no visual parity claim is made.
 
 Remaining actions: controller commits generated project integration, reruns the fixed flexible text control queries with real typing/value assertions, completes meaningful phone/tablet journeys/screenshots, and performs independent Astra review of both the immutable initial change and focused follow-ups. Fold/runtime27.1 validation is not claimed. No installation/publication/physical-device/backend permission blocker remains; the outstanding acceptance is runtime/review work already assigned to controller.
+
+
+## Independent Astra review — fix round 1
+
+Both important findings in `flexible-editor-review-report.md` were reproduced and corrected in `f62de6c9ecfa2b5636463e7bf06276f3f3ad9ad3`. Exact round source range: `0015173a32fc8881b6efffb73bddddae839fe949..f62de6c9ecfa2b5636463e7bf06276f3f3ad9ad3`. This round changes only two product files and three regression files, preserving controller-owned project changes and all native/fixture/UI source.
+
+1. Target errors now carry ownership through a separate request/selection counter. New evaluation requests, board selection changes and session end supersede prior target evidence; ordinary draft edits do not. A delayed404 or invalidTarget from A cannot clear B's newer accepted preview or affect a selection that moved away and back. The latest deleted-target failure after a local edit still removes the unavailable target, clears stale preview and preserves the newer draft. Existing document-revision/pixel acceptance checks remain intact.
+2. Page/block color and background validation now matches core864cfa6b’s single-expression DOTALL grammar with an ICU scoped `(?s:...)` group. Exact LF/CRLF text is preserved through retained document reopen, preview author bytes and whole-block sparse patch serialization. Multiple expressions, nested delimiters and prefixed expression strings remain rejected. A valid retained multiline style no longer blocks unrelated text save/preview eligibility.
+
+Before implementation, the full Documents run had50 tests with2 failures (1 unexpected invalidDocument error), and the full EditorState run had69 tests with22 assertion failures. These failures reproduced both the compatibility and stale-error branches. After correction, full Documents50/50, EditorState69/69 and Kit176/176 pass. The existing deletion-after-edit404 regression remains green, with added latest-invalidTarget-after-edit coverage. Other existing suite evidence (AppState96, Contracts62, Tooling15) is unchanged by this round and was not redundantly rerun.
+
+An intermediate attempt to supply a DOTALL flag as a String.range CompareOptions value failed compilation in controller's phone build (`/tmp/fb-ios-flexible-evidence/ui-phone-2.log`, exit65; no UI ran). The committed correction uses the scoped ICU grammar and was actually compiled and tested before the next stable-source handoff. It contains no nonexistent Foundation option.
+
+Exact verification commands from the active recovered checkout:
+
+```sh
+SWIFT_MODULECACHE_PATH=/tmp/fb-flexible-module-cache CLANG_MODULE_CACHE_PATH=/tmp/fb-flexible-clang-cache swift test --disable-sandbox --package-path Packages/FiestaBoardDocuments --scratch-path /tmp/fb-flexible-recovered-documents > /tmp/fb-flexible-review-r1-documents-green.log 2>&1
+SWIFT_MODULECACHE_PATH=/tmp/fb-flexible-module-cache CLANG_MODULE_CACHE_PATH=/tmp/fb-flexible-clang-cache swift test --disable-sandbox --package-path Packages/FiestaBoardEditorState --scratch-path /tmp/fb-flexible-recovered-editor > /tmp/fb-flexible-review-r1-editor-green.log 2>&1
+SWIFT_MODULECACHE_PATH=/tmp/fb-flexible-module-cache CLANG_MODULE_CACHE_PATH=/tmp/fb-flexible-clang-cache swift test --disable-sandbox --package-path Packages/FiestaBoardKit --scratch-path /tmp/fb-flexible-recovered-kit > /tmp/fb-flexible-review-r1-kit-green.log 2>&1
+```
+
+All three commands exited0 with zero failures. Red logs are `/tmp/fb-flexible-review-r1-documents-red.log` and `/tmp/fb-flexible-review-r1-editor-red.log`. Copies of all five red/green logs are in `../mobile-beta-discovery/evidence/flexible-editor/`. `git diff --check` and staged checks passed before the source commit. No simulator/build execution was performed by this implementer.
+
+Runtime follow-up is still open. Controller’s phone3 run supplied decisive accessibility evidence that the new enclosing `flexibleInspector` identifier propagates to its descendants and hides the intended leaf IDs. This is separate from the two Astra findings and the earlier query-only correction; it will receive a narrow native identifier-ownership fix and fresh controller runtime verification. Phone/tablet acceptance is not claimed by this round.
