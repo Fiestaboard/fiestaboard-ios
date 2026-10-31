@@ -398,15 +398,15 @@ final class ConnectionUITests: XCTestCase {
         let row = app.staticTexts["Flexible document"].firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
         app.buttons["editLocalDraft"].tap()
-        let text = app.textViews["templateRowText"]
-        reveal(text, app); XCTAssertTrue(text.waitForExistence(timeout: 5))
+        let text = app.textViews["flexibleTextEditor"]
+        reveal(text, app); XCTAssertTrue(text.waitForExistence(timeout: 5), app.debugDescription)
         text.tap(); text.typeText(" UI text")
         app.buttons["Hide keyboard"].tap()
         let textEvidence = XCTAttachment(screenshot: app.screenshot())
         textEvidence.name = "Editable flexible text"; textEvidence.lifetime = .keepAlways; add(textEvidence)
         defer { XCUIDevice.shared.orientation = .portrait }
         XCUIDevice.shared.orientation = .landscapeLeft
-        XCTAssertTrue(text.waitForExistence(timeout: 5))
+        XCTAssertTrue(text.waitForExistence(timeout: 5), app.debugDescription)
         XCTAssertTrue((text.value as? String)?.contains("UI text") == true)
         let adapted = XCTAttachment(screenshot: app.screenshot())
         adapted.name = "Flexible editor retains text across width change"; adapted.lifetime = .keepAlways; add(adapted)
@@ -445,8 +445,8 @@ final class ConnectionUITests: XCTestCase {
         if saveLocal.waitForExistence(timeout: 2) { saveLocal.tap() }
         XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 5))
         app.buttons["editLocalDraft"].tap()
-        let reopenedText = app.textViews["templateRowText"]
-        reveal(reopenedText, app); XCTAssertTrue(reopenedText.waitForExistence(timeout: 5))
+        let reopenedText = app.textViews["flexibleTextEditor"]
+        reveal(reopenedText, app); XCTAssertTrue(reopenedText.waitForExistence(timeout: 5), app.debugDescription)
         XCTAssertTrue((reopenedText.value as? String)?.contains("UI text") == true)
         app.buttons["flexibleBlock_drawing"].tap()
         reveal(app.buttons["canvasShape_1"], app); app.buttons["canvasShape_1"].tap()
@@ -474,8 +474,8 @@ final class ConnectionUITests: XCTestCase {
         let flexible = app.staticTexts["Flexible document"].firstMatch
         XCTAssertTrue(flexible.waitForExistence(timeout: 8)); flexible.tap()
         app.buttons["editLocalDraft"].tap()
-        let source = app.textViews["templateRowText"]
-        reveal(source, app); XCTAssertTrue(source.waitForExistence(timeout: 5))
+        let source = app.textViews["flexibleTextEditor"]
+        reveal(source, app); XCTAssertTrue(source.waitForExistence(timeout: 5), app.debugDescription)
         source.tap(); source.typeText(" valid dirty edit")
         app.buttons["Hide keyboard"].tap()
         let picker = app.buttons["evaluationBoardPicker"]
