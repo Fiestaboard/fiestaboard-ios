@@ -1,6 +1,6 @@
 # Native iOS beta execution plan
 
-Status: Astra approved architecture and corrected sequence, 2026-10-31. This is a sustained beta project; reader/physical-preview slice is verified; broader parity is pending. Requirements: requirements-design.md. Traceability: parity-inventory.json (84 existing rows plus flexible deltas). Implementation: /Users/jeffre/workspace/fiestaboard-ios-beta-recovered-20261031, branch codex/mobile-beta, isolated clone of b2e49f9; latest verified navigation checkpoint df6a6af. Original checkout and installed app remain preserved.
+Status: Astra approved architecture and corrected sequence, 2026-10-31. This is a sustained beta project; reader/physical-preview slice is verified; broader parity is pending. Requirements: requirements-design.md. Traceability: parity-inventory.json (84 existing rows plus flexible deltas). Implementation: /Users/jeffre/workspace/fiestaboard-ios-beta-recovered-20261031, branch codex/mobile-beta, isolated clone of b2e49f9; navigation checkpoint df6a6af; flexible editor source through44eed3b has passed independent review and device compilation, with final expanded-inspector native acceptance pending. Collection draft ownership is in progress under the reviewed collection-ownership-plan.md. Original checkout and installed app remain preserved.
 
 ## Delivery rule
 

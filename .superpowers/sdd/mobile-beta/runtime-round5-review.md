@@ -1,0 +1,15 @@
+# Flexible editor round 5 — field height and visible scrolling
+
+Scope: immutable `de8c140..44eed3b2ba7755a5a4858026e2c7ce8a2f730792`, with implementation report at `b02bf2d`. Only the populated-field intrinsic-height correction and flexible UI-test navigation/assertions were reviewed. Parallel collection changes were not inspected.
+
+**Spec/source verdict: PASS. Quality verdict: PASS for this narrow diff. No new important findings and no weakened acceptance assertions identified. Actual device/pixel acceptance remains pending.**
+
+The sole product change is `.fixedSize(horizontal: false, vertical: true)` on the existing vertical `draftField` TextField in `FlexibleWorkspaceView.swift:310–312`. It preserves intrinsic text height while allowing width to follow the available layout. It does not replace the input control, modify its binding or numeric conversion, change focus/leaf identifiers, or alter undo/save behavior. It directly addresses the reported populated Canvas Background disappearance when the surrounding Form row grows with expanded styles. Whether the rendered field now remains readable is a runtime assertion, not established by syntax alone.
+
+The flexible-only scroll helper in `DemoUITests.swift:696` onward requires nonempty, fully contained frames inside a viewport below the Page editor navigation bar and above the keyboard, together with hittability. It performs bounded real drag gestures at the outer Form margin and fails with a screenshot if the target cannot be exposed. It does not inject state, tap coordinates through overlays, substitute another field, or waive failed visibility. Generic scrolling in unrelated journeys remains unchanged.
+
+Disclosure collapse and native keyboard focus now have explicit assertions. Label/field counts must match the intended inspector contexts before selecting their first elements. The deliberately expanded Canvas Block style scenario requires both Background contexts and checks the Canvas field's exact black value plus simultaneous label/value visibility; thus collapsing the disclosure cannot hide the reported expanded-state defect. Retained checks still cover deterministic Width 10 → 11 → Undo 10 with unchanged X2, real numeric typing and exact captured-value reopen, fixed-toolbar dismissal, preview, acknowledged save, and subsequent disabled save. The hidden-invalid journey is unchanged by this diff.
+
+`git diff --check de8c140 44eed3b` passed. The implementation report records successful parsing and standalone UI-test typechecking after correcting the XCTest overlay search path; those are not runtime evidence. Controller reports the prior phone8/iPad5 hidden-invalid journeys passed, while both main journeys failed at the explicit visibility/focus defects described in the report. The new actual journeys use the committed archive `/tmp/fb-ios-validation-b02bf2d`; their results and populated inspector pixels must be reviewed before declaring the visible-label/keyboard work accepted. No Dynamic Type or complete device UX claim is made here.
+
+Only this review artifact was written. No product edits, test/simulator runs, broader review or subagents.

@@ -1,6 +1,12 @@
 # FiestaBoard mobile beta: requirements and iOS design for Astra review
 
-Date: 2026-10-31. Status: **review candidate, not approved architecture or beta acceptance**. Jeffrey delegated design decisions to the team with independent Astra critique and asynchronous screenshots. Parent coordinates that review. Implementation can follow accepted decisions without another user design-approval round. Publication destinations, distribution, device installation, live deployments, software installation, and security changes retain their separate boundaries.
+Date: 2026-10-31. Status: **Astra-approved architecture and corrected execution sequence; beta acceptance remains open**. Jeffrey delegated design decisions to the team with independent Astra critique and asynchronous screenshots. Parent coordinates that review. Implementation can follow accepted decisions without another user design-approval round. Publication destinations, distribution, device installation, live deployments, software installation, and security changes retain their separate boundaries.
+
+## Current execution checkpoint — 2026-10-31
+
+Active implementation is `/Users/jeffre/workspace/fiestaboard-ios-beta-recovered-20261031`; the original Documents checkout is frozen after exact committed and dirty recovery verification. Parent-relayed Astra architecture/plan rulings are recorded in execution-plan.md and the SDD ledger. The historical discovery table below remains dated evidence, not current Git status. Core flexible contract fixtures now pin PR2395 head `864cfa6baccdf5b9f29db712442bf40fb3e79923`; this is source evidence, not a deployed-server claim.
+
+Reader/physical geometry, verified page-draft ownership and native Pages/Collections/Schedule navigation slices are reviewed and tested. Native flexible text/Canvas authoring, conditional save/reopen and recovery are implemented; expanded inspector-label UX acceptance is still being completed. Collection durable ownership is the current parallel P5 package. Full schedule authoring, broader collections, display/system settings, integration/account administration and remaining accessibility/device matrix acceptance remain open. User conditionally authorized organization repository publication and CI at beta readiness; no publication or security change has occurred.
 
 ## Outcome and actual user requirements
 
