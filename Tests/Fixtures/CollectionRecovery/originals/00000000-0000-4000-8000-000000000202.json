@@ -1,0 +1,34 @@
+{
+  "id": "00000000-0000-4000-8000-000000000202",
+  "deploymentID": "https://collection-fixture.invalid",
+  "collectionID": null,
+  "baseline": null,
+  "draft": {
+    "name": "Synthetic legacy collection",
+    "pageIDs": [
+      "page-selected"
+    ],
+    "selectionMode": "time",
+    "intervalText": "-",
+    "randomIntervalText": "30",
+    "hasVariableConfig": false,
+    "hasRandomConfig": false,
+    "rules": [],
+    "defaultPageID": "",
+    "pollText": "5"
+  },
+  "sourceSupportsEditing": false,
+  "status": "idle",
+  "savedAt": 0,
+  "sourceVersions": [],
+  "formatVersion": 99,
+  "identity": {
+    "deploymentID": "https://collection-fixture.invalid",
+    "installationID": "synthetic-export-only",
+    "connectionID": "00000000-0000-4000-8000-000000000299",
+    "collectionID": null
+  },
+  "futureOpaque": {
+    "keepExactly": "café\nopaque recovery bytes"
+  }
+}

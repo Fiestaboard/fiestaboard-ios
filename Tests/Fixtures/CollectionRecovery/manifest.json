@@ -1,0 +1,25 @@
+{
+  "synthetic": true,
+  "appBundleID": "com.fiestaboard.ios.draft",
+  "relativeDataDirectory": "Library/Application Support/FiestaBoard/CollectionDrafts",
+  "files": [
+    {
+      "filename": "00000000-0000-4000-8000-000000000201.json",
+      "sha256": "1a02bfe13e92951561cae0ba977a676c0ab805953d38aac7a2808661b2c01c4b",
+      "bytes": 562,
+      "classification": "Unassigned legacy draft"
+    },
+    {
+      "filename": "00000000-0000-4000-8000-000000000202.json",
+      "sha256": "d19fa33bc61c20fed0b77cf8f6feede73e5d486e7329382e7d68e53450a8d79c",
+      "bytes": 872,
+      "classification": "Unsupported archive format"
+    },
+    {
+      "filename": "00000000-0000-4000-8000-000000000203.json",
+      "sha256": "bd75500759df73982ae361ffd03db34dbb9c1c7d3749808ebbd561014ffaed1a",
+      "bytes": 35,
+      "classification": "Damaged draft"
+    }
+  ]
+}

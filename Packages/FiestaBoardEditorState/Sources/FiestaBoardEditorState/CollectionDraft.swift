@@ -144,6 +144,25 @@ public struct CollectionDraftCheckpoint: Codable, Sendable, Identifiable {
     }
 }
 
+/// Inspection labels describe archived evidence, never ownership by the active connection.
+public enum CollectionDraftRecoveryClassification: String, Sendable {
+    case scoped = "Connection-scoped draft"
+    case retired = "Retired connection draft"
+    case unassigned = "Unassigned legacy draft"
+    case future = "Unsupported archive format"
+    case malformed = "Damaged draft"
+    case untrusted = "Unverified archive identity"
+    case unreadable = "Unreadable draft file"
+}
+
+public struct CollectionDraftRecoveryEntry: Identifiable, Sendable {
+    public var id: URL { fileURL }
+    public let fileURL: URL
+    public let checkpoint: CollectionDraftCheckpoint?
+    public let classification: CollectionDraftRecoveryClassification
+    public let reason: String
+}
+
 /// Independent per-editor files; retirement never deletes original archive bytes.
 @MainActor public final class CollectionDraftArchive {
     public let directory: URL
@@ -172,6 +191,44 @@ public struct CollectionDraftCheckpoint: Codable, Sendable, Identifiable {
                 guard let value = read(url), value.belongs(to: identity), let version = value.archiveVersion, !isRetired(version) else { return nil }
                 return value
             }.sorted { $0.savedAt > $1.savedAt }
+    }
+    /// Inspect original files without adoption, rewriting or retirement. Markers are metadata only.
+    public func recoveryInventory() throws -> [CollectionDraftRecoveryEntry] {
+        guard FileManager.default.fileExists(atPath: directory.path) else { return [] }
+        return try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
+            .filter { $0.lastPathComponent != "retired" && $0.pathExtension != "marker" }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+            .map { url in
+                func entry(_ classification: CollectionDraftRecoveryClassification, _ reason: String, _ checkpoint: CollectionDraftCheckpoint? = nil) -> CollectionDraftRecoveryEntry {
+                    .init(fileURL: url, checkpoint: checkpoint, classification: classification, reason: reason)
+                }
+                let data: Data
+                do { data = try Data(contentsOf: url) }
+                catch { return entry(.unreadable, "The original file could not be read. " + error.localizedDescription) }
+                guard let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] else {
+                    return entry(.malformed, "The original file is not a readable collection checkpoint.")
+                }
+                if let version = object["formatVersion"] as? Int, version != 2 {
+                    return entry(.future, "This app does not support archive format \(version). Export its original file for recovery.")
+                }
+                guard var value = try? JSONDecoder().decode(CollectionDraftCheckpoint.self, from: data) else {
+                    return entry(.malformed, "The saved checkpoint fields could not be decoded. Original bytes are preserved.")
+                }
+                guard url.lastPathComponent == value.id.uuidString + ".json" else {
+                    return entry(.untrusted, "The original filename does not match its checkpoint identity.")
+                }
+                if value.formatVersion == nil && value.identity == nil {
+                    return entry(.unassigned, "This older archive has no verified connection identity. It cannot be adopted by the active sign-in.", value)
+                }
+                guard let identity = value.identity, value.belongs(to: identity) else {
+                    return entry(.untrusted, "The archive scope or baseline identity is incomplete or inconsistent.")
+                }
+                let exactVersion = version(value.id, data)
+                value.archiveVersion = exactVersion
+                return isRetired(exactVersion)
+                    ? entry(.retired, "This exact version was retired from editor recovery. Its original file remains available for export.", value)
+                    : entry(.scoped, "Owned by its saved connection identity. This inventory does not bind it to the active sign-in.", value)
+            }
     }
     /// Every serialized lineage entry is checked against current exact bytes and ownership.
     public func eligibleVersions(_ versions: [CollectionDraftVersion], identity: CollectionDraftIdentity) -> [CollectionDraftVersion] {

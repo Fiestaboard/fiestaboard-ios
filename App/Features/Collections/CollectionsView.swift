@@ -67,7 +67,7 @@ private struct CollectionDestination: Identifiable {
     init(_ context: CollectionEditingContext) { self.context = context }
 }
 
-@MainActor private enum CollectionDraftResources {
+@MainActor enum CollectionDraftResources {
     static let archive = Result { CollectionDraftArchive(directory: try CollectionDraftArchive.defaultDirectory()) }
 }
 
