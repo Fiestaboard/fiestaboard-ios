@@ -108,7 +108,8 @@ final class BoardVisualsUITests: XCTestCase {
         for kind in [XCUIElement.ElementType.staticText, .button, .image] {
             for element in app.descendants(matching: kind).allElementsBoundByIndex where element.exists && !element.frame.isEmpty {
                 let frame = element.frame.intersection(app.frame)
-                guard !frame.isNull, frame.minY >= navBottom else { continue }
+                // Only the board's own column counts (the iPad sidebar sits beside it).
+                guard !frame.isNull, frame.minY >= navBottom, frame.maxX > boardFrame.minX, frame.minX < boardFrame.maxX else { continue }
                 if element.identifier != "homeBoard" {
                     XCTAssertLessThan(frame.width * frame.height, area, "\(element.identifier) \(element.label) is larger than the board")
                 }

@@ -157,8 +157,10 @@ public enum BoardPolling {
         tasks.append(loop(every: { _ in BoardPolling.status }) { $0.pollStatus() })
         tasks.append(loop(every: { $0.activeInterval }) { $0.pollActive() })
         tasks.append(loop(every: { _ in BoardPolling.board }, immediately: false) { status in
-            // Never poll a paused board's frame; never while a command is in flight.
-            guard status.store.board?.summary.paused != true, !status.store.commandBusy, !status.store.refreshing else { return }
+            // Never poll a paused board's frame; never while a command is in flight; and
+            // never clear a readback barrier — after an unknown outcome only the user's
+            // explicit refresh may do that.
+            guard status.store.board?.summary.paused != true, status.canAutoRefresh else { return }
             status.store.refresh()
         })
     }
@@ -184,9 +186,13 @@ public enum BoardPolling {
 
     private func postSendRefresh() {
         if let onPostSendRefresh { onPostSendRefresh(); return }
-        if !store.commandBusy && !store.refreshing { store.refresh() }
+        if canAutoRefresh { store.refresh() }
         pollActive()
     }
+
+    /// Automatic re-reads are reads only: they must not stand in for the explicit
+    /// refresh that a readback barrier (unknown outcome, failed readback) requires.
+    var canAutoRefresh: Bool { !store.commandBusy && !store.refreshing && !store.needsReadback }
 
     private var activeInterval: TimeInterval {
         BoardPolling.activePageInterval(nextCheck: schedule?.resolvedNextCheckSeconds ?? manual?.resolvedNextCheckSeconds)
