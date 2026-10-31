@@ -146,3 +146,27 @@ import FiestaBoardKit
         XCTAssertEqual(pipeline.state.adoptedRenders, 1)
     }
 }
+
+final class LocalStageProjectionTests: XCTestCase {
+    func testUppercaseAlignTruncateAndTiles() {
+        let lines = LocalStageProjection.lines(rows: ["hi {{red}}", "{{weather.temp}}", String(repeating: "X", count: 30)],
+            alignment: { $0 == 0 ? "center" : "left" }, boardRows: 4, cols: 22, uppercase: true)
+        XCTAssertEqual(lines.count, 4, "One line per board row")
+        XCTAssertEqual(lines[0], String(repeating: " ", count: 9) + "HI {red}")
+        XCTAssertEqual(lines[1], "WEATHER.TEMP", "Tokens are never evaluated")
+        XCTAssertEqual(lines[2].count, 22, "Cut at the board width")
+        XCTAssertEqual(lines[3], "")
+        XCTAssertEqual(LocalStageProjection.lines(rows: ["Hi"], alignment: { _ in "right" }, boardRows: 1, cols: 4, uppercase: false), ["  Hi"])
+    }
+}
+
+final class FlapInputCaseTests: XCTestCase {
+    func testOnlyTextOutsideTokensIsUppercased() {
+        XCTAssertEqual(FlapInputCase.uppercased("hello {{weather.temp|pad:3}} world", openBefore: false), "HELLO {{weather.temp|pad:3}} WORLD")
+        XCTAssertEqual(FlapInputCase.uppercased("temp", openBefore: true), "temp")
+        XCTAssertEqual(FlapInputCase.uppercased("p}} ok", openBefore: true), "p}} OK")
+        XCTAssertTrue(FlapInputCase.isInsideToken(rowPrefix: "A {{weather."))
+        XCTAssertFalse(FlapInputCase.isInsideToken(rowPrefix: "A {{red}} b"))
+        XCTAssertFalse(FlapInputCase.isInsideToken(rowPrefix: "plain"))
+    }
+}

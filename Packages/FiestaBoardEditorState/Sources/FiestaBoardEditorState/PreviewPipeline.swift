@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import FiestaBoardKit
+import FiestaBoardDocuments
 
 /// What the stage should draw after a render request (PLAN §3.3).
 public enum PreviewRender: Sendable {
@@ -145,5 +146,68 @@ public final class PreviewPipeline: ObservableObject {
 
     private static func describe(_ error: any Error) -> String {
         (error as? LocalizedError)?.errorDescription ?? error.localizedDescription
+    }
+}
+
+/// Interim local projection of the editor's rows onto the stage (PLAN §5 day-1 item 3): used
+/// until a server render arrives and afterwards as the "no request" path (empty document, no
+/// display chosen). Deliberately tiny, like the fixture's toy fallback (§4.4): uppercase on
+/// split-flap, `{{color}}` → a colour tile, `{{fill_space…}}` → spaces, any other token → its
+/// uppercased inner source; per-row alignment; cut at `cols`. No evaluation of any kind.
+public enum LocalStageProjection {
+    /// Returns markup lines (colour tiles as `{red}`), one per board row.
+    public static func lines(rows: [String], alignment: (Int) -> String, boardRows: Int, cols: Int, uppercase: Bool) -> [String] {
+        (0..<max(0, boardRows)).map { index in
+            guard index < rows.count else { return "" }
+            var cells: [String] = []
+            for fragment in TemplateSyntax.fragments(rows[index]) {
+                switch fragment.kind {
+                case .text:
+                    cells += fragment.source.map { uppercase ? String($0).uppercased() : String($0) }
+                case .tile:
+                    cells.append("{" + fragment.label.lowercased() + "}")
+                case .fill:
+                    cells.append(" ")
+                case .expression, .formula, .span, .icon:
+                    let inner = fragment.label.trimmingCharacters(in: .whitespaces)
+                    cells += inner.map { uppercase ? String($0).uppercased() : String($0) }
+                }
+            }
+            if cells.count > cols { cells = Array(cells.prefix(cols)) }
+            let free = cols - cells.count
+            switch alignment(index) {
+            case "center": cells = Array(repeating: " ", count: free / 2) + cells
+            case "right": cells = Array(repeating: " ", count: free) + cells
+            default: break
+            }
+            return cells.joined()
+        }
+    }
+}
+
+/// Split-flap pages uppercase only what the user types or pastes (PLAN §2.2 lossless rule),
+/// never inside a `{{…}}` token, so variable names and filters keep their case.
+public enum FlapInputCase {
+    /// `openBefore`: the caret sits inside an unclosed `{{` in its row.
+    public static func uppercased(_ inserted: String, openBefore: Bool) -> String {
+        var open = openBefore
+        var result = ""
+        let characters = Array(inserted)
+        var index = 0
+        while index < characters.count {
+            let character = characters[index]
+            let next = index + 1 < characters.count ? characters[index + 1] : nil
+            if character == "{" && next == "{" { open = true; result += "{{"; index += 2; continue }
+            if character == "}" && next == "}" { open = false; result += "}}"; index += 2; continue }
+            result += open ? String(character) : String(character).uppercased()
+            index += 1
+        }
+        return result
+    }
+    /// Whether the text before the caret (within its row) leaves a `{{` unclosed.
+    public static func isInsideToken(rowPrefix: String) -> Bool {
+        guard let open = rowPrefix.range(of: "{{", options: .backwards) else { return false }
+        guard let close = rowPrefix.range(of: "}}", options: .backwards) else { return true }
+        return open.lowerBound > close.lowerBound
     }
 }

@@ -7,7 +7,8 @@ import FiestaBoardKit
 private typealias EditorState<Value> = SwiftUI.State<Value>
 
 /// Present this view in a sheet or navigation destination using a full raw page response.
-/// Local checkpoints and explicit revision-checked server storage are distinct actions.
+/// Legacy template pages open in the document editor (`EditorRoot`); flexible and read-only
+/// documents keep the form editor until their cards arrive (wave 2).
 @MainActor
 public struct LocalPageEditorView: View {
     @Environment(\.dismiss) private var dismiss
@@ -19,12 +20,19 @@ public struct LocalPageEditorView: View {
 
     public init(rawDocumentData: Data, identity: DraftIdentity, draftStore: LocalDraftStore, remote: EditorRemoteActions? = nil, boards: [EditorBoardChoice] = []) throws {
         let model = try LocalPageEditorModel(
-            rawDocumentData: rawDocumentData, identity: identity, draftStore: draftStore, remote: remote, boards: boards
+            rawDocumentData: rawDocumentData, identity: identity, draftStore: draftStore, remote: remote, boards: boards,
+            boardMemory: .standard
         )
         _model = StateObject(wrappedValue: model)
     }
 
+    private var usesDocumentEditor: Bool { !model.supportsFlexibleEditing && model.lines != nil }
+
     public var body: some View {
+        if usesDocumentEditor { EditorRoot(model: model) } else { formEditor }
+    }
+
+    private var formEditor: some View {
         ScrollViewReader { proxy in
         Form {
             if let recovery = model.recoveryNotice {
@@ -55,10 +63,6 @@ public struct LocalPageEditorView: View {
                         else { destination = "flexibleInspector" }
                         DispatchQueue.main.async { withAnimation { proxy.scrollTo(destination, anchor: .top) } }
                     }
-                }
-            } else if model.lines != nil {
-                Section {
-                    TemplateWorkspaceView(model: model, isTextInputActive: $isTextInputActive)
                 }
             } else {
                 Section("Read-only content") {
@@ -238,31 +242,5 @@ public struct LocalPageEditorView: View {
 
     private func commitTextInput() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    }
-}
-
-/// The backend supplies a complete opaque RGBA surface. Display its exact aspect
-/// ratio with nearest-neighbor sampling; no character-grid geometry participates.
-private struct PhysicalFrameView: View {
-    let frame: PhysicalPreviewFrame
-    private var image: CGImage? {
-        guard let provider = CGDataProvider(data: frame.rgba as CFData) else { return nil }
-        return CGImage(width: frame.width, height: frame.height, bitsPerComponent: 8,
-            bitsPerPixel: 32, bytesPerRow: frame.width * 4,
-            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.last.rawValue),
-            provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)
-    }
-    var body: some View {
-        if let image {
-            Image(decorative: image, scale: 1)
-                .resizable().interpolation(.none)
-                .aspectRatio(CGFloat(frame.width) / CGFloat(frame.height), contentMode: .fit)
-                .accessibilityHidden(false)
-                .accessibilityLabel("Server preview, \(frame.width) by \(frame.height) pixels")
-                .accessibilityIdentifier("physicalPreview")
-            Text("\(frame.width) × \(frame.height) pixels").font(.caption)
-        } else {
-            Text("The visual preview could not be displayed.")
-        }
     }
 }

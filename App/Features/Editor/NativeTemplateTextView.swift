@@ -60,21 +60,7 @@ struct NativeTemplateTextView: UIViewRepresentable {
         init(_ parent: NativeTemplateTextView) { self.parent = parent }
         func render(_ view: TemplateUITextView, source: String, sourceSelection: NSRange) {
             let font = UIFont.preferredFont(forTextStyle: .body)
-            let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: UIColor.label]
-            let result = NSMutableAttributedString(string: "")
-            if parent.rich {
-                for fragment in TemplateSyntax.fragments(source) {
-                    if fragment.kind == .text { result.append(NSAttributedString(string: fragment.source, attributes: attributes)) }
-                    else { result.append(NSAttributedString(attachment: TemplateAttachment(fragment: fragment, font: font))) }
-                }
-            } else { result.append(NSAttributedString(string: source, attributes: attributes)) }
-            view.attributedText = result
-            view.typingAttributes = attributes
-            let start = parent.rich ? TemplateSyntax.displayOffset(sourceOffset: sourceSelection.location, in: source) : sourceSelection.location
-            let end = parent.rich ? TemplateSyntax.displayOffset(sourceOffset: NSMaxRange(sourceSelection), in: source) : NSMaxRange(sourceSelection)
-            let safeStart = min(start, result.length)
-            view.selectedRange = NSRange(location: safeStart, length: max(0, min(end, result.length) - safeStart))
-            view.accessibilityValue = source
+            view.setTemplate(source, rich: parent.rich, font: font, sourceSelection: sourceSelection)
             parent.selection.range = view.sourceSelection
         }
         func textViewDidChangeSelection(_ textView: UITextView) {
@@ -126,9 +112,49 @@ final class TemplateUITextView: UITextView {
     var allowsMultiline = false
     var usesDocumentUndo = false
     override var undoManager: UndoManager? { usesDocumentUndo ? nil : super.undoManager }
+    /// Hardware ⌘Z / ⌘⇧Z / ⌘Y reach the session's undo, not UIKit's (PLAN B17).
+    var onUndo: (() -> Void)?
+    var onRedo: (() -> Void)?
+    /// Whether layoutSubviews may toggle scrolling for short single rows (the row editor);
+    /// the document surface always scrolls.
+    var managesOwnScrolling = true
+
+    override var keyCommands: [UIKeyCommand]? {
+        guard onUndo != nil || onRedo != nil else { return super.keyCommands }
+        let commands = [
+            UIKeyCommand(title: "Undo", action: #selector(sessionUndo), input: "z", modifierFlags: .command),
+            UIKeyCommand(title: "Redo", action: #selector(sessionRedo), input: "z", modifierFlags: [.command, .shift]),
+            UIKeyCommand(title: "Redo", action: #selector(sessionRedo), input: "y", modifierFlags: .command)
+        ]
+        commands.forEach { $0.wantsPriorityOverSystemBehavior = true }
+        return (super.keyCommands ?? []) + commands
+    }
+    @objc private func sessionUndo() { onUndo?() }
+    @objc private func sessionRedo() { onRedo?() }
+
+    /// Replaces the whole content with `source`, as attachments (rich) or raw text (plain),
+    /// placing the selection at the given source range. Never call with marked text.
+    func setTemplate(_ source: String, rich: Bool, font: UIFont, sourceSelection: NSRange, color: UIColor = .label) {
+        let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: color]
+        let result = NSMutableAttributedString(string: "")
+        if rich {
+            for fragment in TemplateSyntax.fragments(source) {
+                if fragment.kind == .text { result.append(NSAttributedString(string: fragment.source, attributes: attributes)) }
+                else { result.append(NSAttributedString(attachment: TemplateAttachment(fragment: fragment, font: font))) }
+            }
+        } else { result.append(NSAttributedString(string: source, attributes: attributes)) }
+        attributedText = result
+        typingAttributes = attributes
+        let start = rich ? TemplateSyntax.displayOffset(sourceOffset: sourceSelection.location, in: source) : sourceSelection.location
+        let end = rich ? TemplateSyntax.displayOffset(sourceOffset: NSMaxRange(sourceSelection), in: source) : NSMaxRange(sourceSelection)
+        let safeStart = min(start, result.length)
+        selectedRange = NSRange(location: safeStart, length: max(0, min(end, result.length) - safeStart))
+        accessibilityValue = source
+    }
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        guard managesOwnScrolling else { return }
         // A short row must not consume vertical gestures intended for the surrounding
         // editor. Long source still scrolls inside its native text viewport.
         let needsScrolling = contentSize.height > bounds.height + 1
@@ -169,7 +195,7 @@ final class TemplateUITextView: UITextView {
     }
 }
 
-private final class TemplateAttachment: NSTextAttachment {
+final class TemplateAttachment: NSTextAttachment {
     let source: String
     init(fragment: TemplateSyntax.Fragment, font: UIFont) {
         source = fragment.source
