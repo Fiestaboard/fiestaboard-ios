@@ -369,7 +369,9 @@ extension PageDocument {
     private static let colors = ["red", "orange", "yellow", "green", "blue", "violet", "white", "black"]
     private static func styleColor(_ text: String, transparent: Bool) -> Bool {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        return colors.contains(text.lowercased()) || (transparent && text.lowercased() == "transparent") || text.range(of: #"^(#[0-9a-fA-F]{6}|\{?(6[3-9]|7[01])\}?|\{\{(?:(?!\{\{|\}\}).)*\}\})$"#, options: [.regularExpression]) != nil
+        // The scoped DOTALL group matches core's single-expression re.DOTALL grammar.
+        let pattern = #"^(#[0-9a-fA-F]{6}|\{?(6[3-9]|7[01])\}?|(?s:\{\{(?:(?!\{\{|\}\}).)*\}\}))$"#
+        return colors.contains(text.lowercased()) || (transparent && text.lowercased() == "transparent") || text.range(of: pattern, options: .regularExpression) != nil
     }
     private static func canvasColor(_ value: LosslessJSON, palette: LosslessJSONObject, expressions: Bool = true) -> Bool {
         if value == .null { return true }

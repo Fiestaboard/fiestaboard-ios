@@ -147,3 +147,38 @@ extension FlexibleEditingTests {
         XCTAssertTrue(document.flexibleIssues.isEmpty)
     }
 }
+
+extension FlexibleEditingTests {
+    func testMultilinePageAndBlockStyleExpressionsPreserveExactAuthorText() throws {
+        for location in [FlexibleLocation.pageStyle, .blockStyle("text1")] {
+            for key in ["color", "background"] {
+                for expression in ["{{\nplugin.color\n}}", "{{\r\n plugin.background \r\n}}"] {
+                    var document = try PageDocument(data: raw)
+                    try document.setFlexibleValue(location, key: key, value: .string(expression))
+                    XCTAssertTrue(document.flexibleIssues.isEmpty, "\(location).\(key): \(document.flexibleIssues)")
+                    let reopened = try PageDocument(data: document.serializedData())
+                    XCTAssertEqual(reopened.flexibleValue(location, key: key), .string(expression))
+                    let payload = try LosslessJSON.parse(document.flexibleEvaluationData(boardID: "b"))
+                    guard case .object(let envelope) = payload, case .object(let author) = envelope["page"] else { return XCTFail() }
+                    var restoredAuthor = author
+                    restoredAuthor["document_protocol"] = .string("page-document-v2")
+                    let previewDocument = try PageDocument(data: LosslessJSON.object(restoredAuthor).serializedData())
+                    XCTAssertEqual(previewDocument.flexibleValue(location, key: key), .string(expression))
+                }
+            }
+        }
+    }
+    func testMultilineStyleGrammarStillRejectsMultipleAndNestedExpressions() throws {
+        for location in [FlexibleLocation.pageStyle, .blockStyle("text1")] {
+            for key in ["color", "background"] {
+                for expression in ["{{a}}\n{{b}}", "{{\nouter {{inner}}\n}}", "prefix {{\nvalue\n}}"] {
+                    var document = try PageDocument(data: raw)
+                    try document.setFlexibleValue(location, key: key, value: .string(expression))
+                    XCTAssertFalse(document.flexibleIssues.isEmpty)
+                    XCTAssertEqual(document.flexibleValue(location, key: key), .string(expression))
+                    XCTAssertThrowsError(try document.flexibleEvaluationData(boardID: "b"))
+                }
+            }
+        }
+    }
+}

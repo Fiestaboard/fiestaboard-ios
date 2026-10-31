@@ -117,3 +117,49 @@ extension FlexibleModelTests {
         XCTAssertEqual(model.historyFocus, .shape("c", 1))
     }
 }
+
+extension FlexibleModelTests {
+    func testRetainedMultilineStyleAllowsUnrelatedTextSaveAndPreviewWithoutRewritingExpression() async throws {
+        let target = try BoardTarget(deployment: DeploymentURL("https://fixture.test"), boardID: "b")
+        for location in [FlexibleLocation.pageStyle, .blockStyle("t")] {
+            for key in ["color", "background"] {
+                let expression = "{{\nplugin.\(key)\n}}"
+                var retained = try PageDocument(data: raw)
+                try retained.setFlexibleValue(location, key: key, value: .string(expression))
+                var captured: PageSavePatch?
+                var previewBytes: Data?
+                let remote = EditorRemoteActions(disabledReason: { nil }, save: { patch in
+                    captured = patch; throw FiestaBoardError.rejected(status: 422)
+                }, previewFlexible: { bytes, _ in
+                    previewBytes = bytes; return try Self.reply()
+                })
+                let model = try LocalPageEditorModel(rawDocumentData: retained.serializedData(), identity: DraftIdentity(deploymentID: "fixture", pageID: "p"), draftStore: LocalDraftStore(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)), remote: remote, boards: [EditorBoardChoice(name: "B", target: target)])
+                model.chooseBoard("b")
+                model.setFlexible(.block("t"), key: "text", value: .string("Unrelated edit"))
+                XCTAssertTrue(model.canSaveToServer, model.serverSaveDisabledReason ?? "")
+                XCTAssertTrue(model.canEvaluate)
+                await model.evaluate(preview: true)
+                XCTAssertNotNil(model.flexiblePreview)
+                let bytes = try XCTUnwrap(previewBytes)
+                guard case .object(let payload) = try LosslessJSON.parse(bytes), case .object(var page) = payload["page"] else { return XCTFail() }
+                page["document_protocol"] = .string("page-document-v2")
+                let evaluated = try PageDocument(data: LosslessJSON.object(page).serializedData())
+                XCTAssertEqual(evaluated.flexibleValue(location, key: key), .string(expression))
+                await model.saveToServer()
+                let patch = try XCTUnwrap(captured)
+                try patch.validate()
+                XCTAssertFalse(try patch.serializedData().isEmpty)
+                XCTAssertEqual(patch.expectedRevision, "original")
+                XCTAssertNil(patch.styleData, "Unchanged page style must remain omitted")
+                if case .blockStyle = location {
+                    let savedBlocks = try XCTUnwrap(patch.blocksData)
+                    var saveRoot = retained.root
+                    saveRoot["blocks"] = try LosslessJSON.parse(savedBlocks)
+                    let saved = try PageDocument(data: LosslessJSON.object(saveRoot).serializedData())
+                    XCTAssertEqual(saved.flexibleValue(location, key: key), .string(expression))
+                }
+                XCTAssertEqual(model.flexibleValue(location, key: key), .string(expression))
+            }
+        }
+    }
+}

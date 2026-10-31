@@ -26,6 +26,9 @@ public final class LocalPageEditorModel: ObservableObject {
     @Published public private(set) var remoteComparisonText: String?
     private var remoteComparisonData: Data?
     private var evaluationGeneration: UInt64 = 0
+    // Draft edits invalidate preview pixels, but only a newer request or selection
+    // supersedes evidence that the requested target no longer exists.
+    private var targetEvidenceGeneration: UInt64 = 0
     private var isPreparingRemoteSave = false
     private var editingEnded = false
     // A recovery side effect may preserve only content produced since the last intentional
@@ -270,12 +273,14 @@ public final class LocalPageEditorModel: ObservableObject {
     /// deliberately discarded work into a new recovery draft.
     public func endEditingSession() {
         editingEnded = true
+        targetEvidenceGeneration &+= 1
         invalidateEvaluation()
     }
 
     public func chooseBoard(_ id: String?) {
         guard id != selectedBoardID, id == nil || boards.contains(where: { $0.id == id }) else { return }
         selectedBoardID = id
+        targetEvidenceGeneration &+= 1
         invalidateEvaluation()
     }
     private func invalidateEvaluation() {
@@ -370,6 +375,8 @@ public final class LocalPageEditorModel: ObservableObject {
         guard canEvaluate, let target = selectedTarget, let remote else { return }
         evaluationGeneration &+= 1
         let generation = evaluationGeneration
+        targetEvidenceGeneration &+= 1
+        let targetGeneration = targetEvidenceGeneration
         let revision = session.revision
         isEvaluating = true
         defer { if generation == evaluationGeneration { isEvaluating = false } }
@@ -391,6 +398,7 @@ public final class LocalPageEditorModel: ObservableObject {
         } catch {
             await preserveForConnectionLoss(error)
             if !editingEnded, supportsFlexibleEditing, selectedTarget == target,
+               targetGeneration == targetEvidenceGeneration,
                error as? FiestaBoardError == .rejected(status: 404) || error as? FiestaBoardError == .invalidTarget {
                 selectedBoardID = nil
                 boards.removeAll { $0.target == target }
