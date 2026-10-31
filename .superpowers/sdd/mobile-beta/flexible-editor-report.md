@@ -132,3 +132,18 @@ SWIFT_MODULECACHE_PATH=/tmp/fb-flexible-module-cache CLANG_MODULE_CACHE_PATH=/tm
 All three commands exited0 with zero failures. Red logs are `/tmp/fb-flexible-review-r1-documents-red.log` and `/tmp/fb-flexible-review-r1-editor-red.log`. Copies of all five red/green logs are in `../mobile-beta-discovery/evidence/flexible-editor/`. `git diff --check` and staged checks passed before the source commit. No simulator/build execution was performed by this implementer.
 
 Runtime follow-up is still open. Controller’s phone3 run supplied decisive accessibility evidence that the new enclosing `flexibleInspector` identifier propagates to its descendants and hides the intended leaf IDs. This is separate from the two Astra findings and the earlier query-only correction; it will receive a narrow native identifier-ownership fix and fresh controller runtime verification. Phone/tablet acceptance is not claimed by this round.
+
+
+## Native runtime accessibility ownership follow-up
+
+Controller's phone3 run ended65 with both selected flexible journeys failing the text-editor lookup. Its actual AX hierarchy (`/tmp/fb-ios-flexible-evidence/ui-phone-3.log`, lines1019–1042) showed the visible TextView with label `Block text` and value `Native flexible text`, but identifier `flexibleInspector`; surrounding buttons and numeric fields inherited that same enclosing identifier. This established a product identifier-propagation issue rather than evidence that the editor was absent.
+
+Commit `53c281c2f1515c01d4328741a8664a5aa006d63e` removes only the four enclosing AX identifiers in `FlexibleWorkspaceView`: `flexibleInspector`, `canvasInspector`, `canvasShapeInspector`, and `flexibleIssues`. The last had the same risk of hiding individual issue-button IDs. All existing `.id(...)` scroll anchors, leaf control identifiers, labels, typing/value/reopen assertions and behavior are retained. No fixture, protocol, renderer, unrelated control or test assertion was changed. Source range is `d94d661b28b6a027e81178780392e9c3411b85d0..53c281c2f1515c01d4328741a8664a5aa006d63e`.
+
+Actual parser verification exited0 with no diagnostics:
+
+```sh
+swiftc -parse App/Features/Editor/FlexibleWorkspaceView.swift App/Features/Editor/LocalPageEditorView.swift App/Features/Editor/NativeTemplateTextView.swift Tests/UITests/DemoUITests.swift > /tmp/fb-flexible-runtime-identifiers-parse.log 2>&1
+```
+
+The parse log is also copied to `../mobile-beta-discovery/evidence/flexible-editor/`. `git diff --check` and staged checks passed before the commit. The latest affected-package evidence remains Documents50/50, EditorState69/69 and Kit176/176 from the preceding review-fix round; four AX-modifier removals do not justify repeating unrelated package suites. Controller owns native rebuild and real phone/tablet reruns to verify the leaf TextView/shape/field identities through actual editing, preview/save/reopen and hidden-field repair. Those runtime results remain pending; no runtime acceptance is inferred from parser success.
