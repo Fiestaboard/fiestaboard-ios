@@ -104,7 +104,7 @@ import FiestaBoardEditorState
             NavigationStack {
                 Form {
                     VStack(alignment: .leading, spacing: 4) {
-                        fieldLabel("Expression source")
+                        fieldLabel("Expression source", identifier: "flexibleExpressionSource_label")
                         TextField("Expression source", text: $expression, axis: .vertical)
                             .font(.body.monospaced()).autocorrectionDisabled().textInputAutocapitalization(.never)
                             .accessibilityIdentifier("flexibleExpressionSource")
@@ -183,7 +183,7 @@ import FiestaBoardEditorState
                 }
                 if block.kind == "text" {
                     Picker("Text mode", selection: $rich) { Text("Rich").tag(true); Text("Source").tag(false) }.pickerStyle(.segmented)
-                    fieldLabel("Block text")
+                    fieldLabel("Block text", identifier: "flexibleTextEditor_label")
                     NativeTemplateTextView(text: Binding(get: { model.flexibleText(.block(block.id), key: "text") }, set: { model.setFlexible(.block(block.id), key: "text", value: .string($0)) }), isEditing: $isTextInputActive, rich: rich, selection: selection, allowsMultiline: true, documentUndo: true) { source, range in
                         insertionRange = range; expression = source; finishTyping(); showExpression = true
                     }
@@ -301,7 +301,7 @@ import FiestaBoardEditorState
     }
     private func draftField(_ title: String, _ location: FlexibleLocation, _ key: String, numeric: Bool = false, named: [String] = []) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            fieldLabel(title)
+            fieldLabel(title, identifier: "flexibleField_\(key)_label")
             HStack(alignment: .firstTextBaseline) {
                 TextField(title, text: Binding(get: { model.flexibleText(location, key: key) }, set: { text in
                     let value: LosslessJSON = numeric && !named.contains(text) ? FlexibleNumber.draft(text) : .string(text)
@@ -330,7 +330,7 @@ import FiestaBoardEditorState
     }
     private func targetField(_ title: String, key: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            fieldLabel(title)
+            fieldLabel(title, identifier: "flexibleTargets_\(key)_label")
             HStack {
                 TextField(title, text: Binding(get: {
                     if case .array(let list) = model.flexibleValue(.targets, key: key) { list.map { FlexibleNumber.display($0) }.joined(separator: ", ") } else { model.flexibleText(.targets, key: key) }
@@ -343,7 +343,7 @@ import FiestaBoardEditorState
     }
     private func contentSize(_ id: String, axis: Int, title: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            fieldLabel("Canvas \(title)")
+            fieldLabel("Canvas \(title)", identifier: "canvasSize_\(axis)_label")
             TextField(title, text: Binding(get: {
                 if case .array(let values) = model.flexibleValue(.content(id), key: "size"), values.indices.contains(axis) { FlexibleNumber.display(values[axis]) } else { "" }
             }, set: { model.setContentSize(id, axis: axis, text: $0) }))
@@ -352,9 +352,10 @@ import FiestaBoardEditorState
             .accessibilityLabel("Canvas \(title)").accessibilityIdentifier("canvasSize_\(axis)")
         }
     }
-    private func fieldLabel(_ title: String) -> some View {
+    private func fieldLabel(_ title: String, identifier: String) -> some View {
         Text(title).font(.subheadline).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier(identifier)
     }
     @ViewBuilder private func containerControls(_ location: FlexibleLocation, title: String, optional: Bool) -> some View {
         let value = model.flexibleContainerValue(location)

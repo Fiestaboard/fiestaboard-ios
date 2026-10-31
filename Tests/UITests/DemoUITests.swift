@@ -402,7 +402,8 @@ final class ConnectionUITests: XCTestCase {
         reveal(text, app); XCTAssertTrue(text.waitForExistence(timeout: 5), app.debugDescription)
         text.tap(); text.typeText(" UI text")
         try hideFlexibleKeyboard(app, text: text)
-        let blockTextLabel = app.staticTexts["Block text"]
+        let blockTextLabel = app.staticTexts["flexibleTextEditor_label"]
+        XCTAssertEqual(blockTextLabel.label, "Block text")
         revealFlexibleEditor([blockTextLabel], app); XCTAssertTrue(blockTextLabel.isHittable)
         XCTAssertTrue((text.value as? String)?.contains("UI text") == true)
         let textEvidence = XCTAttachment(screenshot: app.screenshot())
@@ -464,7 +465,8 @@ final class ConnectionUITests: XCTestCase {
         for (label, key, value) in [("X position", "x", "2"), ("Y position", "y", "9"), ("Width", "w", "10"), ("Height", "h", "5"), ("Fill", "fill", "red")] {
             assertVisibleFlexibleField(app, label: label, identifier: "flexibleField_\(key)", value: value)
         }
-        let strokeLabel = app.staticTexts["Stroke"]
+        let strokeLabel = app.staticTexts["flexibleField_stroke_label"]
+        XCTAssertEqual(strokeLabel.label, "Stroke")
         revealFlexibleEditor([strokeLabel], app); XCTAssertTrue(strokeLabel.isHittable)
         attachFlexibleInspector(app, name: "Populated rectangle dimensions and fill labels")
         let width = app.descendants(matching: .any).matching(identifier: "flexibleField_w").firstMatch
@@ -571,7 +573,8 @@ final class ConnectionUITests: XCTestCase {
         reveal(issue, app); XCTAssertTrue(issue.exists); issue.tap()
         XCTAssertTrue(width.waitForExistence(timeout: 5))
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
-        let widthLabel = app.staticTexts["Width"]
+        let widthLabel = app.staticTexts["flexibleField_w_label"]
+        XCTAssertEqual(widthLabel.label, "Width")
         XCTAssertTrue(widthLabel.exists && widthLabel.isHittable, "Invalid focused drafts must retain their visible field name")
         let evidence = XCTAttachment(screenshot: app.screenshot())
         evidence.name = "Hidden invalid Canvas field revealed for repair"; evidence.lifetime = .keepAlways; add(evidence)
@@ -735,7 +738,7 @@ final class ConnectionUITests: XCTestCase {
     }
 
     @MainActor private func assertVisibleFlexibleField(_ app: XCUIApplication, label: String, identifier: String, value: String, matchingContexts: Int = 1, file: StaticString = #filePath, line: UInt = #line) {
-        let names = app.staticTexts.matching(identifier: label)
+        let names = app.staticTexts.matching(identifier: identifier + "_label")
         let fields = app.descendants(matching: .any).matching(identifier: identifier)
         XCTAssertEqual(names.count, matchingContexts, "Verify the expected inspector contexts before choosing their first field", file: file, line: line)
         XCTAssertEqual(fields.count, matchingContexts, "Verify shared field IDs are from the expected disclosure state", file: file, line: line)
@@ -745,6 +748,7 @@ final class ConnectionUITests: XCTestCase {
         let field = fields.firstMatch
         revealFlexibleEditor([name, field], app, file: file, line: line)
         XCTAssertTrue(name.exists && name.isHittable, "Populated field must retain visible label: \(label)", file: file, line: line)
+        XCTAssertEqual(name.label, label, "The identified native label must display the field name", file: file, line: line)
         XCTAssertTrue(field.isHittable, file: file, line: line)
         XCTAssertEqual(field.value as? String, value, file: file, line: line)
         XCTAssertTrue(name.isHittable, "Label and populated value must be visible together", file: file, line: line)
