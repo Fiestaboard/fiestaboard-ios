@@ -6,6 +6,10 @@ import XCTest
     override func setUp() { super.setUp(); continueAfterFailure = false }
 
     private func attach(_ app: XCUIApplication, _ name: String) {
+        // Evidence shows the settled frame: assertions run as soon as the stage's value changes,
+        // while the tiles may still be flipping. The drum only walks forward (80 ms per step), so
+        // a letter turning blank wraps through the colour tiles and can take several seconds.
+        Thread.sleep(forTimeInterval: 6)
         let shot = XCTAttachment(screenshot: app.screenshot())
         shot.name = name + "-mockfixture"; shot.lifetime = .keepAlways; add(shot)
     }
@@ -48,6 +52,11 @@ import XCTest
                 var line = line; while line.last == " " { line.removeLast() }; return line
             }
     }
+    private func waitForCondition(timeout: TimeInterval, _ condition: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat { if condition() { return true }; Thread.sleep(forTimeInterval: 0.2) } while Date() < deadline
+        return false
+    }
     private func waitForStage(_ app: XCUIApplication, timeout: TimeInterval = 3, _ condition: ([String]) -> Bool) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
         repeat { if condition(stageLines(app)) { return true } } while Date() < deadline
@@ -74,15 +83,36 @@ import XCTest
         let stage = app.descendants(matching: .any).matching(identifier: "boardStage").firstMatch
         XCTAssertTrue(stage.exists)
         XCTAssertGreaterThan(stage.frame.width * stage.frame.height, title.frame.width * title.frame.height)
+        XCTAssertGreaterThan(stage.frame.width * stage.frame.height, document.frame.width * document.frame.height,
+                             "The board is larger than the document surface: \(stage.frame) vs \(document.frame)")
+        // The toolbar sits directly under the title (B12/B15), above the board.
+        let alignLeft = app.buttons["toolbar_alignLeft"]
+        XCTAssertTrue(alignLeft.isHittable)
+        XCTAssertGreaterThan(alignLeft.frame.minY, title.frame.maxY - 1); XCTAssertLessThan(alignLeft.frame.maxY, stage.frame.minY)
         // Text between the title and the board may only belong to the stage header row
         // (size readout, display picker label, fit note, updating) — no captions or disclaimers.
         let header = app.staticTexts["boardSizeReadout"].frame
-        let aboveStage = app.staticTexts.allElementsBoundByIndex.filter { $0.exists && $0.frame.maxY <= stage.frame.minY && $0.frame.minY > title.frame.maxY }
+        // Scoped to visible text in the board's own column: labels behind the iPad sheet
+        // (sidebar, Pages rows) are reported by XCUITest but are not hittable.
+        let aboveStage = app.staticTexts.allElementsBoundByIndex.filter {
+            $0.exists && $0.frame.maxY <= stage.frame.minY && $0.frame.minY > title.frame.maxY
+                && $0.frame.maxX > stage.frame.minX && $0.frame.minX < stage.frame.maxX && $0.isHittable
+        }
         let strays = aboveStage.filter { $0.frame.midY < header.minY - 4 || $0.frame.midY > header.maxY + 4 }
         XCTAssertTrue(strays.isEmpty, "Only the stage header sits between the title and the board: \(strays.map(\.label))")
         attach(app, "D1-B12-new-page")
         attach(app, "D1-B33-editor")
         attach(app, "D1-B20-stage-header")
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            // Wide layout (iPad landscape): the board sits beside the document, still the largest element.
+            XCUIDevice.shared.orientation = .landscapeLeft
+            XCTAssertTrue(waitForCondition(timeout: 5) { stage.frame.minX > document.frame.maxX }, "Stage beside the document: \(stage.frame) vs \(document.frame)")
+            XCTAssertGreaterThan(stage.frame.width * stage.frame.height, document.frame.width * document.frame.height)
+            XCTAssertLessThan(app.buttons["toolbar_alignLeft"].frame.maxY, stage.frame.minY, "Toolbar under the title, above the board")
+            attach(app, "D1-B33-editor-landscape")
+            XCUIDevice.shared.orientation = .portrait
+            XCTAssertTrue(waitForCondition(timeout: 5) { stage.frame.maxY < document.frame.minY }, "Stage above the document in portrait")
+        }
 
         // B16: Return on the last row adds a 7th numbered row; the counter and strip warn.
         placeCaret(row: 6, app, document)
@@ -107,6 +137,13 @@ import XCTest
         let center = app.buttons["toolbar_alignCenter"]
         center.tap()
         XCTAssertTrue(center.isSelected, "Toolbar reflects the caret row")
+        // The keyboard accessory mirrors the toolbar while the keyboard is up.
+        let accessoryCenter = app.buttons["accessory_alignCenter"]
+        XCTAssertTrue(accessoryCenter.waitForExistence(timeout: 3), "Keyboard accessory mirrors the toolbar")
+        XCTAssertTrue(accessoryCenter.isSelected); XCTAssertFalse(app.buttons["accessory_alignLeft"].isSelected)
+        for id in ["accessory_undo", "accessory_redo", "accessory_alignRight", "accessory_wrap", "editorHideKeyboard"] {
+            XCTAssertTrue(app.buttons[id].exists, id)
+        }
         XCTAssertTrue(waitForStage(app) { $0.count > 2 && $0[1].hasPrefix(" ") && $0[1].trimmingCharacters(in: .whitespaces) == "TWO" }, "\(stageLines(app))")
         let lines = stageLines(app)
         XCTAssertEqual(lines[0], "ONE", "Row 1 unchanged"); XCTAssertEqual(lines[2], "THREE", "Row 3 unchanged")
@@ -133,6 +170,15 @@ import XCTest
     func testTypingReachesTheBoard() {
         let app = XCUIApplication()
         let document = openNewPage(app, name: "Typing test")
+        // iPad runs this in landscape: the wide layout (board beside the document). Portrait iPad
+        // stacks like the phone, which the phone run covers.
+        let wide = UIDevice.current.userInterfaceIdiom == .pad
+        if wide {
+            XCUIDevice.shared.orientation = .landscapeLeft
+            let stage = app.descendants(matching: .any).matching(identifier: "boardStage").firstMatch
+            XCTAssertTrue(waitForCondition(timeout: 5) { stage.frame.minX > document.frame.maxX }, "Wide layout: board beside the document")
+        }
+        defer { if wide { XCUIDevice.shared.orientation = .portrait } }
         placeCaret(row: 1, app, document)
         XCTAssertTrue(waitForStage(app) { $0.first == "" })
         document.typeText("hello")

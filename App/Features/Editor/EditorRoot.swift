@@ -44,22 +44,31 @@ struct EditorRoot: View {
     private var isPanel: Bool { geometry?.isPanel ?? false }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 4) {
             title
-            stage
-            if let notice = model.recoveryNotice { recoveryBanner(notice) }
-            if model.saveStatus.needsAttention { attentionBanner }
-            TemplateWorkspaceView(model: model, buffer: buffer, pipeline: pipeline,
-                                  isTextInputActive: $isTextInputActive, rich: $rich)
-            if let message = model.message, !Self.isRoutineMessage(message) {
-                Text(message).font(.caption).foregroundStyle(.secondary).lineLimit(3)
-                    .accessibilityIdentifier("editorMessage")
+            // The toolbar sits directly under the title (B12/B15); the keyboard accessory mirrors it.
+            DocumentToolbar(model: model, buffer: buffer, pipeline: pipeline, rich: $rich)
+            StageDocumentLayout {
+                stage
+                VStack(alignment: .leading, spacing: 10) {
+                    if let notice = model.recoveryNotice { recoveryBanner(notice) }
+                    if model.saveStatus.needsAttention { attentionBanner }
+                    TemplateWorkspaceView(model: model, buffer: buffer, pipeline: pipeline,
+                                          isTextInputActive: $isTextInputActive, rich: $rich)
+                    if let message = model.message, !Self.isRoutineMessage(message) {
+                        Text(message).font(.caption).foregroundStyle(.secondary).lineLimit(3)
+                            .accessibilityIdentifier("editorMessage")
+                    }
+                }
             }
+            .padding(.top, 8)
         }
         .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 8)
-        .frame(maxWidth: 900, maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: 1180, maxHeight: .infinity, alignment: .top)
         .frame(maxWidth: .infinity)
         .background(Color(uiColor: .systemBackground))
+        // iPad: a page-sized sheet, wide enough for the stage beside the document.
+        .presentationSizing(.page)
         .overlay(alignment: .bottom) { toastView }
         .navigationTitle(EditorStrings.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
@@ -235,6 +244,40 @@ struct EditorRoot: View {
             UIAccessibility.post(notification: .announcement, argument: toast)
             try? await Task.sleep(for: .milliseconds(1500))
             leave()
+        }
+    }
+}
+
+/// Stage and document column (PLAN B12/B33): on a narrow width the board is pinned above the
+/// document; on a wide one (iPad landscape, large windows: ≥ 860 pt) it sits beside it, document
+/// on the left with room for a full board row (≥ 400 pt), so rows never soft-wrap early. A single
+/// layout keeps the document's text view (and its selection) alive across size changes.
+struct StageDocumentLayout: Layout {
+    static let wideWidth: CGFloat = 860
+    static let minDocumentWidth: CGFloat = 400
+    var spacing: CGFloat = 12
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        proposal.replacingUnspecifiedDimensions(by: CGSize(width: 400, height: 600))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        guard subviews.count == 2 else { return }
+        let stage = subviews[0], document = subviews[1]
+        if bounds.width >= Self.wideWidth {
+            let documentWidth = max(Self.minDocumentWidth, ((bounds.width - spacing) * 0.42).rounded())
+            let stageWidth = bounds.width - spacing - documentWidth
+            let documentHeight = min(document.sizeThatFits(ProposedViewSize(width: documentWidth, height: nil)).height, bounds.height)
+            document.place(at: bounds.origin, proposal: ProposedViewSize(width: documentWidth, height: documentHeight))
+            stage.place(at: CGPoint(x: bounds.minX + documentWidth + spacing, y: bounds.minY),
+                        proposal: ProposedViewSize(width: stageWidth, height: nil))
+        } else {
+            let stageHeight = min(stage.sizeThatFits(ProposedViewSize(width: bounds.width, height: nil)).height, bounds.height * 0.6)
+            stage.place(at: bounds.origin, proposal: ProposedViewSize(width: bounds.width, height: stageHeight))
+            let room = max(0, bounds.height - stageHeight - spacing)
+            let documentHeight = min(document.sizeThatFits(ProposedViewSize(width: bounds.width, height: nil)).height, room)
+            document.place(at: CGPoint(x: bounds.minX, y: bounds.minY + stageHeight + spacing),
+                           proposal: ProposedViewSize(width: bounds.width, height: documentHeight))
         }
     }
 }

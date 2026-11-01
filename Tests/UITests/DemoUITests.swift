@@ -892,12 +892,15 @@ final class ConnectionUITests: XCTestCase {
         let create = app.buttons["newLibraryPage"]
         XCTAssertTrue(create.waitForExistence(timeout: 3)); create.tap()
         let name = app.textFields["New page name"]
-        XCTAssertTrue(name.waitForExistence(timeout: 3)); name.tap(); name.typeText("Native LED test")
-        if app.buttons["Hide keyboard"].waitForExistence(timeout: 3) {
-            app.buttons["Hide keyboard"].tap()
-            XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5))
-        }
-        app.buttons["pageFamilyPicker"].tap(); app.buttons["LED panel"].tap()
+        // Return submits the name and resigns the field. On iPad the keyboard's own "Hide keyboard" key
+        // leaves the field first responder, and the next tap (the format picker) re-shows the
+        // keyboard instead of opening the menu (Library sheet behaviour, reported to the coordinator).
+        XCTAssertTrue(name.waitForExistence(timeout: 3)); name.tap(); name.typeText("Native LED test\n")
+        XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5))
+        app.buttons["pageFamilyPicker"].tap()
+        let led = app.buttons["LED panel"]
+        XCTAssertTrue(led.waitForExistence(timeout: 3), "The display format menu opens")
+        led.tap()
         app.buttons["createLibraryPage"].tap()
         // Re-recorded (PLAN §5.5, iOS-E1): the created page opens in the document editor.
         XCTAssertTrue(app.navigationBars["Edit Page"].waitForExistence(timeout: 8))
@@ -920,14 +923,17 @@ final class ConnectionUITests: XCTestCase {
     func testRichTokenSourceRoundTripAndStructuralUndo() {
         // Re-recorded (PLAN §5.5, iOS-E1): one document surface replaces the per-row editor;
         // "Plain" replaces "Source"; tokens are typed, undo is the session's (one step per burst).
+        // A fresh page: iOS snaps a tap in whitespace-only rows (as in "Welcome") to the next word,
+        // so the token is typed into an empty row instead.
         let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
         selectTab("Pages", in: app)
-        app.staticTexts["Welcome"].tap(); app.buttons["editLocalDraft"].tap()
+        app.buttons["newLibraryPage"].tap()
+        let pageName = app.textFields["New page name"]
+        XCTAssertTrue(pageName.waitForExistence(timeout: 3)); pageName.tap(); pageName.typeText("Token round trip\n")
+        app.buttons["createLibraryPage"].tap()
         let document = app.textViews["boardDocument"]
         XCTAssertTrue(document.waitForExistence(timeout: 8))
         func row(_ n: Int) -> String { ((document.value as? String) ?? "").components(separatedBy: "\n")[n - 1] }
-        // Earlier runs may have left an automatic recovery copy of this demo page; keep the fetched page.
-        if app.buttons["Keep fetched page"].waitForExistence(timeout: 2) { app.buttons["Keep fetched page"].tap() }
         let original = row(1)
         let gutter = app.staticTexts["documentRow_1"]
         // Row 1 is the first line of the surface: tap its start.
@@ -956,7 +962,8 @@ final class ConnectionUITests: XCTestCase {
         app.navigationBars.buttons["Insert"].tap()
         XCTAssertEqual(row(1), "NATIVE {{weather.temperature}}" + original)
         app.navigationBars.buttons["Close"].tap(); app.buttons["Discard and leave"].tap()
-        XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 5))
+        XCTAssertTrue(document.waitForNonExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Token round trip"].firstMatch.waitForExistence(timeout: 5))
     }
     func testFreshSplitFlapPaletteAndFormattingSave() {
         // Re-recorded (PLAN §5.5, iOS-E1): the new page opens as six empty rows; the colour token is

@@ -50,6 +50,13 @@ import FiestaBoardEditorState
 /// TextKit 1 `TemplateUITextView` (PLAN B12, §3.2). Return inserts a row, Backspace at a row's
 /// start joins it to the previous one; there is no per-row chrome.
 struct BoardDocumentView: UIViewRepresentable {
+    struct AccessoryState: Equatable {
+        var alignment: String
+        var wrap: Bool
+        var canUndo: Bool
+        var canRedo: Bool
+        var enabled: Bool
+    }
     @ObservedObject var buffer: DocumentBuffer
     /// The session's rows, padded for display to the board's rows.
     var sessionRows: [String]
@@ -60,8 +67,12 @@ struct BoardDocumentView: UIViewRepresentable {
     var onEdited: () -> Void
     var onCommitNow: () -> Void
     var onFocusChange: (Bool) -> Void
+    /// State the keyboard accessory mirrors from the toolbar (caret row's alignment and wrap).
+    var accessory: AccessoryState
     var onUndo: () -> Void
     var onRedo: () -> Void
+    var onAlign: (String) -> Void
+    var onWrap: (Bool) -> Void
     var onEditToken: (String, NSRange) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -111,6 +122,7 @@ struct BoardDocumentView: UIViewRepresentable {
         if sessionSource != buffer.syncedSource || modeChanged {
             coordinator.push(source: sessionSource, into: view, caret: view.sourceSelection)
         }
+        coordinator.refreshAccessory()
         container.boardRows = boardRows
         container.refreshGutter(rows: buffer.rows, caretRows: buffer.caretRows)
     }
@@ -119,20 +131,72 @@ struct BoardDocumentView: UIViewRepresentable {
         var parent: BoardDocumentView
         init(_ parent: BoardDocumentView) { self.parent = parent }
 
-        /// Keyboard accessory: Undo · Redo · Hide keyboard (`editorHideKeyboard`). The full
-        /// toolbar mirror is wave 2 (B30).
-        func accessoryBar() -> UIToolbar {
-            let bar = UIToolbar(frame: CGRect(x: 0, y: 0, width: 320, height: 44))
-            let undo = UIBarButtonItem(image: UIImage(systemName: "arrow.uturn.backward"), primaryAction: UIAction { [weak self] _ in self?.parent.onUndo() })
-            undo.accessibilityLabel = EditorStrings.undo
-            let redo = UIBarButtonItem(image: UIImage(systemName: "arrow.uturn.forward"), primaryAction: UIAction { [weak self] _ in self?.parent.onRedo() })
-            redo.accessibilityLabel = EditorStrings.redo
-            let hide = UIBarButtonItem(image: UIImage(systemName: "keyboard.chevron.compact.down"), primaryAction: UIAction { [weak self] _ in self?.parent.buffer.resignFocus() })
-            hide.accessibilityLabel = EditorStrings.hideKeyboard
-            hide.accessibilityIdentifier = "editorHideKeyboard"
-            bar.items = [undo, redo, .flexibleSpace(), hide]
-            bar.sizeToFit()
+        /// Keyboard accessory: mirrors the document toolbar under the title (Undo · Redo ·
+        /// Align left/center/right · Wrap) plus Hide keyboard (`editorHideKeyboard`), so the
+        /// toolbar stays in reach while the keyboard covers the screen (PLAN B15/B30).
+        private var accessoryItems: [String: UIButton] = [:]
+
+        func accessoryBar() -> UIView {
+            let bar = UIInputView(frame: CGRect(x: 0, y: 0, width: 320, height: 48), inputViewStyle: .keyboard)
+            bar.allowsSelfSizing = true
+            func item(_ id: String, _ title: String, _ symbol: String, _ action: @escaping (Coordinator) -> Void) -> UIButton {
+                var configuration = UIButton.Configuration.plain()
+                configuration.image = UIImage(systemName: symbol)
+                configuration.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 6, bottom: 6, trailing: 6)
+                let button = UIButton(configuration: configuration, primaryAction: UIAction { [weak self] _ in
+                    guard let self else { return }
+                    action(self)
+                })
+                button.configurationUpdateHandler = { button in
+                    var updated = button.configuration
+                    updated?.background.backgroundColor = button.isSelected ? UIColor.tintColor.withAlphaComponent(0.18) : .clear
+                    updated?.background.cornerRadius = 8
+                    button.configuration = updated
+                }
+                button.accessibilityLabel = title
+                button.accessibilityIdentifier = id
+                button.widthAnchor.constraint(equalToConstant: 42).isActive = true
+                button.heightAnchor.constraint(equalToConstant: 38).isActive = true
+                accessoryItems[id] = button
+                return button
+            }
+            func gap() -> UIView { let view = UIView(); view.widthAnchor.constraint(equalToConstant: 8).isActive = true; return view }
+            let undo = item("accessory_undo", EditorStrings.undo, "arrow.uturn.backward") { $0.parent.onUndo() }
+            let redo = item("accessory_redo", EditorStrings.redo, "arrow.uturn.forward") { $0.parent.onRedo() }
+            let left = item("accessory_alignLeft", EditorStrings.alignLeft, "text.alignleft") { $0.parent.onAlign("left") }
+            let center = item("accessory_alignCenter", EditorStrings.alignCenter, "text.aligncenter") { $0.parent.onAlign("center") }
+            let right = item("accessory_alignRight", EditorStrings.alignRight, "text.alignright") { $0.parent.onAlign("right") }
+            let wrap = item("accessory_wrap", EditorStrings.wrap, "text.word.spacing") { $0.parent.onWrap(!$0.parent.accessory.wrap) }
+            let hide = item("editorHideKeyboard", EditorStrings.hideKeyboard, "keyboard.chevron.compact.down") { $0.parent.buffer.resignFocus() }
+            let spacer = UIView(); spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+            let stack = UIStackView(arrangedSubviews: [undo, redo, gap(), left, center, right, gap(), wrap, spacer, hide])
+            stack.axis = .horizontal; stack.alignment = .center; stack.spacing = 2
+            stack.translatesAutoresizingMaskIntoConstraints = false
+            bar.addSubview(stack)
+            NSLayoutConstraint.activate([
+                stack.leadingAnchor.constraint(equalTo: bar.layoutMarginsGuide.leadingAnchor),
+                stack.trailingAnchor.constraint(equalTo: bar.layoutMarginsGuide.trailingAnchor),
+                stack.topAnchor.constraint(equalTo: bar.topAnchor, constant: 4),
+                stack.bottomAnchor.constraint(equalTo: bar.bottomAnchor, constant: -4),
+            ])
+            refreshAccessory()
             return bar
+        }
+
+        /// Selected/enabled state follows the toolbar (the caret row's alignment and wrap).
+        func refreshAccessory() {
+            let state = parent.accessory
+            func set(_ id: String, selected: Bool = false, enabled: Bool = true) {
+                guard let button = accessoryItems[id] else { return }
+                if button.isSelected != selected { button.isSelected = selected }
+                if button.isEnabled != (enabled && state.enabled) { button.isEnabled = enabled && state.enabled }
+            }
+            set("accessory_undo", enabled: state.canUndo)
+            set("accessory_redo", enabled: state.canRedo)
+            set("accessory_alignLeft", selected: state.alignment == "left")
+            set("accessory_alignCenter", selected: state.alignment == "center")
+            set("accessory_alignRight", selected: state.alignment == "right")
+            set("accessory_wrap", selected: state.wrap)
         }
 
         func configure(_ view: TemplateUITextView) {

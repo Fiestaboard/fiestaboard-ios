@@ -93,7 +93,9 @@ struct PageDetailView: View {
             Text("This removes the page from the server. References can prevent deletion; an active display may receive a replacement page. This cannot be undone here.")
         }
         .sheet(isPresented: $editing) {
+            // iOS-E1 (D1 gate): page-sized on iPad so the editor's stage sits beside the document.
             NavigationStack { LocalPageEditorLoader(pageID: page.id, store: store) }
+                .presentationSizing(.page)
         }
         .onChange(of: store.status == nil) { _, disconnected in if disconnected { editing = false } }
         .onChange(of: store.connectionLabel) { _, _ in editing = false }
@@ -169,5 +171,7 @@ struct CreateLibraryPageView: View {
             }
         }
         .interactiveDismissDisabled(library.busy)
+        // iOS-E1 (D1 gate): the sheet becomes the editor after Create; size it for the editor on iPad.
+        .presentationSizing(.page)
     }
 }

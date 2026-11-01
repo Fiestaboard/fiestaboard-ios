@@ -67,10 +67,14 @@ public struct LocalPageEditorView: View {
             } else {
                 Section("Read-only content") {
                     Text("This page’s content mode or metadata cannot be safely edited here. Its full raw document is preserved.")
-                    Text(model.pageType).font(.caption.monospaced())
-                    Text(model.readOnlyDocumentText)
-                        .font(.caption.monospaced())
-                        .textSelection(.enabled)
+                    // The raw document stays reachable but off the main surface (D1 gate: no JSON
+                    // on the editor's main surface).
+                    DisclosureGroup("Full page document · select to copy") {
+                        Text(model.pageType).font(.caption.monospaced())
+                        Text(model.readOnlyDocumentText)
+                            .font(.caption.monospaced())
+                            .textSelection(.enabled)
+                    }
                 }
             }
             evaluationSection
