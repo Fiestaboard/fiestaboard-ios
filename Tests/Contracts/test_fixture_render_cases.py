@@ -113,6 +113,33 @@ class FixtureRenderCasesTests(unittest.TestCase):
         self.assertEqual(invalid, {'valid': False, 'errors': [{'line': 1, 'column': 1,
                                    'message': 'Formula #NAME?: Unknown function: NOPE'}]})
 
+    def test_editor_request_shape_still_finds_its_case(self):
+        """P1 (W2-INT): the editor adds `board_id` and `canvases: null`; the recorded case
+        still answers (WARM OUT, not ???), with the board's charset fields."""
+        prefix, cookie = self.signed_in()
+        case = next(c for _, c in self.cases() if c['id'] == 'page_morning_full_metadata')
+        body = dict(case['request'], board_id='kitchen', canvases=None)
+        status, answer, _ = self.request('POST', prefix + '/templates/render', body, cookie)
+        self.assertEqual(status, 200)
+        self.assertEqual(answer['lines'], case['response']['body']['lines'])
+        self.assertEqual(answer['lines'][1], '72 ° SUNNY            ', "the server's pad:3 is ljust")
+        self.assertEqual(answer['lines'][4].rstrip(), 'WARM OUT')
+        self.assertEqual(answer['charset'], 'vestaboard_v1')
+        self.assertEqual(answer['charset_issues'], [])
+
+    def test_fallback_aligns_and_wraps_like_the_server(self):
+        """P1: rows pad by their alignment; a wrap row flows into the empty rows below and
+        stops at the first row with content."""
+        prefix, cookie = self.signed_in()
+        _, out, _ = self.request('POST', prefix + '/templates/render', {
+            'template': ['THE BEST WAY TO PREDICT THE FUTURE IS TO CREATE IT', '', 'FOOTER', '', 'RIGHT', 'MID'],
+            'line_metadata': [{'alignment': 'center', 'wrap': True}, {'alignment': 'left', 'wrap': False},
+                              {'alignment': 'left', 'wrap': False}, {'alignment': 'left', 'wrap': False},
+                              {'alignment': 'right', 'wrap': False}, {'alignment': 'center', 'wrap': False}],
+            'device_type': 'flagship'}, cookie)
+        self.assertEqual(out['lines'], ['   THE BEST WAY TO    ', 'PREDICT THE FUTURE IS ', 'FOOTER                ',
+                                        '                      ', '                 RIGHT', '         MID          '])
+
     def test_scenarios_serve_board_and_status_routes(self):
         for scenario in ('manual', 'schedule', 'paused', 'schedule-gap', 'collection', 'override', 'silence'):
             with self.subTest(scenario=scenario):

@@ -3,7 +3,8 @@ for the fixture server, from one shared table plus a deterministic toy fallback.
 
 Table: every `Fixtures/shared/render-cases*.json` mirror (PLAN §4.4). Each case is
 `{"id", "route", "request": <body>, "response": {"status", "body"}}`; a request
-matches when its body equals the case's body exactly (canonical JSON). The
+matches when its body equals the case's body exactly (canonical JSON), or else
+ignoring `board_id` and null-valued keys (`normalized`). The
 same request key in two files is an error at start-up.
 
 Fallback (unlisted inputs): deterministic, and shaped like the server's output so
@@ -54,6 +55,54 @@ def load_table(directory=SHARED):
 
 
 TABLE = load_table()
+
+# Request fields that never change a render's lines: which display asked (`board_id`
+# only adds `charset`/`charset_issues`, filled in below) and absent-vs-null keys
+# (`canvases: null`, `grid_rows: null` …). The editor sends `board_id` and
+# `canvases: null`, which the recorded cases don't carry (W2-INT), so a second index
+# matches on the template, line metadata and geometry alone.
+IGNORED_FIELDS = {'board_id'}
+
+
+def normalized(body):
+    if not isinstance(body, dict):
+        return body
+    return {k: v for k, v in body.items() if k not in IGNORED_FIELDS and v is not None}
+
+
+def load_loose_table(table=None):
+    """(route, normalized request) → response; a key two cases share is dropped (ambiguous)."""
+    loose, seen = {}, set()
+    for path in sorted(glob.glob(str(SHARED / 'render-cases*.json'))):
+        for case in json.loads(Path(path).read_text()).get('cases', []):
+            key = (case['route'], canonical(normalized(case['request'])))
+            if key in seen:
+                loose.pop(key, None)
+                continue
+            seen.add(key)
+            loose[key] = case['response']
+    return loose
+
+
+LOOSE_TABLE = load_loose_table()
+
+
+def lookup_case(route, body):
+    """The recorded response for this request: exact first, then ignoring the fields that
+    don't affect the lines. A `board_id` request gets the board's charset fields."""
+    hit = TABLE.get((route, canonical(body)))
+    if hit is not None:
+        return hit
+    hit = LOOSE_TABLE.get((route, canonical(normalized(body))))
+    if hit is None:
+        return None
+    if route == '/templates/render' and isinstance(body, dict) and 'board_id' in body \
+            and isinstance(hit.get('body'), dict) and 'charset' not in hit['body']:
+        board = body['board_id']
+        extra = {'charset': BOARD_CHARSETS.get(board) if board in BOARD_CHARSETS else None,
+                 'charset_issues': [] if board in BOARD_CHARSETS else None}
+        hit = dict(hit, body=dict(hit['body'], **extra))
+    return hit
 
 
 def functions():
@@ -188,20 +237,74 @@ def render_row(source, keep_case, cols=None):
     return out
 
 
+def wrap_cells(cells, cols):
+    """Greedy word wrap of one rendered row (cells) to `cols`, as the server's
+    `markup.wrap_line`: words split on spaces and rejoin with one space; a word
+    wider than the board is hard-broken."""
+    words, word = [], []
+    for cell in cells:
+        if cell == ' ':
+            if word:
+                words.append(word); word = []
+        else:
+            word.append(cell)
+    if word:
+        words.append(word)
+    rows, current = [], []
+    for word in words:
+        while len(word) > cols:
+            if current:
+                rows.append(current); current = []
+            rows.append(word[:cols]); word = word[cols:]
+        if not word:
+            continue
+        if current and len(current) + 1 + len(word) > cols:
+            rows.append(current); current = []
+        current = current + ([' '] if current else []) + word
+    if current or not rows:
+        rows.append(current)
+    return rows
+
+
 def toy_render(body):
+    """Alignment and wrap follow the server (`templates/engine.py`): each row pads to
+    `cols` by its `line_metadata` alignment; a row with `wrap` flows its words into the
+    rows below while they are empty (or wrap rows themselves), each piece aligned."""
     rows, cols = dimensions(body)
     keep_case = body.get('board_id') in LED_BOARDS
     template = list(body.get('template') or [])
     metadata = body.get('line_metadata') or []
-    lines = []
-    for index in range(rows):
-        source = template[index] if index < len(template) else ''
-        meta = metadata[index] if index < len(metadata) and isinstance(metadata[index], dict) else {}
-        cells = render_row(source, keep_case, cols)[:cols]
+
+    def meta(index):
+        return metadata[index] if index < len(metadata) and isinstance(metadata[index], dict) else {}
+
+    def aligned(cells, align):
+        cells = cells[:cols]
         pad = cols - len(cells)
-        align = meta.get('alignment') or 'left'
         left = pad // 2 if align == 'center' else (pad if align == 'right' else 0)
-        lines.append(''.join([' '] * left + cells + [' '] * (pad - left)))
+        return ''.join([' '] * left + cells + [' '] * (pad - left))
+
+    def source(index):
+        return template[index] if index < len(template) else ''
+
+    lines, index = [], 0
+    while index < rows:
+        info = meta(index)
+        align = info.get('alignment') or 'left'
+        cells = render_row(source(index), keep_case, cols)
+        if info.get('wrap') and len(cells) > cols:
+            budget = 1
+            for later in range(index + 1, rows):
+                if source(later).strip() == '' or meta(later).get('wrap'):
+                    budget += 1
+                else:
+                    break
+            pieces = wrap_cells(cells, cols)[:budget]
+            lines += [aligned(piece, align) for piece in pieces]
+            index += len(pieces)
+            continue
+        lines.append(aligned(cells, align))
+        index += 1
     out = {'rendered': '\n'.join(lines), 'lines': lines, 'line_count': len(lines)}
     if 'board_id' in body:
         board = body['board_id']
@@ -238,7 +341,7 @@ def handle(prefix, route, method, body, query, store):
         return None
     if route not in ('templates/render', 'templates/validate', 'pages/preview/batch'):
         return None
-    hit = TABLE.get(('/' + route, canonical(body)))
+    hit = lookup_case('/' + route, body)
     if hit is not None:
         return hit.get('status', 200), hit['body']
     if route == 'templates/render':
@@ -282,7 +385,7 @@ def toy_batch(prefix, body):
             # editor's request shape), else the toy fallback.
             exact = {k: page.get(k) for k in ('template', 'line_metadata', 'device_type', 'notes_wide',
                                               'notes_tall', 'grid_rows', 'grid_cols')}
-            hit = TABLE.get(('/templates/render', canonical(exact)))
+            hit = lookup_case('/templates/render', exact)
             lines = hit['body']['lines'] if hit and hit.get('status', 200) == 200 else toy_render(request)['lines']
         elif page.get('shows'):
             request['template'] = [re.sub(r'\{(red|orange|yellow|green|blue|violet|white|black)\}', r'{{\1}}', line)
