@@ -97,7 +97,8 @@ class FixtureRenderCasesTests(unittest.TestCase):
         status, first, _ = self.request('POST', prefix + '/templates/render', body, cookie)
         self.assertEqual(status, 200)
         self.assertEqual(first['line_count'], 3)
-        self.assertEqual(first['lines'][0], '    HI {63} 72    ', 'a known variable renders a plausible value; a marker is one cell')
+        # Re-recorded (W4): 10.3.2's render keeps case (WEB-P4); a flap board reports it in charset_issues.
+        self.assertEqual(first['lines'][0], '    hi {63} 72    ', 'a known variable renders a plausible value; a marker is one cell')
         _, rich, _ = self.request('POST', prefix + '/templates/render', {'template': [
             '{{weather.temperature|pad:3}}° {{weather.condition}}',
             '{{= IF(weather.temperature > 70, "WARM OUT", "BRING A COAT") }}',
@@ -110,7 +111,8 @@ class FixtureRenderCasesTests(unittest.TestCase):
         _, second, _ = self.request('POST', prefix + '/templates/render', body, cookie)
         self.assertEqual(first, second)
         _, invalid, _ = self.request('POST', prefix + '/templates/validate', {'template': ['{{= NOPE(1) }}']}, cookie)
-        self.assertEqual(invalid, {'valid': False, 'errors': [{'line': 1, 'column': 1,
+        # Re-recorded (W4): 10.3.2 reports this at column 0 (WEB-P4, b21_bogus).
+        self.assertEqual(invalid, {'valid': False, 'errors': [{'line': 1, 'column': 0,
                                    'message': 'Formula #NAME?: Unknown function: NOPE'}]})
 
     def test_editor_request_shape_still_finds_its_case(self):
@@ -160,6 +162,36 @@ class FixtureRenderCasesTests(unittest.TestCase):
                 self.assertEqual(detail['paused'], scenario == 'paused')
                 self.assertEqual(len(detail['characters']), 6)
 
+
+
+class RealServerBehaviourTests(unittest.TestCase):
+    """W4: the fallback follows what WEB-P4 observed on a real 10.3.2 (reports/W4-WEB.md)."""
+
+    def setUp(self):
+        import importlib
+        import sys
+        sys.path.insert(0, str(ROOT / 'Tests/UITests'))
+        self.render = importlib.import_module('fixture_render')
+
+    def test_lowercase_on_a_flap_board_is_a_case_issue_not_folded(self):
+        out = self.render.toy_render({'template': ['', 'ab'], 'device_type': 'flagship', 'board_id': 'kitchen'})
+        self.assertEqual(out['lines'][1].rstrip(), 'ab')
+        self.assertEqual([(i['row'], i['col'], i['reason'], i['fallback']['value']) for i in out['charset_issues']],
+                         [(1, 0, 'case', 'A'), (1, 1, 'case', 'B')])
+        self.assertEqual(self.render.toy_render({'template': ['ab'], 'board_id': 'pixoo', 'device_type': 'panel',
+                                                 'grid_rows': 10, 'grid_cols': 16})['charset_issues'], [])
+
+    def test_wrap_fills_each_row(self):
+        out = self.render.toy_render({'template': ['THE BEST WAY TO PREDICT THE FUTURE IS TO CREATE IT'],
+                                      'line_metadata': [{'alignment': 'center', 'wrap': True}],
+                                      'device_type': 'note_array', 'notes_wide': 2, 'notes_tall': 2})
+        self.assertEqual(out['lines'][:2], [' THE BEST WAY TO PREDICT THE  ', '    FUTURE IS TO CREATE IT    '])
+
+    def test_validate_errors_are_at_column_zero_with_the_real_messages(self):
+        self.assertEqual(self.render.toy_validate({'template': ['{{= BOGUS(1) }}']})['errors'],
+                         [{'line': 1, 'column': 0, 'message': 'Formula #NAME?: Unknown function: BOGUS'}])
+        self.assertEqual(self.render.toy_validate({'template': ['{{= UPPER(date_time.day_of_week }}']})['errors'][0]['message'],
+                         "Formula #SYNTAX: Missing ')' in call to UPPER")
 
 if __name__ == '__main__':
     unittest.main()

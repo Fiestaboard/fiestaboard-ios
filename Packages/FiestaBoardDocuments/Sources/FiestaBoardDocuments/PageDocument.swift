@@ -189,7 +189,8 @@ public struct PageDocument: Equatable, Sendable {
         var payload: LosslessJSONObject = ["template": root["template"]!, "board_id": .string(boardID)]
         if preview {
             for key in ["device_type", "notes_wide", "notes_tall", "grid_rows", "grid_cols", "line_metadata", "canvases"] {
-                guard let value = root[key] else { continue }
+                guard var value = root[key] else { continue }
+                if key == "line_metadata" { value = LineMetadataSplice.requestShape(value) }
                 switch (key, value) {
                 case ("device_type", .null), ("grid_rows", .null), ("grid_cols", .null),
                      ("line_metadata", .null), ("canvases", .null): break

@@ -13,6 +13,14 @@ import Foundation
 public enum LineMetadataSplice {
     public static let defaultEntry: LosslessJSON = .object(["alignment": .string("left"), "wrap": .bool(false)])
 
+    /// `line_metadata` as a request may carry it (W4): 10.3.2 answers 422 to any `null` entry
+    /// ("Input should be a valid dictionary"), so a `null` entry, which reads as left/no-wrap,
+    /// goes out as that full object. The stored document is not changed.
+    public static func requestShape(_ metadata: LosslessJSON) -> LosslessJSON {
+        guard case .array(let entries) = metadata else { return metadata }
+        return .array(entries.map { $0 == .null ? defaultEntry : $0 })
+    }
+
     /// The common prefix/suffix of two row lists, as the web computes it.
     public static func diff(old: [String], new: [String]) -> (prefix: Int, suffix: Int) {
         let limit = min(old.count, new.count)

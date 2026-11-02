@@ -79,4 +79,30 @@ final class LineMetadataSpliceTests: XCTestCase {
         XCTAssertEqual(session.document.templateLines, ["", "", "", "", "", ""])
         XCTAssertFalse(session.canUndo)
     }
+
+    /// W4 (real 10.3.2, WEB-P4): `/templates/render` answers 422 to `null` entries in
+    /// `line_metadata`. A render request never carries one: it goes out as the full left/no-wrap
+    /// object; an entry that is neither is still refused locally. The stored document is unchanged.
+    func testRenderRequestsNeverCarryNullMetadataEntries() throws {
+        let document = try page(#"{"type":"template","template":["","","HELLO"],"line_metadata":[null,null,{"alignment":"center","wrap":false}],"device_type":"flagship"}"#)
+        let request = try LosslessJSON.parse(document.evaluationData(boardID: "kitchen", preview: true))
+        guard case .object(let body) = request, case .array(let entries)? = body["line_metadata"] else { return XCTFail("no metadata") }
+        XCTAssertEqual(entries, [LineMetadataSplice.defaultEntry, LineMetadataSplice.defaultEntry, entry("center", false)])
+        XCTAssertFalse(String(decoding: try document.evaluationData(boardID: "kitchen", preview: true), as: UTF8.self).contains("null"))
+        guard case .array(let stored)? = document.root["line_metadata"] else { return XCTFail() }
+        XCTAssertEqual(stored.first, .null, "the document keeps its bytes")
+        // A top-level null stays null (10.3.2 accepts `line_metadata: null`, as the corpus's
+        // `page_lobby` case shows); only entries inside the array must be objects.
+        let bare = try page(#"{"type":"template","template":["A"],"line_metadata":null,"device_type":"flagship"}"#)
+        guard case .object(let bareBody) = try LosslessJSON.parse(bare.evaluationData(boardID: "kitchen", preview: true)) else { return XCTFail() }
+        XCTAssertTrue(bareBody["line_metadata"] == nil || bareBody["line_metadata"] == .null)
+        // Aligning a row of a page without metadata writes whole objects for every row up to it.
+        var aligned = bare
+        try aligned.setLineAlignment(at: 0, alignment: "center")
+        guard case .array(let written)? = aligned.root["line_metadata"] else { return XCTFail() }
+        XCTAssertTrue(written.allSatisfy { if case .object = $0 { true } else { false } })
+        let other = try page(#"{"type":"template","template":["A"],"line_metadata":[7],"device_type":"flagship"}"#)
+        XCTAssertThrowsError(try other.evaluationData(boardID: "kitchen", preview: true))
+        XCTAssertEqual(LineMetadataSplice.requestShape(.null), .null)
+    }
 }

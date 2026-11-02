@@ -201,7 +201,7 @@ public struct LocalPageEditorView: View {
                     .font(.caption).foregroundStyle(.secondary)
                 Text(result.valid ? "No template syntax errors reported." : "Template syntax errors")
                 ForEach(Array(result.errors.enumerated()), id: \.offset) { _, issue in
-                    Text("Line \(issue.line), column \(issue.column): \(issue.message)").font(.footnote)
+                    Text(EditorStrings.validationIssue(issue)).font(.footnote)
                 }
             }
             if let result = model.flexiblePreview {

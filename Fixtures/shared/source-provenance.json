@@ -2,10 +2,10 @@
   "about": "Mirrors of /Volumes/ExtHD/fiestaboard-mobile-handoff/fixtures (PLAN §4.0). Never edit a mirror; copy the canonical file and record its sha256 here.",
   "files": {
     "render-cases.json": {
-      "sha256": "78222e275a4070682798d148dcae4ea4c82dad493a2907221d6886ab1019a67d",
-      "writer": "iOS-P1",
+      "sha256": "8fcb0022ca313efa20433a2bfb742abba100f7f421abbd8727102e1c48bff5df",
+      "writer": "iOS-P4",
       "date": "2026-11-02",
-      "note": "page_morning row 2 corrected to the server pad:3 (ljust): \"72 ° SUNNY\""
+      "note": "W4: page_hello/page_morning removed (null line_metadata entries are a 422 on 10.3.2); page_wide, page_lower, b21_bogus corrected to the real server (WEB-P4)"
     },
     "led-golden.json": {
       "sha256": "3bd2560b7fc7b3b9c6baeaac206a3a7b1bad6a28d19b861160ca53d3022d1521",
@@ -39,9 +39,10 @@
       "note": "page_morning row 2 corrected to the server pad:3 (ljust): \"72 ° SUNNY\""
     },
     "render-cases.f1.json": {
-      "sha256": "0cf61acb4f5f8d1780fc63241126b25e7a6ae4d378a7831f9b9bbf646343cb06",
-      "writer": "iOS-F1",
-      "date": "2026-11-02"
+      "sha256": "8d82ba4dc8e01a8c7c13e52852434635e6faaf381b618db0c57f7c048675ad92",
+      "writer": "iOS-P4",
+      "date": "2026-11-02",
+      "note": "W4: f1_formula_mismatched_parentheses corrected to the real #SYNTAX message, column 0; WOBBLE case labelled mock-only (WEB-P4)"
     }
   }
 }

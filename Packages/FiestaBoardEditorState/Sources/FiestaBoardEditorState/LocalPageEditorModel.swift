@@ -392,7 +392,7 @@ public final class LocalPageEditorModel: ObservableObject {
         let name = session.document.root["name"] != session.baseline.root["name"] ? session.document.name : nil
         let template = session.document.root["template"] != session.baseline.root["template"] ? session.document.editableTemplateLines : nil
         let metadata = session.document.root["line_metadata"] != session.baseline.root["line_metadata"]
-            ? (try? session.document.root["line_metadata"]?.serializedData()) : nil
+            ? (try? session.document.root["line_metadata"].map(LineMetadataSplice.requestShape)?.serializedData()) : nil
         func changedRaw(_ key: String) throws -> Data? {
             guard session.document.root[key] != session.baseline.root[key] else { return nil }
             return try session.document.root[key]?.serializedData()

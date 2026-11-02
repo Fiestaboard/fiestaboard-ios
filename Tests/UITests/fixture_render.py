@@ -8,14 +8,16 @@ ignoring `board_id` and null-valued keys (`normalized`). The
 same request key in two files is an error at start-up.
 
 Fallback (unlisted inputs): deterministic, and shaped like the server's output so
-demos never show variable names on the board. Uppercase on flap boards (keep
-case on LED), per-row alignment from `line_metadata`, cut at `cols`,
+demos never show variable names on the board. Case is kept, as 10.3.2's render
+does; with a `board_id` on a flap board each lowercase letter is a `charset_issues`
+entry (`reason: "case"`, uppercase fallback) instead (W4, WEB-P4), per-row alignment from `line_metadata`, cut at `cols`,
 `{{color}}` → `{63}`… markers, `{{fill_space}}` / `{{fill_space_repeat:X}}`
 fill the rest of the row, the variables in `VALUES` (shared with the Android
 fixture) are substituted and their `upper`/`lower`/`pad`/`truncate`/`zeropad` filters applied,
 any other variable and every `{{= … }}` formula render `???`.
 Validate fallback: valid iff braces and parentheses balance and every `NAME(`
-is a known function; otherwise the server's message shapes.
+is a known function; otherwise the server's message shapes (0-based `column`;
+an unclosed call is `Formula #SYNTAX: Missing ')' in call to NAME`, as 10.3.2).
 """
 import glob
 import json
@@ -87,6 +89,28 @@ def load_loose_table(table=None):
 LOOSE_TABLE = load_loose_table()
 
 
+FLAP_CHARSETS = {'vestaboard_v1', 'vestaboard_v2'}
+
+
+def charset_fields(board, lines):
+    """`charset` / `charset_issues` for a `board_id` render (10.3.2 `validate_message`):
+    on a flap set a lowercase letter is reason `case` with its uppercase as fallback;
+    null for an unknown board or a set the fixture doesn't model (FiestaPanel)."""
+    if board not in BOARD_CHARSETS:
+        return {'charset': None, 'charset_issues': None}
+    charset = BOARD_CHARSETS[board]
+    issues = []
+    if charset in FLAP_CHARSETS:
+        for row, line in enumerate(lines):
+            col = 0
+            for cell in cells_of(line, True):
+                if len(cell) == 1 and cell != cell.upper() and cell.upper().isascii():
+                    issues.append({'row': row, 'col': col, 'token': {'type': 'char', 'value': cell}, 'reason': 'case',
+                                   'fallback': {'type': 'char', 'value': cell.upper()}})
+                col += 1
+    return {'charset': charset, 'charset_issues': issues if charset is not None else None}
+
+
 def lookup_case(route, body):
     """The recorded response for this request: exact first, then ignoring the fields that
     don't affect the lines. A `board_id` request gets the board's charset fields."""
@@ -98,9 +122,7 @@ def lookup_case(route, body):
         return None
     if route == '/templates/render' and isinstance(body, dict) and 'board_id' in body \
             and isinstance(hit.get('body'), dict) and 'charset' not in hit['body']:
-        board = body['board_id']
-        extra = {'charset': BOARD_CHARSETS.get(board) if board in BOARD_CHARSETS else None,
-                 'charset_issues': [] if board in BOARD_CHARSETS else None}
+        extra = charset_fields(body['board_id'], hit['body'].get('lines') or [])
         hit = dict(hit, body=dict(hit['body'], **extra))
     return hit
 
@@ -271,7 +293,7 @@ def toy_render(body):
     `cols` by its `line_metadata` alignment; a row with `wrap` flows its words into the
     rows below while they are empty (or wrap rows themselves), each piece aligned."""
     rows, cols = dimensions(body)
-    keep_case = body.get('board_id') in LED_BOARDS
+    keep_case = True  # 10.3.2 keeps case in lines; flap boards report it in charset_issues
     template = list(body.get('template') or [])
     metadata = body.get('line_metadata') or []
 
@@ -307,9 +329,7 @@ def toy_render(body):
         index += 1
     out = {'rendered': '\n'.join(lines), 'lines': lines, 'line_count': len(lines)}
     if 'board_id' in body:
-        board = body['board_id']
-        out['charset'] = BOARD_CHARSETS.get(board) if board in BOARD_CHARSETS else None
-        out['charset_issues'] = [] if board in BOARD_CHARSETS else None
+        out.update(charset_fields(body['board_id'], lines))
     return out
 
 
@@ -317,7 +337,7 @@ def toy_validate(body):
     errors = []
     for line_no, row in enumerate(body.get('template') or [], start=1):
         if row.count('{{') != row.count('}}'):
-            errors.append({'line': line_no, 'column': 1, 'message': 'Mismatched variable braces'})
+            errors.append({'line': line_no, 'column': max(0, row.find('{{')), 'message': 'Mismatched variable braces'})
             continue
         for match in TOKEN.finditer(row):
             inner = match.group(1)
@@ -325,12 +345,14 @@ def toy_validate(body):
                 continue
             expression = inner.strip()[1:]
             if expression.count('(') != expression.count(')'):
-                errors.append({'line': line_no, 'column': match.start() + 1,
-                               'message': 'Formula #ERROR!: Mismatched parentheses'})
+                calls = re.findall(r'([A-Za-z_][A-Za-z0-9_]*)\s*\(', expression)
+                message = (f"Formula #SYNTAX: Missing ')' in call to {calls[-1].upper()}" if calls and expression.count('(') > expression.count(')')
+                           else 'Formula #SYNTAX: Unexpected )')
+                errors.append({'line': line_no, 'column': match.start(), 'message': message})
                 continue
             for name in re.findall(r'([A-Za-z_][A-Za-z0-9_]*)\s*\(', expression):
                 if name.upper() not in functions():
-                    errors.append({'line': line_no, 'column': match.start() + 1,
+                    errors.append({'line': line_no, 'column': match.start(),
                                    'message': f'Formula #NAME?: Unknown function: {name.upper()}'})
     return {'valid': not errors, 'errors': errors}
 

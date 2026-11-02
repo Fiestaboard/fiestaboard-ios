@@ -1,6 +1,6 @@
 {
   "about": "iOS-F1 render/validate cases (PLAN §4.4): appended to render-cases.json by both fixture servers.",
-  "version": 1,
+  "version": 2,
   "cases": [
     {
       "id": "f1_formula_pretty_flattened_valid",
@@ -17,7 +17,7 @@
           "errors": []
         }
       },
-      "source": "mock: validate fallback, pinned. The formula editor flattens its one-argument-per-line text like the web (spaces after commas dropped)"
+      "source": "mock: validate fallback, pinned. The formula editor flattens its one-argument-per-line text like the web (spaces after commas dropped). Environment-dependent on a real server: valid only when the weather plugin is installed (WEB-P4)"
     },
     {
       "id": "f1_formula_mismatched_parentheses",
@@ -34,13 +34,13 @@
           "errors": [
             {
               "line": 1,
-              "column": 1,
-              "message": "Formula #ERROR!: Mismatched parentheses"
+              "column": 0,
+              "message": "Formula #SYNTAX: Missing ')' in call to UPPER"
             }
           ]
         }
       },
-      "source": "mock: validate fallback, pinned"
+      "source": "verified against FiestaBoard v10.3.2 (3669e6086) by WEB-P4, 2026-11-02; applied by iOS-P4 (W4)"
     },
     {
       "id": "f1_formula_unknown_category_function",
@@ -57,7 +57,7 @@
           "errors": []
         }
       },
-      "source": "mock: WOBBLE is the fixture's function in the unknown category `experimental` (fixture_catalog.py)"
+      "source": "mock-only: WOBBLE exists only in the fixture catalog (unknown category `experimental`); a real 10.3.2 answers #NAME?"
     }
   ]
 }

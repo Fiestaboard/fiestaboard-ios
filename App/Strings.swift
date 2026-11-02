@@ -102,6 +102,30 @@ enum EditorStrings {
     }
     static func sizeReadout(rows: Int, cols: Int) -> String { "\(rows) × \(cols)" }
 
+    /// A validate error (W4): the server's `line` is 1-based and its `column` 0-based (10.3.2
+    /// reports a formula error at column 0), so the column shown is `column + 1`.
+    static func validationIssue(_ issue: TemplateValidationIssue) -> String {
+        "Line \(issue.line), column \(max(0, issue.column) + 1): \(issue.message)"
+    }
+    /// B16 charset issues from `charset_issues` (0-based `row`/`col`): "Line L, column C: this
+    /// board can't show “X” and draws “Y” instead.", at most five, then "…and N more".
+    static func charsetIssueLines(_ issues: [TemplateCharsetIssue], limit: Int = 5) -> [String] {
+        func describe(_ token: TemplateCharsetIssue.Token?) -> String {
+            guard let token else { return "?" }
+            if token.kind == "color" { return "\(token.code ?? "?") tile" }
+            if let icon = token.icon { return "\(icon) icon" }
+            if token.value == " " { return "a blank" }
+            return token.value ?? "?"
+        }
+        var lines = issues.prefix(limit).map { issue in
+            let shown = describe(issue.token), drawn = describe(issue.fallback)
+            let quote = { (text: String) in text.hasSuffix(" tile") || text.hasSuffix(" icon") || text == "a blank" ? text : "“\(text)”" }
+            return "Line \(issue.row + 1), column \(issue.col + 1): this board can't show \(quote(shown)) and draws \(quote(drawn)) instead."
+        }
+        if issues.count > limit { lines.append("…and \(issues.count - limit) more") }
+        return lines
+    }
+
     static func lineCounter(_ count: Int, limit: Int) -> String {
         count > limit ? "\(count) / \(limit) lines — exceeds the \(limit)-line board limit" : "\(count) / \(limit) lines"
     }

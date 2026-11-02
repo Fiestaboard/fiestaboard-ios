@@ -192,10 +192,21 @@ public struct TemplatePreviewResult: Sendable {
 
 /// `charset_issues[]` entry: FiestaUI `CharsetValidationIssue` (`S:src/led/charsets.py:385`).
 public struct TemplateCharsetIssue: Decodable, Sendable, Equatable {
+    /// FiestaUI `BoardToken` JSON: `type` is `char` (with `value`) or `color` (with `code`).
     public struct Token: Decodable, Sendable, Equatable {
         public let kind: String?
         public let value: String?
+        public let code: String?
         public let color: String?
+        public let icon: String?
+        public init(kind: String?, value: String? = nil, code: String? = nil, color: String? = nil, icon: String? = nil) {
+            self.kind = kind; self.value = value; self.code = code; self.color = color; self.icon = icon
+        }
+        // W4: the wire key is `type` (src/markup.py BoardToken.to_dict); `kind` never decoded.
+        enum CodingKeys: String, CodingKey { case kind = "type", value, code, color, icon }
+    }
+    public init(row: Int, col: Int, token: Token?, reason: String?, fallback: Token?) {
+        self.row = row; self.col = col; self.token = token; self.reason = reason; self.fallback = fallback
     }
     public let row: Int
     public let col: Int
