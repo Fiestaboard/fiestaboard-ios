@@ -9,13 +9,16 @@ struct EditorPresentation<Editor: View>: ViewModifier {
     @Binding var isPresented: Bool
     @ViewBuilder var editor: () -> Editor
     @Environment(\.horizontalSizeClass) private var sizeClass
+    /// The idiom is chosen when the editor opens and kept while it is open: rotating a large
+    /// phone to landscape (regular width) must not tear the editor down and rebuild it.
+    @State private var pushes = false
 
     func body(content: Content) -> some View {
-        if sizeClass == .regular {
-            content.navigationDestination(isPresented: $isPresented) { editor() }
-        } else {
-            content.fullScreenCover(isPresented: $isPresented) { NavigationStack { editor() } }
-        }
+        content
+            .navigationDestination(isPresented: Binding(get: { isPresented && pushes }, set: { if !$0 { isPresented = false } })) { editor() }
+            .fullScreenCover(isPresented: Binding(get: { isPresented && !pushes }, set: { if !$0 { isPresented = false } })) { NavigationStack { editor() } }
+            .onChange(of: isPresented, initial: true) { _, open in if open { pushes = sizeClass == .regular } }
+            .onChange(of: sizeClass, initial: true) { _, size in if !isPresented { pushes = size == .regular } }
     }
 }
 
