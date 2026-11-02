@@ -90,7 +90,8 @@ class Handler(BaseHTTPRequestHandler):
             body = {}
             if method in ('POST', 'PUT', 'PATCH'):
                 try:
-                    body = json.loads(self.rfile.read(int(self.headers.get('Content-Length', '0'))))
+                    raw = self.rfile.read(int(self.headers.get('Content-Length', '0')))
+                    body = json.loads(raw) if raw else {}  # body-less POSTs (restore) are valid
                 except (ValueError, json.JSONDecodeError):
                     return self.reply(400, {})
             if method == 'GET' and route == 'health':
@@ -197,7 +198,7 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(404, {})  # Only the synthetic conditional flexible page PUT is supported.
 
     def reply(self, status, body, cookie=None):
-        data = json.dumps(body).encode()
+        data = b'' if body is None else json.dumps(body).encode()  # None: no content (204)
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Content-Length', str(len(data)))

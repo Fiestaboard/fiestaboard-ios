@@ -12,6 +12,7 @@ struct HomeView<ChangePage: View, Controls: View>: View {
     @ObservedObject var status: BoardStatus
     let compose: () -> Void
     let preparePage: (String) -> Void
+    let prepareRestore: () -> Void
     let openSettings: () -> Void
     let openSchedule: () -> Void
     @ViewBuilder let changePage: () -> ChangePage
@@ -26,6 +27,9 @@ struct HomeView<ChangePage: View, Controls: View>: View {
                     if let summary {
                         header(summary)
                         board(summary, height: geometry.size.height)
+                        if let face = status.outOfSync {
+                            OutOfSyncBanner(face: face, summary: summary, store: store, status: status, restore: prepareRestore)
+                        }
                         outcome
                         actions(wide: geometry.size.width > 760)
                         changesNote

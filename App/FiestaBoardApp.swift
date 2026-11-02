@@ -160,6 +160,7 @@ struct DraftScene: View {
             NavigationStack {
                 HomeView(store: store, status: boardStatus, compose: { composing = true },
                          preparePage: { pending = store.prepare(.page($0)) },
+                         prepareRestore: { pending = store.prepare(.restore) },
                          openSettings: { tab = .settings }, openSchedule: { tab = .schedule },
                          changePage: { pageChooser }, controls: { boardControlsDestination() })
             }

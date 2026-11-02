@@ -117,10 +117,12 @@ public struct CurrentBoardMessage: Codable, Sendable, Equatable {
     public let cachedAt: String?
     public let layers: [CanvasLayer]?
     public let externalCharacters: [[Int]]?
+    public let externalDetectedAt: String?
     public let overwrittenAt: String?
     enum CodingKeys: String, CodingKey {
         case characters, message, rows, cols, layers
         case expectedCharacters = "expected_characters", cachedAt = "cached_at"
-        case externalCharacters = "external_characters", overwrittenAt = "overwritten_at"
+        case externalCharacters = "external_characters", externalDetectedAt = "external_detected_at"
+        case overwrittenAt = "overwritten_at"
     }
 }

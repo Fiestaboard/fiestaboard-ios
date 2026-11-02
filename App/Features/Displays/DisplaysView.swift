@@ -151,6 +151,5 @@ struct DisplaysView<Playback: View>: View {
                 .foregroundStyle(.secondary).multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity).padding(.top, 40).padding(.horizontal, 16)
-        .accessibilityIdentifier("displaysEmptyState")
     }
 }

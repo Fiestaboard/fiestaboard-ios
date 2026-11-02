@@ -121,6 +121,9 @@ public enum BoardPolling {
     /// What every *other* board shows now (`/board/current-message`), for
     /// Home's "Other displays" thumbnails. Read on start and every 30 s.
     @Published public private(set) var frames: [String: BoardFrame] = [:]
+    /// The selected board's out-of-sync face (B9), from `/board/current-message`.
+    @Published public private(set) var outOfSync: OutOfSync?
+    private var selectedMessage: CurrentBoardMessage?
 
     public typealias Sleeper = @Sendable (TimeInterval) async throws -> Void
     private let store: BoardStore
@@ -159,6 +162,7 @@ public enum BoardPolling {
         tasks.append(Task { [weak self] in await self?.loadAppearance() })
         tasks.append(loop(every: { _ in BoardPolling.status }) { $0.pollStatus() })
         tasks.append(loop(every: { _ in BoardPolling.board }) { $0.pollOtherFrames() })
+        tasks.append(loop(every: { _ in BoardPolling.board }) { $0.pollSelectedMessage() })
         tasks.append(loop(every: { $0.activeInterval }) { $0.pollActive() })
         tasks.append(loop(every: { _ in BoardPolling.board }, immediately: false) { status in
             // Never poll a paused board's frame; never while a command is in flight; and
@@ -192,6 +196,7 @@ public enum BoardPolling {
         if let onPostSendRefresh { onPostSendRefresh(); return }
         if canAutoRefresh { store.refresh() }
         pollActive()
+        pollSelectedMessage()
     }
 
     /// Automatic re-reads are reads only: they must not stand in for the explicit
@@ -224,6 +229,8 @@ public enum BoardPolling {
             let changed = lastBoardID != nil
             lastBoardID = store.selectedBoardID
             if changed { pollOtherFrames() }
+            selectedMessage = nil; outOfSync = nil
+            if store.selectedBoardID != nil { pollSelectedMessage() }
             schedule = nil; manual = nil; silence = nil
             if store.selectedBoardID != nil { pollActive() }
         }
@@ -267,6 +274,32 @@ public enum BoardPolling {
         }
     }
 
+    /// Re-read the selected board's current message (after Restore / Dismiss).
+    public func pollSelectedMessage() {
+        guard let reader = reader(), let id = store.selectedBoardID else { return }
+        Task { [weak self] in
+            guard let message = try? await reader.currentMessage(boardID: id) else { return }
+            guard let self, self.store.selectedBoardID == id else { return }
+            self.selectedMessage = message
+            self.recomputeOutOfSync()
+        }
+    }
+
+    private func recomputeOutOfSync() {
+        let next = OutOfSync.make(selectedMessage, silenceActive: silence?.active == true)
+        if next != outOfSync { outOfSync = next }
+    }
+
+    /// Forget the held external frame (kept face → Dismiss). Hidden at once; the
+    /// next read brings it back if the server still holds it.
+    public func dismissExternalFrame() async {
+        guard let id = store.selectedBoardID,
+              let writer = reader() as? any ExternalFrameDismissing else { return }
+        outOfSync = nil
+        try? await writer.dismissExternalFrame(boardID: id)
+        pollSelectedMessage()
+    }
+
     private func pollOtherFrames() {
         guard let reader = reader() else { return }
         let others = store.boards.filter { $0.id != store.selectedBoardID }
@@ -306,7 +339,7 @@ public enum BoardPolling {
             let (s, m, q) = await (schedule, manual, silence)
             guard let self, self.store.selectedBoardID == id else { return }
             self.schedule = s; self.manual = m; self.silence = q
-            self.recompute()
+            self.recompute(); self.recomputeOutOfSync()
         }
     }
 }

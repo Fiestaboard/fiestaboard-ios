@@ -128,14 +128,13 @@ struct PageLibraryFeedback: View {
 struct CreateLibraryPageView: View {
     @ObservedObject var library: PageLibraryState
     @ObservedObject var store: BoardStore
+    /// Called with the new page's id; the Pages list then opens its editor the
+    /// way every editor opens (B29), after this sheet has gone.
+    var onCreated: (String) -> Void = { _ in }
     @Environment(\.dismiss) private var dismiss
-    @LibraryState private var createdID: String?
     @FocusState private var nameFocused: Bool
     var body: some View {
         Group {
-            if let id = createdID {
-                LocalPageEditorLoader(pageID: id, store: store)
-            } else {
                 Form {
                     Section("Page") {
                         TextField("New page name", text: $library.name)
@@ -163,7 +162,7 @@ struct CreateLibraryPageView: View {
                     Section {
                         Button(library.capability.isSimulated ? "Create simulated page" : "Create page") {
                             Task {
-                                do { createdID = try await store.createLibraryPage() }
+                                do { let id = try await store.createLibraryPage(); onCreated(id); dismiss() }
                                 catch { /* Input and recovery remain in the retained library state. */ }
                             }
                         }
@@ -176,10 +175,7 @@ struct CreateLibraryPageView: View {
                 }
                 .navigationTitle("New page")
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
-            }
         }
         .interactiveDismissDisabled(library.busy)
-        // iOS-E1 (D1 gate): the sheet becomes the editor after Create; size it for the editor on iPad.
-        .presentationSizing(.page)
     }
 }

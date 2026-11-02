@@ -13,6 +13,14 @@ struct PagesListView: View {
     let prepare: (String) -> Void
     @State private var search = ""
     @State private var creatingPage = false
+    /// The page just created, waiting for the create sheet to close.
+    @State private var createdPage: CreatedPage?
+    /// The editor for it: pushed on regular width, a full-screen cover on compact (B29).
+    @State private var pushedEditor: CreatedPage?
+    @State private var coveredEditor: CreatedPage?
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    struct CreatedPage: Identifiable, Hashable { let id: String }
 
     private var selected: BoardSummary? { store.boards.first { $0.id == store.selectedBoardID } }
     private var pages: [Page] {
@@ -54,12 +62,28 @@ struct PagesListView: View {
                 }.disabled(store.connecting)
             }
         }
-        .sheet(isPresented: $creatingPage, onDismiss: { store.pageLibrary?.dismissCompletion() }) {
+        .sheet(isPresented: $creatingPage, onDismiss: openCreatedPage) {
             if let library = store.pageLibrary {
-                NavigationStack { CreateLibraryPageView(library: library, store: store) }
+                NavigationStack {
+                    CreateLibraryPageView(library: library, store: store, onCreated: { createdPage = CreatedPage(id: $0) })
+                }
             }
         }
-        .onChange(of: store.connectionLabel) { _, _ in creatingPage = false }
+        .navigationDestination(item: $pushedEditor) { page in
+            LocalPageEditorLoader(pageID: page.id, store: store)
+                .onDisappear { store.pageLibrary?.dismissCompletion() }
+        }
+        .fullScreenCover(item: $coveredEditor, onDismiss: { store.pageLibrary?.dismissCompletion() }) { page in
+            NavigationStack { LocalPageEditorLoader(pageID: page.id, store: store) }
+        }
+        .onChange(of: store.connectionLabel) { _, _ in creatingPage = false; pushedEditor = nil; coveredEditor = nil }
+    }
+
+    /// The create sheet closed: open the new page's editor, if one was made.
+    private func openCreatedPage() {
+        guard let page = createdPage else { store.pageLibrary?.dismissCompletion(); return }
+        createdPage = nil
+        if sizeClass == .regular { pushedEditor = page } else { coveredEditor = page }
     }
 
     // MARK: cards
@@ -172,7 +196,6 @@ struct PagesListView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 30)
-        .accessibilityIdentifier("pagesEmptyState")
     }
 }
 

@@ -626,7 +626,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
               CapabilityPolicy.allows(operation, version: version.runningVersion, isDev: version.isDev, optedIn: controlOptIn) else { throw FiestaBoardError.writesDisabled }
         guard knownBoards[target.boardID] != nil else { throw FiestaBoardError.invalidTarget }
     }
-    private func response(_ request: APIRequest, invalidateUnauthenticated: Bool = true) async throws -> APIResponse {
+    func response(_ request: APIRequest, invalidateUnauthenticated: Bool = true) async throws -> APIResponse {
         let token = generation
         do {
             let result = try await transport.send(request)

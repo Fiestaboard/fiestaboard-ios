@@ -170,6 +170,138 @@ final class BoardVisualsUITests: XCTestCase {
         shot(app, "W2-B11-pages-lower")
     }
 
+    /// B9 (iOS-R2): the three out-of-sync faces with the web's actions, then
+    /// Save as page and Restore against the fixture.
+    @MainActor
+    func testOutOfSyncFaces() async throws {
+        try await requireFixture()
+        for (scenario, restore, save, dismiss) in [("overwritten", true, false, false), ("kept", false, true, true)] {
+            let app = launchSignedIn(scenario: scenario)
+            let banner = app.descendants(matching: .any)["outOfSyncBanner_\(scenario)"]
+            XCTAssertTrue(banner.waitForExistence(timeout: 15), "\(scenario): \(app.debugDescription)")
+            XCTAssertEqual(app.buttons["outOfSyncRestore"].exists, restore, scenario)
+            XCTAssertEqual(app.buttons["outOfSyncSave"].exists, save, scenario)
+            XCTAssertEqual(app.buttons["outOfSyncDismiss"].exists, dismiss, scenario)
+            try await Task.sleep(nanoseconds: 1_500_000_000)
+            shot(app, "W2-B9-\(scenario)")
+            if dismiss {
+                XCTAssertFalse(app.buttons["outOfSyncDismiss"].isEnabled, "Dismiss is a write: off while changes are off")
+                enableChanges(app)
+                let button = app.buttons["outOfSyncDismiss"]
+                XCTAssertTrue(button.waitForExistence(timeout: 15)); reveal(button, app)
+                waitFor(button, NSPredicate(format: "enabled == true"), 10, "Dismiss enabled")
+                button.tap()
+                XCTAssertTrue(banner.waitForNonExistence(timeout: 8), "Dismiss forgets the held frame")
+            }
+            app.terminate()
+        }
+        let app = launchSignedIn(scenario: "out-of-sync")
+        let banner = app.descendants(matching: .any)["outOfSyncBanner_out-of-sync"]
+        XCTAssertTrue(banner.waitForExistence(timeout: 15), app.debugDescription)
+        let board = app.descendants(matching: .any)["homeBoard"]
+        XCTAssertTrue((board.value as? String ?? "").contains("SOMEONE ELSE"), "the board shows the foreign frame")
+        XCTAssertFalse(app.buttons["outOfSyncDismiss"].exists)
+        try await Task.sleep(nanoseconds: 1_500_000_000)
+        shot(app, "W2-B9-out-of-sync")
+        enableChanges(app)
+        XCTAssertTrue(banner.waitForExistence(timeout: 15))
+        let save = app.buttons["outOfSyncSave"]
+        reveal(save, app)
+        waitFor(save, NSPredicate(format: "enabled == true"), 10, "Save as page enabled")
+        save.tap()
+        let saved = app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "Saved as “From board")).firstMatch
+        XCTAssertTrue(saved.waitForExistence(timeout: 10), app.debugDescription)
+        shot(app, "W2-B9-saved-as-page")
+        let restore = app.buttons["outOfSyncRestore"]
+        reveal(restore, app); restore.tap()
+        let confirm = app.buttons["Confirm board action"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5)); confirm.tap()
+        XCTAssertTrue(banner.waitForNonExistence(timeout: 15),
+                      "Restore puts the page back; outcome: \(app.staticTexts["actionOutcome"].exists ? app.staticTexts["actionOutcome"].label : "none")")
+        waitFor(board, NSPredicate(format: "value CONTAINS %@", "HELLO"), 15, "the page is back")
+    }
+
+    /// B10 (iOS-R2): Displays cards (static preview, badges) and the detail's Now showing.
+    @MainActor
+    func testDisplaysCardsAndNowShowing() async throws {
+        try await requireFixture()
+        let app = launchSignedIn(scenario: "manual")
+        selectDestination("Displays", in: app)
+        let kitchen = app.descendants(matching: .any)["displayCard_kitchen"]
+        XCTAssertTrue(kitchen.waitForExistence(timeout: 10), app.debugDescription)
+        let badge = { (board: String, name: String) in app.descendants(matching: .any)["displayBadge_\(board)_\(name)"] }
+        XCTAssertTrue(badge("kitchen", "Connected").waitForExistence(timeout: 20))
+        XCTAssertFalse(badge("kitchen", "Paused").exists)
+        try await Task.sleep(nanoseconds: 1_500_000_000)
+        shot(app, "W2-B10-displays")
+        // The grid is lazy: scroll the later cards into existence.
+        for (board, name) in [("tv", "FiestaPanel"), ("marquee", "Not configured"), ("mystery", "Unavailable")] {
+            for _ in 0..<6 where !badge(board, name).exists { app.swipeUp() }
+            XCTAssertTrue(badge(board, name).exists, "\(board): \(name)")
+        }
+        XCTAssertFalse(badge("mystery", "Connected").exists, "an unavailable display is never also Connected")
+        shot(app, "W2-B10-displays-lower")
+        for _ in 0..<6 where !kitchen.isHittable { app.swipeDown() }
+        kitchen.tap()
+        XCTAssertTrue(app.staticTexts["Now showing"].waitForExistence(timeout: 5))
+        let preview = app.descendants(matching: .any)["displayNowShowing"]
+        waitFor(preview, NSPredicate(format: "value CONTAINS %@", "HELLO"), 10, "Kitchen's frame")
+        XCTAssertTrue(app.buttons["displayPlayback"].exists)
+        shot(app, "W2-B10-display-detail")
+    }
+
+    /// B32 (iOS-R2): no displays and no pages.
+    @MainActor
+    func testEmptyStates() async throws {
+        try await requireFixture()
+        let app = launchSignedIn(scenario: "no-boards")
+        XCTAssertTrue(app.staticTexts["No displays yet. Add one to start showing pages on it."].waitForExistence(timeout: 10))
+        shot(app, "W2-B32-no-boards")
+        app.terminate()
+        let pages = launchSignedIn(scenario: "no-pages")
+        selectDestination("Pages", in: pages)
+        XCTAssertTrue(pages.staticTexts["No pages created yet."].waitForExistence(timeout: 10))
+        XCTAssertTrue(pages.staticTexts["Create your first page to display on the board."].exists)
+        XCTAssertTrue(pages.buttons["createFirstPage"].exists)
+        shot(pages, "W2-B32-no-pages")
+    }
+
+    /// Library (iOS-R2; E1 open issues 5 and 6), in demo: on iPad the keyboard's
+    /// own Hide key resigns the name field, so the next tap opens the format menu;
+    /// and after the created page's editor closes, the Pages list shows no stale
+    /// "Page created. Open its editor…" note.
+    @MainActor
+    func testLibraryCreateSheetKeyboardAndOutcome() throws {
+        let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
+        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        selectDestination("Pages", in: app)
+        let create = app.buttons["newLibraryPage"]
+        XCTAssertTrue(create.waitForExistence(timeout: 5)); create.tap()
+        let name = app.textFields["New page name"]
+        XCTAssertTrue(name.waitForExistence(timeout: 3)); name.tap(); name.typeText("Keyboard check")
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            let hide = app.keyboards.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "hide")).firstMatch
+            XCTAssertTrue(hide.waitForExistence(timeout: 3), app.keyboards.firstMatch.debugDescription)
+            hide.tap()
+            XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5))
+        } else {
+            name.typeText("\n")
+            XCTAssertTrue(app.keyboards.firstMatch.waitForNonExistence(timeout: 5))
+        }
+        app.buttons["pageFamilyPicker"].tap()
+        let flap = app.buttons["Split-flap · 6 × 22"]
+        XCTAssertTrue(flap.waitForExistence(timeout: 3), "the format menu opens instead of the keyboard")
+        XCTAssertFalse(app.keyboards.firstMatch.exists, "the keyboard did not come back")
+        flap.tap()
+        app.buttons["createLibraryPage"].tap()
+        XCTAssertTrue(app.navigationBars["Edit Page"].waitForExistence(timeout: 8))
+        app.buttons["Close"].tap()
+        XCTAssertTrue(app.staticTexts["Keyboard check"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Open its editor")).firstMatch.exists,
+                       "no stale creation note once the editor has closed")
+        shot(app, "W2-library-after-create")
+    }
+
     @MainActor private func waitFor(_ element: XCUIElement, _ predicate: NSPredicate, _ timeout: TimeInterval, _ what: String) {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {

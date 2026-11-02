@@ -69,6 +69,8 @@ def text_of(grid):
 
 
 HELLO = ['', '', 'HELLO {red}{orange}{yellow} WORLD 62°']
+# What "another app" wrote (B9 out-of-sync / kept scenarios).
+FOREIGN = ['', 'SOMEONE ELSE', 'WAS HERE {red}{red}', '', 'SENT FROM A PHONE APP']
 
 # PLAN §4.2. `summary` = /v1/boards entry (v1 fields only); `stored` = extra
 # /settings/board BoardInstance fields; `lines` = what the board shows.
@@ -217,11 +219,12 @@ def new_state(scenario):
     for board_id, (page_id, _, _) in BOARD_PAGES.items():
         boards[board_id]['active_page_id'] = None if scenario == 'no-pages' else page_id
     kitchen = boards['kitchen']
-    if scenario in ('manual', 'paused', 'silence'):
+    if scenario in ('manual', 'paused', 'silence', 'out-of-sync', 'overwritten', 'kept'):
         kitchen['active_page_id'] = 'hello'
     elif scenario in ('collection', 'collection-native-null'):
         kitchen['active_page_id'] = COLLECTION_ID
-    return {'scenario': scenario, 'boards': boards, 'started': time.time()}
+    sync = {'foreign': scenario == 'out-of-sync', 'overwritten': scenario == 'overwritten', 'kept': scenario == 'kept'}
+    return {'scenario': scenario, 'boards': boards, 'started': time.time(), 'sync': sync, 'extra_pages': []}
 
 
 def board_entry(b):
@@ -260,9 +263,11 @@ def detail(state, entry):
     shown = resolved(state, active or scheduled)
     if is_kitchen and shown in [p['id'] for p in PAGES]:
         live['characters'] = page_frame(shown, s['rows'], s['cols'])
+    expected = live['characters']
+    shows = frame(FOREIGN, s['rows'], s['cols']) if is_kitchen and state['sync']['foreign'] else expected
     source = 'manual' if active else ('schedule' if scheduled else 'none')
-    return {**summary(entry, live), 'characters': live['characters'], 'text': text_of(live['characters']),
-            'expected_characters': live['characters'], 'read_at': None,
+    return {**summary(entry, live), 'characters': shows, 'text': text_of(shows),
+            'expected_characters': expected, 'read_at': None,
             'active_page_id': active, 'scheduled_page_id': scheduled,
             'resolved_page_id': shown if (active or scheduled) else None,
             'resolved_next_check_seconds': 2 if (active or scheduled) == COLLECTION_ID else None,
@@ -326,6 +331,25 @@ def handle(prefix, route, method, body, query, store):
             live['characters'] = page_frame(page_id, entry['summary']['rows'], entry['summary']['cols'])
         return 200, {'board_id': entry['summary']['id'], 'page_id': page_id, 'sent': sent,
                      'silenced': False, 'reason': None if sent else 'paused', 'error': None, 'warnings': []}
+    if method == 'POST' and route.startswith('v1/boards/') and route.endswith('/restore'):
+        entry = board_entry(route.split('/')[2])
+        if not entry:
+            return 404, {'detail': 'Board not found'}
+        live = state['boards'][entry['summary']['id']]
+        if entry['summary']['id'] == 'kitchen':
+            state['sync'] = {'foreign': False, 'overwritten': False, 'kept': False}
+        return 200, {'board_id': entry['summary']['id'], 'page_id': live['active_page_id'], 'sent': not live['paused'],
+                     'reason': None if not live['paused'] else 'paused', 'device_observed': False}
+    if method == 'DELETE' and route == 'board/external-frame':
+        if board_id == 'kitchen':
+            state['sync']['kept'] = False
+        return 204, None
+    if method == 'POST' and route == 'v1/pages':
+        new = {**PAGE_COMMON, 'id': 'saved-%d' % (len(state['extra_pages']) + 1), 'name': body.get('name'),
+               'type': 'template', 'device_type': body.get('device_type') or 'flagship', 'template': body.get('template') or [],
+               'grid_rows': body.get('grid_rows'), 'grid_cols': body.get('grid_cols'), 'revision': 'revision-new-1'}
+        state['extra_pages'].append(new)
+        return 201, new
     if method == 'GET' and route == 'settings/board':
         return 200, {'board_type': None, 'devices': [e['summary']['device_type'] for e in BOARDS],
                      'boards': [stored_board(e, state['boards'][e['summary']['id']]) for e in BOARDS]}
@@ -344,7 +368,12 @@ def handle(prefix, route, method, body, query, store):
             return 404, {'detail': 'Board not found'}
         d = detail(state, entry)
         out = {'characters': d['characters'], 'message': d['text'], 'rows': d['rows'], 'cols': d['cols'],
-               'expected_characters': d['characters'], 'cached_at': '2026-10-31T08:15:00Z', 'api_mode': 'local'}
+               'expected_characters': d['expected_characters'], 'cached_at': '2026-10-31T08:15:00Z', 'api_mode': 'local'}
+        if board_id == 'kitchen' and state['sync']['overwritten']:
+            out['overwritten_at'] = '2026-10-31T16:12:00+00:00'
+        if board_id == 'kitchen' and state['sync']['kept']:
+            out['external_characters'] = frame(FOREIGN, d['rows'], d['cols'])
+            out['external_detected_at'] = '2026-10-31T16:12:00+00:00'
         if board_id == 'pixoo':
             out['layers'] = d['layers']
         return 200, out
@@ -374,11 +403,14 @@ def handle(prefix, route, method, body, query, store):
     if method == 'GET' and route == 'settings/display':
         return 200, {'reduce_motion': False, 'board_animations': True, 'site_animations': True, 'board_flap_speed': 'standard'}
     if method == 'GET' and route == 'v1/pages':
-        pages = [] if sc == 'no-pages' else [page_body(p) for p in PAGES]
+        pages = ([] if sc == 'no-pages' else [page_body(p) for p in PAGES]) + state['extra_pages']
         return 200, {'pages': pages, 'total': len(pages)}
     if method == 'GET' and route.startswith('v1/pages/'):
         page = next((p for p in PAGES if p['id'] == route.split('/')[2]), None)
-        return (200, page_body(page)) if page else (404, {'detail': 'Page not found'})
+        if page:
+            return 200, page_body(page)
+        extra = next((p for p in state['extra_pages'] if p['id'] == route.split('/')[2]), None)
+        return (200, extra) if extra else (404, {'detail': 'Page not found'})
     if method == 'GET' and route == 'v1/schedules':
         entries = [] if sc == 'schedule-gap' else [schedule_entry(e, board_id) for e in SCHEDULE]
         return 200, {'schedules': entries, 'total': len(entries), 'default_page_id': None,
