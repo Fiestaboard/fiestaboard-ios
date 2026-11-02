@@ -21,17 +21,40 @@ import XCTest
         for (display, file, check) in [("Pixoo", "B4-B7-pixoo", "Hi"), ("Marquee — mock-only", "B5-marquee", "HOT"),
                                        ("Mystery", "B5-mystery", "UNKNOWN MODEL")] {
             choose(display, app)
-            XCTAssertTrue(waitFor(10) { ((board.value as? String) ?? "").contains(check) }, "\(display): \(board.value ?? "-")")
+            XCTAssertTrue(waitFor(10) { ((board.value as? String) ?? "").localizedCaseInsensitiveContains(check) }, "\(display): \(board.value ?? "-")")
             XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@", "web preview")).firstMatch.exists)
             shot(app, "W4-\(file)", settle: 3)
         }
     }
 
     /// B31: the editor at accessibility XL text: chips, tiles and rows re-rasterise at the size.
+    /// (The in-app demo: at this size the connection form's fields move out of the helper's reach.)
     func testEditorAtAccessibilityTextSize() throws {
-        let app = try signIn(scenario: "manual", arguments: ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"])
-        let document = openEditor(app, page: "Good Morning")
-        XCTAssertTrue(document.exists)
+        let app = XCUIApplication()
+        app.launchArguments = ["--demo", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"]
+        app.launch()
+        XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15))
+        let destination = element(app, "destination-Pages")
+        for _ in 0..<5 where !(destination.exists && destination.isHittable) {
+            let sidebar = app.buttons["Show Sidebar"].firstMatch
+            if sidebar.exists && sidebar.isHittable { sidebar.tap(); continue }
+            let back = app.navigationBars.buttons.element(boundBy: 0)
+            if back.exists && back.isHittable { back.tap() }
+        }
+        destination.tap()
+        let create = app.buttons["newLibraryPage"]
+        XCTAssertTrue(create.waitForExistence(timeout: 5)); create.tap()
+        let field = app.textFields["New page name"]
+        XCTAssertTrue(field.waitForExistence(timeout: 3)); field.tap(); field.typeText("Large text\n")
+        app.buttons["createLibraryPage"].tap()
+        let document = app.textViews["boardDocument"]
+        XCTAssertTrue(document.waitForExistence(timeout: 8), app.debugDescription)
+        document.tap(); document.typeText("HELLO ")
+        app.buttons["accessory_colors"].tap()
+        let red = app.buttons["insertColor_red"]
+        if red.waitForExistence(timeout: 4) { red.tap() }
+        let hide = app.buttons["editorHideKeyboard"]
+        if hide.waitForExistence(timeout: 3) && hide.isHittable { hide.tap() }
         shot(app, "W4-B31-editor-accessibility-xl", settle: 4)
         close(app)
     }

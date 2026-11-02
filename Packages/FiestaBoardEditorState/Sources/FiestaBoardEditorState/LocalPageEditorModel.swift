@@ -156,8 +156,11 @@ public final class LocalPageEditorModel: ObservableObject {
             switch try await draftStore.load(identity) {
             case .absent: break
             case .recovered(let draft):
-                recovery = draft
                 let base = try PageDocument(data: draft.baselineData)
+                // W4: a checkpoint written right after an acknowledged save holds exactly the
+                // fetched page (no edits): there is nothing to recover, so no prompt.
+                if base == session.baseline, (try? PageDocument(data: draft.documentData)) == session.baseline { break }
+                recovery = draft
                 let date = draft.savedAt.formatted(date: .abbreviated, time: .shortened)
                 recoveryNotice = base == session.baseline
                     ? "A local draft from \(date) is available. Recover it explicitly or keep the fetched page."

@@ -453,6 +453,9 @@ struct EditorRoot: View {
         Task {
             await model.saveToServer()
             guard model.remoteStatus == .idle, !model.hasServerChanges else { return }
+            // W4: the automatic checkpoint (B25) now holds the accepted revision, so reopening the
+            // saved page offers no stale pre-save draft (the model leaves this to its caller).
+            await model.saveDraft()
             toast = model.isSimulated ? EditorStrings.pageUpdatedSimulated : EditorStrings.pageUpdated
             UIAccessibility.post(notification: .announcement, argument: toast)
             try? await Task.sleep(for: .milliseconds(1500))
