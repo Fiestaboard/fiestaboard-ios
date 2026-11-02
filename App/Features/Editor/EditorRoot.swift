@@ -80,6 +80,7 @@ struct EditorRoot: View {
         .frame(maxWidth: .infinity)
         .background(Color(uiColor: .systemBackground))
         .overlay(alignment: .bottom) { toastView }
+        .preference(key: EditorIsOpenKey.self, value: true)
         .navigationTitle(EditorStrings.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)

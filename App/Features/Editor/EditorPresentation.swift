@@ -18,3 +18,11 @@ struct EditorPresentation<Editor: View>: ViewModifier {
         }
     }
 }
+
+/// True while a page editor is on screen. The app shell (iOS-R2's split view) can read it with
+/// `.onPreferenceChange(EditorIsOpenKey.self)` and collapse the sidebar (`columnVisibility =
+/// .detailOnly`) so the board gets the whole width on iPad (B29: "the board should grow").
+struct EditorIsOpenKey: PreferenceKey {
+    static let defaultValue = false
+    static func reduce(value: inout Bool, nextValue: () -> Bool) { value = value || nextValue() }
+}

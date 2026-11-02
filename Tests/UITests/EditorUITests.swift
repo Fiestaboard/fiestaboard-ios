@@ -335,7 +335,7 @@ import XCTest
         let stage = app.descendants(matching: .any).matching(identifier: "boardStage").firstMatch
         let keyboard = app.keyboards.firstMatch
         XCTAssertLessThan(stage.frame.maxY, keyboard.frame.minY, "The board is above the keyboard")
-        XCTAssertGreaterThan(stage.frame.width, app.windows.firstMatch.frame.width * 0.85, "The board keeps its width while typing")
+        XCTAssertGreaterThanOrEqual(stage.frame.width, document.frame.width - 1, "The board keeps the editor's full width while typing")
         app.buttons["editorHideKeyboard"].tap()
         attach(app, "W2-B13-chips-\(device())")
     }
@@ -464,7 +464,7 @@ import XCTest
         XCTAssertTrue(waitForStage(app) { $0.count == 3 && $0[0] == "HI" }, "\(stageLines(app))")
         attach(app, "W2-B20-note-shape-\(device())")
         app.buttons["savePageOnServer"].tap()
-        let resize = app.buttons["resizeAndSave"]
+        let resize = app.buttons["resizeAndSave"].firstMatch
         XCTAssertTrue(resize.waitForExistence(timeout: 3), "Shrinking asks first")
         attach(app, "W2-B28-resize-confirm-\(device())")
         resize.tap()

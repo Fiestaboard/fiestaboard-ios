@@ -310,7 +310,8 @@ struct BoardDocumentView: UIViewRepresentable {
 
         func textViewDidChangeSelection(_ textView: UITextView) {
             guard textView.markedTextRange == nil, let view = textView as? TemplateUITextView else { return }
-            if let tapped = tappedChip, view.selectedRange != NSRange(location: tapped + 1, length: 0) { tappedChip = nil }
+            // A caret just before or after the tapped chip keeps it "tapped" (a second tap opens it).
+            if let tapped = tappedChip, !(view.selectedRange.length == 0 && [tapped, tapped + 1].contains(view.selectedRange.location)) { tappedChip = nil }
             view.updateChipOutlines(tapped: tappedChip)
             let buffer = parent.buffer
             buffer.adopt(rows: buffer.rows, caret: caretRows(view), dirty: false)
