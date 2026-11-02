@@ -4,15 +4,18 @@ import FiestaBoardAppState
 import FiestaBoardRender
 
 /// Home: the selected display's name, the "what's happening" row, then the
-/// board itself — the largest element on screen (B33). Actions sit below it.
-struct HomeView<ChangePage: View, Controls: View, Banner: View>: View {
+/// board itself — the largest element on screen (B33). Below it: the outcome
+/// of the last action, quick actions, what the schedule does next and what
+/// the other displays show. Server/account details live in Settings.
+struct HomeView<ChangePage: View, Controls: View>: View {
     @ObservedObject var store: BoardStore
     @ObservedObject var status: BoardStatus
     let compose: () -> Void
     let preparePage: (String) -> Void
+    let openSettings: () -> Void
+    let openSchedule: () -> Void
     @ViewBuilder let changePage: () -> ChangePage
     @ViewBuilder let controls: () -> Controls
-    @ViewBuilder let banner: () -> Banner
 
     private var summary: BoardSummary? { store.boards.first { $0.id == store.selectedBoardID } }
 
@@ -23,11 +26,16 @@ struct HomeView<ChangePage: View, Controls: View, Banner: View>: View {
                     if let summary {
                         header(summary)
                         board(summary, height: geometry.size.height)
+                        outcome
                         actions(wide: geometry.size.width > 760)
+                        changesNote
+                        HomeCards(store: store, status: status, wide: geometry.size.width > 760,
+                                  openSchedule: openSchedule)
                     } else if store.boards.isEmpty && !store.connecting {
                         emptyBoard
+                    } else {
+                        outcome
                     }
-                    banner()
                 }
                 .padding(.horizontal, 16).padding(.vertical, 8)
                 .frame(maxWidth: 1250).frame(maxWidth: .infinity)
@@ -126,7 +134,41 @@ struct HomeView<ChangePage: View, Controls: View, Banner: View>: View {
         }
     }
 
-    // MARK: actions
+    // MARK: outcome and actions
+
+    @ViewBuilder private var outcome: some View {
+        if let message = store.message {
+            Text(message).font(.callout).accessibilityIdentifier("actionOutcome")
+                .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+        }
+        if store.commandBusy || store.refreshing {
+            ProgressView(store.commandBusy ? "Waiting for the board…" : "Refreshing…").font(.callout)
+        }
+    }
+
+    /// Why Change page / Compose are greyed out, in plain words, with the fix.
+    @ViewBuilder private var changesNote: some View {
+        switch store.boardActionDisabledReason {
+        case .changesDisabled?:
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: "lock").foregroundStyle(.secondary)
+                Text("Changing this board from the app is turned off.").foregroundStyle(.secondary)
+                Spacer(minLength: 4)
+                Button("Turn on", action: openSettings).font(.callout.weight(.semibold))
+            }
+            .font(.callout)
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("homeChangesOff")
+        case .unsupportedOperation?:
+            Label("This server version can't be changed from the app yet. Use the web app to change the board.",
+                  systemImage: "info.circle").font(.callout).foregroundStyle(.secondary)
+        case .readbackRequired?:
+            Label("Refresh to see the board before making another change.", systemImage: "arrow.clockwise")
+                .font(.callout).foregroundStyle(.orange)
+        default: EmptyView()
+        }
+    }
 
     private func actions(wide: Bool) -> some View {
         let layout = wide ? AnyLayout(HStackLayout(spacing: 12)) : AnyLayout(VStackLayout(spacing: 10))

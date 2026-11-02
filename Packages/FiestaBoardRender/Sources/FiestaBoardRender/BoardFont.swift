@@ -32,9 +32,9 @@ public enum BoardFont {
 
     public static func glyph(size: Double) -> Font {
         if registerIfNeeded() {
-            return .custom(familyName, fixedSize: size).weight(.semibold)
+            return .custom(familyName, fixedSize: size).weight(.bold)
         }
-        return .system(size: size, weight: .semibold, design: .monospaced)
+        return .system(size: size, weight: .bold, design: .monospaced)
     }
 }
 

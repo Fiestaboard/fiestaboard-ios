@@ -158,8 +158,8 @@ struct DraftScene: View {
             NavigationStack {
                 HomeView(store: store, status: boardStatus, compose: { composing = true },
                          preparePage: { pending = store.prepare(.page($0)) },
-                         changePage: { pageChooser }, controls: { boardControlsDestination() },
-                         banner: { connectionBanner })
+                         openSettings: { tab = .settings }, openSchedule: { tab = .schedule },
+                         changePage: { pageChooser }, controls: { boardControlsDestination() })
             }
         case .displays: displays
         case .pages: library
@@ -179,7 +179,7 @@ struct DraftScene: View {
         VStack(alignment: .leading, spacing: 8) {
             Label(store.connectionLabel, systemImage: store.status?.isDemo == true ? "sparkles" : "network")
                 .font(.subheadline.weight(.semibold)).textSelection(.enabled)
-            Text(store.status?.isDemo == true ? "Demo · page saves, previews and board actions are simulated" : "\(store.status?.version.displayedVersion ?? "Unknown version") · \(store.status?.access == .candidateWrites ? "Board controls enabled" : "Board controls read-only") · Page and collection editing checked separately")
+            Text(store.status?.isDemo == true ? "Demo · page saves, previews and board actions are simulated" : "FiestaBoard \(store.status?.version.displayedVersion ?? "(version unknown)") · \(store.status?.access == .candidateWrites ? "Changes from this app are on" : "Changes from this app are off")")
                 .font(.caption).foregroundStyle(.secondary)
             if let message = store.message {
                 Text(message).font(.callout).accessibilityIdentifier("actionOutcome")
@@ -189,54 +189,6 @@ struct DraftScene: View {
             if store.commandBusy || store.refreshing { ProgressView(store.commandBusy ? "Waiting for server…" : "Refreshing…") }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-    private var home: some View {
-        NavigationStack {
-            GeometryReader { geometry in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        connectionBanner
-                        let wide = geometry.size.width > 760
-                        let layout = wide ? AnyLayout(HStackLayout(alignment: .top, spacing: 24)) : AnyLayout(VStackLayout(alignment: .leading, spacing: 24))
-                        layout {
-                            VStack(alignment: .leading, spacing: 16) {
-                                boardPicker
-                                if let board = store.board {
-                                    Text("Server-reported output").font(.headline)
-                                    BoardOutputView(board: board)
-                                    Text("Reported content may be cached. This is not independent physical readback.").font(.caption).foregroundStyle(.secondary)
-                                    if let date = board.readAt { Text("Server read: \(date)").font(.caption).foregroundStyle(.secondary) }
-                                    if board.expectedCharacters != nil && board.expectedCharacters != board.characters {
-                                        DisclosureGroup("Expected output differs") { BoardOutputView(board: board, expected: true) }
-                                    }
-                                } else if store.boards.isEmpty {
-                                    ContentUnavailableView("No displays", systemImage: "rectangle.on.rectangle", description: Text("Add a display in the server web interface, then reconnect to load it here."))
-                                }
-                            }.frame(maxWidth: .infinity)
-                            VStack(alignment: .leading, spacing: 16) {
-                                Label("Make room for a little joy.", systemImage: "sun.max").font(.title2.bold())
-                                Button { composing = true } label: { Label("Compose text", systemImage: "square.and.pencil").frame(maxWidth: .infinity, minHeight: 36) }
-                                    .buttonStyle(.borderedProminent).disabled(!store.canWrite)
-                                if let reason = store.boardActionDisabledReason { Text(reason.message).font(.callout).foregroundStyle(.secondary) }
-                                if store.needsReadback { Text("Refresh output before another action.").font(.callout).foregroundStyle(.orange) }
-                                if let board = store.board {
-                                    selectionDetails(board)
-                                    NavigationLink { pageChooser } label: { Label("Choose a page", systemImage: "rectangle.stack") }
-                                        .buttonStyle(.bordered).disabled(!store.canWrite)
-                                    NavigationLink {
-                                        boardControlsDestination()
-                                    } label: { Label("Board controls", systemImage: "slider.horizontal.3") }
-                                        .buttonStyle(.bordered)
-                                        .accessibilityIdentifier("boardControlsEntry")
-                                }
-                            }.frame(maxWidth: wide ? 290 : .infinity, alignment: .leading)
-                        }
-                    }.padding().frame(maxWidth: 1250).frame(maxWidth: .infinity)
-                }
-            }
-            .navigationTitle("FiestaBoard")
-            .toolbar { ToolbarItem(placement: .primaryAction) { refreshButton } }
-        }
     }
     private func boardControlsDestination(title: String = "Board controls") -> some View {
         Form {
@@ -272,28 +224,9 @@ struct DraftScene: View {
         .navigationTitle("Playback")
         .task { if store.selectedBoardID != boardID { await store.selectBoard(boardID).value } }
     }
-    private var boardPicker: some View {
-        Picker("Display", selection: Binding(get: { store.selectedBoardID ?? "" }, set: { store.selectBoard($0) })) {
-            ForEach(store.boards) { Text($0.name).tag($0.id) }
-        }.pickerStyle(.menu).disabled(store.commandBusy || store.refreshing)
-    }
-    private var refreshButton: some View {
-        Button { store.refresh() } label: { Label("Refresh output", systemImage: "arrow.clockwise") }
-            .disabled(store.refreshing || store.commandBusy)
-    }
-    private func selectionDetails(_ board: BoardDetail) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Selection & delivery").font(.headline)
-            LabeledContent("Selected page", value: pageName(board.activePageID))
-            LabeledContent("Resolved page", value: pageName(board.resolvedPageID))
-            LabeledContent("Scheduled page", value: pageName(board.scheduledPageID))
-            LabeledContent("Source", value: board.source)
-        }.font(.subheadline)
-    }
     private var library: some View {
         NavigationStack {
             List {
-                Section { connectionBanner }
                 if let library = store.pageLibrary {
                     Section { PageLibraryFeedback(library: library, store: store) }
                 }
@@ -333,7 +266,6 @@ struct DraftScene: View {
     private var displays: some View {
         NavigationStack {
             List {
-                Section { connectionBanner }
                 Section("Displays") {
                     ForEach(store.boards) { board in
                         NavigationLink {

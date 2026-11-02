@@ -181,6 +181,20 @@ for _board in BOARDS:
 COLLECTION = {'id': COLLECTION_UUID, 'name': 'Morning rotation', 'page_ids': ['hello', 'morning'],
               'selection_mode': 'time', 'interval_seconds': 2, 'revision': 'collection-r1'}
 
+# Kitchen's schedule (wall-clock HH:MM, weekly), served by /v1/schedules.
+SCHEDULE = [('sched-morning', 'morning', '06:00', '10:00', 'all'), ('sched-hello', 'hello', '10:00', '18:00', 'all'),
+            ('sched-evening', 'lower', '18:00', '23:00', 'weekends')]
+
+
+def schedule_entry(entry, board_id):
+    sid, page, start, end, pattern = entry
+    return {'id': sid, 'revision': 'revision-' + sid, 'board_id': board_id, 'page_id': page, 'start_time': start,
+            'end_time': end, 'day_pattern': pattern, 'custom_days': None, 'enabled': True, 'recurrence_type': 'weekly',
+            'annual_date': None, 'annual_end_date': None, 'one_off_date': None, 'one_off_end_date': None,
+            'start_type': 'fixed', 'start_sun_offset': 0, 'end_type': 'fixed', 'end_sun_offset': 0,
+            'created_at': '2026-10-31T08:00:00Z', 'updated_at': None, 'resolved_start_time': start,
+            'resolved_end_time': end, 'warnings': [], 'edit_protocol': 'schedule-revision-v1'}
+
 
 def page_body(page):
     body = {**PAGE_COMMON, **{k: v for k, v in page.items() if k != 'shows'}}
@@ -365,6 +379,10 @@ def handle(prefix, route, method, body, query, store):
     if method == 'GET' and route.startswith('v1/pages/'):
         page = next((p for p in PAGES if p['id'] == route.split('/')[2]), None)
         return (200, page_body(page)) if page else (404, {'detail': 'Page not found'})
+    if method == 'GET' and route == 'v1/schedules':
+        entries = [] if sc == 'schedule-gap' else [schedule_entry(e, board_id) for e in SCHEDULE]
+        return 200, {'schedules': entries, 'total': len(entries), 'default_page_id': None,
+                     'enabled': state['boards'].get(board_id, {}).get('schedule_enabled', False)}
     if method == 'GET' and route == 'v1/collections':
         return 200, {'collections': [COLLECTION], 'total': 1}
     if method == 'GET' and route == 'v1/collections/' + COLLECTION_UUID:

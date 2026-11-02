@@ -121,6 +121,31 @@ final class BoardVisualsUITests: XCTestCase {
         }
     }
 
+    /// W2 (iOS-R2): Home in plain words with a useful lower half — no server
+    /// URL, no "read-only" jargon, the next schedule entry and the other displays.
+    @MainActor
+    func testHomeIsPlainAndUseful() async throws {
+        try await requireFixture()
+        let app = launchSignedIn(scenario: "schedule")
+        let upNext = app.descendants(matching: .any)["homeUpNext"]
+        XCTAssertTrue(upNext.waitForExistence(timeout: 10), app.debugDescription)
+        let others = app.descendants(matching: .any)["otherDisplay_hall"]
+        XCTAssertTrue(others.waitForExistence(timeout: 10))
+        for jargon in ["127.0.0.1", "read-only", "checked separately", "Board controls enabled"] {
+            XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@", jargon)).firstMatch.exists, jargon)
+        }
+        XCTAssertTrue(app.descendants(matching: .any)["homeChangesOff"].exists, "greyed actions explain themselves")
+        try await Task.sleep(nanoseconds: 2_500_000_000)
+        shot(app, "W2-home")
+        app.swipeUp()
+        try await Task.sleep(nanoseconds: 1_000_000_000)
+        shot(app, "W2-home-lower")
+        // Tapping another display switches Home to it.
+        reveal(others, app); others.tap()
+        let name = app.descendants(matching: .any)["nowShowingName"]
+        waitFor(name, NSPredicate(format: "label == %@", "Hall Hello"), 10, "Hall's page")
+    }
+
     @MainActor private func waitFor(_ element: XCUIElement, _ predicate: NSPredicate, _ timeout: TimeInterval, _ what: String) {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {

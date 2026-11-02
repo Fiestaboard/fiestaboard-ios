@@ -35,9 +35,13 @@ public struct BoardLayout: Sendable {
     public let height: Double
     public let tileHeight: Double
 
-    /// Glyph size as a fraction of tile height, matching FiestaUI's board
-    /// steps (28px tile → 16px text at the lg breakpoint).
-    public static let fontSizeRatio = 0.40
+    /// Glyph font size as a fraction of tile height. FiestaUI uses 0.38–0.40
+    /// (`board-metrics.ts`), which leaves letters a third of the flap tall and
+    /// unreadable at phone sizes. A real split-flap letter fills well over half
+    /// the flap: at 0.72 Spline Sans Mono's cap height (0.727 em) is 0.52 of the
+    /// tile height and its advance (0.60 em) is 0.62 of the tile width
+    /// (`BoardGeometry.tileWidthRatio` 0.70). iOS-R2, wave 2.
+    public static let fontSizeRatio = 0.72
 
     public var fontSize: Double { tileHeight * Self.fontSizeRatio }
 

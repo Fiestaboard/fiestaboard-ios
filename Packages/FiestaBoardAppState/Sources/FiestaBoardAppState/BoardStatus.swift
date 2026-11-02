@@ -118,6 +118,9 @@ public enum BoardPolling {
     @Published public private(set) var nowShowing: NowShowing?
     @Published public private(set) var display = BoardDisplaySettings()
     @Published public private(set) var runtime: [String: BoardRuntimeStatus] = [:]
+    /// What every *other* board shows now (`/board/current-message`), for
+    /// Home's "Other displays" thumbnails. Read on start and every 30 s.
+    @Published public private(set) var frames: [String: BoardFrame] = [:]
 
     public typealias Sleeper = @Sendable (TimeInterval) async throws -> Void
     private let store: BoardStore
@@ -155,6 +158,7 @@ public enum BoardPolling {
         rebuildModels(); recompute()
         tasks.append(Task { [weak self] in await self?.loadAppearance() })
         tasks.append(loop(every: { _ in BoardPolling.status }) { $0.pollStatus() })
+        tasks.append(loop(every: { _ in BoardPolling.board }) { $0.pollOtherFrames() })
         tasks.append(loop(every: { $0.activeInterval }) { $0.pollActive() })
         tasks.append(loop(every: { _ in BoardPolling.board }, immediately: false) { status in
             // Never poll a paused board's frame; never while a command is in flight; and
@@ -217,7 +221,9 @@ public enum BoardPolling {
         if wasBusy && !busy { noteSend() }
         wasBusy = busy
         if store.selectedBoardID != lastBoardID {
+            let changed = lastBoardID != nil
             lastBoardID = store.selectedBoardID
+            if changed { pollOtherFrames() }
             schedule = nil; manual = nil; silence = nil
             if store.selectedBoardID != nil { pollActive() }
         }
@@ -259,6 +265,36 @@ public enum BoardPolling {
             guard let report = try? await reader.serviceStatus() else { return }
             self?.runtime = report.boards
         }
+    }
+
+    private func pollOtherFrames() {
+        guard let reader = reader() else { return }
+        let others = store.boards.filter { $0.id != store.selectedBoardID }
+        Task { [weak self] in
+            var next: [String: BoardFrame] = [:]
+            await withTaskGroup(of: (String, BoardFrame?).self) { group in
+                for board in others {
+                    group.addTask {
+                        guard let message = try? await reader.currentMessage(boardID: board.id) else { return (board.id, nil) }
+                        return (board.id, BoardFrame(message, rows: board.rows, cols: board.cols))
+                    }
+                }
+                for await (id, frame) in group { if let frame { next[id] = frame } }
+            }
+            guard let self else { return }
+            let merged = self.frames.merging(next) { _, new in new }
+            if merged != self.frames { self.frames = merged }
+        }
+    }
+
+    /// Page name the server says a board shows (`/v1/status` `active_page_id`).
+    public func activePageName(for boardID: String) -> String? {
+        guard let id = runtime[boardID]?.activePageID else { return nil }
+        if id.hasPrefix(NowShowingModel.collectionPrefix) {
+            let uuid = String(id.dropFirst(NowShowingModel.collectionPrefix.count))
+            return collectionNames[uuid] ?? collectionNames[id] ?? "Collection"
+        }
+        return store.pages.first { $0.id == id }?.name
     }
 
     private func pollActive() {
