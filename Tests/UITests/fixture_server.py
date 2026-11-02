@@ -78,6 +78,15 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == '/ready':
             return self.reply(200, {'fixture': 'native-onboarding'})
         path, _, query = self.path.partition('?')
+        if method == 'GET' and path.startswith('/fixture-state/'):
+            # Test-only, read-only (W4): what a prefix's saved page now holds, so a UI test can
+            # prove a Save reached the fixture's storage. Loopback only; no credentials involved.
+            _, _, alias, kind, page_id = (path.split('/') + ['', '', ''])[:5]
+            with LOCK:
+                state = STATES.get('/' + alias)
+                boards = HOOKS[0] if HOOKS and HOOKS[0].__name__ == 'fixture_boards' else None
+                page = boards.current_page(state['boards_state'], page_id) if (boards and state and kind == 'pages' and 'boards_state' in state) else None
+            return self.reply(200, page) if page else self.reply(404, {})
         parts = path.split('/api/', 1)
         if len(parts) != 2 or not parts[0].startswith(PREFIXES):
             return self.reply(404, {})
@@ -195,7 +204,7 @@ class Handler(BaseHTTPRequestHandler):
                          'document_protocol': 'page-document-v99', 'revision': 'future-r1'},
                     ]
                 return self.reply(200, {'pages': pages, 'total': len(pages)})
-            return self.reply(404, {})  # Only the synthetic conditional flexible page PUT is supported.
+            return self.reply(404, {})  # Unrouted (board-* page PUTs live in fixture_boards).
 
     def reply(self, status, body, cookie=None):
         data = b'' if body is None else json.dumps(body).encode()  # None: no content (204)

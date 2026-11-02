@@ -90,14 +90,21 @@ BOARDS = [
      'stored': {'board_color': 'black', 'notes_wide': 2, 'notes_tall': 2},
      'lines': ['', 'FOUR NOTES MAKE ONE WALL', '{red}{orange}{yellow}{green}{blue}{violet}', 'SEAMS EVERY 15 COLUMNS', 'AND EVERY 3 ROWS', '']},
     {'summary': {'id': 'tv', 'name': 'Living room TV', 'device_type': 'panel', 'rows': 12, 'cols': 29,
-                 'is_primary': False, 'output': 'fiestapanel', 'device_model': 'vestaboard_panel', 'charset': 'vestaboard_v2'},
+                 'is_primary': False, 'output': 'fiestapanel', 'device_model': 'fiestapanel_split_flap', 'charset': 'vestaboard_v2'},
      'stored': {'grid_rows': 12, 'grid_cols': 29}, 'lines': ['', '', '', '', 'LIVING ROOM TV', '', '{blue}{blue}{blue} PANEL {blue}{blue}{blue}']},
     {'summary': {'id': 'pixoo', 'name': 'Pixoo', 'device_type': 'panel', 'rows': 10, 'cols': 16,
                  'is_primary': False, 'output': 'divoom_pixoo', 'device_model': 'divoom_pixoo64', 'charset': 'led_3x5'},
-     'stored': {'output': 'divoom_pixoo', 'device_model': 'divoom_pixoo64'}, 'lines': ['', '', '', '', 'HI {red}!']},
+     # W4 (WEB-P4, verified on 10.3.2): the Pixoo output needs output_config.host, and the grid comes
+     # from output_config.font (3x5 → 10×16); the server reports led_layout and the grid on GET.
+     'stored': {'output': 'divoom_pixoo', 'device_model': 'divoom_pixoo64', 'output_config': {'host': '192.0.2.10', 'font': '3x5'},
+                'grid_rows': 10, 'grid_cols': 16, 'charset': 'led_3x5',
+                'led_layout': {'tile_gap': 'gap', 'block_padding': 0, 'font': '3x5'}}, 'lines': ['', '', '', '', 'HI {red}!']},
     {'summary': {'id': 'pixoo57', 'name': 'Pixoo (5x7) — mock-only', 'device_type': 'panel', 'rows': 8, 'cols': 10,
                  'is_primary': False, 'output': 'divoom_pixoo', 'device_model': 'divoom_pixoo64', 'charset': 'led_5x7'},
-     'stored': {'device_model_spec': {'id': 'divoom_pixoo64', 'technology': 'led_matrix',
+     # W4: font 5x7 → 8×10 (verified on 10.3.2); device_model_spec and led_layout are server-computed read fields.
+     'stored': {'output_config': {'host': '192.0.2.10', 'font': '5x7'}, 'grid_rows': 8, 'grid_cols': 10, 'charset': 'led_5x7',
+                'led_layout': {'tile_gap': 'gap', 'block_padding': 0, 'font': '5x7'},
+                'device_model_spec': {'id': 'divoom_pixoo64', 'technology': 'led_matrix',
                                       'geometry': {'kind': 'pixels', 'width': 64, 'height': 64},
                                       'color': {'kind': 'rgb', 'bitDepth': 24}, 'charset': 'led_5x7',
                                       'layoutOptions': {'font': '5x7'}}},
@@ -109,9 +116,10 @@ BOARDS = [
                                       'color': {'kind': 'monochrome', 'color': '#ff3b1f', 'bitDepth': 1},
                                       'charset': 'led_5x7', 'font': '5x7'}},
      'lines': ['HOT', '{red}{red}'], 'not_configured': True},
-    {'summary': {'id': 'mystery', 'name': 'Mystery', 'device_type': 'flagship', 'rows': 4, 'cols': 20,
+    # W4: a 4×20 board is a panel (a flagship is always 6×22 on 10.3.2; WEB-P4).
+    {'summary': {'id': 'mystery', 'name': 'Mystery', 'device_type': 'panel', 'rows': 4, 'cols': 20,
                  'is_primary': False, 'output': 'acme_output', 'device_model': 'acme_unknown', 'charset': None},
-     'stored': {}, 'lines': ['', 'UNKNOWN MODEL', 'DRAWN AS FLAPS'], 'error': 'Output plugin acme_output failed to start'},
+     'stored': {'grid_rows': 4, 'grid_cols': 20}, 'lines': ['', 'UNKNOWN MODEL', 'DRAWN AS FLAPS'], 'error': 'Output plugin acme_output failed to start'},
 ]
 
 PAGE_COMMON = {'display_type': None, 'rows': None, 'line_metadata': None, 'duration_seconds': 300,
@@ -152,10 +160,13 @@ PAGES = [
     {'id': 'lower', 'name': 'Mixed Case', 'type': 'template', 'device_type': 'flagship',
      'template': ['UPPER ROW', 'lower row kept', 'THIRD'], 'line_metadata': [{'alignment': 'center', 'wrap': False}],
      'shows': ['UPPER ROW', 'LOWER ROW KEPT', 'THIRD']},
+    # W4 (WEB-P4): 10.3.2 requires display_type on a single page and row configs on a composite,
+    # and stamps both with the page protocols.
     {'id': 'single', 'name': 'Weather (single)', 'type': 'single', 'device_type': 'flagship', 'template': None,
-     'document_protocol': None, 'edit_protocol': None, 'shows': ['WEATHER', '72° SUNNY']},
+     'display_type': 'weather', 'shows': ['WEATHER', '72° SUNNY']},
     {'id': 'composite', 'name': 'Mix (composite)', 'type': 'composite', 'device_type': 'flagship', 'template': None,
-     'document_protocol': None, 'edit_protocol': None, 'shows': ['MIX', 'TWO PLUGINS']},
+     'rows': [{'source': 'weather', 'row_index': 0, 'target_row': 0}, {'source': 'date_time', 'row_index': 0, 'target_row': 1}],
+     'shows': ['MIX', 'TWO PLUGINS']},
 ]
 
 
@@ -227,7 +238,60 @@ def new_state(scenario):
     elif scenario in ('collection', 'collection-native-null'):
         kitchen['active_page_id'] = COLLECTION_ID
     sync = {'foreign': scenario == 'out-of-sync', 'overwritten': scenario == 'overwritten', 'kept': scenario == 'kept'}
-    return {'scenario': scenario, 'boards': boards, 'started': time.time(), 'sync': sync, 'extra_pages': []}
+    return {'scenario': scenario, 'boards': boards, 'started': time.time(), 'sync': sync, 'extra_pages': [], 'saved_pages': {}}
+
+
+# PUT /v1/pages/{id} (W4): the legacy page write path as 10.3.2 serves it
+# (S:src/pages/models.py PageUpdate + the page-revision-v1 conditional write).
+# Only author fields are accepted; `expected_revision` must match or the answer is
+# 412; the stored page gets a new revision and `updated_at`; the response is
+# `{page, incompatible_references}`. Saved pages replace the static ones for this
+# prefix, so GET /v1/pages and /v1/pages/{id} read them back after a reopen.
+PAGE_WRITE_FIELDS = {'name', 'template', 'line_metadata', 'canvases', 'device_type', 'notes_wide', 'notes_tall',
+                     'grid_rows', 'grid_cols', 'display_type', 'rows'}
+
+
+def current_page(state, page_id):
+    saved = state.setdefault('saved_pages', {})
+    if page_id in saved:
+        return saved[page_id]
+    page = next((p for p in PAGES if p['id'] == page_id), None)
+    if page:
+        return page_body(page)
+    return next((p for p in state['extra_pages'] if p['id'] == page_id), None)
+
+
+def save_page(state, page_id, body):
+    current = current_page(state, page_id)
+    if current is None:
+        return 404, {'detail': 'Page not found'}
+    if current.get('edit_protocol') != 'page-revision-v1':
+        return 409, {'detail': 'This page type is not editable through the revision protocol'}
+    if not isinstance(body, dict) or body.get('expected_revision') != current.get('revision'):
+        return 412, {'detail': 'Page changed; fetch for comparison'}
+    unknown = set(body) - PAGE_WRITE_FIELDS - {'expected_revision'}
+    if unknown:
+        return 422, {'detail': 'Unsupported page patch fields: ' + ', '.join(sorted(unknown))}
+    if 'template' in body and (not isinstance(body['template'], list) or not body['template']):
+        return 422, {'detail': 'Template pages require at least one template line'}
+    if 'canvases' in body and body['canvases'] is not None:
+        canvases = body['canvases']
+        if not isinstance(canvases, list) or len(canvases) > 8 or not all(isinstance(c, dict) and c.get('id') for c in canvases):
+            return 422, {'detail': 'Invalid canvases'}
+        for c in canvases:
+            area = c.get('area') or {}
+            if not all(isinstance(area.get(k), int) and area[k] >= 1 for k in ('row', 'col', 'rows', 'cols')):
+                return 422, {'detail': 'Canvas area values must be whole numbers >= 1'}
+    updated = copy.deepcopy(current)
+    for key, value in body.items():
+        if key != 'expected_revision':
+            updated[key] = value
+    count = state.setdefault('save_count', 0) + 1
+    state['save_count'] = count
+    updated['revision'] = 'revision-%s-saved-%d' % (page_id, count)
+    updated['updated_at'] = '2026-11-02T09:%02d:00Z' % (count % 60)
+    state['saved_pages'][page_id] = updated
+    return 200, {'page': updated, 'incompatible_references': []}
 
 
 def board_entry(b):
@@ -406,14 +470,14 @@ def handle(prefix, route, method, body, query, store):
     if method == 'GET' and route == 'settings/display':
         return 200, {'reduce_motion': False, 'board_animations': True, 'site_animations': True, 'board_flap_speed': 'standard'}
     if method == 'GET' and route == 'v1/pages':
-        pages = ([] if sc == 'no-pages' else [page_body(p) for p in PAGES]) + state['extra_pages']
+        ids = ([] if sc == 'no-pages' else [p['id'] for p in PAGES]) + [p['id'] for p in state['extra_pages']]
+        pages = [current_page(state, i) for i in ids]
         return 200, {'pages': pages, 'total': len(pages)}
+    if method == 'PUT' and route.startswith('v1/pages/') and route.count('/') == 2:
+        return save_page(state, route.split('/')[2], body)
     if method == 'GET' and route.startswith('v1/pages/'):
-        page = next((p for p in PAGES if p['id'] == route.split('/')[2]), None)
-        if page:
-            return 200, page_body(page)
-        extra = next((p for p in state['extra_pages'] if p['id'] == route.split('/')[2]), None)
-        return (200, extra) if extra else (404, {'detail': 'Page not found'})
+        page = current_page(state, route.split('/')[2])
+        return (200, page) if page else (404, {'detail': 'Page not found'})
     if method == 'GET' and route == 'v1/schedules':
         entries = [] if sc == 'schedule-gap' else [schedule_entry(e, board_id) for e in SCHEDULE]
         return 200, {'schedules': entries, 'total': len(entries), 'default_page_id': None,
