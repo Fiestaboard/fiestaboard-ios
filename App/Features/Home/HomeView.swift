@@ -194,7 +194,7 @@ struct QuickAction: View {
     @Environment(\.isEnabled) private var enabled
     var body: some View {
         VStack(spacing: 6) {
-            Image(systemName: systemImage).font(.title3.weight(.semibold))
+            Image(systemName: systemImage).font(.title3.weight(.semibold)).frame(height: 26)
             Text(title).font(.footnote.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity, minHeight: 64)

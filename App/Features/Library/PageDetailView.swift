@@ -130,6 +130,7 @@ struct CreateLibraryPageView: View {
     @ObservedObject var store: BoardStore
     @Environment(\.dismiss) private var dismiss
     @LibraryState private var createdID: String?
+    @FocusState private var nameFocused: Bool
     var body: some View {
         Group {
             if let id = createdID {
@@ -138,9 +139,16 @@ struct CreateLibraryPageView: View {
                 Form {
                     Section("Page") {
                         TextField("New page name", text: $library.name)
+                            .focused($nameFocused)
                             .submitLabel(.done)
-                            .onSubmit { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
+                            .onSubmit { nameFocused = false }
                             .disabled(library.busy)
+                            // iPad: the keyboard's own Hide key hides the keyboard but leaves
+                            // the field first responder, so the next tap (the format menu)
+                            // brought the keyboard back. Resign with it (E1 open issue 5).
+                            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                                nameFocused = false
+                            }
                         Picker("Display format", selection: $library.isPanel) {
                             Text("Split-flap · 6 × 22").tag(false)
                             Text("LED panel").tag(true)

@@ -19,4 +19,9 @@ final class StatusReaderRegistry: @unchecked Sendable {
         lock.lock(); defer { lock.unlock() }
         return readers[label]
     }
+
+    /// The same live service, for page thumbnails (`/pages/preview/batch`).
+    func previewReader(for label: String) -> (any PagePreviewReading)? {
+        reader(for: label) as? any PagePreviewReading
+    }
 }

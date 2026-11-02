@@ -48,6 +48,10 @@ public enum PageLibraryPhase: Equatable, Sendable {
     fileprivate var blocked = false
     fileprivate var deletionRecoveryEpochs: [String: UInt64] = [:]
     public var busy: Bool { phase == .working }
+    /// The "Page created" note belongs to the create sheet; clear it once the
+    /// sheet (or the editor it became) closes, so the Pages list never keeps a
+    /// stale "open its editor" instruction after the page was saved.
+    public func dismissCompletion() { if case .completed = phase { phase = .idle } }
     public var needsReview: Bool { blocked }
     public var canCreate: Bool { capability.canCreate && !busy && !blocked }
     public var canDelete: Bool { capability.canDelete && !busy && !blocked }

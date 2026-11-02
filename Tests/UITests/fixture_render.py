@@ -247,4 +247,52 @@ def handle(prefix, route, method, body, query, store):
         return 200, toy_render(body)
     if route == 'templates/validate':
         return 200, toy_validate(body)
-    return None  # /pages/preview/batch: table only in D1.
+    if route == 'pages/preview/batch':
+        return 200, toy_batch(prefix, body)
+    return None
+
+
+def _pages_for(prefix):
+    """The page documents this prefix serves (board scenarios, else the corpus page)."""
+    if prefix.startswith('/board-'):
+        import fixture_boards
+        return {p['id']: fixture_boards.page_body(p) | {'shows': p.get('shows')} for p in fixture_boards.PAGES}
+    corpus = json.loads((ROOT / 'Fixtures/contracts/10.1.20/bootstrap-control.json').read_text())
+    page = next((c['response']['body'] for c in corpus['cases'] if c['id'] == 'page_get'), None)
+    return {page['id']: page} if page else {}
+
+
+def toy_batch(prefix, body):
+    """`POST /pages/preview/batch` fallback: each page through the toy renderer."""
+    pages = _pages_for(prefix)
+    board_id = body.get('board_id')
+    previews = {}
+    for page_id in body.get('page_ids') or []:
+        page = pages.get(page_id)
+        if page is None:
+            previews[page_id] = {'available': False, 'error': f'Page not found: {page_id}'}
+            continue
+        request = {k: page.get(k) for k in ('device_type', 'notes_wide', 'notes_tall', 'grid_rows', 'grid_cols')}
+        if board_id:
+            request['board_id'] = board_id
+        if page.get('template'):
+            request['template'] = page['template']
+            request['line_metadata'] = page.get('line_metadata')
+            # The exact render case for this page when the table has one (the
+            # editor's request shape), else the toy fallback.
+            exact = {k: page.get(k) for k in ('template', 'line_metadata', 'device_type', 'notes_wide',
+                                              'notes_tall', 'grid_rows', 'grid_cols')}
+            hit = TABLE.get(('/templates/render', canonical(exact)))
+            lines = hit['body']['lines'] if hit and hit.get('status', 200) == 200 else toy_render(request)['lines']
+        elif page.get('shows'):
+            request['template'] = [re.sub(r'\{(red|orange|yellow|green|blue|violet|white|black)\}', r'{{\1}}', line)
+                                   for line in page['shows']]
+            request['line_metadata'] = [{'alignment': 'center', 'wrap': False}] * len(page['shows'])
+            lines = toy_render(request)['lines']
+        else:
+            previews[page_id] = {'available': False, 'error': 'This page has no fixed grid to preview'}
+            continue
+        previews[page_id] = {'available': True, 'page_id': page_id, 'message': '\n'.join(lines), 'lines': lines,
+                             'display_type': page.get('device_type') or 'flagship', 'raw': {}}
+    ok = sum(1 for v in previews.values() if v['available'])
+    return {'previews': previews, 'total': len(previews), 'successful': ok}

@@ -146,6 +146,30 @@ final class BoardVisualsUITests: XCTestCase {
         waitFor(name, NSPredicate(format: "label == %@", "Hall Hello"), 10, "Hall's page")
     }
 
+    /// B11 (iOS-R2): Pages as cards with server-rendered static thumbnails drawn
+    /// as the selected display, type badges and "Not on this display".
+    @MainActor
+    func testPagesThumbnails() async throws {
+        try await requireFixture()
+        let app = launchSignedIn(scenario: "manual")
+        selectDestination("Pages", in: app)
+        let morning = app.descendants(matching: .any)["pageThumbnail_morning"]
+        XCTAssertTrue(morning.waitForExistence(timeout: 10), app.debugDescription)
+        waitFor(morning, NSPredicate(format: "value == %@", "rendered"), 10, "Good Morning thumbnail")
+        XCTAssertTrue(morning.label.contains("GOOD MORNING"), morning.label)
+        XCTAssertTrue(morning.label.contains("WARM OUT"), "the server's render, not the template source: \(morning.label)")
+        XCTAssertFalse(morning.label.contains("WEATHER."), "no variable names on the thumbnail")
+        XCTAssertTrue(app.descendants(matching: .any)["notOnThisDisplay_note"].exists, "a Note page on a Flagship")
+        XCTAssertFalse(app.descendants(matching: .any)["notOnThisDisplay_morning"].exists)
+        XCTAssertTrue(app.staticTexts["Note Array"].exists && app.staticTexts["Panel"].exists)
+        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@", "no fixed grid")).firstMatch.exists)
+        try await Task.sleep(nanoseconds: 1_500_000_000)
+        shot(app, "W2-B11-pages")
+        app.swipeUp()
+        try await Task.sleep(nanoseconds: 1_000_000_000)
+        shot(app, "W2-B11-pages-lower")
+    }
+
     @MainActor private func waitFor(_ element: XCUIElement, _ predicate: NSPredicate, _ timeout: TimeInterval, _ what: String) {
         let deadline = Date().addingTimeInterval(timeout)
         while Date() < deadline {

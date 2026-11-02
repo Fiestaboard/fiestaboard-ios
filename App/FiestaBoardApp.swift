@@ -32,9 +32,13 @@ struct DraftScene: View {
     @StateObject private var store: BoardStore
     @StateObject private var connection: ConnectionModel
     @StateObject private var boardStatus: BoardStatus
+    @StateObject private var thumbnails: PageThumbnails
     init(persistence: ConnectionPersistence) {
         let store = BoardStore()
         _store = StateObject(wrappedValue: store)
+        _thumbnails = StateObject(wrappedValue: PageThumbnails(reader: {
+            StatusReaderRegistry.shared.previewReader(for: store.connectionLabel)
+        }))
         _boardStatus = StateObject(wrappedValue: BoardStatus(store: store, reader: {
             StatusReaderRegistry.shared.reader(for: store.connectionLabel)
         }))
@@ -48,8 +52,6 @@ struct DraftScene: View {
     }
     @DraftState private var tab: DraftTab? = .home
     @DraftState private var compactColumn = NavigationSplitViewColumn.detail
-    @DraftState private var search = ""
-    @DraftState private var creatingPage = false
     @DraftState private var composing = false
     @DraftState private var textDraft = ""
     @DraftState private var reviewAfterCompose: PreparedAction?
@@ -226,35 +228,8 @@ struct DraftScene: View {
     }
     private var library: some View {
         NavigationStack {
-            List {
-                if let library = store.pageLibrary {
-                    Section { PageLibraryFeedback(library: library, store: store) }
-                }
-                Section("Pages · local drafts available") {
-                    ForEach(store.pages.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }) { page in
-                        NavigationLink { PageDetailView(page: page, store: store, prepare: { pending = store.prepare(.page(page.id)) }) } label: {
-                            Label { VStack(alignment: .leading, spacing: 4) { Text(page.name).font(.headline); Text("\(page.type) · \(page.deviceType ?? "no fixed grid")").font(.caption).foregroundStyle(.secondary) } } icon: { Image(systemName: "rectangle.stack").foregroundStyle(.orange) }.padding(.vertical, 6)
-                        }
-                    }
-                    if store.pages.isEmpty { Text("No pages on this deployment.") }
-                }
-            }.navigationTitle("Pages").searchable(text: $search, prompt: "Find a page")
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button("New page", systemImage: "plus") { creatingPage = true }
-                            .accessibilityIdentifier("newLibraryPage")
-                            .disabled(store.pageLibrary?.capability.canCreate != true)
-                    }
-                    ToolbarItem(placement: .secondaryAction) {
-                        Button("Reload library", systemImage: "arrow.clockwise") { store.refreshLibrary() }.disabled(store.connecting)
-                    }
-                }
-                .sheet(isPresented: $creatingPage) {
-                    if let library = store.pageLibrary {
-                        NavigationStack { CreateLibraryPageView(library: library, store: store) }
-                    }
-                }
-                .onChange(of: store.connectionLabel) { _, _ in creatingPage = false }
+            PagesListView(store: store, status: boardStatus, thumbnails: thumbnails,
+                          prepare: { pending = store.prepare(.page($0)) })
         }
     }
     private var pageChooser: some View {
@@ -265,36 +240,8 @@ struct DraftScene: View {
     }
     private var displays: some View {
         NavigationStack {
-            List {
-                Section("Displays") {
-                    ForEach(store.boards) { board in
-                        NavigationLink {
-                            Form {
-                                Section("Display") {
-                                    LabeledContent("Name", value: board.name)
-                                    LabeledContent("ID", value: board.id)
-                                    LabeledContent("Geometry", value: "\(board.rows) × \(board.cols)")
-                                    LabeledContent("Device model", value: board.deviceModel ?? "Not reported")
-                                    LabeledContent("Character set", value: board.charset ?? "Not reported")
-                                    LabeledContent("Schedule", value: board.scheduleEnabled ? "Enabled" : "Disabled")
-                                    LabeledContent("Paused", value: board.paused ? "Yes" : "No")
-                                }
-                                Section {
-                                    Button("Use this display") { store.selectBoard(board.id); tab = .home }.disabled(store.commandBusy)
-                                    NavigationLink {
-                                        playback(for: board.id)
-                                    } label: { Label("Playback", systemImage: "play.rectangle") }
-                                        .accessibilityIdentifier("displayPlayback")
-                                        .disabled(store.commandBusy)
-                                }
-                            }.frame(maxWidth: 1000).frame(maxWidth: .infinity).navigationTitle(board.name)
-                        } label: {
-                            HStack { Label(board.name, systemImage: "rectangle.on.rectangle"); Spacer(); if store.selectedBoardID == board.id { Image(systemName: "checkmark.circle.fill").foregroundStyle(.orange).accessibilityLabel("Selected") } }
-                        }
-                    }
-                    if store.boards.isEmpty { Text("No displays reported by this server.") }
-                }
-            }.navigationTitle("Displays")
+            DisplaysView(store: store, status: boardStatus, useOnHome: { tab = .home },
+                         playback: { playback(for: $0) })
         }
     }
     private var settings: some View {
