@@ -88,6 +88,13 @@ public struct DocumentEditingSession: Sendable {
         }
         try adopt(candidate, action: "Change board size")
     }
+    /// A draw-mode stroke (PLAN B23, iOS-F1): rows and their forced alignment/wrap, one undo step,
+    /// so Undo restores the text and each row's previous alignment and wrap together.
+    public mutating func applyStroke(_ stroke: StrokeTransaction) throws {
+        var candidate = document
+        try candidate.applyStroke(stroke)
+        try adopt(candidate, action: "Paint")
+    }
     public mutating func setLineAlignment(at index: Int, alignment: String) throws {
         var candidate = document
         try candidate.setLineAlignment(at: index, alignment: alignment)

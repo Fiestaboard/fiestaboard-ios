@@ -73,7 +73,8 @@ import FiestaBoardRender
         let mark = chip.sourceMark
         let markInk: UIColor = { if case .unknownVariable = chip.style { return .systemOrange }; return palette.stroke }()
         let markDiameter = (markFont.lineHeight * 1.0).rounded()
-        let prefix: String? = { if case .formula = chip.style { return "ƒ" }; return nil }()
+        // The formula's ƒ is its source mark on the amber dot (iOS-F1: compact like a variable chip).
+        let prefix: String? = nil
         let prefixFont = UIFont.systemFont(ofSize: font.pointSize * 0.86, weight: .bold).italic
         let labelAttributes: [NSAttributedString.Key: Any] = [.font: labelFont, .foregroundColor: palette.text]
         let filterAttributes: [NSAttributedString.Key: Any] = [.font: filterFont, .foregroundColor: palette.text]

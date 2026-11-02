@@ -1,0 +1,63 @@
+{
+  "about": "iOS-F1 render/validate cases (PLAN §4.4): appended to render-cases.json by both fixture servers.",
+  "version": 1,
+  "cases": [
+    {
+      "id": "f1_formula_pretty_flattened_valid",
+      "route": "/templates/validate",
+      "request": {
+        "template": [
+          "{{= IF(weather.temperature > 70,\"WARM\",\"COOL\") }}"
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "valid": true,
+          "errors": []
+        }
+      },
+      "source": "mock: validate fallback, pinned. The formula editor flattens its one-argument-per-line text like the web (spaces after commas dropped)"
+    },
+    {
+      "id": "f1_formula_mismatched_parentheses",
+      "route": "/templates/validate",
+      "request": {
+        "template": [
+          "{{= UPPER(date_time.day_of_week }}"
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "valid": false,
+          "errors": [
+            {
+              "line": 1,
+              "column": 1,
+              "message": "Formula #ERROR!: Mismatched parentheses"
+            }
+          ]
+        }
+      },
+      "source": "mock: validate fallback, pinned"
+    },
+    {
+      "id": "f1_formula_unknown_category_function",
+      "route": "/templates/validate",
+      "request": {
+        "template": [
+          "{{= WOBBLE(1) }}"
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "valid": true,
+          "errors": []
+        }
+      },
+      "source": "mock: WOBBLE is the fixture's function in the unknown category `experimental` (fixture_catalog.py)"
+    }
+  ]
+}
