@@ -331,8 +331,16 @@ struct StageDocumentLayout: Layout {
         } else {
             // The stage keeps its full size; the document gives way down to ~3 rows (B30), and only
             // then does the board scale down.
-            let stageHeight = max(0, min(stage.sizeThatFits(ProposedViewSize(width: bounds.width, height: nil)).height,
+            var stageHeight = max(0, min(stage.sizeThatFits(ProposedViewSize(width: bounds.width, height: nil)).height,
                                          bounds.height - minDocumentHeight - spacing, bounds.height * 0.75))
+            // Free space under the document (keyboard up, iPad portrait) goes to the board: its
+            // tiles grow taller, up to `StageBoard.maxStretch` (P1). The board stays the largest
+            // element and is never covered.
+            let documentNatural = document.sizeThatFits(ProposedViewSize(width: bounds.width, height: nil)).height
+            let spare = bounds.height - stageHeight - spacing - documentNatural
+            if spare > 1 {
+                stageHeight = stage.sizeThatFits(ProposedViewSize(width: bounds.width, height: stageHeight + spare)).height
+            }
             stage.place(at: bounds.origin, proposal: ProposedViewSize(width: bounds.width, height: stageHeight))
             let room = max(0, bounds.height - stageHeight - spacing)
             let documentHeight = min(document.sizeThatFits(ProposedViewSize(width: bounds.width, height: nil)).height, room)

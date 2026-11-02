@@ -29,7 +29,16 @@ public struct BoardFrameView: View {
 
     /// Bezel padding and border as fractions of tile height, so the aspect of
     /// the whole board is size-independent.
-    static let bezelPadX = 0.40, bezelPadY = 0.55, bezelBorder = 0.10, bezelRadius = 0.40
+    public static let bezelPadX = 0.40, bezelPadY = 0.55, bezelBorder = 0.10, bezelRadius = 0.40
+
+    /// Width / height of a split-flap board with its bezel (size-independent), for hosts that lay
+    /// the board out themselves (the editor's stage, P1).
+    public static func flapAspect(_ model: DisplayModel, bezel: Bool = true) -> Double {
+        let h = 100.0
+        let grid = BoardLayout.size(rows: model.rows, cols: model.cols, tileHeight: h, seams: model.seams)
+        guard bezel else { return grid.width / max(grid.height, 1) }
+        return (grid.width + 2 * h * (bezelPadX + bezelBorder)) / max(grid.height + 2 * h * (bezelPadY + bezelBorder), 1)
+    }
 
     private var cells: [[BoardCell]] { frame.boardCells(model: model) }
 

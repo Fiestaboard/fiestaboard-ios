@@ -154,10 +154,47 @@ struct StageBoard: View {
         }
     }
 
+    /// How much taller than its width-derived height the board may grow into free space (P1).
+    static let maxStretch: CGFloat = 1.3
+
     var body: some View {
-        BoardFrameView(frame: BoardFrame.fromLines(lines, rows: rows, cols: cols),
-                       model: DisplayModel.flap(rows: rows, cols: cols, deviceType: deviceType),
-                       size: .fit, animated: true, loading: loading)
+        let model = DisplayModel.flap(rows: rows, cols: cols, deviceType: deviceType)
+        let aspect = CGFloat(BoardFrameView.flapAspect(model))
+        StretchBoardLayout(aspect: aspect, maxStretch: Self.maxStretch) {
+            GeometryReader { proxy in
+                // Width-bound board, drawn at its natural aspect, then made taller (tiles and
+                // letters) to fill the height the stage was given; never wider than the room.
+                let natural = proxy.size.width / aspect
+                let stretch = min(Self.maxStretch, max(1, proxy.size.height / max(natural, 1)))
+                BoardFrameView(frame: BoardFrame.fromLines(lines, rows: rows, cols: cols), model: model,
+                               size: .fit, animated: true, loading: loading)
+                    .frame(width: proxy.size.width, height: natural)
+                    .scaleEffect(x: 1, y: stretch, anchor: .top)
+                    .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
+            }
+        }
+    }
+}
+
+/// Sizes the stage's board (P1, free space): with no height offered it is width-bound at the
+/// board's aspect (as before); offered more height it grows up to `maxStretch` × that; offered
+/// less it shrinks to fit (keeping its aspect), so it is never covered.
+struct StretchBoardLayout: Layout {
+    var aspect: CGFloat
+    var maxStretch: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width.flatMap { $0.isFinite ? $0 : nil } ?? 400
+        let natural = width / max(aspect, 0.01)
+        guard let height = proposal.height, height.isFinite else { return CGSize(width: width, height: natural) }
+        if height >= natural { return CGSize(width: width, height: min(height, natural * maxStretch)) }
+        return CGSize(width: height * aspect, height: height)
+    }
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        for subview in subviews {
+            subview.place(at: CGPoint(x: bounds.midX, y: bounds.minY), anchor: .top,
+                          proposal: ProposedViewSize(width: bounds.width, height: bounds.height))
+        }
     }
 }
 

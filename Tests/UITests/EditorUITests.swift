@@ -286,6 +286,16 @@ import XCTest
         placeCaret(row: 3, app, document)
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
         attach(app, "P1-1-chips-keyboard-up-\(device())")
+        // P1 item 2: the free space between the document and the keyboard goes to the board (W2
+        // left ~85 pt empty there on this phone). The board stays above the keyboard.
+        let stage = app.descendants(matching: .any).matching(identifier: "boardStage").firstMatch
+        let hide = app.buttons["editorHideKeyboard"]
+        let mode = app.descendants(matching: .any).matching(identifier: "editingMode").firstMatch
+        XCTAssertLessThan(stage.frame.maxY, hide.frame.minY, "The board is above the keyboard")
+        if UIDevice.current.userInterfaceIdiom == .phone {
+            XCTAssertLessThan(hide.frame.minY - mode.frame.maxY, 50, "Little empty space is left under the document")
+            XCTAssertGreaterThan(stage.frame.height, stage.frame.width * 0.45, "The board grew taller than its width-bound aspect (≈0.41)")
+        }
         app.buttons["editorHideKeyboard"].tap()
         app.navigationBars.buttons["Close"].tap()
         let discard = app.buttons["Discard and leave"]
