@@ -73,7 +73,8 @@ final class DocumentTests: XCTestCase {
         for unsupported in [
             #"{"type":"single","template":["a"]}"#,
             #"{"type":"template","template":["a",{"future":"node"}]}"#,
-            #"{"type":"template","template":["a"],"line_metadata":[]}"#,
+            // `"line_metadata":[]` (shorter than `template`) moved to LosslessRoundTripTests: real pages
+            // carry short arrays and PLAN §2.2 requires them editable, read as the server reads them.
             #"{"type":"template","template":["a"],"line_metadata":[null]}"#,
             #"{"type":"template","template":["a"],"line_metadata":[{"alignment":"future"}]}"#
         ] {

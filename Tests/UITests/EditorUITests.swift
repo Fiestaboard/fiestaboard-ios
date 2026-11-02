@@ -46,6 +46,12 @@ import XCTest
         let y = gutter.frame.midY - document.frame.minY
         document.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: document.frame.width - 12, dy: y)).tap()
     }
+    /// A toolbar action: the button under the title, or (phone, keyboard up, where the title and
+    /// toolbar step aside for the board — W2 B30) its keyboard-accessory mirror.
+    private func tool(_ app: XCUIApplication, _ name: String) -> XCUIElement {
+        let toolbar = app.buttons["toolbar_" + name]
+        return toolbar.exists && toolbar.isHittable ? toolbar : app.buttons["accessory_" + name]
+    }
     private func stageLines(_ app: XCUIApplication) -> [String] {
         ((app.descendants(matching: .any).matching(identifier: "boardStage").firstMatch.value as? String) ?? "")
             .components(separatedBy: "\n").map { line in
@@ -134,7 +140,9 @@ import XCTest
         placeCaret(row: 2, app, document); document.typeText("TWO")
         placeCaret(row: 3, app, document); document.typeText("THREE")
         placeCaret(row: 2, app, document)
-        let center = app.buttons["toolbar_alignCenter"]
+        // Re-recorded (W2): on a phone the toolbar steps aside while typing, so actions go through
+        // `tool(...)` (toolbar or its accessory mirror); the assertions are unchanged.
+        let center = tool(app, "alignCenter")
         center.tap()
         XCTAssertTrue(center.isSelected, "Toolbar reflects the caret row")
         // The keyboard accessory mirrors the toolbar while the keyboard is up.
@@ -150,19 +158,19 @@ import XCTest
         XCTAssertEqual(lines[1], String(repeating: " ", count: 9) + "TWO")
         attach(app, "D1-B15-align")
         placeCaret(row: 1, app, document)
-        XCTAssertFalse(center.isSelected, "Row 1 is still left-aligned")
-        XCTAssertTrue(app.buttons["toolbar_alignLeft"].isSelected)
-        let wrap = app.buttons["toolbar_wrap"]
+        XCTAssertFalse(tool(app, "alignCenter").isSelected, "Row 1 is still left-aligned")
+        XCTAssertTrue(tool(app, "alignLeft").isSelected)
+        let wrap = tool(app, "wrap")
         XCTAssertFalse(wrap.isSelected); wrap.tap(); XCTAssertTrue(wrap.isSelected)
         placeCaret(row: 2, app, document)
         XCTAssertFalse(wrap.isSelected, "Wrap follows the caret row too")
         XCTAssertTrue(center.isSelected)
         // One Undo removes the last toolbar action only.
-        app.buttons["toolbar_undo"].tap()
+        tool(app, "undo").tap()
         placeCaret(row: 1, app, document)
         XCTAssertFalse(wrap.isSelected)
         placeCaret(row: 2, app, document)
-        XCTAssertTrue(center.isSelected)
+        XCTAssertTrue(tool(app, "alignCenter").isSelected)
     }
 
     /// B19: typed letters reach the stage within 750 ms of the last keystroke (UI-test clock;
@@ -266,5 +274,200 @@ import XCTest
         attach(app, "D1-B19-fixture-render")
         app.buttons["editorHideKeyboard"].tap()
         app.navigationBars.buttons["Close"].tap(); app.buttons["Discard and leave"].tap()
+    }
+
+    // MARK: Wave 2 (iOS-E2): chips, insert buttons, keyboard-up layout
+
+    private func device() -> String { UIDevice.current.userInterfaceIdiom == .pad ? "ipadair11m4" : "iphone17promax" }
+    private func source(_ document: XCUIElement) -> String { (document.value as? String) ?? "" }
+    /// Opens a menu button and taps through its items by label (menus keep the keyboard up).
+    private func pick(_ app: XCUIApplication, _ button: String, _ path: [String]) {
+        let opener = app.buttons[button]
+        XCTAssertTrue(opener.waitForExistence(timeout: 3), button); opener.tap()
+        for label in path {
+            let item = app.collectionViews.buttons[label].firstMatch.exists ? app.collectionViews.buttons[label].firstMatch : app.buttons[label].firstMatch
+            XCTAssertTrue(item.waitForExistence(timeout: 3), "\(label) in \(button)"); item.tap()
+        }
+    }
+
+    /// B13/B14/B15: Variables, Colors and Insert formula on the keyboard accessory insert chips at
+    /// the caret (the keyboard stays up); the board follows; Backspace removes a chip whole; an
+    /// unknown variable is flagged with a reason for the board's ???.
+    func testInsertChipsFromTheKeyboardAccessory() {
+        let app = XCUIApplication()
+        let document = openNewPage(app, name: "Chips")
+        placeCaret(row: 1, app, document)
+        document.typeText("TEMP ")
+        pick(app, "accessory_variables", ["Weather", "insertVariable_weather.temperature"])
+        XCTAssertTrue(waitForCondition(timeout: 3) { self.source(document).hasPrefix("TEMP {{weather.temperature}}") }, source(document))
+        XCTAssertTrue(app.keyboards.firstMatch.exists, "The keyboard stays up after a menu insert")
+        document.typeText(" ")
+        pick(app, "accessory_colors", ["insertColor_red"])
+        XCTAssertTrue(waitForCondition(timeout: 3) { self.source(document).hasPrefix("TEMP {{weather.temperature}} {{red}}") }, source(document))
+        // The stage's value carries letters only (a colour flap reads as a gap), so the tile is
+        // checked in the evidence; the sample value replaces the variable on the board.
+        XCTAssertTrue(waitForStage(app) { $0.first == "TEMP 72" }, "Sample value on the board: \(stageLines(app))")
+        attach(app, "W2-B13-chips-keyboard-up-\(device())")
+        // Insert formula: a sheet for the expression; the pill lands at the caret.
+        placeCaret(row: 2, app, document)
+        app.buttons["accessory_formula"].tap()
+        let expression = app.textFields["formulaExpression"].exists ? app.textFields["formulaExpression"] : app.textViews["formulaExpression"]
+        XCTAssertTrue(expression.waitForExistence(timeout: 3))
+        expression.typeText(#"IF(weather.temperature > 70, "WARM", "COOL")"#)
+        app.buttons["formulaInsert"].tap()
+        XCTAssertTrue(waitForCondition(timeout: 3) { self.source(document).components(separatedBy: "\n").dropFirst().first == #"{{= IF(weather.temperature > 70, "WARM", "COOL") }}"# }, source(document))
+        XCTAssertTrue(waitForStage(app) { $0.count > 1 && $0[1] == "WARM" }, "\(stageLines(app))")
+        // Backspace right after the pill deletes the whole pill (one character for the caret).
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 3), "Focus returns to the document after the sheet")
+        document.typeText(XCUIKeyboardKey.delete.rawValue)
+        XCTAssertTrue(waitForCondition(timeout: 3) { self.source(document).components(separatedBy: "\n").dropFirst().first == "" }, source(document))
+        app.buttons["accessory_undo"].tap()
+        XCTAssertTrue(waitForCondition(timeout: 3) { self.source(document).contains("{{= IF(") }, "One Undo restores the pill: \(source(document))")
+        // An unknown variable gets the warning treatment and says why the board shows ???.
+        placeCaret(row: 3, app, document)
+        document.typeText("{{bogus.thing}}")
+        let issue = app.descendants(matching: .any).matching(identifier: "unknownVariableIssue").firstMatch
+        XCTAssertTrue(issue.waitForExistence(timeout: 3))
+        XCTAssertTrue(issue.label.contains("???"), issue.label)
+        XCTAssertTrue(waitForStage(app) { $0.count > 2 && $0[2] == "???" }, "\(stageLines(app))")
+        attach(app, "W2-B13-formula-and-unknown-\(device())")
+        // B30: with the keyboard up the board is not covered and keeps (almost) the full width.
+        let stage = app.descendants(matching: .any).matching(identifier: "boardStage").firstMatch
+        let keyboard = app.keyboards.firstMatch
+        XCTAssertLessThan(stage.frame.maxY, keyboard.frame.minY, "The board is above the keyboard")
+        XCTAssertGreaterThanOrEqual(stage.frame.width, document.frame.width - 1, "The board keeps the editor's full width while typing")
+        app.buttons["editorHideKeyboard"].tap()
+        attach(app, "W2-B13-chips-\(device())")
+    }
+
+    /// Web port: Return at the end of a row on a padded new page moves to the next row instead of
+    /// adding a 7th ("7 / 6" on a beginner's first Return).
+    func testReturnMovesToTheNextEmptyRow() {
+        let app = XCUIApplication()
+        let document = openNewPage(app, name: "Return test")
+        placeCaret(row: 1, app, document)
+        document.typeText("ONE\nTWO\nTHREE")
+        XCTAssertTrue(waitForCondition(timeout: 3) { self.source(document).components(separatedBy: "\n").count == 6 }, source(document))
+        XCTAssertEqual(source(document).components(separatedBy: "\n").prefix(3), ["ONE", "TWO", "THREE"])
+        XCTAssertEqual(app.staticTexts["lineCounter"].label, "3 / 6 lines")
+        XCTAssertFalse(app.staticTexts["documentRow_7"].exists)
+    }
+
+    /// B30/B33 (phone): all six rows and the whole board are visible with the keyboard down, and
+    /// the stage is the largest element; the title does not truncate.
+    func testBoardStaysBigAndAllRowsShow() {
+        let app = XCUIApplication()
+        let document = openNewPage(app, name: "Six rows")
+        placeCaret(row: 1, app, document)
+        document.typeText("ONE\nTWO\nTHREE\nFOUR\nFIVE\nSIX")
+        app.buttons["editorHideKeyboard"].tap()
+        let row6 = app.staticTexts["documentRow_6"]
+        XCTAssertTrue(row6.waitForExistence(timeout: 3))
+        XCTAssertLessThanOrEqual(row6.frame.maxY, document.frame.maxY + 1, "Row 6 is not cut off: \(row6.frame) vs \(document.frame)")
+        let stage = app.descendants(matching: .any).matching(identifier: "boardStage").firstMatch
+        XCTAssertGreaterThan(stage.frame.width * stage.frame.height, document.frame.width * document.frame.height)
+        XCTAssertFalse(app.staticTexts["Demo · local preview, expressions are not evaluated"].exists)
+        // Minimum tile width (~15 pt): 22 tiles plus bezel fit in the stage width.
+        XCTAssertGreaterThanOrEqual(stage.frame.width / 22, 15, "Tiles are at least ~15 pt wide")
+        attach(app, "W2-B30-keyboard-down-\(device())")
+        placeCaret(row: 6, app, document)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 3))
+        XCTAssertLessThan(stage.frame.maxY, app.keyboards.firstMatch.frame.minY)
+        attach(app, "W2-B30-keyboard-up-\(device())")
+    }
+
+    /// B12 (Note) / B28: a page whose `line_metadata` is shorter than its rows (fixture "Desk Note",
+    /// 3 × 15, two entries for three rows) opens in the document editor, not the read-only form.
+    func testShortMetadataNoteOpensInTheDocumentEditor() throws {
+        let app = XCUIApplication()
+        try connectToFixture(app, scenario: "manual")
+        openPages(app)
+        let row = app.staticTexts["Desk Note"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
+        app.buttons["editLocalDraft"].tap()
+        let document = app.textViews["boardDocument"]
+        XCTAssertTrue(document.waitForExistence(timeout: 8), "Desk Note opens in the document editor")
+        XCTAssertEqual(app.staticTexts["boardSizeReadout"].label, "Board size 3 by 15")
+        XCTAssertEqual(source(document).components(separatedBy: "\n").first, "HELLO")
+        XCTAssertTrue(app.staticTexts["documentRow_3"].exists); XCTAssertFalse(app.staticTexts["documentRow_4"].exists)
+        attach(app, "W2-B12-note-\(device())")
+        // Edit row 3 (no metadata entry) and align it: Save stays available.
+        placeCaret(row: 3, app, document)
+        document.typeText("!")
+        app.buttons["accessory_alignRight"].tap()
+        XCTAssertTrue(waitForStage(app, timeout: 5) { $0.count == 3 }, "\(stageLines(app))")
+        app.buttons["editorHideKeyboard"].tap()
+        attach(app, "W2-B28-note-edited-\(device())")
+        app.navigationBars.buttons["Close"].tap(); app.buttons["Discard and leave"].tap()
+    }
+
+    /// E1 open issue 4: when Save is off with unsaved changes, the reason sits beside it.
+    func testDisabledSaveSaysWhy() throws {
+        let app = XCUIApplication()
+        try connectToFixture(app, scenario: "manual")
+        openPages(app)
+        let row = app.staticTexts["Lobby"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
+        app.buttons["editLocalDraft"].tap()
+        let document = app.textViews["boardDocument"]
+        XCTAssertTrue(document.waitForExistence(timeout: 8))
+        placeCaret(row: 3, app, document); document.typeText("HI")
+        app.buttons["editorHideKeyboard"].tap()
+        let save = app.buttons["savePageOnServer"]
+        XCTAssertTrue(waitForCondition(timeout: 3) { !save.isEnabled || save.isEnabled })
+        if !save.isEnabled {
+            let reason = app.descendants(matching: .any).matching(identifier: "saveDisabledReason").firstMatch
+            XCTAssertTrue(reason.waitForExistence(timeout: 3), "A disabled Save says why")
+            XCTAssertTrue(reason.label.hasPrefix("Can't save:"), reason.label)
+            XCTAssertLessThan(reason.frame.minY, document.frame.minY, "The reason is at the top, under Save")
+            attach(app, "W2-save-reason-\(device())")
+        } else {
+            XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "saveDisabledReason").firstMatch.exists)
+        }
+        app.navigationBars.buttons["Close"].tap(); app.buttons["Discard and leave"].tap()
+    }
+
+    /// B18: Plain shows alignment/wrap as prefixes; prefixes typed in Plain become alignment.
+    func testPlainModeShowsPrefixes() {
+        let app = XCUIApplication()
+        let document = openNewPage(app, name: "Plain test")
+        placeCaret(row: 1, app, document); document.typeText("ONE")
+        app.buttons["accessory_alignCenter"].tap()
+        app.buttons["editorHideKeyboard"].tap()
+        app.buttons["Plain"].tap()
+        XCTAssertTrue(waitForCondition(timeout: 3) { self.source(document).hasPrefix("{center}ONE") }, source(document))
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "plainHelp").firstMatch.exists)
+        placeCaret(row: 2, app, document); document.typeText("{right}TWO")
+        app.buttons["editorHideKeyboard"].tap()
+        attach(app, "W2-B18-plain-\(device())")
+        app.buttons["Rich"].tap()
+        XCTAssertTrue(waitForCondition(timeout: 3) { self.source(document).components(separatedBy: "\n").prefix(2) == ["ONE", "TWO"] }, source(document))
+        placeCaret(row: 2, app, document)
+        XCTAssertTrue(waitForCondition(timeout: 2) { self.tool(app, "alignRight").isSelected }, "The prefix became the row's alignment")
+        XCTAssertTrue(waitForStage(app) { $0.count > 1 && $0[1].hasSuffix("TWO") && $0[1].hasPrefix(" ") }, "\(stageLines(app))")
+        app.buttons["editorHideKeyboard"].tap()
+        app.buttons["Plain"].tap(); app.buttons["Rich"].tap() // leave Rich for the next test (the choice persists)
+    }
+
+    /// B20/B28: choosing Note in the stage header redraws a 3 × 15 board and 3 rows; saving a page
+    /// whose board got smaller asks "Change board size?" first.
+    func testGeometryChangeAndShrinkConfirmation() {
+        let app = XCUIApplication()
+        let document = openNewPage(app, name: "Shape test")
+        placeCaret(row: 1, app, document); document.typeText("HI")
+        app.buttons["editorHideKeyboard"].tap()
+        app.buttons["evaluationBoardPicker"].tap()
+        let note = app.buttons["Note · 3 × 15"]
+        XCTAssertTrue(note.waitForExistence(timeout: 3)); note.tap()
+        XCTAssertTrue(waitForCondition(timeout: 3) { app.staticTexts["boardSizeReadout"].label == "Board size 3 by 15" })
+        XCTAssertTrue(waitForCondition(timeout: 3) { !app.staticTexts["documentRow_4"].exists }, "3 rows for a Note")
+        XCTAssertTrue(waitForStage(app) { $0.count == 3 && $0[0] == "HI" }, "\(stageLines(app))")
+        attach(app, "W2-B20-note-shape-\(device())")
+        app.buttons["savePageOnServer"].tap()
+        let resize = app.buttons["resizeAndSave"].firstMatch
+        XCTAssertTrue(resize.waitForExistence(timeout: 3), "Shrinking asks first")
+        attach(app, "W2-B28-resize-confirm-\(device())")
+        resize.tap()
+        XCTAssertTrue(app.textViews["boardDocument"].waitForNonExistence(timeout: 8), "Saved and back to Pages")
     }
 }

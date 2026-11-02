@@ -134,15 +134,30 @@ final class TemplateUITextView: UITextView {
 
     /// Replaces the whole content with `source`, as attachments (rich) or raw text (plain),
     /// placing the selection at the given source range. Never call with marked text.
+    /// Decides the unknown-variable warning on chips (only an authoritative catalog warns).
+    var variables: VariableCatalog?
+    /// Extra styling after the text is set (the document's board-width guide and overflow dimming).
+    var decorate: ((NSMutableAttributedString) -> Void)?
+    private var lastRender: (rich: Bool, font: UIFont, color: UIColor)?
+    private var traitRegistration: (any UITraitChangeRegistration)?
+
     func setTemplate(_ source: String, rich: Bool, font: UIFont, sourceSelection: NSRange, color: UIColor = .label) {
+        lastRender = (rich, font, color)
+        registerChipTraitChanges()
         let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: color]
         let result = NSMutableAttributedString(string: "")
         if rich {
             for fragment in TemplateSyntax.fragments(source) {
                 if fragment.kind == .text { result.append(NSAttributedString(string: fragment.source, attributes: attributes)) }
-                else { result.append(NSAttributedString(attachment: TemplateAttachment(fragment: fragment, font: font))) }
+                else {
+                    let attachment = TemplateAttachment(fragment: fragment, font: font, variables: variables, traits: traitCollection)
+                    let chip = NSMutableAttributedString(attachment: attachment)
+                    chip.addAttributes(attributes, range: NSRange(location: 0, length: chip.length))
+                    result.append(chip)
+                }
             }
         } else { result.append(NSAttributedString(string: source, attributes: attributes)) }
+        decorate?(result)
         attributedText = result
         typingAttributes = attributes
         let start = rich ? TemplateSyntax.displayOffset(sourceOffset: sourceSelection.location, in: source) : sourceSelection.location
@@ -150,6 +165,45 @@ final class TemplateUITextView: UITextView {
         let safeStart = min(start, result.length)
         selectedRange = NSRange(location: safeStart, length: max(0, min(end, result.length) - safeStart))
         accessibilityValue = source
+    }
+
+    /// Chips re-rasterise on light/dark and Dynamic Type changes (PLAN B31), keeping the selection.
+    private func registerChipTraitChanges() {
+        guard traitRegistration == nil else { return }
+        traitRegistration = registerForTraitChanges([UITraitUserInterfaceStyle.self, UITraitPreferredContentSizeCategory.self, UITraitDisplayScale.self]) { (view: TemplateUITextView, _) in
+            view.rerenderChips()
+        }
+    }
+    /// Number of chip re-renders after trait changes (tests).
+    private(set) var traitRerenderCount = 0
+    func rerenderChips() {
+        guard markedTextRange == nil, let lastRender else { return }
+        traitRerenderCount += 1
+        let font = fontProvider?() ?? lastRender.font
+        setTemplate(templateSource, rich: lastRender.rich, font: font, sourceSelection: sourceSelection, color: lastRender.color)
+    }
+    /// The current font (Dynamic Type), asked again on trait changes.
+    var fontProvider: (() -> UIFont)?
+
+    /// Outlines the chips inside a range selection, or the chip just tapped (PLAN B14). Only the
+    /// attachments whose state changes are redrawn.
+    func updateChipOutlines(tapped: Int? = nil) {
+        guard let text = attributedText, text.length > 0 else { return }
+        let selection = selectedRange
+        var changed: [NSRange] = []
+        text.enumerateAttribute(.attachment, in: NSRange(location: 0, length: text.length)) { value, range, _ in
+            guard let attachment = value as? TemplateAttachment else { return }
+            let inside = selection.length > 0 && NSLocationInRange(range.location, selection)
+            let wanted = inside || range.location == tapped
+            if attachment.outlined != wanted {
+                attachment.rerender(traits: traitCollection, outlined: wanted)
+                changed.append(range)
+            }
+        }
+        for range in changed {
+            layoutManager.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
+            layoutManager.invalidateDisplay(forCharacterRange: range)
+        }
     }
 
     override func layoutSubviews() {
@@ -195,23 +249,32 @@ final class TemplateUITextView: UITextView {
     }
 }
 
-final class TemplateAttachment: NSTextAttachment {
+/// One token as one character (U+FFFC): the caret can never land inside it and Backspace removes
+/// it whole (PLAN B14). The image is the token's chip (`TemplateChipRenderer`); `source` is its
+/// exact template text, which copy, cut and the document's source all read back.
+@MainActor final class TemplateAttachment: NSTextAttachment {
     let source: String
-    init(fragment: TemplateSyntax.Fragment, font: UIFont) {
+    let chip: TemplateChip?
+    private(set) var outlined = false
+    private var font: UIFont
+
+    init(fragment: TemplateSyntax.Fragment, font: UIFont, variables: VariableCatalog? = nil, traits: UITraitCollection = .current) {
         source = fragment.source
+        chip = TemplateChip(fragment: fragment, variables: variables)
+        self.font = font
         super.init(data: nil, ofType: nil)
-        let label = fragment.label
-        let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: UIColor.label]
-        let width = min(230, max(34, (label as NSString).size(withAttributes: attributes).width + 18))
-        let height = font.lineHeight + 6
-        image = UIGraphicsImageRenderer(size: CGSize(width: width, height: height)).image { _ in
-            UIColor.tertiarySystemFill.setFill()
-            UIBezierPath(roundedRect: CGRect(x: 0, y: 0, width: width, height: height), cornerRadius: 7).fill()
-            let style = NSMutableParagraphStyle(); style.lineBreakMode = .byTruncatingMiddle
-            var labelAttributes = attributes; labelAttributes[.paragraphStyle] = style
-            (label as NSString).draw(in: CGRect(x: 9, y: 3, width: width - 18, height: height - 6), withAttributes: labelAttributes)
-        }
-        bounds = CGRect(x: 0, y: font.descender - 3, width: width, height: height)
+        accessibilityLabel = chip?.accessibilityLabel ?? fragment.label
+        rerender(font: font, traits: traits)
     }
     required init?(coder: NSCoder) { return nil }
+
+    /// Redraws for a new font size, appearance or outline state (B31: trait changes re-rasterise).
+    func rerender(font: UIFont? = nil, traits: UITraitCollection, outlined: Bool? = nil) {
+        if let font { self.font = font }
+        if let outlined { self.outlined = outlined }
+        guard let chip else { return }
+        let (image, bounds) = TemplateChipRenderer.render(chip, font: self.font, traits: traits, outlined: self.outlined)
+        self.image = image
+        self.bounds = bounds
+    }
 }

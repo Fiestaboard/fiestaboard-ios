@@ -71,6 +71,23 @@ public struct DocumentEditingSession: Sendable {
         try candidate.replaceTemplateRows(rows)
         try adopt(candidate, action: action)
     }
+    /// Plain mode's commit (rows with prefixes), one undo step like typing.
+    public mutating func replacePlainRows(_ rows: [String], action: String = "Typing") throws {
+        var candidate = document
+        try candidate.replacePlainRows(rows)
+        try adopt(candidate, action: action)
+    }
+    /// Board shape change (PLAN B20), one undo step.
+    public mutating func setGeometry(_ geometry: PageGeometry) throws {
+        var candidate = document
+        try candidate.setGeometry(geometry)
+        // Empty rows past the new board's last row are padding, not content: drop them in the same step.
+        if var rows = candidate.editableTemplateLines {
+            while rows.count > geometry.rows, rows.last?.isEmpty == true { rows.removeLast() }
+            if rows.count != candidate.editableTemplateLines?.count { try candidate.replaceTemplateRows(rows) }
+        }
+        try adopt(candidate, action: "Change board size")
+    }
     public mutating func setLineAlignment(at index: Int, alignment: String) throws {
         var candidate = document
         try candidate.setLineAlignment(at: index, alignment: alignment)

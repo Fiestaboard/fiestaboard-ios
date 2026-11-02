@@ -11,17 +11,22 @@ public struct PageSavePatch: Encodable, Sendable, Equatable {
     public let styleData: Data?
     public let layoutData: Data?
     public let targetsData: Data?
+    /// Board shape change (PLAN B20/§2.4): raw `device_type` / `notes_*` / `grid_*` values by key.
+    public let geometryData: [String: Data]
+    public static let geometryKeys = ["device_type", "notes_wide", "notes_tall", "grid_rows", "grid_cols"]
     public var hasFlexibleFields: Bool { blocksData != nil || styleData != nil || layoutData != nil || targetsData != nil }
     public init(name: String? = nil, template: [String]? = nil, lineMetadataData: Data? = nil,
                 blocksData: Data? = nil, styleData: Data? = nil, layoutData: Data? = nil, targetsData: Data? = nil,
-                expectedRevision: String) {
+                geometryData: [String: Data] = [:], expectedRevision: String) {
         self.name = name; self.template = template; self.lineMetadataData = lineMetadataData
+        self.geometryData = geometryData
         self.blocksData = blocksData; self.styleData = styleData; self.layoutData = layoutData; self.targetsData = targetsData
         self.expectedRevision = expectedRevision
     }
     enum CodingKeys: String, CodingKey { case name, template, expectedRevision = "expected_revision" }
     public func validate() throws {
-        guard name != nil || template != nil || lineMetadataData != nil || hasFlexibleFields,
+        guard name != nil || template != nil || lineMetadataData != nil || hasFlexibleFields || !geometryData.isEmpty,
+              geometryData.keys.allSatisfy(Self.geometryKeys.contains), !hasFlexibleFields || geometryData.isEmpty,
               !expectedRevision.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               name.map({ (1...100).contains($0.unicodeScalars.count) && !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) ?? true,
               !hasFlexibleFields || (template == nil && lineMetadataData == nil) else { throw FiestaBoardError.pageWritesDisabled }
@@ -37,6 +42,7 @@ public struct PageSavePatch: Encodable, Sendable, Equatable {
     }
     private var rawFields: [(String, Data)] {
         [("line_metadata", lineMetadataData), ("blocks", blocksData), ("style", styleData), ("layout", layoutData), ("targets", targetsData)].compactMap { key, value in value.map { (key, $0) } }
+            + Self.geometryKeys.compactMap { key in geometryData[key].map { (key, $0) } }
     }
     public func encode(to encoder: any Encoder) throws {
         guard rawFields.isEmpty else { throw FiestaBoardError.pageWritesDisabled }

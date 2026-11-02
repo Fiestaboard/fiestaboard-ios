@@ -192,7 +192,9 @@ extension DemoUITests {
         XCTAssertEqual(picker.value as? String, "Demo Kitchen", "The stage previews on a display")
         let rendered = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value CONTAINS %@", "WELCOME TO FIESTA"), object: stage)
         XCTAssertEqual(XCTWaiter.wait(for: [rendered], timeout: 5), .completed, "Preview is read from the stage")
-        XCTAssertTrue(app.staticTexts["Demo · local preview, expressions are not evaluated"].exists)
+        // Re-recorded (W2): the jargon footnote is gone by design (Jeffrey: no jargon under the board);
+        // the demo board shows sample values and at most says "Sample values".
+        XCTAssertFalse(app.staticTexts["Demo · local preview, expressions are not evaluated"].exists)
 
         let name = app.textFields["pageTitle"]
         name.tap()
@@ -314,6 +316,8 @@ extension DemoUITests {
 /// These scenarios use a loopback fixture process, never the user's server.
 /// Start with: python3 Tests/UITests/fixture_server.py
 final class ConnectionUITests: XCTestCase {
+    /// FIXTURE_PORT lets two agents run their own fixtures concurrently (18442 / 18443).
+    nonisolated static var fixturePort: String { ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "18442" }
     override func setUp() { super.setUp(); continueAfterFailure = false }
     @MainActor
     func testMixedLibraryPreservesUnknownPagesAndShowsReadOnlyRoute() async throws {
@@ -851,7 +855,7 @@ final class ConnectionUITests: XCTestCase {
         XCTAssertTrue(app.buttons["exploreDemo"].waitForExistence(timeout: 8))
         reveal(address, app)
         XCTAssertTrue(address.exists)
-        address.tap(); address.typeText("http://127.0.0.1:18442/" + alias)
+        address.tap(); address.typeText("http://127.0.0.1:\(Self.fixturePort)/" + alias)
         let name = app.textFields["Server name (optional)"]
         reveal(name, app); name.tap(); name.typeText(alias + "\n")
         let localHTTP = app.switches["connectionLocalHTTP"]
@@ -874,7 +878,7 @@ final class ConnectionUITests: XCTestCase {
     }
 
     @MainActor private func requireFixture() async throws {
-        var request = URLRequest(url: URL(string: "http://127.0.0.1:18442/ready")!)
+        var request = URLRequest(url: URL(string: "http://127.0.0.1:\(Self.fixturePort)/ready")!)
         request.timeoutInterval = 3
         let (data, response) = try await URLSession.shared.data(for: request)
         XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
@@ -951,9 +955,11 @@ final class ConnectionUITests: XCTestCase {
         XCTAssertEqual(row(1), original, "One undo removes the typing burst")
         app.buttons["toolbar_redo"].tap()
         XCTAssertEqual(row(1), "NATIVE {{weather.temperature}}" + original)
-        // Tap the chip (just after "NATIVE ") to edit its source.
+        // Tap the chip (just after "NATIVE ") to edit its source. Re-recorded (W2, B14): the first
+        // tap puts the caret after the chip and outlines it; a second tap opens it.
         let charWidth = ("M" as NSString).size(withAttributes: [.font: UIFont.monospacedSystemFont(ofSize: UIFont.preferredFont(forTextStyle: .body).pointSize, weight: .regular)]).width
-        document.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 9 + 7 * charWidth + 24, dy: gutter.frame.midY - document.frame.minY)).tap()
+        let chip = document.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 9 + 7 * charWidth + 24, dy: gutter.frame.midY - document.frame.minY))
+        chip.tap(); Thread.sleep(forTimeInterval: 0.6); chip.tap()
         let tokenSource = app.textFields["tokenSource"]
         XCTAssertTrue(tokenSource.waitForExistence(timeout: 4), "Tapping a chip opens its editor")
         XCTAssertEqual(tokenSource.value as? String, "{{weather.temperature}}")

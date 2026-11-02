@@ -235,7 +235,7 @@ public final class LocalPageEditorModel: ObservableObject {
     public var baselineRevision: String? {
         if case .string(let value) = session.baseline.root["revision"] { value } else { nil }
     }
-    private var editableFields: [String] { supportsFlexibleEditing ? ["name", "blocks", "style", "layout", "targets"] : ["name", "template", "line_metadata"] }
+    private var editableFields: [String] { supportsFlexibleEditing ? ["name", "blocks", "style", "layout", "targets"] : ["name", "template", "line_metadata"] + PageGeometry.keys }
     public var hasServerChanges: Bool { editableFields.contains { session.document.root[$0] != session.baseline.root[$0] } }
     public var serverSaveDisabledReason: String? {
         guard let remote else { return "Server saving is unavailable for this local document." }
@@ -316,6 +316,21 @@ public final class LocalPageEditorModel: ObservableObject {
         guard let current = lines, current != rows else { return }
         mutate { try $0.replaceTemplateRows(rows) }
     }
+    /// The page's stored board shape (PLAN B20) and its change, one undo step.
+    public var pageGeometry: PageGeometry? { lines == nil ? nil : session.document.geometry }
+    public func setGeometry(_ geometry: PageGeometry) { mutate { try $0.setGeometry(geometry) } }
+    /// Saving would make the saved page's board smaller (B28: confirm "Change board size?" first).
+    public var geometryShrinks: Bool {
+        guard let now = session.document.geometry, let saved = session.baseline.geometry else { return false }
+        return now.shrinks(from: saved)
+    }
+    /// Rows as Plain mode shows them, with `{wrap}`/alignment prefixes (PLAN B18).
+    public var plainLines: [String]? { supportsLocalAuthoring ? session.document.plainRows : nil }
+    /// Plain mode's commit: prefixes become the rows' alignment/wrap; one undo step.
+    public func commitPlainRows(_ rows: [String]) {
+        guard let current = plainLines, current != rows else { return }
+        mutate { try $0.replacePlainRows(rows) }
+    }
 
     /// One render of the committed document for the pinned stage. `.local` when no request can
     /// be made (empty document, no display chosen, no render route). Never retried here.
@@ -368,8 +383,11 @@ public final class LocalPageEditorModel: ObservableObject {
             guard session.document.root[key] != session.baseline.root[key] else { return nil }
             return try session.document.root[key]?.serializedData()
         }
+        var geometry: [String: Data] = [:]
+        for key in PageGeometry.keys { if let data = try? changedRaw(key) { geometry[key] = data } }
         guard let patch = try? PageSavePatch(name: name, template: template, lineMetadataData: metadata,
-            blocksData: changedRaw("blocks"), styleData: changedRaw("style"), layoutData: changedRaw("layout"), targetsData: changedRaw("targets"), expectedRevision: revision) else { return }
+            blocksData: changedRaw("blocks"), styleData: changedRaw("style"), layoutData: changedRaw("layout"), targetsData: changedRaw("targets"),
+            geometryData: geometry, expectedRevision: revision) else { return }
         isPreparingRemoteSave = true
         guard await saveDraft() else { isPreparingRemoteSave = false; return }
         isPreparingRemoteSave = false

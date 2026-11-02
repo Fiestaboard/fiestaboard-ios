@@ -13,13 +13,16 @@ struct EditorRoot: View {
     @ObservedObject var model: LocalPageEditorModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @StateObject private var buffer: DocumentBuffer
     @StateObject private var pipeline: PreviewPipeline
     @RootState private var isTextInputActive = false
-    @RootState private var rich = true
+    /// Rich | Plain persists across launches (PLAN B18).
+    @AppStorage("editor.richMode") private var rich = true
     @RootState private var confirmClose = false
     @RootState private var confirmReload = false
     @RootState private var showDetails = false
+    @RootState private var confirmResize = false
     @RootState private var toast: String?
     @RootState private var titleDraft = ""
     @RootState private var started = false
@@ -31,7 +34,7 @@ struct EditorRoot: View {
         _pipeline = StateObject(wrappedValue: PreviewPipeline(
             commit: { [weak model, weak buffer] in
                 guard let model, let buffer, buffer.isDirty else { return }
-                model.commitRows(buffer.rows)
+                if buffer.plainMode { model.commitPlainRows(buffer.rows) } else { model.commitRows(buffer.rows) }
                 buffer.markCommitted()
                 model.scheduleDraftSave()
             },
@@ -43,12 +46,20 @@ struct EditorRoot: View {
     private var boardCols: Int { geometry?.columns ?? 22 }
     private var isPanel: Bool { geometry?.isPanel ?? false }
 
+    /// Keyboard up: the title and toolbar step aside (the keyboard accessory mirrors the toolbar)
+    /// so the board keeps its size and is never covered (B30), on a phone and on iPad.
+    private var compactTyping: Bool { isTextInputActive }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            title
-            // The toolbar sits directly under the title (B12/B15); the keyboard accessory mirrors it.
-            DocumentToolbar(model: model, buffer: buffer, pipeline: pipeline, rich: $rich)
-            StageDocumentLayout {
+            if let reason = saveDisabledReason { saveReason(reason) }
+            if !compactTyping {
+                title
+                // The toolbar sits directly under the title (B12/B15); the keyboard accessory mirrors it.
+                DocumentToolbar(model: model, buffer: buffer, pipeline: pipeline, rich: $rich)
+            }
+            StageDocumentLayout(minDocumentWidth: TemplateWorkspaceView.documentWidth(columns: boardCols),
+                                minDocumentHeight: TemplateWorkspaceView.documentHeight(rows: min(boardRows, 3))) {
                 stage
                 VStack(alignment: .leading, spacing: 10) {
                     if let notice = model.recoveryNotice { recoveryBanner(notice) }
@@ -61,15 +72,15 @@ struct EditorRoot: View {
                     }
                 }
             }
-            .padding(.top, 8)
+            .padding(.top, compactTyping ? 0 : 8)
         }
-        .padding(.horizontal, 16).padding(.top, 14).padding(.bottom, 8)
+        .animation(.easeInOut(duration: 0.2), value: compactTyping)
+        .padding(.horizontal, sizeClass == .compact ? 12 : 16).padding(.top, compactTyping ? 4 : 14).padding(.bottom, 8)
         .frame(maxWidth: 1180, maxHeight: .infinity, alignment: .top)
         .frame(maxWidth: .infinity)
         .background(Color(uiColor: .systemBackground))
-        // iPad: a page-sized sheet, wide enough for the stage beside the document.
-        .presentationSizing(.page)
         .overlay(alignment: .bottom) { toastView }
+        .preference(key: EditorIsOpenKey.self, value: true)
         .navigationTitle(EditorStrings.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarBackButtonHidden(true)
@@ -84,6 +95,11 @@ struct EditorRoot: View {
             Button(EditorStrings.keepLocalWork, role: .cancel) {}
         } message: { Text(EditorStrings.reloadMessage) }
         .sheet(isPresented: $showDetails) { DocumentDetailsSheet(model: model) }
+        .confirmationDialog(EditorStrings.resizeTitle, isPresented: $confirmResize, titleVisibility: .visible) {
+            Button(EditorStrings.resizeAndSave, role: .destructive) { save(confirmedResize: true) }
+                .accessibilityIdentifier("resizeAndSave")
+            Button(EditorStrings.keepEditing, role: .cancel) {}
+        } message: { Text(EditorStrings.resizeMessage) }
         .task {
             guard !started else { return }
             started = true
@@ -133,24 +149,52 @@ struct EditorRoot: View {
     /// so the stage follows the same 250 ms commit cadence either way.
     private var stageLines: [String] {
         if let lines = pipeline.state.lines, model.lastPreview?.isSimulated != true { return lines }
-        return LocalStageProjection.lines(rows: model.lines ?? [], alignment: { model.lineAlignment($0) },
+        var rows = model.lines ?? []
+        // The demo has no server to work out values: show the sample values, never token names.
+        if model.isSimulated { rows = SampleValues.resolve(rows, catalog: .sample(authoritative: true)) }
+        return LocalStageProjection.lines(rows: rows, alignment: { model.lineAlignment($0) },
                                           boardRows: boardRows, cols: boardCols, uppercase: !isPanel)
+    }
+    private var hasDynamicTokens: Bool {
+        (model.lines ?? []).contains { row in TemplateSyntax.fragments(row).contains { $0.kind == .expression || $0.kind == .formula } }
     }
     private var physicalFrame: PhysicalPreviewFrame? {
         guard pipeline.state.lines != nil, case .physical(let frame) = model.lastPreview?.surface else { return nil }
         return frame
     }
+    /// Plain and short, and only when it explains something on the board.
     private var stageFootnote: String? {
-        if model.selectedBoardID == nil { return EditorStrings.localPreviewNote }
-        if model.lastPreview?.isSimulated == true { return EditorStrings.simulatedPreviewNote }
+        guard hasDynamicTokens, !compactTyping else { return nil }
+        if model.isSimulated { return EditorStrings.sampleValuesNote }
+        if model.selectedBoardID == nil { return EditorStrings.chooseDisplayNote }
         return nil
+    }
+
+    /// Why Save is off, shown beside it whenever there is something to save (E1 open issue 4).
+    private var saveDisabledReason: String? {
+        guard model.hasServerChanges || buffer.isDirty, !model.isSaving, !model.editingFrozen,
+              let reason = model.serverSaveDisabledReason, model.saveStatus != .conflict, model.saveStatus != .unknown else { return nil }
+        return reason
+    }
+    private func saveReason(_ reason: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Spacer(minLength: 0)
+            Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.orange)
+            Text(EditorStrings.saveOff(reason)).font(.footnote).foregroundStyle(.secondary)
+                .multilineTextAlignment(.trailing).lineLimit(3)
+        }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("saveDisabledReason")
     }
 
     private var stage: some View {
         PreviewStage(lines: stageLines, rows: boardRows, cols: boardCols, isPanel: isPanel, physical: physicalFrame,
                      state: pipeline.state, boards: model.boards, selectedBoardID: model.selectedBoardID,
                      fitNote: nil, footnote: stageFootnote, disabled: model.editingFrozen,
-                     onChooseBoard: { model.chooseBoard($0) }, onRetry: { pipeline.retry() }, onRefresh: { pipeline.flush() })
+                     onChooseBoard: { model.chooseBoard($0) }, onRetry: { pipeline.retry() }, onRefresh: { pipeline.flush() },
+                     geometry: model.pageGeometry,
+                     onChooseGeometry: { shape in pipeline.flush(); model.setGeometry(shape); pipeline.flush() })
     }
 
     // MARK: Toolbar
@@ -159,13 +203,18 @@ struct EditorRoot: View {
         ToolbarItem(placement: .cancellationAction) {
             Button(EditorStrings.close) { close() }.disabled(model.isSaving || model.editingFrozen)
         }
+        // The page name is the title on screen; the bar's centre carries the one status word,
+        // so "Edit Page" never truncates to "Ed…" beside the buttons (it stays the bar's name).
+        ToolbarItem(placement: .principal) {
+            SaveStatusChip(status: buffer.isDirty && model.saveStatus == .saved ? .unsaved : model.saveStatus)
+        }
         ToolbarItemGroup(placement: .topBarTrailing) {
             Button(EditorStrings.documentDetails, systemImage: "info.circle") { pipeline.flush(); showDetails = true }
                 .labelStyle(.iconOnly).accessibilityIdentifier("documentDetails")
-            SaveStatusChip(status: buffer.isDirty && model.saveStatus == .saved ? .unsaved : model.saveStatus)
             Button(EditorStrings.save) { save() }
                 .bold()
                 .disabled(!(model.canSaveToServer || (buffer.isDirty && model.serverSaveDisabledReason == nil)) || model.editingFrozen)
+                .accessibilityHint(saveDisabledReason ?? "")
                 .accessibilityIdentifier("savePageOnServer")
         }
     }
@@ -233,10 +282,12 @@ struct EditorRoot: View {
         model.endEditingSession()
         dismiss()
     }
-    private func save() {
+    private func save(confirmedResize: Bool = false) {
         pipeline.flush()
         buffer.resignFocus()
         guard model.canSaveToServer else { return }
+        // B28: shrinking a saved page's board asks first.
+        if model.geometryShrinks && !confirmedResize { confirmResize = true; return }
         Task {
             await model.saveToServer()
             guard model.remoteStatus == .idle, !model.hasServerChanges else { return }
@@ -254,7 +305,10 @@ struct EditorRoot: View {
 /// layout keeps the document's text view (and its selection) alive across size changes.
 struct StageDocumentLayout: Layout {
     static let wideWidth: CGFloat = 860
-    static let minDocumentWidth: CGFloat = 400
+    /// The document column's natural width (its board-width row plus gutter); the stage gets the rest.
+    var minDocumentWidth: CGFloat = 320
+    /// The document never shrinks below about three rows, so the caret row stays in view.
+    var minDocumentHeight: CGFloat = 96
     var spacing: CGFloat = 12
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
@@ -265,14 +319,20 @@ struct StageDocumentLayout: Layout {
         guard subviews.count == 2 else { return }
         let stage = subviews[0], document = subviews[1]
         if bounds.width >= Self.wideWidth {
-            let documentWidth = max(Self.minDocumentWidth, ((bounds.width - spacing) * 0.42).rounded())
+            // The board is the largest element: the document takes its natural width, at most 42%.
+            let documentWidth = min(max(minDocumentWidth, 300), ((bounds.width - spacing) * 0.42).rounded())
             let stageWidth = bounds.width - spacing - documentWidth
             let documentHeight = min(document.sizeThatFits(ProposedViewSize(width: documentWidth, height: nil)).height, bounds.height)
             document.place(at: bounds.origin, proposal: ProposedViewSize(width: documentWidth, height: documentHeight))
+            // Never taller than the room above the keyboard: the board scales down instead (B30).
+            let stageHeight = min(stage.sizeThatFits(ProposedViewSize(width: stageWidth, height: nil)).height, bounds.height)
             stage.place(at: CGPoint(x: bounds.minX + documentWidth + spacing, y: bounds.minY),
-                        proposal: ProposedViewSize(width: stageWidth, height: nil))
+                        proposal: ProposedViewSize(width: stageWidth, height: stageHeight))
         } else {
-            let stageHeight = min(stage.sizeThatFits(ProposedViewSize(width: bounds.width, height: nil)).height, bounds.height * 0.6)
+            // The stage keeps its full size; the document gives way down to ~3 rows (B30), and only
+            // then does the board scale down.
+            let stageHeight = max(0, min(stage.sizeThatFits(ProposedViewSize(width: bounds.width, height: nil)).height,
+                                         bounds.height - minDocumentHeight - spacing, bounds.height * 0.75))
             stage.place(at: bounds.origin, proposal: ProposedViewSize(width: bounds.width, height: stageHeight))
             let room = max(0, bounds.height - stageHeight - spacing)
             let documentHeight = min(document.sizeThatFits(ProposedViewSize(width: bounds.width, height: nil)).height, room)

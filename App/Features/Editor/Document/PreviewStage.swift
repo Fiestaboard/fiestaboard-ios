@@ -2,6 +2,7 @@ import SwiftUI
 import FiestaBoardKit
 import FiestaBoardEditorState
 import FiestaBoardRender
+import FiestaBoardDocuments
 
 /// The pinned live board above the document (PLAN §3.3 "Stage", B19/B20). Header: size readout,
 /// display picker, fit note, updating/retry. Body: the board, never a text dump.
@@ -22,6 +23,9 @@ struct PreviewStage: View {
     var onChooseBoard: (String?) -> Void
     var onRetry: () -> Void
     var onRefresh: () -> Void
+    /// The page's board shape and its change (PLAN B20); nil hides the size section.
+    var geometry: PageGeometry? = nil
+    var onChooseGeometry: ((PageGeometry) -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -84,6 +88,17 @@ struct PreviewStage: View {
                 }
             }
             Button(EditorStrings.noDisplay) { onChooseBoard(nil) }
+            if let geometry, let onChooseGeometry {
+                Section(EditorStrings.boardSize) {
+                    ForEach(Self.shapes(current: geometry), id: \.self) { shape in
+                        Button { onChooseGeometry(shape) } label: {
+                            let title = EditorStrings.shapeName(shape)
+                            if shape == geometry { Label(title, systemImage: "checkmark") } else { Text(title) }
+                        }
+                        .accessibilityIdentifier("boardShape_\(shape.deviceType)_\(shape.rows)x\(shape.columns)")
+                    }
+                }
+            }
         } label: {
             HStack(spacing: 3) {
                 Text(boards.first(where: { $0.id == selectedBoardID })?.name ?? EditorStrings.displayPickerLabel)
@@ -96,6 +111,13 @@ struct PreviewStage: View {
         .accessibilityLabel(EditorStrings.displayPickerLabel)
         .accessibilityValue(boards.first(where: { $0.id == selectedBoardID })?.name ?? "None")
         .accessibilityIdentifier("evaluationBoardPicker")
+    }
+
+    /// Flagship / Note / Note array presets, plus the page's own shape when it is another one.
+    static func shapes(current: PageGeometry) -> [PageGeometry] {
+        var shapes: [PageGeometry] = [.flagship, .note, .noteArray(wide: 2, tall: 1), .noteArray(wide: 2, tall: 2), .noteArray(wide: 3, tall: 2)]
+        if !shapes.contains(current) { shapes.append(current) }
+        return shapes
     }
 
     @ViewBuilder private var board: some View {
