@@ -20,6 +20,20 @@ import FiestaBoardRender
         XCTAssertNil(DrawModeController.cell(at: CGPoint(x: -40, y: -40), size: size, model: model), "Outside the board")
     }
 
+    /// W4: the stage stretches the board in the renderer (taller tiles), so the hit test does too.
+    func testTileUnderAPointFollowsAStretchedBoard() throws {
+        let model = DisplayModel.flap(rows: 6, cols: 22)
+        let stretch = 1.3
+        let size = CGSize(width: 400, height: 400 / BoardFrameView.flapAspect(model, stretch: stretch))
+        let h = Double(size.width) / (22 * 0.845 - 0.145 + 1.0)
+        func centre(_ row: Int, _ col: Int) -> CGPoint {
+            CGPoint(x: h * (0.5 + Double(col) * 0.845 + 0.35), y: h * (0.10 + 0.55 * stretch + (Double(row) * 1.145 + 0.5) * stretch))
+        }
+        for (row, col) in [(0, 0), (5, 21), (4, 3), (2, 9)] {
+            XCTAssertEqual(DrawModeController.cell(at: centre(row, col), size: size, model: model, stretch: stretch), CellPaint(row: row, col: col))
+        }
+    }
+
     func testFastDragsFillTheCellsBetweenAndRepeatsAreIgnored() {
         let draw = DrawModeController()
         draw.add(CellPaint(row: 0, col: 0))

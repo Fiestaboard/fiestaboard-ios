@@ -128,7 +128,12 @@ public struct TemplateCatalog: Equatable, Sendable {
     /// combining it with the manifests that loaded. Plugins are sorted by their readable name;
     /// fields keep the server's order; groups follow the first field that uses them, with the
     /// ungrouped "General" fields last (as the web picker).
-    public init(variablesData data: Data, manifests: [String: Manifest] = [:]) throws {
+    ///
+    /// `arrayData` (W4) is each plugin's live data from `POST /displays/raw/batch`, as the web
+    /// picker reads it: a 10.3.2 server lists arrays only as `name.*.field` patterns, so the items
+    /// (`stations.0`, label from `label_field`) come from that data. Indexed paths in the
+    /// variables list are used only when a plugin has no live data for the array.
+    public init(variablesData data: Data, manifests: [String: Manifest] = [:], arrayData: [String: [String: Any]] = [:]) throws {
         guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let variables = object["variables"] as? [String: Any] else { throw FiestaBoardError.invalidResponse }
         let metadata = object["variable_metadata"] as? [String: Any] ?? [:]
@@ -176,6 +181,24 @@ public struct TemplateCatalog: Equatable, Sendable {
                     if !fieldNames.contains(rest) { fieldNames.append(rest) }
                 }
                 let labelField = manifest?.arrays[arrayName]?.labelField ?? "name"
+                if let live = arrayData[pluginID]?[arrayName] as? [Any] {
+                    items = [:]
+                    var liveLabels: [Int: String] = [:]
+                    for (index, element) in live.enumerated() {
+                        guard let item = element as? [String: Any] else { continue }
+                        let names = fieldNames.isEmpty ? item.keys.sorted() : fieldNames
+                        items[index] = names.map { name in
+                            let full = "\(arrayName).\(index).\(name)"
+                            return Field(name: full, path: pluginID + "." + full, preview: Self.previewText(item[name]),
+                                         summary: meta("\(arrayName).*.\(name)")["description"] as? String,
+                                         label: meta("\(arrayName).*.\(name)")["label"] as? String ?? Self.sentence(name))
+                        }
+                        liveLabels[index] = Self.previewText(item[labelField])
+                    }
+                    arrays.append(ArrayVariable(name: arrayName, items: items.keys.sorted().map { ArrayItem(index: $0, label: liveLabels[$0], fields: items[$0]!) },
+                                                itemFields: fieldNames))
+                    continue
+                }
                 let built = items.keys.sorted().map { index -> ArrayItem in
                     let fields = items[index]!
                     let label = fields.first { $0.name == "\(arrayName).\(index).\(labelField)" }?.preview
@@ -226,6 +249,17 @@ public struct TemplateCatalog: Equatable, Sendable {
     }
 
     /// `date_time` → `Date Time`, `baywheels` → `Baywheels`, `home-assistant` → `Home Assistant`.
+    /// A live value as a short preview (strings as they are, numbers without a trailing `.0`).
+    static func previewText(_ value: Any?) -> String? {
+        switch value {
+        case let text as String: return text
+        case let number as NSNumber:
+            if CFGetTypeID(number) == CFBooleanGetTypeID() { return number.boolValue ? "true" : "false" }
+            return number.stringValue
+        default: return nil
+        }
+    }
+
     public static func titleCase(_ id: String) -> String {
         id.split(whereSeparator: { $0 == "_" || $0 == "-" || $0 == " " })
             .map { $0.prefix(1).uppercased() + $0.dropFirst() }

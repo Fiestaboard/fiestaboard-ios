@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import FiestaBoardKit
 
 /// The Variables picker (PLAN B22): a search field, then each plugin as a section with its icon
@@ -13,7 +14,6 @@ struct VariablePickerView: View {
     var onInsert: (String) -> Void
     @State private var query = ""
     @State private var expanded: Set<String> = []
-    @FocusState private var searchFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -41,7 +41,6 @@ struct VariablePickerView: View {
                 }
             }
         }
-        .onAppear { if autoFocusSearch { searchFocused = true } }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("variablePicker")
     }
@@ -49,10 +48,9 @@ struct VariablePickerView: View {
     private var searchField: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-            TextField(CatalogStrings.searchVariables, text: $query)
-                .textInputAutocapitalization(.never).autocorrectionDisabled()
-                .submitLabel(.search)
-                .focused($searchFocused)
+            // W4: a UIKit field, so there is no QuickType/shortcuts bar over the list on iPad.
+            PlainSearchField(placeholder: CatalogStrings.searchVariables, text: $query, focusOnAppear: autoFocusSearch)
+                .frame(height: 22)
                 .accessibilityIdentifier("variableSearch")
             if !query.isEmpty {
                 Button { query = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary) }
@@ -202,5 +200,50 @@ struct PillFlowLayout: Layout {
         }
         if !current.indices.isEmpty { rows.append(current) }
         return rows
+    }
+}
+
+/// A search field with no input-assistant bar, predictions, autocorrection or spell-checking
+/// (W4: iPad showed the QuickType bar over the variables list; the formula code view had already
+/// dropped its bar, which also stopped XCUITest's idle waits stalling).
+struct PlainSearchField: UIViewRepresentable {
+    var placeholder: String
+    @Binding var text: String
+    var focusOnAppear = true
+
+    func makeUIView(context: Context) -> UITextField {
+        let field = UITextField()
+        field.placeholder = placeholder
+        field.font = .preferredFont(forTextStyle: .body)
+        field.adjustsFontForContentSizeCategory = true
+        field.autocapitalizationType = .none
+        field.autocorrectionType = .no
+        field.spellCheckingType = .no
+        field.smartQuotesType = .no
+        field.smartDashesType = .no
+        field.inlinePredictionType = .no
+        field.keyboardType = .asciiCapable
+        field.returnKeyType = .search
+        field.clearButtonMode = .never
+        field.inputAssistantItem.leadingBarButtonGroups = []
+        field.inputAssistantItem.trailingBarButtonGroups = []
+        field.delegate = context.coordinator
+        field.addTarget(context.coordinator, action: #selector(Coordinator.changed(_:)), for: .editingChanged)
+        field.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        if focusOnAppear { DispatchQueue.main.async { field.becomeFirstResponder() } }
+        return field
+    }
+    func updateUIView(_ field: UITextField, context: Context) {
+        context.coordinator.parent = self
+        if field.text != text { field.text = text }
+    }
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    final class Coordinator: NSObject, UITextFieldDelegate {
+        var parent: PlainSearchField
+        init(_ parent: PlainSearchField) { self.parent = parent }
+        @objc func changed(_ field: UITextField) { parent.text = field.text ?? "" }
+        func textFieldShouldReturn(_ field: UITextField) -> Bool { field.resignFirstResponder(); return true }
     }
 }

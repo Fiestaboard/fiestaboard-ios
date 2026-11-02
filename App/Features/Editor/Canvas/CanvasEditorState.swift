@@ -9,6 +9,7 @@ enum CanvasStrings {
     static let text = "Text"
     static let canvases = "Canvases"
     static let editingSurface = "Editing surface"
+    static let scrollRail = "Scroll the canvases panel"
     static let title = "Pixel canvases"
     static let description = "Draw any pixel in any colour over an area of the board. Text under a canvas is hidden, or flows around it."
     static let add = "Add canvas"

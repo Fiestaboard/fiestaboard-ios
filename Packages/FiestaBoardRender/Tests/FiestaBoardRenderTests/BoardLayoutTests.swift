@@ -158,4 +158,21 @@ final class BoardLayoutTests: XCTestCase {
                                                      in: .zero, mode: .fit, diagonalInches: 65,
                                                      calibration: 1.0, colPitchIn: BoardGeometry.colPitchIn))
     }
+
+    /// W4: a vertical stretch (the editor stage's free space) makes tiles, gutters and seams
+    /// taller and keeps widths; the letters grow at most `maxGlyphStretch`. Replaces a scaleEffect.
+    func testStretchIsARealTileAspect() {
+        let plain = BoardLayout.make(rows: 6, cols: 22, cells: cells(rows: 6, cols: 22), tileHeight: 20)
+        let tall = BoardLayout.make(rows: 6, cols: 22, cells: cells(rows: 6, cols: 22), tileHeight: 20, stretch: 1.3)
+        XCTAssertEqual(tall.width, plain.width, accuracy: 1e-9)
+        XCTAssertEqual(tall.height, plain.height * 1.3, accuracy: 1e-9)
+        XCTAssertEqual(tall.tiles[23].width, plain.tiles[23].width, accuracy: 1e-9)
+        XCTAssertEqual(tall.tiles[23].height, plain.tiles[23].height * 1.3, accuracy: 1e-9)
+        XCTAssertEqual(tall.tiles[23].y, plain.tiles[23].y * 1.3, accuracy: 1e-9)
+        XCTAssertEqual(tall.fontSize, plain.fontSize * BoardLayout.maxGlyphStretch, accuracy: 1e-9)
+        let model = DisplayModel.flap(rows: 6, cols: 22)
+        let aspect = BoardFrameView.flapAspect(model, stretch: 1.2)
+        XCTAssertEqual(BoardFrameView.flapStretch(model, width: 400, height: 400 / aspect), 1.2, accuracy: 1e-9)
+        XCTAssertEqual(BoardFrameView.flapStretch(model, width: 400, height: 400 / BoardFrameView.flapAspect(model)), 1, accuracy: 1e-9)
+    }
 }

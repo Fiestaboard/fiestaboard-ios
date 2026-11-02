@@ -20,11 +20,15 @@ public struct BoardFrameView: View {
     let loading: Bool
     let bezel: Bool
     let flapStepMs: Int
+    let stretch: Double
 
+    /// `stretch` (split-flap only, W4): the board is that much taller than its hardware aspect —
+    /// tiles, gutters and the bezel's vertical padding grow; widths and letter shapes don't.
     public init(frame: BoardFrame, model: DisplayModel, size: BoardSize = .fit,
-                animated: Bool, loading: Bool = false, bezel: Bool = true, flapStepMs: Int = 80) {
+                animated: Bool, loading: Bool = false, bezel: Bool = true, flapStepMs: Int = 80, stretch: Double = 1) {
         self.frame = frame; self.model = model; self.size = size
         self.animated = animated; self.loading = loading; self.bezel = bezel; self.flapStepMs = flapStepMs
+        self.stretch = stretch.isFinite ? max(1, stretch) : 1
     }
 
     /// Bezel padding and border as fractions of tile height, so the aspect of
@@ -33,11 +37,24 @@ public struct BoardFrameView: View {
 
     /// Width / height of a split-flap board with its bezel (size-independent), for hosts that lay
     /// the board out themselves (the editor's stage, P1).
-    public static func flapAspect(_ model: DisplayModel, bezel: Bool = true) -> Double {
+    public static func flapAspect(_ model: DisplayModel, bezel: Bool = true, stretch: Double = 1) -> Double {
+        let h = 100.0
+        let grid = BoardLayout.size(rows: model.rows, cols: model.cols, tileHeight: h, seams: model.seams, stretch: stretch)
+        guard bezel else { return grid.width / max(grid.height, 1) }
+        return (grid.width + 2 * h * (bezelPadX + bezelBorder)) / max(grid.height + 2 * h * (bezelPadY * stretch + bezelBorder), 1)
+    }
+
+    /// The `stretch` at which a split-flap board `width` wide is `height` tall (bezel included;
+    /// its border doesn't stretch). Unclamped: below 1 the board is width-bound and shorter.
+    public static func flapStretch(_ model: DisplayModel, width: Double, height: Double, bezel: Bool = true) -> Double {
         let h = 100.0
         let grid = BoardLayout.size(rows: model.rows, cols: model.cols, tileHeight: h, seams: model.seams)
-        guard bezel else { return grid.width / max(grid.height, 1) }
-        return (grid.width + 2 * h * (bezelPadX + bezelBorder)) / max(grid.height + 2 * h * (bezelPadY + bezelBorder), 1)
+        let outerWidth = grid.width + (bezel ? 2 * h * (bezelPadX + bezelBorder) : 0)
+        guard width > 0, height > 0, outerWidth > 0 else { return 1 }
+        let scale = width / outerWidth
+        let fixed = bezel ? 2 * h * bezelBorder : 0
+        let stretchable = grid.height + (bezel ? 2 * h * bezelPadY : 0)
+        return (height / scale - fixed) / max(stretchable, 1)
     }
 
     private var cells: [[BoardCell]] { frame.boardCells(model: model) }
@@ -59,10 +76,10 @@ public struct BoardFrameView: View {
     // MARK: split-flap
 
     private func outer(tileHeight h: Double) -> (width: Double, height: Double) {
-        let grid = BoardLayout.size(rows: model.rows, cols: model.cols, tileHeight: h, seams: model.seams)
+        let grid = BoardLayout.size(rows: model.rows, cols: model.cols, tileHeight: h, seams: model.seams, stretch: stretch)
         guard bezel else { return grid }
         return (grid.width + 2 * h * (Self.bezelPadX + Self.bezelBorder),
-                grid.height + 2 * h * (Self.bezelPadY + Self.bezelBorder))
+                grid.height + 2 * h * (Self.bezelPadY * stretch + Self.bezelBorder))
     }
 
     @ViewBuilder private var flap: some View {
@@ -80,7 +97,7 @@ public struct BoardFrameView: View {
     }
 
     private func flapBoard(tileHeight h: Double) -> some View {
-        let layout = BoardLayout.make(rows: model.rows, cols: model.cols, cells: cells, tileHeight: h, seams: model.seams)
+        let layout = BoardLayout.make(rows: model.rows, cols: model.cols, cells: cells, tileHeight: h, seams: model.seams, stretch: stretch)
         let palette = model.flapPalette
         let canvas = BoardCanvas(layout: layout, palette: palette, animated: animated, loading: loading,
                                  code62: model.code62, step: Double(flapStepMs) / 1000)
@@ -89,7 +106,7 @@ public struct BoardFrameView: View {
             if bezel {
                 canvas
                     .padding(.horizontal, h * Self.bezelPadX)
-                    .padding(.vertical, h * Self.bezelPadY)
+                    .padding(.vertical, h * Self.bezelPadY * stretch)
                     .background(
                         RoundedRectangle(cornerRadius: h * Self.bezelRadius, style: .continuous)
                             .fill(LinearGradient(colors: [Color(rgb: palette.bezel), Color(rgb: palette.backing)],

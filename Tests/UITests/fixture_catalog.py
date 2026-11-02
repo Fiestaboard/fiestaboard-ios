@@ -11,6 +11,7 @@ Mock content only, shaped like FiestaBoard 10.3.2 (`src/v1/routes_meta.py`,
 - `GET /v1/functions`: the dict keyed by NAME with a representative subset of each
   category plus one unknown category, `experimental`.
 - `GET /plugins/{id}/manifest`: name, icon and the `baywheels` array schema.
+- `POST /displays/raw/batch` (W4): live data; the `stations` items for the picker.
 
 `fixture_render.functions()` reads FUNCTION_NAMES for the validate fallback, so a
 formula is valid here iff it only calls these functions. Other prefixes (/signin-,
@@ -25,9 +26,9 @@ VARIABLES = {
         'weather': ['temperature', 'condition', 'feels_like', 'high', 'low', 'humidity', 'wind_speed'],
         'date_time': ['time', 'date', 'day_of_week', 'day', 'month', 'year'],
         'stocks': ['AAPL.price', 'AAPL.change'],
-        'baywheels': ['station_count', 'stations.*.name', 'stations.*.bikes', 'stations.*.docks',
-                      'stations.0.name', 'stations.0.bikes', 'stations.0.docks',
-                      'stations.1.name', 'stations.1.bikes', 'stations.1.docks'],
+        # As 10.3.2 lists arrays (src/plugins/manifest.py): `name.*.field` patterns only; the
+        # items come from POST /displays/raw/batch (W4, web VariablePickerContent parity).
+        'baywheels': ['station_count', 'stations.*.name', 'stations.*.bikes', 'stations.*.docks'],
     },
     'max_lengths': {'weather.temperature': 3, 'weather.condition': 12, 'date_time.time': 5},
     'variable_metadata': {
@@ -47,8 +48,6 @@ VARIABLES = {
         'stocks': {'AAPL.price': {'preview': '227.50'}, 'AAPL.change': {'preview': '+1.2%'}},
         'baywheels': {
             'station_count': {'preview': '2'},
-            'stations.0.name': {'preview': 'MARKET ST'}, 'stations.0.bikes': {'preview': '7'}, 'stations.0.docks': {'preview': '12'},
-            'stations.1.name': {'preview': 'FERRY BUILDING'}, 'stations.1.bikes': {'preview': '3'}, 'stations.1.docks': {'preview': '20'},
         },
     },
     'variable_groups': {'weather': {'now': {'label': 'Right now'}, 'today': {'label': 'Today'}}},
@@ -121,11 +120,36 @@ def variables_for(scenario):
     return body
 
 
+# Live plugin data for `POST /displays/raw/batch` (10.3.2 src/displays/models.py
+# DisplayRawBatchRequest/Response). The picker reads array items from here.
+RAW = {
+    'baywheels': {'station_count': 2, 'stations': [{'name': 'MARKET ST', 'bikes': 7, 'docks': 12},
+                                                   {'name': 'FERRY BUILDING', 'bikes': 3, 'docks': 20}]},
+    'weather': {'temperature': 72, 'condition': 'SUNNY'},
+}
+
+
+def raw_batch(scenario, body):
+    types = body.get('display_types') if isinstance(body, dict) else None
+    if not types:
+        return 400, {'detail': 'display_types parameter required'}
+    displays = {}
+    for name in types:
+        if scenario == 'no-plugins' or name not in RAW:
+            continue  # enabled_only: unknown or disabled sources are left out
+        displays[name] = {'data': copy.deepcopy(RAW[name]), 'available': True, 'error': None}
+    return 200, {'displays': displays, 'total': len(types), 'successful': len(displays)}
+
+
 def handle(prefix, route, method, body, query, store):
     """Return (status, body) or None. Only the board prefix family serves catalogs."""
-    if method != 'GET' or not prefix.startswith('/board-'):
+    if not prefix.startswith('/board-'):
         return None
     scenario = prefix[len('/board-'):].rsplit('-', 1)[0]
+    if method == 'POST' and route == 'displays/raw/batch':
+        return raw_batch(scenario, body)
+    if method != 'GET':
+        return None
     if route == 'v1/variables':
         return 200, variables_for(scenario)
     if route == 'v1/functions':

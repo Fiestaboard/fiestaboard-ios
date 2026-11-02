@@ -45,10 +45,12 @@ struct FormulaEditorSheet: View {
 
     var body: some View {
         NavigationStack {
-            Group {
-                if sizeClass == .regular {
+            GeometryReader { proxy in
+                // W4: side by side whenever the sheet is wide enough (the iPad page sheet, ≥ 600 pt),
+                // not only at a regular size class, which an iPad sheet never reported.
+                if sizeClass == .regular || proxy.size.width >= 600 {
                     HStack(spacing: 0) {
-                        catalogColumn.frame(width: 300)
+                        catalogColumn.frame(width: min(340, proxy.size.width * 0.42))
                         Divider()
                         editorColumn.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                     }
@@ -77,6 +79,8 @@ struct FormulaEditorSheet: View {
         }
         .accessibilityIdentifier("formulaEditor")
         .presentationDetents([.large])
+        // iPad: a page-sized sheet, wide enough for the catalog beside the code (W4).
+        .presentationSizing(.page)
         .onAppear {
             code.load(FormulaHighlighter.pretty(initialExpression), selectAll: isEditing)
             validator.update(expression)

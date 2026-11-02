@@ -91,14 +91,22 @@ struct EditorRoot: View {
                     else if !model.canvases.isEmpty { notPixelNotice }
                     if showsCanvases, let display = pixelDisplay {
                         ScrollView {
-                            CanvasesPanel(model: model, state: canvasState, display: display, gridRows: boardRows, gridCols: boardCols,
-                                          onCommitted: { pipeline.edited() })
-                                .padding(.bottom, 12)
+                            // W4: a drag that starts on a drawing surface edits it, so a rail on
+                            // the trailing edge (no gestures of its own) always scrolls the panel.
+                            HStack(alignment: .top, spacing: 6) {
+                                CanvasesPanel(model: model, state: canvasState, display: display, gridRows: boardRows, gridCols: boardCols,
+                                              onCommitted: { pipeline.edited() })
+                                CanvasScrollRail()
+                            }
+                            .padding(.bottom, 12)
                         }
+                        .scrollIndicators(.visible)
                         .scrollDismissesKeyboard(.interactively)
                     } else {
                         TemplateWorkspaceView(model: model, buffer: buffer, pipeline: pipeline,
-                                              isTextInputActive: $isTextInputActive, rich: $rich)
+                                              isTextInputActive: $isTextInputActive, rich: $rich,
+                                              onDraw: canDraw ? { startDrawing() } : nil,
+                                              charsetIssues: pipeline.state.charsetIssues)
                     }
                     if let message = model.message, !Self.isRoutineMessage(message) {
                         Text(message).font(.caption).foregroundStyle(.secondary).lineLimit(3)
@@ -281,8 +289,8 @@ struct EditorRoot: View {
                      geometry: model.pageGeometry,
                      onChooseGeometry: { shape in pipeline.flush(); model.setGeometry(shape); pipeline.flush() },
                      animated: !drawMode,
-                     drawOverlay: drawMode ? { size, displayModel in
-                         AnyView(DrawCanvasOverlay(size: size, model: displayModel, controller: draw, onCommit: commitStroke))
+                     drawOverlay: drawMode ? { size, displayModel, stretch in
+                         AnyView(DrawCanvasOverlay(size: size, model: displayModel, stretch: stretch, controller: draw, onCommit: commitStroke))
                      } : nil,
                      led: pixelDisplay?.model, layers: stageLayers,
                      ledMaxHeight: showsCanvases && sizeClass == .compact ? 200 : 320)
@@ -540,5 +548,28 @@ struct DocumentDetailsSheet: View {
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
         }
         .accessibilityIdentifier("documentDetailsSheet")
+    }
+}
+
+/// The canvases panel's scroll rail (W4): a strip with a grip, beside the area grid, pixel pad and
+/// shapes surface, where a drag always scrolls (those surfaces take drags that start on them).
+struct CanvasScrollRail: View {
+    var body: some View {
+        RoundedRectangle(cornerRadius: 6)
+            .fill(Color(uiColor: .tertiarySystemFill))
+            .overlay(alignment: .top) {
+                VStack(spacing: 3) {
+                    Image(systemName: "chevron.up")
+                    Image(systemName: "line.3.horizontal")
+                    Image(systemName: "chevron.down")
+                }
+                .font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
+                .padding(.top, 10)
+            }
+            .frame(width: 22)
+            .frame(maxHeight: .infinity)
+            .accessibilityElement()
+            .accessibilityLabel(CanvasStrings.scrollRail)
+            .accessibilityIdentifier("canvasesPanelHandle")
     }
 }

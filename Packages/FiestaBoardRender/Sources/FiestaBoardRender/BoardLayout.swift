@@ -34,6 +34,11 @@ public struct BoardLayout: Sendable {
     public let width: Double
     public let height: Double
     public let tileHeight: Double
+    /// Vertical stretch (W4): tiles, gutters and seams are this much taller than the width-bound
+    /// board's; widths are unchanged. 1 = the hardware's aspect. Hosts that give a board more
+    /// height than its width needs (the editor's stage) use it instead of a `scaleEffect`, so the
+    /// letters are drawn, not smeared.
+    public private(set) var stretch: Double = 1
 
     /// Glyph font size as a fraction of tile height. FiestaUI uses 0.38–0.40
     /// (`board-metrics.ts`), which leaves letters a third of the flap tall and
@@ -43,7 +48,9 @@ public struct BoardLayout: Sendable {
     /// (`BoardGeometry.tileWidthRatio` 0.70). iOS-R2, wave 2.
     public static let fontSizeRatio = 0.72
 
-    public var fontSize: Double { tileHeight * Self.fontSizeRatio }
+    /// Letters grow a little with a stretch (never past `maxGlyphStretch`), keeping their shape.
+    public var fontSize: Double { tileHeight * Self.fontSizeRatio * min(stretch, Self.maxGlyphStretch) }
+    public static let maxGlyphStretch = 1.15
 
     /// The size `make` would produce, without building its tiles.
     ///
@@ -52,8 +59,9 @@ public struct BoardLayout: Sendable {
     /// is 810 tiles, so measuring through `make` allocated a whole board to
     /// read two numbers off it.
     public static func size(rows: Int, cols: Int,
-                            tileHeight: Double, seams: NoteSeams? = nil) -> (width: Double, height: Double) {
+                            tileHeight: Double, seams: NoteSeams? = nil, stretch: Double = 1) -> (width: Double, height: Double) {
         guard rows > 0, cols > 0, tileHeight > 0 else { return (0, 0) }
+        let s = stretch.isFinite ? max(stretch, 0.01) : 1
         let gutter = tileHeight * BoardGeometry.tileGutterRatio
         let colPitch = tileHeight * BoardGeometry.tileWidthRatio + gutter
         let rowPitch = tileHeight + gutter
@@ -62,7 +70,7 @@ public struct BoardLayout: Sendable {
         let rowSeams = seams.map { Double((rows - 1) / $0.everyRows) } ?? 0
         // Borderless: the trailing gutter is not part of the board.
         return (Double(cols) * colPitch - gutter + colSeams * extra,
-                Double(rows) * rowPitch - gutter + rowSeams * extra)
+                (Double(rows) * rowPitch - gutter + rowSeams * extra) * s)
     }
 
     /// Note-array seams (mobile addition; neither TV app has them): a wider
@@ -81,7 +89,8 @@ public struct BoardLayout: Sendable {
     }
 
     public static func make(rows: Int, cols: Int, cells: [[BoardCell]], tileHeight: Double,
-                            seams: NoteSeams? = nil) -> BoardLayout {
+                            seams: NoteSeams? = nil, stretch: Double = 1) -> BoardLayout {
+        let s = stretch.isFinite ? max(stretch, 0.01) : 1
         // The dimension ceiling is a second belt behind `PanelFrame`'s decode
         // clamp: `rows * cols` below is an unchecked Int multiply feeding
         // `reserveCapacity`, and a grid assembled in code rather than decoded
@@ -112,14 +121,14 @@ public struct BoardLayout: Sendable {
                 let rowSeams = seams.map { Double(row / $0.everyRows) } ?? 0
                 tiles.append(TileRect(row: row, col: col,
                                       x: Double(col) * colPitch + colSeams * extra,
-                                      y: Double(row) * rowPitch + rowSeams * extra,
-                                      width: tileWidth, height: h, radius: radius,
+                                      y: (Double(row) * rowPitch + rowSeams * extra) * s,
+                                      width: tileWidth, height: h * s, radius: radius,
                                       cell: cell))
             }
         }
 
-        let total = size(rows: rows, cols: cols, tileHeight: h, seams: seams)
-        return BoardLayout(tiles: tiles, width: total.width, height: total.height, tileHeight: h)
+        let total = size(rows: rows, cols: cols, tileHeight: h, seams: seams, stretch: s)
+        return BoardLayout(tiles: tiles, width: total.width, height: total.height, tileHeight: h, stretch: s)
     }
 
     /// Lay the board out at whatever tile height makes it meet the screen

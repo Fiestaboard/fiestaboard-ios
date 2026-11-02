@@ -155,15 +155,7 @@ struct HomeView<ChangePage: View, Controls: View>: View {
     @ViewBuilder private var changesNote: some View {
         switch store.boardActionDisabledReason {
         case .changesDisabled?:
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Image(systemName: "lock").foregroundStyle(.secondary)
-                Text("Changing this board from the app is turned off").foregroundStyle(.secondary)
-                Spacer(minLength: 4)
-                Button("Turn on", action: openSettings).font(.callout.weight(.semibold))
-            }
-            .font(.callout)
-            .accessibilityElement(children: .combine)
-            .accessibilityIdentifier("homeChangesOff")
+            EmptyView() // W4: shown as a card beside Board controls (`actions`).
         case .unsupportedOperation?:
             Label("This server version can't be changed from the app yet. Use the web app to change the board.",
                   systemImage: "info.circle").font(.callout).foregroundStyle(.secondary)
@@ -195,11 +187,31 @@ struct HomeView<ChangePage: View, Controls: View>: View {
             }
             NavigationLink { controls() } label: { QuickAction(title: "Board controls", systemImage: "slider.horizontal.3") }
                 .accessibilityIdentifier("boardControlsEntry")
-                .frame(maxWidth: writeActionsHidden ? (wide ? 200 : 160) : .infinity)
-            if writeActionsHidden { Spacer(minLength: 0) }
+                .frame(maxWidth: writeActionsHidden ? (wide ? 200 : 150) : .infinity)
+            // W4: with changes off, the reason and its fix fill the row as a card of the same
+            // height, instead of a lone half-width tile over a line of grey text.
+            if store.boardActionDisabledReason == .changesDisabled { changesOffCard }
+            else if writeActionsHidden { Spacer(minLength: 0) }
         }
         .buttonStyle(.plain)
         .frame(maxWidth: wide ? 640 : .infinity, alignment: .leading)
+    }
+
+    private var changesOffCard: some View {
+        HStack(alignment: .center, spacing: 10) {
+            Image(systemName: "lock.fill").font(.title3).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Changing this board from the app is turned off")
+                    .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                Button("Turn on", action: openSettings).font(.footnote.weight(.semibold)).foregroundStyle(.orange)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(.secondarySystemBackground)))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("homeChangesOff")
     }
 }
 

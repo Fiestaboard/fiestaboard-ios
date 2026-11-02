@@ -1,6 +1,7 @@
 import SwiftUI
 import FiestaBoardDocuments
 import FiestaBoardEditorState
+import FiestaBoardKit
 
 /// Toolbar and keyboard-accessory actions on the document (PLAN B15/B17). One set of actions,
 /// shared by the visible toolbar under the title and the keyboard accessory that mirrors it.
@@ -89,6 +90,11 @@ struct TemplateWorkspaceView: View {
     var pipeline: PreviewPipeline
     @Binding var isTextInputActive: Bool
     @Binding var rich: Bool
+    /// Draw on board, when the page can be drawn on (W4: also offered on the keyboard accessory).
+    var onDraw: (() -> Void)? = nil
+    /// The chosen display's `charset_issues` from the last render (B16, W4): lowercase on a flap
+    /// board, or a character it lacks, is listed, never silently changed in the document.
+    var charsetIssues: [TemplateCharsetIssue] = []
     @State private var tokenEditing: TokenEditing?
     @EnvironmentObject private var catalog: EditorCatalogStore
 
@@ -129,21 +135,28 @@ struct TemplateWorkspaceView: View {
                               accessory: .init(alignment: commands.alignment, wrap: commands.wrap,
                                                canUndo: commands.canUndo, canRedo: commands.canRedo, enabled: commands.enabled,
                                                variablesEnabled: catalog.variablesAvailable,
-                                               colorsShown: catalog.colorsAvailable, formattingShown: catalog.formattingAvailable),
+                                               colorsShown: catalog.colorsAvailable, formattingShown: catalog.formattingAvailable,
+                                               drawShown: onDraw != nil),
                               onUndo: commands.undo, onRedo: commands.redo, onAlign: commands.align, onWrap: commands.setWrap,
                               onEditToken: { source, range in editToken(source, range, commands) },
                               variables: commands.variables, boardColumns: boardColumns,
-                              onInsert: commands.insert, onFormula: commands.insertFormula, onPicker: commands.openPicker)
+                              onInsert: commands.insert, onFormula: commands.insertFormula, onPicker: commands.openPicker,
+                              onDraw: { onDraw?() })
                 // Hugs its rows (B33: the board stays the largest element); scrolls when capped.
                 .frame(minHeight: 80, idealHeight: Self.documentHeight(rows: max(rows.count, boardRows)))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(overflow ? Color.orange : Color(uiColor: .separator), lineWidth: overflow ? 2 : 0.5))
-            if rich, let detail = buffer.chipDetail {
+            if rich {
                 // The chip at the caret, in full (compact chips show only a short name; AND-P1).
-                Text(detail)
+                // W4: its line is always reserved, so moving the caret over chips never nudges
+                // the layout; one line, truncated in the middle (the callout has the rest).
+                let detail = buffer.chipDetail
+                Text(detail ?? " ")
                     .font(.footnote.monospaced()).foregroundStyle(.secondary)
-                    .lineLimit(2).truncationMode(.middle)
+                    .lineLimit(1).truncationMode(.middle)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityIdentifier("chip-detail")
+                    .opacity(detail == nil ? 0 : 1)
+                    .accessibilityHidden(detail == nil)
+                    .accessibilityIdentifier(detail == nil ? "" : "chip-detail")
             }
             HStack(alignment: .center) {
                 Text(EditorStrings.lineCounter(count, limit: boardRows))
@@ -171,6 +184,17 @@ struct TemplateWorkspaceView: View {
                     .font(.footnote)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityIdentifier("unknownVariableIssue")
+            }
+            if !charsetIssues.isEmpty {
+                VStack(alignment: .leading, spacing: 3) {
+                    ForEach(Array(EditorStrings.charsetIssueLines(charsetIssues).enumerated()), id: \.offset) { _, line in
+                        Label { Text(line) } icon: { Image(systemName: "character.cursor.ibeam").foregroundStyle(.orange) }
+                            .font(.footnote)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("charsetIssues")
             }
             if rich, catalog.isLoaded, !catalog.variablesAvailable {
                 // B32: no plugins on this server.

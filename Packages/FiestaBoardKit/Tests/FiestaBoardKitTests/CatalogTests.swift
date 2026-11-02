@@ -42,6 +42,24 @@ final class VariableCatalogTests: XCTestCase {
         try TemplateCatalog(variablesData: Data(variablesJSON.utf8), manifests: manifests)
     }
 
+    /// W4: a 10.3.2 server lists arrays only as `name.*.field`; the items come from the live data
+    /// of `POST /displays/raw/batch` (web `VariablePickerContent`), labelled by `label_field`.
+    func testArrayItemsComeFromLiveDataLikeTheWeb() throws {
+        let manifest = try TemplateCatalog.Manifest(data: Data(#"{"name":"Bay Wheels","variables":{"arrays":{"stations":{"label_field":"name","item_fields":["name","bikes"]}}}}"#.utf8))
+        let live: [String: [String: Any]] = ["baywheels": ["stations": [["name": "POWELL ST", "bikes": 5, "extra": true], ["name": "PIER 39", "bikes": 0]]]]
+        let catalog = try TemplateCatalog(variablesData: Data(variablesJSON.utf8), manifests: ["baywheels": manifest], arrayData: live)
+        let stations = try XCTUnwrap(catalog.plugins.first { $0.id == "baywheels" }?.arrays.first)
+        XCTAssertEqual(stations.items.map(\.label), ["POWELL ST", "PIER 39"], "Live data wins over the indexed paths")
+        XCTAssertEqual(stations.items[0].fields.map(\.path), ["baywheels.stations.0.name", "baywheels.stations.0.bikes"])
+        XCTAssertEqual(stations.items[1].fields.map(\.preview), ["PIER 39", "0"])
+        XCTAssertEqual(stations.items[1].fields.map(\.label), ["Name", "Bikes"])
+        // No live data for an array: the indexed paths (or the empty-array hint) as before.
+        let without = try TemplateCatalog(variablesData: Data(variablesJSON.utf8), manifests: ["baywheels": manifest])
+        XCTAssertEqual(without.plugins.first { $0.id == "baywheels" }?.arrays.first?.items.map(\.label), ["MARKET ST", "FERRY BLDG"])
+        let empty = try TemplateCatalog(variablesData: Data(variablesJSON.utf8), manifests: ["baywheels": manifest], arrayData: ["baywheels": ["stations": []]])
+        XCTAssertEqual(empty.plugins.first { $0.id == "baywheels" }?.arrays.first?.items.count, 0)
+    }
+
     func testPluginsHaveReadableNamesIconsAndGroups() throws {
         let manifest = try TemplateCatalog.Manifest(data: Data(#"{"name":"Bay Wheels","icon":"bike","variables":{"arrays":{"stations":{"label_field":"name","item_fields":["name","bikes","docks"]}}}}"#.utf8))
         let catalog = try catalog(manifests: ["baywheels": manifest])

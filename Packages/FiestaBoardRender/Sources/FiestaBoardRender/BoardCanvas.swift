@@ -41,7 +41,8 @@ public struct BoardCanvas: View {
     }
 
     private var atlasKey: FlapAtlas.Key? {
-        guard animated, !reduceMotion, !loading, layout.tiles.count >= 256, layout.tileHeight <= 120 else { return nil }
+        // The atlas caches faces at the hardware aspect: a stretched board draws tiles directly.
+        guard animated, !reduceMotion, !loading, layout.stretch == 1, layout.tiles.count >= 256, layout.tileHeight <= 120 else { return nil }
         return .init(tileHeight: layout.tileHeight, palette: palette, code62: code62, scale: displayScale)
     }
 

@@ -104,6 +104,8 @@ struct BoardDocumentView: UIViewRepresentable {
         var variablesEnabled = true
         var colorsShown = true
         var formattingShown = true
+        /// W4: Draw on board from the keyboard too (split-flap pages with a cell stage only).
+        var drawShown = false
     }
     @ObservedObject var buffer: DocumentBuffer
     /// The session's rows, padded for display to the board's rows.
@@ -129,6 +131,8 @@ struct BoardDocumentView: UIViewRepresentable {
     var onFormula: () -> Void = {}
     /// Opens the Variables / Colors / Formatting picker (iOS-F1).
     var onPicker: (InsertPickerKind) -> Void = { _ in }
+    /// Draw on board (W4: reachable from the keyboard accessory, like the toolbar's pencil).
+    var onDraw: () -> Void = {}
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -233,7 +237,11 @@ struct BoardDocumentView: UIViewRepresentable {
         func showCallout(_ view: TemplateUITextView, chip index: Int) {
             calloutChip = index; calloutView = view
             let rect = Self.chipRect(view, at: index)
-            chipMenu.presentEditMenu(with: UIEditMenuConfiguration(identifier: "chipCallout" as NSString, sourcePoint: CGPoint(x: rect.midX, y: rect.minY)))
+            let configuration = UIEditMenuConfiguration(identifier: "chipCallout" as NSString, sourcePoint: CGPoint(x: rect.midX, y: rect.maxY))
+            // W4: below the chip (arrow up), so it doesn't cover the board's bottom row above the
+            // document; the system still flips it above when the keyboard leaves no room.
+            configuration.preferredArrowDirection = .up
+            chipMenu.presentEditMenu(with: configuration)
         }
         func editMenuInteraction(_ interaction: UIEditMenuInteraction, menuFor configuration: UIEditMenuConfiguration, suggestedActions: [UIMenuElement]) -> UIMenu? {
             guard let view = calloutView, let index = calloutChip, index < view.attributedText.length,
@@ -284,13 +292,15 @@ struct BoardDocumentView: UIViewRepresentable {
                 // 34 pt keeps all ten actions (through Wrap) inside a 440 pt phone's row beside the
                 // pinned Hide key; at 40 pt Wrap fell past the edge (W2 integration). Narrower
                 // phones still scroll.
-                button.widthAnchor.constraint(equalToConstant: 34).isActive = true
+                // W4: 32 pt, so Draw on board joins the row and Wrap still fits on a 440 pt phone.
+                button.widthAnchor.constraint(equalToConstant: 32).isActive = true
                 button.heightAnchor.constraint(equalToConstant: 38).isActive = true
                 accessoryItems[id] = button
                 return button
             }
             func gap() -> UIView { let view = UIView(); view.widthAnchor.constraint(equalToConstant: 4).isActive = true; return view }
             // iOS-F1: searchable pickers in a sheet replace the wave-2 menus (B22).
+            let draw = item("accessory_draw", EditorStrings.drawOnBoard, "pencil.tip.crop.circle") { $0.parent.onDraw() }
             let variables = item("accessory_variables", EditorStrings.variables, "curlybraces") { $0.parent.onPicker(.variables) }
             let colors = item("accessory_colors", EditorStrings.colors, "paintpalette") { $0.parent.onPicker(.colors) }
             let formatting = item("accessory_formatting", EditorStrings.formatting, "textformat") { $0.parent.onPicker(.formatting) }
@@ -303,7 +313,7 @@ struct BoardDocumentView: UIViewRepresentable {
             let wrap = item("accessory_wrap", EditorStrings.wrap, "text.word.spacing") { $0.parent.onWrap(!$0.parent.accessory.wrap) }
             let hide = item("editorHideKeyboard", EditorStrings.hideKeyboard, "keyboard.chevron.compact.down") { $0.parent.buffer.resignFocus() }
             // One scrollable row (inserts first, as the web research recommends); Hide stays pinned.
-            let stack = UIStackView(arrangedSubviews: [variables, colors, formatting, formula, gap(), undo, redo, gap(), left, center, right, wrap])
+            let stack = UIStackView(arrangedSubviews: [draw, variables, colors, formatting, formula, gap(), undo, redo, gap(), left, center, right, wrap])
             stack.axis = .horizontal; stack.alignment = .center; stack.spacing = 0
             stack.translatesAutoresizingMaskIntoConstraints = false
             let scroller = UIScrollView()
@@ -338,6 +348,7 @@ struct BoardDocumentView: UIViewRepresentable {
                 if button.isEnabled != (enabled && state.enabled) { button.isEnabled = enabled && state.enabled }
             }
             set("accessory_variables", enabled: state.variablesEnabled)
+            accessoryItems["accessory_draw"]?.isHidden = !state.drawShown
             accessoryItems["accessory_colors"]?.isHidden = !state.colorsShown
             accessoryItems["accessory_formatting"]?.isHidden = !state.formattingShown
             set("accessory_undo", enabled: state.canUndo)
@@ -356,8 +367,10 @@ struct BoardDocumentView: UIViewRepresentable {
             }
         }
         static var font: UIFont {
-            let size = UIFont.preferredFont(forTextStyle: .body).pointSize
-            return UIFont.monospacedSystemFont(ofSize: size, weight: .regular)
+            // W4: on iPad the document's rows are larger (body × 1.35, ≈ 23 pt at the default
+            // size), so the document reads at arm's length and fills the band under the board.
+            let size = UIFont.preferredFont(forTextStyle: .body).pointSize * (UIDevice.current.userInterfaceIdiom == .pad ? 1.35 : 1)
+            return UIFont.monospacedSystemFont(ofSize: size.rounded(), weight: .regular)
         }
 
         func push(source: String, into view: TemplateUITextView, caret: NSRange) {

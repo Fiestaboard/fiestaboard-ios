@@ -43,22 +43,22 @@ import FiestaBoardRender
         return cells
     }
 
-    /// The tile under a point of the stage board (board coordinates before the stage's vertical
-    /// stretch), or the nearest tile when the point falls in a gutter; nil outside the tiles.
-    /// Geometry follows `BoardFrameView`: the board fills `size` at its flap aspect, its canvas
-    /// sits inside the bezel padding and border, and tiles come from `BoardLayout`.
-    nonisolated static func cell(at point: CGPoint, size: CGSize, model: DisplayModel) -> CellPaint? {
+    /// The tile under a point of the stage board, or the nearest tile when the point falls in a
+    /// gutter; nil outside the tiles. Geometry follows `BoardFrameView`: the board fills `size` at
+    /// its flap aspect (with the stage's vertical `stretch`, W4), its canvas sits inside the bezel
+    /// padding and border, and tiles come from `BoardLayout`.
+    nonisolated static func cell(at point: CGPoint, size: CGSize, model: DisplayModel, stretch: Double = 1) -> CellPaint? {
         guard size.width > 0, size.height > 0, model.rows > 0, model.cols > 0 else { return nil }
-        let reference = BoardLayout.size(rows: model.rows, cols: model.cols, tileHeight: 100, seams: model.seams)
+        let reference = BoardLayout.size(rows: model.rows, cols: model.cols, tileHeight: 100, seams: model.seams, stretch: stretch)
         let outerWidth = reference.width + 2 * 100 * (BoardFrameView.bezelPadX + BoardFrameView.bezelBorder)
-        let outerHeight = reference.height + 2 * 100 * (BoardFrameView.bezelPadY + BoardFrameView.bezelBorder)
+        let outerHeight = reference.height + 2 * 100 * (BoardFrameView.bezelPadY * stretch + BoardFrameView.bezelBorder)
         let scale = min(Double(size.width) / outerWidth, Double(size.height) / outerHeight)
         let h = 100 * scale
         let boardWidth = outerWidth * scale, boardHeight = outerHeight * scale
         let originX = (Double(size.width) - boardWidth) / 2 + h * (BoardFrameView.bezelPadX + BoardFrameView.bezelBorder)
-        let originY = (Double(size.height) - boardHeight) / 2 + h * (BoardFrameView.bezelPadY + BoardFrameView.bezelBorder)
+        let originY = (Double(size.height) - boardHeight) / 2 + h * (BoardFrameView.bezelPadY * stretch + BoardFrameView.bezelBorder)
         let cells = Array(repeating: Array(repeating: BoardCell.blank, count: model.cols), count: model.rows)
-        let layout = BoardLayout.make(rows: model.rows, cols: model.cols, cells: cells, tileHeight: h, seams: model.seams)
+        let layout = BoardLayout.make(rows: model.rows, cols: model.cols, cells: cells, tileHeight: h, seams: model.seams, stretch: stretch)
         let x = Double(point.x) - originX, y = Double(point.y) - originY
         guard x >= -h * 0.2, y >= -h * 0.2, x <= layout.width + h * 0.2, y <= layout.height + h * 0.2 else { return nil }
         var best: (TileRect, Double)?
@@ -75,6 +75,7 @@ import FiestaBoardRender
 struct DrawCanvasOverlay: View {
     let size: CGSize
     let model: DisplayModel
+    var stretch: Double = 1
     @ObservedObject var controller: DrawModeController
     var onCommit: () -> Void
 
@@ -83,7 +84,7 @@ struct DrawCanvasOverlay: View {
             .contentShape(Rectangle())
             .gesture(DragGesture(minimumDistance: 0, coordinateSpace: .local)
                 .onChanged { value in
-                    if let cell = DrawModeController.cell(at: value.location, size: size, model: model) { controller.add(cell) }
+                    if let cell = DrawModeController.cell(at: value.location, size: size, model: model, stretch: stretch) { controller.add(cell) }
                 }
                 .onEnded { _ in onCommit() })
             // Hidden from VoiceOver/XCUI so the stage keeps reading its lines (`boardStage` value).

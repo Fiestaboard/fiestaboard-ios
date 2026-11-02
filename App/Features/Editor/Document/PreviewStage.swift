@@ -29,7 +29,7 @@ struct PreviewStage: View {
     /// Draw mode (iOS-F1, B23): tiles change at once (no flip), and a layer over the board
     /// takes the drag. Given the board's unstretched size and its display model.
     var animated = true
-    var drawOverlay: ((CGSize, DisplayModel) -> AnyView)? = nil
+    var drawOverlay: ((CGSize, DisplayModel, Double) -> AnyView)? = nil
     /// The chosen display when it is an LED pixel matrix (PLAN B24): the stage draws LEDs, with
     /// the page's canvases as layers.
     var led: DisplayModel? = nil
@@ -167,7 +167,7 @@ struct StageBoard: View {
     var isPanel: Bool
     var loading: Bool
     var animated = true
-    var drawOverlay: ((CGSize, DisplayModel) -> AnyView)? = nil
+    var drawOverlay: ((CGSize, DisplayModel, Double) -> AnyView)? = nil
 
     private var deviceType: String {
         if isPanel { return "panel" }
@@ -186,16 +186,16 @@ struct StageBoard: View {
         let aspect = CGFloat(BoardFrameView.flapAspect(model))
         StretchBoardLayout(aspect: aspect, maxStretch: Self.maxStretch) {
             GeometryReader { proxy in
-                // Width-bound board, drawn at its natural aspect, then made taller (tiles and
-                // letters) to fill the height the stage was given; never wider than the room.
+                // Width-bound board, drawn taller (tiles, gutters, bezel padding; letters a
+                // little) to fill the height the stage was given; never wider than the room.
+                // W4: a real tile aspect in the renderer, not a `scaleEffect`, so glyphs stay sharp.
                 let natural = proxy.size.width / aspect
-                let stretch = min(Self.maxStretch, max(1, proxy.size.height / max(natural, 1)))
+                let stretch = min(Double(Self.maxStretch), max(1, BoardFrameView.flapStretch(model, width: Double(proxy.size.width), height: Double(proxy.size.height))))
+                let height = max(natural, proxy.size.width / CGFloat(BoardFrameView.flapAspect(model, stretch: stretch)))
                 BoardFrameView(frame: BoardFrame.fromLines(lines, rows: rows, cols: cols), model: model,
-                               size: .fit, animated: animated, loading: loading)
-                    .frame(width: proxy.size.width, height: natural)
-                    // Inside the stretch: the overlay's drag locations are board coordinates.
-                    .overlay { drawOverlay?(CGSize(width: proxy.size.width, height: natural), model) }
-                    .scaleEffect(x: 1, y: stretch, anchor: .top)
+                               size: .fit, animated: animated, loading: loading, stretch: stretch)
+                    .frame(width: proxy.size.width, height: height)
+                    .overlay { drawOverlay?(CGSize(width: proxy.size.width, height: height), model, stretch) }
                     .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
             }
         }

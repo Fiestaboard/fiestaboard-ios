@@ -5,6 +5,7 @@ catalog's functions. Mock content; not backend evidence.
 """
 import importlib.util
 import json
+import sys
 from http.client import HTTPConnection
 from http.server import ThreadingHTTPServer
 from pathlib import Path
@@ -60,7 +61,9 @@ class FixtureCatalogTests(unittest.TestCase):
         self.assertEqual(set(catalog), VARIABLE_CATALOG_KEYS)
         self.assertEqual(sorted(catalog['variables']), ['baywheels', 'date_time', 'stocks', 'weather'])
         self.assertNotIn('home_assistant', catalog['variables'])
-        self.assertIn('stations.1.name', catalog['variables']['baywheels'])
+        # 10.3.2 lists arrays as patterns only; items come from /displays/raw/batch (W4).
+        self.assertIn('stations.*.name', catalog['variables']['baywheels'])
+        self.assertFalse(any(name.startswith('stations.0') for name in catalog['variables']['baywheels']))
         status, functions, _ = self.request('GET', prefix + '/v1/functions', cookie=cookie)
         self.assertEqual(status, 200)
         categories = {entry['category'] for entry in functions['functions'].values()}
@@ -90,6 +93,21 @@ class FixtureCatalogTests(unittest.TestCase):
         _, wobble, _ = self.request('POST', prefix + '/templates/validate', {'template': ['{{= WOBBLE(2) }}']}, cookie=cookie)
         self.assertTrue(wobble['valid'], 'Functions of an unknown category validate')
 
+
+
+class RawBatchFixtureTests(unittest.TestCase):
+    def test_raw_batch_serves_array_items_like_10_3_2(self):
+        fixture_catalog = sys.modules["fixture_catalog"]
+        status, body = fixture_catalog.handle('/board-manual-x', 'displays/raw/batch', 'POST',
+                                              {'display_types': ['baywheels', 'nope'], 'enabled_only': True}, '', {})
+        self.assertEqual(status, 200)
+        self.assertEqual(set(body), {'displays', 'total', 'successful'})
+        self.assertEqual((body['total'], body['successful']), (2, 1))
+        stations = body['displays']['baywheels']['data']['stations']
+        self.assertEqual([s['name'] for s in stations], ['MARKET ST', 'FERRY BUILDING'])
+        self.assertEqual(fixture_catalog.handle('/board-manual-x', 'displays/raw/batch', 'POST', {}, '', {})[0], 400)
+        empty = fixture_catalog.handle('/board-no-plugins-x', 'displays/raw/batch', 'POST', {'display_types': ['baywheels']}, '', {})[1]
+        self.assertEqual(empty['displays'], {})
 
 if __name__ == '__main__':
     unittest.main()

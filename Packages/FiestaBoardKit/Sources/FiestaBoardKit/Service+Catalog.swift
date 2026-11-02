@@ -12,6 +12,9 @@ public protocol TemplateCatalogReading: Sendable {
     func formulaFunctions() async throws -> FunctionCatalog
     /// `POST /templates/validate {template: [row]}` (no board: formulas validate the same everywhere).
     func validateTemplateRows(_ rows: [String]) async throws -> TemplateValidationResult
+    /// Raw `POST /displays/raw/batch {display_types, enabled_only: true}` (W4): live plugin data
+    /// for array items, as the web picker reads it.
+    func displaysRawBatchData(ids: [String]) async throws -> Data
 }
 
 extension TemplateCatalogReading {
@@ -33,7 +36,17 @@ extension TemplateCatalogReading {
             for await (id, manifest) in group { if let manifest { result[id] = manifest } }
             return result
         }
-        return try TemplateCatalog(variablesData: data, manifests: manifests)
+        // Plugins whose manifest declares arrays: their items come from live data (web parity).
+        let withArrays = manifests.filter { !$0.value.arrays.isEmpty }.keys.sorted()
+        var arrayData: [String: [String: Any]] = [:]
+        if !withArrays.isEmpty, let raw = try? await displaysRawBatchData(ids: withArrays),
+           let reply = try? JSONSerialization.jsonObject(with: raw) as? [String: Any],
+           let displays = reply["displays"] as? [String: Any] {
+            for id in withArrays {
+                if let entry = displays[id] as? [String: Any], let values = entry["data"] as? [String: Any] { arrayData[id] = values }
+            }
+        }
+        return try TemplateCatalog(variablesData: data, manifests: manifests, arrayData: arrayData)
     }
 
     /// One formula's verdict: the expression wrapped as `{{= … }}`.
@@ -57,6 +70,11 @@ extension LiveFiestaBoardService: TemplateCatalogReading {
     }
     public func formulaFunctions() async throws -> FunctionCatalog {
         try FunctionCatalog(data: try await readOK(APIRequest(path: ["v1", "functions"], cachePolicy: .noStore)))
+    }
+    public func displaysRawBatchData(ids: [String]) async throws -> Data {
+        struct Body: Encodable { let display_types: [String]; let enabled_only: Bool }
+        return try await readOK(APIRequest(.post, path: ["displays", "raw", "batch"],
+                                           body: JSONEncoder().encode(Body(display_types: ids, enabled_only: true))))
     }
     public func validateTemplateRows(_ rows: [String]) async throws -> TemplateValidationResult {
         struct Body: Encodable { let template: [String] }
