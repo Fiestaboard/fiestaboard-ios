@@ -152,6 +152,32 @@ PAGES = [
     {'id': 'composite', 'name': 'Mix (composite)', 'type': 'composite', 'device_type': 'flagship', 'template': None,
      'document_protocol': None, 'edit_protocol': None, 'shows': ['MIX', 'TWO PLUGINS']},
 ]
+
+
+def _template(lines):
+    import re
+    return [re.sub(r'\{(red|orange|yellow|green|blue|violet|white|black|filled)\}', r'{{\1}}', line) for line in lines]
+
+
+# One page per non-Kitchen board, whose frame is exactly what that board shows, so
+# Home never says "No page selected" over a board full of content (W2 iOS-R2).
+BOARD_PAGES = {'hall': ('hall-hello', 'Hall Hello', {'device_type': 'flagship'}),
+               'desk': ('desk-note', 'Desk Love Note', {'device_type': 'note'}),
+               'wall': ('wall-seams', 'Four Notes', {'device_type': 'note_array', 'notes_wide': 2, 'notes_tall': 2}),
+               'tv': ('tv-welcome', 'Living Room Welcome', {'device_type': 'panel', 'grid_rows': 12, 'grid_cols': 29}),
+               'pixoo': ('pixoo-hi', 'Pixoo Hello', {'device_type': 'panel', 'grid_rows': 10, 'grid_cols': 16}),
+               'pixoo57': ('pixoo57-hi', 'Pixoo Hello (5x7)', {'device_type': 'panel', 'grid_rows': 8, 'grid_cols': 10}),
+               'marquee': ('marquee-hot', 'Marquee Hot', {'device_type': 'panel', 'grid_rows': 2, 'grid_cols': 5}),
+               'mystery': ('mystery-flaps', 'Unknown Model Test', {'device_type': 'panel', 'grid_rows': 4, 'grid_cols': 20})}
+for _board in BOARDS:
+    _bid = _board['summary']['id']
+    if _bid in BOARD_PAGES:
+        _pid, _name, _geometry = BOARD_PAGES[_bid]
+        _rows = _board['summary']['rows']
+        _lines = (_board['lines'] + [''] * _rows)[:_rows]
+        PAGES.append({'id': _pid, 'name': _name, 'type': 'template', **_geometry, 'template': _template(_lines),
+                      'line_metadata': [{'alignment': 'center', 'wrap': False} for _ in _lines], 'shows': _board['lines']})
+
 COLLECTION = {'id': COLLECTION_UUID, 'name': 'Morning rotation', 'page_ids': ['hello', 'morning'],
               'selection_mode': 'time', 'interval_seconds': 2, 'revision': 'collection-r1'}
 
@@ -174,6 +200,8 @@ def new_state(scenario):
         boards[s['id']] = {'paused': scenario == 'paused', 'schedule_enabled': scenario.startswith(('schedule', 'collection', 'override')),
                            'auto_restore': True, 'active_page_id': None,
                            'characters': frame(b['lines'], s['rows'], s['cols'])}
+    for board_id, (page_id, _, _) in BOARD_PAGES.items():
+        boards[board_id]['active_page_id'] = None if scenario == 'no-pages' else page_id
     kitchen = boards['kitchen']
     if scenario in ('manual', 'paused', 'silence'):
         kitchen['active_page_id'] = 'hello'
