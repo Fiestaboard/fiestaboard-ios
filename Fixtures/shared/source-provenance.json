@@ -1,5 +1,5 @@
 {
-  "about": "Mirrors of /Volumes/ExtHD/fiestaboard-mobile-handoff/fixtures (PLAN \u00a74.0). Never edit a mirror; copy the canonical file and record its sha256 here.",
+  "about": "Mirrors of /Volumes/ExtHD/fiestaboard-mobile-handoff/fixtures (PLAN §4.0). Never edit a mirror; copy the canonical file and record its sha256 here.",
   "files": {
     "render-cases.json": {
       "sha256": "0c83c554d362512ee50f6ff72c0f4b2d573095caa48b52edba6fc4da3d47e6ee",
@@ -29,6 +29,11 @@
     "terminology.json": {
       "sha256": "c1acbd1b5598373056f98649ce9105078f4b8b8ccf921ee9b3322b6f4dd2a527",
       "writer": "iOS-E2",
+      "date": "2026-11-01"
+    },
+    "render-cases.r2.json": {
+      "sha256": "ea2a77cee497bf7b1bec09772f3408ebb68a57d36c7f5e54b630e3dc222ab762",
+      "writer": "iOS-R2",
       "date": "2026-11-01"
     }
   }

@@ -17,9 +17,10 @@ public struct APIRequest: Sendable {
     public let timeout: TimeInterval
     public let context: APIRequestContext
     public let cachePolicy: APIRequestCachePolicy
-    /// The two bounded evaluation POSTs never write a page or send to hardware.
+    /// The bounded evaluation POSTs (and the page-thumbnail batch render) never
+    /// write a page or send to hardware.
     public var isMutation: Bool {
-        method != .get && !(method == .post && (path == ["templates", "validate"] || path == ["templates", "render"] || path == ["pages", "preview", "flexible"]))
+        method != .get && !(method == .post && (path == ["templates", "validate"] || path == ["templates", "render"] || path == ["pages", "preview", "flexible"] || path == ["pages", "preview", "batch"]))
     }
     public init(_ method: Method = .get, path: [String], body: Data? = nil, timeout: TimeInterval = 20, queryItems: [URLQueryItem] = [], context: APIRequestContext = .standard, cachePolicy: APIRequestCachePolicy = .default) {
         self.method = method; self.path = path; self.body = body; self.timeout = timeout; self.queryItems = queryItems

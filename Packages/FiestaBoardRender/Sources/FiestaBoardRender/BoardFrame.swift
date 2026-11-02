@@ -24,7 +24,10 @@ public struct BoardToken: Sendable, Equatable {
               let kind = Kind(rawValue: type) else { return nil }
         self.kind = kind
         value = object["value"] as? String
-        if let code = object["code"] as? String { self.code = Int(code) } else { code = DisplayModel.int(object["code"]) }
+        if let code = object["code"] as? String {
+            // A tile may spell its colour by name (`"white"`, FiestaUI `BoardToken`).
+            self.code = Int(code) ?? BoardMessageParser.named[code.lowercased()]
+        } else { code = DisplayModel.int(object["code"]) }
         color = object["color"] as? String
         background = object["background"] as? String
         icon = object["icon"] as? String

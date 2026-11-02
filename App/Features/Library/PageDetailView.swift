@@ -125,19 +125,26 @@ struct PageLibraryFeedback: View {
 struct CreateLibraryPageView: View {
     @ObservedObject var library: PageLibraryState
     @ObservedObject var store: BoardStore
+    /// Called with the new page's id; the Pages list then opens its editor the
+    /// way every editor opens (B29), after this sheet has gone.
+    var onCreated: (String) -> Void = { _ in }
     @Environment(\.dismiss) private var dismiss
-    @LibraryState private var createdID: String?
+    @FocusState private var nameFocused: Bool
     var body: some View {
         Group {
-            if let id = createdID {
-                LocalPageEditorLoader(pageID: id, store: store)
-            } else {
                 Form {
                     Section("Page") {
                         TextField("New page name", text: $library.name)
+                            .focused($nameFocused)
                             .submitLabel(.done)
-                            .onSubmit { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
+                            .onSubmit { nameFocused = false }
                             .disabled(library.busy)
+                            // iPad: the keyboard's own Hide key hides the keyboard but leaves
+                            // the field first responder, so the next tap (the format menu)
+                            // brought the keyboard back. Resign with it (E1 open issue 5).
+                            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                                if nameFocused { nameFocused = false }
+                            }
                         Picker("Display format", selection: $library.isPanel) {
                             Text("Split-flap · 6 × 22").tag(false)
                             Text("LED panel").tag(true)
@@ -152,7 +159,7 @@ struct CreateLibraryPageView: View {
                     Section {
                         Button(library.capability.isSimulated ? "Create simulated page" : "Create page") {
                             Task {
-                                do { createdID = try await store.createLibraryPage() }
+                                do { let id = try await store.createLibraryPage(); onCreated(id); dismiss() }
                                 catch { /* Input and recovery remain in the retained library state. */ }
                             }
                         }
@@ -165,7 +172,6 @@ struct CreateLibraryPageView: View {
                 }
                 .navigationTitle("New page")
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
-            }
         }
         .interactiveDismissDisabled(library.busy)
     }

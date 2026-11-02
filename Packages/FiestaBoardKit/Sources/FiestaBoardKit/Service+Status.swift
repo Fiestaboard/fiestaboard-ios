@@ -71,3 +71,18 @@ extension LiveFiestaBoardService: BoardStatusReading {
         return Dictionary(list.collections.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
     }
 }
+
+/// Forget a board's remembered external frame (`DELETE /board/external-frame`,
+/// web "Dismiss" on the kept face). Idempotent on the server (204 either way).
+public protocol ExternalFrameDismissing: Sendable {
+    func dismissExternalFrame(boardID: String) async throws
+}
+
+extension LiveFiestaBoardService: ExternalFrameDismissing {
+    public func dismissExternalFrame(boardID: String) async throws {
+        guard DeploymentURL.validSegment(boardID) else { throw FiestaBoardError.invalidTarget }
+        let result = try await response(APIRequest(.delete, path: ["board", "external-frame"],
+                                                   queryItems: [URLQueryItem(name: "board_id", value: boardID)]))
+        guard (200..<300).contains(result.status) else { throw FiestaBoardError.unknownMutationOutcome }
+    }
+}

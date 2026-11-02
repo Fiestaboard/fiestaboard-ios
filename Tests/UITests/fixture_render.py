@@ -6,10 +6,13 @@ Table: every `Fixtures/shared/render-cases*.json` mirror (PLAN §4.4). Each case
 matches when its body equals the case's body exactly (canonical JSON). The
 same request key in two files is an error at start-up.
 
-Fallback (unlisted inputs), deliberately tiny: uppercase on flap boards (keep case
-on LED), per-row alignment from `line_metadata`, cut at `cols`, `{{color}}` →
-`{63}`… markers, `{{fill_space}}` → a space, any other `{{…}}` rendered as its
-uppercased source; no formula evaluation and no variable lookup, ever.
+Fallback (unlisted inputs): deterministic, and shaped like the server's output so
+demos never show variable names on the board. Uppercase on flap boards (keep
+case on LED), per-row alignment from `line_metadata`, cut at `cols`,
+`{{color}}` → `{63}`… markers, `{{fill_space}}` / `{{fill_space_repeat:X}}`
+fill the rest of the row, the variables in `VALUES` (shared with the Android
+fixture) are substituted and their `upper`/`lower`/`pad`/`truncate`/`zeropad` filters applied,
+any other variable and every `{{= … }}` formula render `???`.
 Validate fallback: valid iff braces and parentheses balance and every `NAME(`
 is a known function; otherwise the server's message shapes.
 """
@@ -73,24 +76,116 @@ def dimensions(body):
 
 
 TOKEN = re.compile(r'\{\{(.*?)\}\}')
+SYMBOL = re.compile(r'\{(\d{1,2}|red|orange|yellow|green|blue|violet|purple|white|black|filled)\}', re.IGNORECASE)
+FILL = '\x00FILL'
+
+# Plausible values, identical to AND-R2's Android fixture (coordinator's table,
+# 2026-11-01) so both platforms draw the same boards. Weather and the clock also
+# match /v1/variables (PLAN §4.4). Anything else renders ??? like the server's
+# `_get_variable_value`.
+VALUES = {
+    'weather.temperature': '72', 'weather.condition': 'SUNNY', 'weather.feels_like': '70',
+    'weather.high': '75', 'weather.low': '58', 'weather.humidity': '40', 'weather.wind_speed': '8',
+    'date_time.time': '08:15', 'date_time.date': '2026-10-31', 'date_time.day_of_week': 'SATURDAY',
+    'date_time.day': '31', 'date_time.month': 'OCTOBER', 'date_time.year': '2026',
+    'stocks.AAPL.price': '227.50', 'stocks.AAPL.change': '+1.2%',
+    'baywheels.stations.0.name': 'MARKET ST', 'baywheels.stations.0.bikes': '7',
+}
+UNKNOWN = '???'
 
 
-def render_row(source, keep_case):
-    """Template row → list of cells (strings; markers like '{63}' are one cell)."""
+def lookup(path):
+    """`source.field[.n]` → plausible value, or None. `stations[0]` ≡ `stations.0`."""
+    key = re.sub(r'\[(\d+)\]', r'.\1', path.strip())
+    return VALUES.get(key)
+
+
+def apply_filters(value, filters):
+    """`upper`, `lower`, `pad:N` (`ljust(N)[:N]`), `truncate:N` and `zeropad:N`
+    (sign kept), as the server's filters; any other filter leaves the value as is."""
+    for single in filters:
+        name, _, arg = single.strip().partition(':')
+        name = name.lower()
+        if name == 'upper':
+            value = value.upper()
+        elif name == 'lower':
+            value = value.lower()
+        else:
+            try:
+                width = int(arg)
+            except ValueError:
+                continue
+            if name == 'pad':
+                value = value.ljust(width)[:width]
+            elif name == 'truncate':
+                value = value[:width]
+            elif name == 'zeropad' and width > 0:
+                value = ('-' + value[1:].rjust(width - 1, '0')) if value.startswith('-') else value.rjust(width, '0')
+    return value
+
+
+def expand(inner):
+    """The text one `{{…}}` token renders as (markers like `{63}` kept)."""
+    stripped = inner.strip()
+    name = stripped.lower()
+    if name in COLOR_CODES:
+        return '{%d}' % COLOR_CODES[name]
+    if name.isdigit() and 63 <= int(name) <= 71:
+        return '{%s}' % name
+    if stripped.startswith('='):
+        return UNKNOWN  # the fixture never evaluates formulas
+    path, *filters = stripped.split('|')
+    value = lookup(path)
+    if value is None:
+        return UNKNOWN
+    return apply_filters(value, filters)
+
+
+def cells_of(text, keep_case):
+    """Text with `{NN}`/`{color}` markers → list of cells (a marker is one cell)."""
     cells, pos = [], 0
+    for match in SYMBOL.finditer(text):
+        chunk = text[pos:match.start()]
+        cells += list(chunk if keep_case else chunk.upper())
+        token = match.group(1).lower()
+        code = COLOR_CODES.get(token) or (int(token) if token.isdigit() and 63 <= int(token) <= 71 else None)
+        if code is None:
+            cells += list(match.group(0) if keep_case else match.group(0).upper())
+        else:
+            cells.append('{%d}' % code)
+        pos = match.end()
+    chunk = text[pos:]
+    return cells + list(chunk if keep_case else chunk.upper())
+
+
+def render_row(source, keep_case, cols=None):
+    """Template row → list of cells (strings; markers like '{63}' are one cell)."""
+    cells, pos, fills = [], 0, []
     for match in TOKEN.finditer(source):
-        cells += list(source[pos:match.start()] if keep_case else source[pos:match.start()].upper())
+        cells += cells_of(source[pos:match.start()], keep_case)
         inner = match.group(1).strip()
         name = inner.lower()
-        if name in COLOR_CODES:
-            cells.append('{%d}' % COLOR_CODES[name])
-        elif name == 'fill_space' or name.startswith('fill_space_repeat'):
-            cells.append(' ')
+        if name == 'fill_space':
+            fills.append((len(cells), ' ')); cells.append(FILL)
+        elif name.startswith('fill_space_repeat:'):
+            fills.append((len(cells), inner.split(':', 1)[1] or ' ')); cells.append(FILL)
         else:
-            cells += list(inner if keep_case else inner.upper())
+            cells += cells_of(expand(inner), keep_case)
         pos = match.end()
-    cells += list(source[pos:] if keep_case else source[pos:].upper())
-    return cells
+    cells += cells_of(source[pos:], keep_case)
+    if not fills:
+        return cells
+    room = max(0, (cols or 0) - (len(cells) - len(fills)))
+    share, extra = divmod(room, len(fills))
+    out = []
+    for index, cell in enumerate(cells):
+        if cell != FILL:
+            out.append(cell); continue
+        n = next(i for i, (at, _) in enumerate(fills) if at == index)
+        pattern = fills[n][1] if keep_case else fills[n][1].upper()
+        count = share + (1 if n < extra else 0)
+        out += [pattern[i % len(pattern)] for i in range(count)]
+    return out
 
 
 def toy_render(body):
@@ -102,7 +197,7 @@ def toy_render(body):
     for index in range(rows):
         source = template[index] if index < len(template) else ''
         meta = metadata[index] if index < len(metadata) and isinstance(metadata[index], dict) else {}
-        cells = render_row(source, keep_case)[:cols]
+        cells = render_row(source, keep_case, cols)[:cols]
         pad = cols - len(cells)
         align = meta.get('alignment') or 'left'
         left = pad // 2 if align == 'center' else (pad if align == 'right' else 0)
@@ -152,4 +247,52 @@ def handle(prefix, route, method, body, query, store):
         return 200, toy_render(body)
     if route == 'templates/validate':
         return 200, toy_validate(body)
-    return None  # /pages/preview/batch: table only in D1.
+    if route == 'pages/preview/batch':
+        return 200, toy_batch(prefix, body)
+    return None
+
+
+def _pages_for(prefix):
+    """The page documents this prefix serves (board scenarios, else the corpus page)."""
+    if prefix.startswith('/board-'):
+        import fixture_boards
+        return {p['id']: fixture_boards.page_body(p) | {'shows': p.get('shows')} for p in fixture_boards.PAGES}
+    corpus = json.loads((ROOT / 'Fixtures/contracts/10.1.20/bootstrap-control.json').read_text())
+    page = next((c['response']['body'] for c in corpus['cases'] if c['id'] == 'page_get'), None)
+    return {page['id']: page} if page else {}
+
+
+def toy_batch(prefix, body):
+    """`POST /pages/preview/batch` fallback: each page through the toy renderer."""
+    pages = _pages_for(prefix)
+    board_id = body.get('board_id')
+    previews = {}
+    for page_id in body.get('page_ids') or []:
+        page = pages.get(page_id)
+        if page is None:
+            previews[page_id] = {'available': False, 'error': f'Page not found: {page_id}'}
+            continue
+        request = {k: page.get(k) for k in ('device_type', 'notes_wide', 'notes_tall', 'grid_rows', 'grid_cols')}
+        if board_id:
+            request['board_id'] = board_id
+        if page.get('template'):
+            request['template'] = page['template']
+            request['line_metadata'] = page.get('line_metadata')
+            # The exact render case for this page when the table has one (the
+            # editor's request shape), else the toy fallback.
+            exact = {k: page.get(k) for k in ('template', 'line_metadata', 'device_type', 'notes_wide',
+                                              'notes_tall', 'grid_rows', 'grid_cols')}
+            hit = TABLE.get(('/templates/render', canonical(exact)))
+            lines = hit['body']['lines'] if hit and hit.get('status', 200) == 200 else toy_render(request)['lines']
+        elif page.get('shows'):
+            request['template'] = [re.sub(r'\{(red|orange|yellow|green|blue|violet|white|black)\}', r'{{\1}}', line)
+                                   for line in page['shows']]
+            request['line_metadata'] = [{'alignment': 'center', 'wrap': False}] * len(page['shows'])
+            lines = toy_render(request)['lines']
+        else:
+            previews[page_id] = {'available': False, 'error': 'This page has no fixed grid to preview'}
+            continue
+        previews[page_id] = {'available': True, 'page_id': page_id, 'message': '\n'.join(lines), 'lines': lines,
+                             'display_type': page.get('device_type') or 'flagship', 'raw': {}}
+    ok = sum(1 for v in previews.values() if v['available'])
+    return {'previews': previews, 'total': len(previews), 'successful': ok}

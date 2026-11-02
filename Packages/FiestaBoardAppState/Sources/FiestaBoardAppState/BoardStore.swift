@@ -48,6 +48,10 @@ public enum PageLibraryPhase: Equatable, Sendable {
     fileprivate var blocked = false
     fileprivate var deletionRecoveryEpochs: [String: UInt64] = [:]
     public var busy: Bool { phase == .working }
+    /// The "Page created" note belongs to the create sheet; clear it once the
+    /// sheet (or the editor it became) closes, so the Pages list never keeps a
+    /// stale "open its editor" instruction after the page was saved.
+    public func dismissCompletion() { if case .completed = phase { phase = .idle } }
     public var needsReview: Bool { blocked }
     public var canCreate: Bool { capability.canCreate && !busy && !blocked }
     public var canDelete: Bool { capability.canDelete && !busy && !blocked }
@@ -896,11 +900,16 @@ extension BoardStore {
         return (service, library)
     }
 
-    public func createLibraryPage() async throws -> String {
+    /// Creates a page from the library sheet's input, or — with `name`,
+    /// `template` and `family` — from a board frame ("Save as page", B9).
+    public func createLibraryPage(name: String? = nil, template: [String] = [],
+                                  family: PageCreationFamily? = nil) async throws -> String {
         let (service, library) = try requirePageLibrary()
         guard library.canCreate else { throw FiestaBoardError.pageWritesDisabled }
-        let input = PageCreationInput(name: library.name.trimmingCharacters(in: .whitespacesAndNewlines),
-                                      family: library.isPanel ? .panel(rows: library.rows, cols: library.columns) : .flagship)
+        let fromSheet = name == nil
+        let input = PageCreationInput(name: (name ?? library.name).trimmingCharacters(in: .whitespacesAndNewlines),
+                                      family: family ?? (library.isPanel ? .panel(rows: library.rows, cols: library.columns) : .flagship),
+                                      template: template)
         try input.validate()
         let token = generation
         library.phase = .working; library.deletion = nil
@@ -913,8 +922,9 @@ extension BoardStore {
             let receipt = try await service.createPage(context: context)
             guard valid(token), pageLibrary === library else { throw FiestaBoardError.staleSession }
             if !pages.contains(where: { $0.id == receipt.page.id }) { pages.append(receipt.page) }
-            library.name = ""; library.blocked = false
-            library.phase = .completed("Page created. Open its editor to add content.")
+            if fromSheet { library.name = "" }
+            library.blocked = false
+            library.phase = .completed(fromSheet ? "Page created. Open its editor to add content." : "Saved “\(input.name)” as a page.")
             return receipt.page.id
         } catch {
             finishPageLibraryFailure(error, library: library, dispatched: dispatched)

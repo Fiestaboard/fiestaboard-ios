@@ -1,0 +1,104 @@
+{
+  "description": "iOS-R2 (wave 2): sample pages whose line_metadata uses full objects instead of nulls (the server model list[LineMetadata] rejects null entries). Responses identical to render-cases.json page_hello / page_morning.",
+  "cases": [
+    {
+      "id": "page_hello_full_metadata",
+      "route": "/templates/render",
+      "request": {
+        "template": [
+          "",
+          "",
+          "HELLO {{red}}{{orange}}{{yellow}} WORLD 62°"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          },
+          {
+            "alignment": "left",
+            "wrap": false
+          },
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "device_type": "flagship",
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "grid_rows": null,
+        "grid_cols": null
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "                      \n                      \n HELLO {63}{64}{65} WORLD 62°  \n                      \n                      \n                      ",
+          "lines": [
+            "                      ",
+            "                      ",
+            " HELLO {63}{64}{65} WORLD 62°  ",
+            "                      ",
+            "                      ",
+            "                      "
+          ],
+          "line_count": 6
+        }
+      },
+      "source": "mock: fixture_boards.PAGES \"hello\" as the server would evaluate it (weather 72 SUNNY, time 08:15)"
+    },
+    {
+      "id": "page_morning_full_metadata",
+      "route": "/templates/render",
+      "request": {
+        "template": [
+          "GOOD MORNING",
+          "{{weather.temperature|pad:3}}° {{weather.condition}}",
+          "",
+          "{{red}}{{orange}}{{yellow}}{{green}}{{blue}}{{violet}}",
+          "{{= IF(weather.temperature > 70, \"WARM OUT\", \"BRING A COAT\") }}",
+          "{{fill_space_repeat:-}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "center",
+            "wrap": false
+          },
+          {
+            "alignment": "left",
+            "wrap": false
+          },
+          {
+            "alignment": "left",
+            "wrap": false
+          },
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "device_type": "flagship",
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "grid_rows": null,
+        "grid_cols": null
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "     GOOD MORNING     \n 72° SUNNY            \n                      \n        {63}{64}{65}{66}{67}{68}        \nWARM OUT              \n----------------------",
+          "lines": [
+            "     GOOD MORNING     ",
+            " 72° SUNNY            ",
+            "                      ",
+            "        {63}{64}{65}{66}{67}{68}        ",
+            "WARM OUT              ",
+            "----------------------"
+          ],
+          "line_count": 6
+        }
+      },
+      "source": "mock: fixture_boards.PAGES \"morning\" as the server would evaluate it (weather 72 SUNNY, time 08:15)"
+    }
+  ]
+}

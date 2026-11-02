@@ -32,9 +32,13 @@ struct DraftScene: View {
     @StateObject private var store: BoardStore
     @StateObject private var connection: ConnectionModel
     @StateObject private var boardStatus: BoardStatus
+    @StateObject private var thumbnails: PageThumbnails
     init(persistence: ConnectionPersistence) {
         let store = BoardStore()
         _store = StateObject(wrappedValue: store)
+        _thumbnails = StateObject(wrappedValue: PageThumbnails(reader: {
+            StatusReaderRegistry.shared.previewReader(for: store.connectionLabel)
+        }))
         _boardStatus = StateObject(wrappedValue: BoardStatus(store: store, reader: {
             StatusReaderRegistry.shared.reader(for: store.connectionLabel)
         }))
@@ -48,8 +52,8 @@ struct DraftScene: View {
     }
     @DraftState private var tab: DraftTab? = .home
     @DraftState private var compactColumn = NavigationSplitViewColumn.detail
-    @DraftState private var search = ""
-    @DraftState private var creatingPage = false
+    /// The sidebar hides while a page editor is open so the board gets the full width (B29).
+    @DraftState private var columnVisibility = NavigationSplitViewVisibility.automatic
     @DraftState private var composing = false
     @DraftState private var textDraft = ""
     @DraftState private var reviewAfterCompose: PreparedAction?
@@ -65,7 +69,7 @@ struct DraftScene: View {
             if store.status == nil {
                 ConnectionView(model: connection, store: store)
             } else {
-                NavigationSplitView(preferredCompactColumn: $compactColumn) {
+                NavigationSplitView(columnVisibility: $columnVisibility, preferredCompactColumn: $compactColumn) {
                     List(DraftTab.allCases, selection: $tab) { destination in
                         NavigationLink(value: destination) {
                             Label(destination.rawValue, systemImage: destination.symbol)
@@ -77,6 +81,11 @@ struct DraftScene: View {
                     destination
                 }
                 .navigationSplitViewStyle(.balanced)
+                // EditorRoot reports EditorIsOpenKey while it is on screen (iOS-E2): full width
+                // while editing, and the sidebar comes back when the editor closes.
+                .onPreferenceChange(EditorIsOpenKey.self) { open in
+                    withAnimation(.easeInOut(duration: 0.25)) { columnVisibility = open ? .detailOnly : .automatic }
+                }
             }
         }
         .tint(accent)
@@ -158,8 +167,9 @@ struct DraftScene: View {
             NavigationStack {
                 HomeView(store: store, status: boardStatus, compose: { composing = true },
                          preparePage: { pending = store.prepare(.page($0)) },
-                         changePage: { pageChooser }, controls: { boardControlsDestination() },
-                         banner: { connectionBanner })
+                         prepareRestore: { pending = store.prepare(.restore) },
+                         openSettings: { tab = .settings }, openSchedule: { tab = .schedule },
+                         changePage: { pageChooser }, controls: { boardControlsDestination() })
             }
         case .displays: displays
         case .pages: library
@@ -179,7 +189,7 @@ struct DraftScene: View {
         VStack(alignment: .leading, spacing: 8) {
             Label(store.connectionLabel, systemImage: store.status?.isDemo == true ? "sparkles" : "network")
                 .font(.subheadline.weight(.semibold)).textSelection(.enabled)
-            Text(store.status?.isDemo == true ? "Demo · page saves, previews and board actions are simulated" : "\(store.status?.version.displayedVersion ?? "Unknown version") · \(store.status?.access == .candidateWrites ? "Board controls enabled" : "Board controls read-only") · Page and collection editing checked separately")
+            Text(store.status?.isDemo == true ? "Demo · page saves, previews and board actions are simulated" : "FiestaBoard \(store.status?.version.displayedVersion ?? "(version unknown)") · \(store.status?.access == .candidateWrites ? "Changes from this app are on" : "Changes from this app are off")")
                 .font(.caption).foregroundStyle(.secondary)
             if let message = store.message {
                 Text(message).font(.callout).accessibilityIdentifier("actionOutcome")
@@ -189,54 +199,6 @@ struct DraftScene: View {
             if store.commandBusy || store.refreshing { ProgressView(store.commandBusy ? "Waiting for server…" : "Refreshing…") }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-    private var home: some View {
-        NavigationStack {
-            GeometryReader { geometry in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        connectionBanner
-                        let wide = geometry.size.width > 760
-                        let layout = wide ? AnyLayout(HStackLayout(alignment: .top, spacing: 24)) : AnyLayout(VStackLayout(alignment: .leading, spacing: 24))
-                        layout {
-                            VStack(alignment: .leading, spacing: 16) {
-                                boardPicker
-                                if let board = store.board {
-                                    Text("Server-reported output").font(.headline)
-                                    BoardOutputView(board: board)
-                                    Text("Reported content may be cached. This is not independent physical readback.").font(.caption).foregroundStyle(.secondary)
-                                    if let date = board.readAt { Text("Server read: \(date)").font(.caption).foregroundStyle(.secondary) }
-                                    if board.expectedCharacters != nil && board.expectedCharacters != board.characters {
-                                        DisclosureGroup("Expected output differs") { BoardOutputView(board: board, expected: true) }
-                                    }
-                                } else if store.boards.isEmpty {
-                                    ContentUnavailableView("No displays", systemImage: "rectangle.on.rectangle", description: Text("Add a display in the server web interface, then reconnect to load it here."))
-                                }
-                            }.frame(maxWidth: .infinity)
-                            VStack(alignment: .leading, spacing: 16) {
-                                Label("Make room for a little joy.", systemImage: "sun.max").font(.title2.bold())
-                                Button { composing = true } label: { Label("Compose text", systemImage: "square.and.pencil").frame(maxWidth: .infinity, minHeight: 36) }
-                                    .buttonStyle(.borderedProminent).disabled(!store.canWrite)
-                                if let reason = store.boardActionDisabledReason { Text(reason.message).font(.callout).foregroundStyle(.secondary) }
-                                if store.needsReadback { Text("Refresh output before another action.").font(.callout).foregroundStyle(.orange) }
-                                if let board = store.board {
-                                    selectionDetails(board)
-                                    NavigationLink { pageChooser } label: { Label("Choose a page", systemImage: "rectangle.stack") }
-                                        .buttonStyle(.bordered).disabled(!store.canWrite)
-                                    NavigationLink {
-                                        boardControlsDestination()
-                                    } label: { Label("Board controls", systemImage: "slider.horizontal.3") }
-                                        .buttonStyle(.bordered)
-                                        .accessibilityIdentifier("boardControlsEntry")
-                                }
-                            }.frame(maxWidth: wide ? 290 : .infinity, alignment: .leading)
-                        }
-                    }.padding().frame(maxWidth: 1250).frame(maxWidth: .infinity)
-                }
-            }
-            .navigationTitle("FiestaBoard")
-            .toolbar { ToolbarItem(placement: .primaryAction) { refreshButton } }
-        }
     }
     private func boardControlsDestination(title: String = "Board controls") -> some View {
         Form {
@@ -272,56 +234,10 @@ struct DraftScene: View {
         .navigationTitle("Playback")
         .task { if store.selectedBoardID != boardID { await store.selectBoard(boardID).value } }
     }
-    private var boardPicker: some View {
-        Picker("Display", selection: Binding(get: { store.selectedBoardID ?? "" }, set: { store.selectBoard($0) })) {
-            ForEach(store.boards) { Text($0.name).tag($0.id) }
-        }.pickerStyle(.menu).disabled(store.commandBusy || store.refreshing)
-    }
-    private var refreshButton: some View {
-        Button { store.refresh() } label: { Label("Refresh output", systemImage: "arrow.clockwise") }
-            .disabled(store.refreshing || store.commandBusy)
-    }
-    private func selectionDetails(_ board: BoardDetail) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Selection & delivery").font(.headline)
-            LabeledContent("Selected page", value: pageName(board.activePageID))
-            LabeledContent("Resolved page", value: pageName(board.resolvedPageID))
-            LabeledContent("Scheduled page", value: pageName(board.scheduledPageID))
-            LabeledContent("Source", value: board.source)
-        }.font(.subheadline)
-    }
     private var library: some View {
         NavigationStack {
-            List {
-                Section { connectionBanner }
-                if let library = store.pageLibrary {
-                    Section { PageLibraryFeedback(library: library, store: store) }
-                }
-                Section("Pages · local drafts available") {
-                    ForEach(store.pages.filter { search.isEmpty || $0.name.localizedCaseInsensitiveContains(search) }) { page in
-                        NavigationLink { PageDetailView(page: page, store: store, prepare: { pending = store.prepare(.page(page.id)) }) } label: {
-                            Label { VStack(alignment: .leading, spacing: 4) { Text(page.name).font(.headline); Text("\(page.type) · \(page.deviceType ?? "no fixed grid")").font(.caption).foregroundStyle(.secondary) } } icon: { Image(systemName: "rectangle.stack").foregroundStyle(.orange) }.padding(.vertical, 6)
-                        }
-                    }
-                    if store.pages.isEmpty { Text("No pages on this deployment.") }
-                }
-            }.navigationTitle("Pages").searchable(text: $search, prompt: "Find a page")
-                .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        Button("New page", systemImage: "plus") { creatingPage = true }
-                            .accessibilityIdentifier("newLibraryPage")
-                            .disabled(store.pageLibrary?.capability.canCreate != true)
-                    }
-                    ToolbarItem(placement: .secondaryAction) {
-                        Button("Reload library", systemImage: "arrow.clockwise") { store.refreshLibrary() }.disabled(store.connecting)
-                    }
-                }
-                .sheet(isPresented: $creatingPage) {
-                    if let library = store.pageLibrary {
-                        NavigationStack { CreateLibraryPageView(library: library, store: store) }
-                    }
-                }
-                .onChange(of: store.connectionLabel) { _, _ in creatingPage = false }
+            PagesListView(store: store, status: boardStatus, thumbnails: thumbnails,
+                          prepare: { pending = store.prepare(.page($0)) })
         }
     }
     private var pageChooser: some View {
@@ -332,37 +248,8 @@ struct DraftScene: View {
     }
     private var displays: some View {
         NavigationStack {
-            List {
-                Section { connectionBanner }
-                Section("Displays") {
-                    ForEach(store.boards) { board in
-                        NavigationLink {
-                            Form {
-                                Section("Display") {
-                                    LabeledContent("Name", value: board.name)
-                                    LabeledContent("ID", value: board.id)
-                                    LabeledContent("Geometry", value: "\(board.rows) × \(board.cols)")
-                                    LabeledContent("Device model", value: board.deviceModel ?? "Not reported")
-                                    LabeledContent("Character set", value: board.charset ?? "Not reported")
-                                    LabeledContent("Schedule", value: board.scheduleEnabled ? "Enabled" : "Disabled")
-                                    LabeledContent("Paused", value: board.paused ? "Yes" : "No")
-                                }
-                                Section {
-                                    Button("Use this display") { store.selectBoard(board.id); tab = .home }.disabled(store.commandBusy)
-                                    NavigationLink {
-                                        playback(for: board.id)
-                                    } label: { Label("Playback", systemImage: "play.rectangle") }
-                                        .accessibilityIdentifier("displayPlayback")
-                                        .disabled(store.commandBusy)
-                                }
-                            }.frame(maxWidth: 1000).frame(maxWidth: .infinity).navigationTitle(board.name)
-                        } label: {
-                            HStack { Label(board.name, systemImage: "rectangle.on.rectangle"); Spacer(); if store.selectedBoardID == board.id { Image(systemName: "checkmark.circle.fill").foregroundStyle(.orange).accessibilityLabel("Selected") } }
-                        }
-                    }
-                    if store.boards.isEmpty { Text("No displays reported by this server.") }
-                }
-            }.navigationTitle("Displays")
+            DisplaysView(store: store, status: boardStatus, useOnHome: { tab = .home },
+                         playback: { playback(for: $0) })
         }
     }
     private var settings: some View {

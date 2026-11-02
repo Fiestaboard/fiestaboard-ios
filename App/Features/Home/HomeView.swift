@@ -4,15 +4,19 @@ import FiestaBoardAppState
 import FiestaBoardRender
 
 /// Home: the selected display's name, the "what's happening" row, then the
-/// board itself — the largest element on screen (B33). Actions sit below it.
-struct HomeView<ChangePage: View, Controls: View, Banner: View>: View {
+/// board itself — the largest element on screen (B33). Below it: the outcome
+/// of the last action, quick actions, what the schedule does next and what
+/// the other displays show. Server/account details live in Settings.
+struct HomeView<ChangePage: View, Controls: View>: View {
     @ObservedObject var store: BoardStore
     @ObservedObject var status: BoardStatus
     let compose: () -> Void
     let preparePage: (String) -> Void
+    let prepareRestore: () -> Void
+    let openSettings: () -> Void
+    let openSchedule: () -> Void
     @ViewBuilder let changePage: () -> ChangePage
     @ViewBuilder let controls: () -> Controls
-    @ViewBuilder let banner: () -> Banner
 
     private var summary: BoardSummary? { store.boards.first { $0.id == store.selectedBoardID } }
 
@@ -23,11 +27,19 @@ struct HomeView<ChangePage: View, Controls: View, Banner: View>: View {
                     if let summary {
                         header(summary)
                         board(summary, height: geometry.size.height)
+                        if let face = status.outOfSync {
+                            OutOfSyncBanner(face: face, summary: summary, store: store, status: status, restore: prepareRestore)
+                        }
+                        outcome
                         actions(wide: geometry.size.width > 760)
+                        changesNote
+                        HomeCards(store: store, status: status, wide: geometry.size.width > 760,
+                                  openSchedule: openSchedule)
                     } else if store.boards.isEmpty && !store.connecting {
                         emptyBoard
+                    } else {
+                        outcome
                     }
-                    banner()
                 }
                 .padding(.horizontal, 16).padding(.vertical, 8)
                 .frame(maxWidth: 1250).frame(maxWidth: .infinity)
@@ -126,22 +138,78 @@ struct HomeView<ChangePage: View, Controls: View, Banner: View>: View {
         }
     }
 
-    // MARK: actions
+    // MARK: outcome and actions
 
-    private func actions(wide: Bool) -> some View {
-        let layout = wide ? AnyLayout(HStackLayout(spacing: 12)) : AnyLayout(VStackLayout(spacing: 10))
-        return layout {
-            NavigationLink { changePage() } label: {
-                Label("Change page", systemImage: "rectangle.stack").frame(maxWidth: .infinity, minHeight: 36)
-            }
-            .buttonStyle(.borderedProminent).disabled(!store.canWrite).accessibilityIdentifier("changePage")
-            Button(action: compose) { Label("Compose text", systemImage: "square.and.pencil").frame(maxWidth: .infinity, minHeight: 36) }
-                .buttonStyle(.bordered).disabled(!store.canWrite)
-            NavigationLink { controls() } label: {
-                Label("Board controls", systemImage: "slider.horizontal.3").frame(maxWidth: .infinity, minHeight: 36)
-            }
-            .buttonStyle(.bordered).accessibilityIdentifier("boardControlsEntry")
+    @ViewBuilder private var outcome: some View {
+        if let message = store.message {
+            Text(message).font(.callout).accessibilityIdentifier("actionOutcome")
+                .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
         }
+        if store.commandBusy || store.refreshing {
+            ProgressView(store.commandBusy ? "Waiting for the board…" : "Refreshing…").font(.callout)
+        }
+    }
+
+    /// Why Change page / Compose are greyed out, in plain words, with the fix.
+    @ViewBuilder private var changesNote: some View {
+        switch store.boardActionDisabledReason {
+        case .changesDisabled?:
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: "lock").foregroundStyle(.secondary)
+                Text("Changing this board from the app is turned off.").foregroundStyle(.secondary)
+                Spacer(minLength: 4)
+                Button("Turn on", action: openSettings).font(.callout.weight(.semibold))
+            }
+            .font(.callout)
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("homeChangesOff")
+        case .unsupportedOperation?:
+            Label("This server version can't be changed from the app yet. Use the web app to change the board.",
+                  systemImage: "info.circle").font(.callout).foregroundStyle(.secondary)
+        case .readbackRequired?:
+            Label("Refresh to see the board before making another change.", systemImage: "arrow.clockwise")
+                .font(.callout).foregroundStyle(.orange)
+        default: EmptyView()
+        }
+    }
+
+    /// Three equal quick actions in one row (icon over label), so the board
+    /// keeps the screen and the lower half has room for the cards.
+    private func actions(wide: Bool) -> some View {
+        HStack(spacing: 10) {
+            NavigationLink { changePage() } label: { QuickAction(title: "Change page", systemImage: "rectangle.stack", prominent: true) }
+                .disabled(!store.canWrite).accessibilityIdentifier("changePage")
+            Button(action: compose) { QuickAction(title: "Compose text", systemImage: "square.and.pencil") }
+                .disabled(!store.canWrite)
+            NavigationLink { controls() } label: { QuickAction(title: "Board controls", systemImage: "slider.horizontal.3") }
+                .accessibilityIdentifier("boardControlsEntry")
+        }
+        .buttonStyle(.plain)
+        .frame(maxWidth: wide ? 640 : .infinity, alignment: .leading)
+    }
+}
+
+/// One quick-action tile: icon above a one-line label, full tile tappable.
+struct QuickAction: View {
+    let title: String
+    let systemImage: String
+    var prominent = false
+    @Environment(\.isEnabled) private var enabled
+    var body: some View {
+        VStack(spacing: 6) {
+            Image(systemName: systemImage).font(.title3.weight(.semibold)).frame(height: 26)
+            Text(title).font(.footnote.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, minHeight: 64)
+        .foregroundStyle(prominent && enabled ? Color.white : (enabled ? Color.orange : Color.secondary))
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(prominent && enabled ? AnyShapeStyle(Color.orange) : AnyShapeStyle(Color(.secondarySystemBackground))))
+        .opacity(enabled ? 1 : 0.6)
+        .contentShape(RoundedRectangle(cornerRadius: 14))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(.isButton)
     }
 }
 

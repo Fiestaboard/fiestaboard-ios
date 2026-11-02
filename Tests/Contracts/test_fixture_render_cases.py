@@ -90,14 +90,22 @@ class FixtureRenderCasesTests(unittest.TestCase):
                 status, _, _ = self.request(method, prefix + route, {'template': ['X']} if method == 'POST' else None)
                 self.assertEqual(status, 401)
 
-    def test_toy_fallback_is_deterministic_and_never_evaluates(self):
+    def test_fallback_is_deterministic_and_substitutes_plausible_values(self):
         prefix, cookie = self.signed_in()
         body = {'template': ['hi {{red}} {{weather.temperature}}', 'X'], 'line_metadata': [{'alignment': 'center'}],
                 'device_type': 'note'}
         status, first, _ = self.request('POST', prefix + '/templates/render', body, cookie)
         self.assertEqual(status, 200)
         self.assertEqual(first['line_count'], 3)
-        self.assertEqual(first['lines'][0], 'HI {63} WEATHER.TE', 'cut at 15 cells; a marker is one cell')
+        self.assertEqual(first['lines'][0], '    HI {63} 72    ', 'a known variable renders a plausible value; a marker is one cell')
+        _, rich, _ = self.request('POST', prefix + '/templates/render', {'template': [
+            '{{weather.temperature|pad:3}}° {{weather.condition}}',
+            '{{= IF(weather.temperature > 70, "WARM OUT", "BRING A COAT") }}',
+            '{{date_time.day_of_week|truncate:3}} {{date_time.day}} {{weather.wind_speed|zeropad:3}}', '{{nope.field}}', '{{fill_space_repeat:-}}',
+            'ABCDEFGHIJKLMNOPQRSTUVWXYZ'], 'device_type': 'flagship'}, cookie)
+        self.assertEqual([line.rstrip() for line in rich['lines']],
+                         ['72 ° SUNNY', '???', 'SAT 31 008', '???', '-' * 22, 'ABCDEFGHIJKLMNOPQRSTUV'],
+                         'pad/truncate/zeropad filters, formula → ???, shared clock, unknown → ???, fill, cut at cols')
         self.assertNotIn('charset_issues', first, 'charset_issues only when board_id is sent')
         _, second, _ = self.request('POST', prefix + '/templates/render', body, cookie)
         self.assertEqual(first, second)
