@@ -32,7 +32,8 @@ final class StructuralEditingTests: XCTestCase {
         XCTAssertEqual(session.document, recovered.document)
     }
     func testUnsupportedMetadataShapesRejectStructureWithoutTruncation() throws {
-        for metadata in [#"[{"alignment":"future"}]"#, #"[{"wrap":1}]"#, "[]", "[null]", "{}"] {
+        // "[]" is no longer unsupported: a shorter-than-template array is editable (PLAN §2.2; LosslessRoundTripTests).
+        for metadata in [#"[{"alignment":"future"}]"#, #"[{"wrap":1}]"#, "[null]", "{}", #"[{},{}]"#] {
             var document = try PageDocument(data: Data("{\"type\":\"template\",\"template\":[\"A\"],\"line_metadata\":\(metadata)}".utf8))
             let before = document
             XCTAssertThrowsError(try document.insertTemplateLine(at: 0, with: "B"))

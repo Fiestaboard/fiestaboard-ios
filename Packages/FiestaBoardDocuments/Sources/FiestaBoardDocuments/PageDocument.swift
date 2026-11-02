@@ -29,7 +29,10 @@ public struct PageDocument: Equatable, Sendable {
         switch root["line_metadata"] {
         case nil, .null: return lines
         case .array(let metadata):
-            guard metadata.count == lines.count else { return nil }
+            // Real pages carry arrays shorter than `template` (PLAN §2.2). The server reads a row
+            // without an entry from its legacy prefixes (`templates/engine.py`), as `lineAlignment`
+            // does. Longer arrays have no row to belong to and stay read-only.
+            guard metadata.count <= lines.count else { return nil }
             for value in metadata {
                 guard case .object(let object) = value else { return nil }
                 if let alignment = object["alignment"] {
@@ -67,32 +70,48 @@ public struct PageDocument: Equatable, Sendable {
         root["template"] = .array(lines.map(LosslessJSON.string))
         if let metadata { root["line_metadata"] = .array(metadata) }
     }
+    /// Extends a short `line_metadata` array so it has an entry for `index`. Rows that gain an
+    /// entry keep their effective alignment/wrap: their legacy prefixes (which the server reads
+    /// only for rows without an entry) move into the entry. Rows without prefixes are untouched.
+    private static func padMetadata(_ metadata: inout [LosslessJSON], lines: inout [String], through index: Int) {
+        while metadata.count <= index, metadata.count < lines.count {
+            let row = metadata.count
+            let legacy = legacyLine(lines[row])
+            metadata.append(.object(["alignment": .string(legacy.alignment), "wrap": .bool(legacy.wrap)]))
+            if legacy.content != lines[row] { lines[row] = legacy.content }
+        }
+    }
     public mutating func insertTemplateLine(at index: Int, with content: String = "") throws {
         try editRows { lines, metadata in
             guard (0...lines.count).contains(index), !content.contains("\n"), !content.contains("\r") else { throw DocumentError.invalidLine }
             lines.insert(content, at: index)
-            metadata?.insert(Self.defaultLineMetadata, at: index)
+            // Past the end of a short array the new row has no entry, which already reads left.
+            if let count = metadata?.count, index <= count { metadata?.insert(Self.defaultLineMetadata, at: index) }
         }
     }
     public mutating func removeTemplateLine(at index: Int) throws {
         try editRows { lines, metadata in
             guard lines.indices.contains(index) else { throw DocumentError.invalidLine }
-            lines.remove(at: index); metadata?.remove(at: index)
+            lines.remove(at: index)
+            if let count = metadata?.count, index < count { metadata?.remove(at: index) }
         }
     }
     /// Destination is the row's final index, after the move.
     public mutating func moveTemplateLine(from source: Int, to destination: Int) throws {
         try editRows { lines, metadata in
             guard lines.indices.contains(source), lines.indices.contains(destination) else { throw DocumentError.invalidLine }
+            if var values = metadata {
+                Self.padMetadata(&values, lines: &lines, through: max(source, destination))
+                values.insert(values.remove(at: source), at: destination); metadata = values
+            }
             lines.insert(lines.remove(at: source), at: destination)
-            if var values = metadata { values.insert(values.remove(at: source), at: destination); metadata = values }
         }
     }
     public mutating func duplicateTemplateLine(at index: Int) throws {
         try editRows { lines, metadata in
             guard lines.indices.contains(index) else { throw DocumentError.invalidLine }
             lines.insert(lines[index], at: index + 1)
-            if var values = metadata { values.insert(values[index], at: index + 1); metadata = values }
+            if var values = metadata, index < values.count { values.insert(values[index], at: index + 1); metadata = values }
         }
     }
     /// Mirrors exact20 src/text_utils.py: optional lowercase {wrap}, then one
@@ -130,8 +149,13 @@ public struct PageDocument: Equatable, Sendable {
         guard let lines = editableTemplateLines else { throw DocumentError.unsupportedTemplate }
         guard lines.indices.contains(index) else { throw DocumentError.invalidLine }
         var metadata: [LosslessJSON]
-        if case .array(let existing) = root["line_metadata"] { metadata = existing }
-        else {
+        if case .array(let existing) = root["line_metadata"] {
+            // A short array gains entries only up to this row (PLAN §2.2: write only what changed).
+            metadata = existing
+            var rows = lines
+            Self.padMetadata(&metadata, lines: &rows, through: index)
+            if rows != lines { root["template"] = .array(rows.map(LosslessJSON.string)) }
+        } else {
             // Follow storage migration: metadata overrides prefixes, so consume only the
             // prefixes the backend previously interpreted, keeping the remaining source exact.
             let migrated = lines.map(Self.legacyLine)
