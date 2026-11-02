@@ -25,7 +25,7 @@ struct HomeCards: View {
         }
         .padding(.top, 10)
         // Read once the selected board has loaded (not while connecting).
-        .task(id: store.board?.summary.id) {
+        .task(id: "\(store.board?.summary.id ?? "-")|\(store.connecting)") {
             guard store.board != nil, !store.connecting else { return }
             now = Date()
             await store.refreshSchedules().value
@@ -80,8 +80,10 @@ struct HomeCards: View {
         let subtitle = board.paused ? "Paused" : (status.activePageName(for: board.id) ?? " ")
         return Button { store.selectBoard(board.id) } label: {
             VStack(alignment: .leading, spacing: 6) {
+                // A fixed-height well so every caption lines up across the grid.
                 BoardThumbnail(frame: frame, model: model)
-                    .frame(maxWidth: .infinity, maxHeight: 120)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .frame(height: wide ? 130 : 96)
                 Text(board.name).font(.subheadline.weight(.semibold)).foregroundStyle(.primary).lineLimit(1)
                 Text(subtitle).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }

@@ -170,20 +170,42 @@ struct HomeView<ChangePage: View, Controls: View>: View {
         }
     }
 
+    /// Three equal quick actions in one row (icon over label), so the board
+    /// keeps the screen and the lower half has room for the cards.
     private func actions(wide: Bool) -> some View {
-        let layout = wide ? AnyLayout(HStackLayout(spacing: 12)) : AnyLayout(VStackLayout(spacing: 10))
-        return layout {
-            NavigationLink { changePage() } label: {
-                Label("Change page", systemImage: "rectangle.stack").frame(maxWidth: .infinity, minHeight: 36)
-            }
-            .buttonStyle(.borderedProminent).disabled(!store.canWrite).accessibilityIdentifier("changePage")
-            Button(action: compose) { Label("Compose text", systemImage: "square.and.pencil").frame(maxWidth: .infinity, minHeight: 36) }
-                .buttonStyle(.bordered).disabled(!store.canWrite)
-            NavigationLink { controls() } label: {
-                Label("Board controls", systemImage: "slider.horizontal.3").frame(maxWidth: .infinity, minHeight: 36)
-            }
-            .buttonStyle(.bordered).accessibilityIdentifier("boardControlsEntry")
+        HStack(spacing: 10) {
+            NavigationLink { changePage() } label: { QuickAction(title: "Change page", systemImage: "rectangle.stack", prominent: true) }
+                .disabled(!store.canWrite).accessibilityIdentifier("changePage")
+            Button(action: compose) { QuickAction(title: "Compose text", systemImage: "square.and.pencil") }
+                .disabled(!store.canWrite)
+            NavigationLink { controls() } label: { QuickAction(title: "Board controls", systemImage: "slider.horizontal.3") }
+                .accessibilityIdentifier("boardControlsEntry")
         }
+        .buttonStyle(.plain)
+        .frame(maxWidth: wide ? 640 : .infinity, alignment: .leading)
+    }
+}
+
+/// One quick-action tile: icon above a one-line label, full tile tappable.
+struct QuickAction: View {
+    let title: String
+    let systemImage: String
+    var prominent = false
+    @Environment(\.isEnabled) private var enabled
+    var body: some View {
+        VStack(spacing: 6) {
+            Image(systemName: systemImage).font(.title3.weight(.semibold))
+            Text(title).font(.footnote.weight(.semibold)).lineLimit(1).minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity, minHeight: 64)
+        .foregroundStyle(prominent && enabled ? Color.white : (enabled ? Color.orange : Color.secondary))
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous)
+            .fill(prominent && enabled ? AnyShapeStyle(Color.orange) : AnyShapeStyle(Color(.secondarySystemBackground))))
+        .opacity(enabled ? 1 : 0.6)
+        .contentShape(RoundedRectangle(cornerRadius: 14))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(.isButton)
     }
 }
 
