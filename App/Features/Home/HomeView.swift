@@ -14,6 +14,7 @@ struct HomeView<ChangePage: View, Controls: View>: View {
     let preparePage: (String) -> Void
     let prepareRestore: () -> Void
     let openSettings: () -> Void
+    @State private var showOverrideReason = false
     let openSchedule: () -> Void
     @ViewBuilder let changePage: () -> ChangePage
     @ViewBuilder let controls: () -> Controls
@@ -79,8 +80,10 @@ struct HomeView<ChangePage: View, Controls: View>: View {
             if let now = status.nowShowing {
                 nowShowingName(now)
                 FlowBadges {
-                    Badge(text: now.mode.label, systemImage: now.mode == .manual ? "hand.tap" : (now.mode == .schedule ? "calendar" : "timer"),
-                          tint: modeTint(now.mode)).accessibilityIdentifier("modeBadge")
+                    if case .override = now.mode { overrideBadge(now) } else {
+                        Badge(text: now.mode.label, systemImage: now.mode == .manual ? "hand.tap" : "calendar",
+                              tint: modeTint(now.mode)).accessibilityIdentifier("modeBadge")
+                    }
                     if now.collection { Badge(text: "Collection", systemImage: "rectangle.stack", tint: .secondary, outline: true).accessibilityIdentifier("collectionBadge") }
                     if now.silence { Badge(text: "Silence mode active", systemImage: "moon.fill", tint: .indigo).accessibilityIdentifier("silenceBadge") }
                     if now.paused { Badge(text: "Paused", systemImage: "pause.circle.fill", tint: .orange).accessibilityIdentifier("pausedBadge") }
@@ -89,6 +92,59 @@ struct HomeView<ChangePage: View, Controls: View>: View {
                 Text(" ").font(.title3.weight(.semibold)).redacted(reason: .placeholder)
             }
         }
+    }
+
+    /// Why the override's ✕ can't cancel it now, or nil when it can (P5, B8).
+    private var overrideCancelReason: String? {
+        if !status.canClearOverride { return "This connection can't cancel an override. Use the web app." }
+        switch store.boardActionDisabledReason {
+        case .changesDisabled?: return "Changing this board from the app is turned off."
+        case .unsupportedOperation?: return "This server version can't be changed from the app yet."
+        case .readbackRequired?: return "Refresh to see the board before making another change."
+        default: return store.canWrite ? nil : "Wait for the board, then try again."
+        }
+    }
+
+    /// "Override: Nm remaining" with its ✕ (B8, `DELETE /settings/temporary-override`). With
+    /// changes off the ✕ stays, dimmed; tapping it says why and offers "Turn on".
+    private func overrideBadge(_ now: NowShowing) -> some View {
+        let reason = overrideCancelReason
+        return HStack(spacing: 4) {
+            Label(now.mode.label, systemImage: "timer")
+                .labelStyle(.titleAndIcon)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(now.mode.label)
+                .accessibilityIdentifier("modeBadge")
+            Button {
+                if reason == nil { Task { await status.clearTemporaryOverride() } } else { showOverrideReason = true }
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.footnote)
+                    .frame(width: 24, height: 22).contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .opacity(reason == nil ? 1 : 0.35)
+            .accessibilityLabel("Cancel override")
+            .accessibilityValue(reason == nil ? "" : "Unavailable")
+            .accessibilityHint(reason ?? "Returns the board to its schedule")
+            .accessibilityIdentifier("overrideCancel")
+            .popover(isPresented: $showOverrideReason, arrowEdge: .top) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(reason ?? "").font(.callout).fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("overrideCancelReason")
+                    if store.boardActionDisabledReason == .changesDisabled {
+                        Button("Turn on") { showOverrideReason = false; openSettings() }
+                            .font(.callout.weight(.semibold))
+                    }
+                }
+                .padding(14).frame(idealWidth: 260, maxWidth: 300)
+                .presentationCompactAdaptation(.popover)
+            }
+        }
+        .font(.caption.weight(.semibold))
+        .foregroundStyle(Color.purple)
+        .padding(.leading, 9).padding(.trailing, 2).padding(.vertical, 1)
+        .background(Capsule().fill(Color.purple.opacity(0.14)))
     }
 
     @ViewBuilder private func nowShowingName(_ now: NowShowing) -> some View {
@@ -143,6 +199,11 @@ struct HomeView<ChangePage: View, Controls: View>: View {
     @ViewBuilder private var outcome: some View {
         if let message = store.message {
             Text(message).font(.callout).accessibilityIdentifier("actionOutcome")
+                .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
+        }
+        if status.overrideClearFailed {
+            Text("Couldn't cancel the override. Refresh and try again.").font(.callout).accessibilityIdentifier("overrideCancelFailed")
                 .padding(12).frame(maxWidth: .infinity, alignment: .leading)
                 .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
         }

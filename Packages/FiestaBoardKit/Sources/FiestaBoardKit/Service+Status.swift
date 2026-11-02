@@ -86,3 +86,17 @@ extension LiveFiestaBoardService: ExternalFrameDismissing {
         guard (200..<300).contains(result.status) else { throw FiestaBoardError.unknownMutationOutcome }
     }
 }
+
+/// Cancel the active temporary override (`DELETE /settings/temporary-override`, the web's ✕ on
+/// the "Override: Nm remaining" badge, `clearTemporaryOverride`). Server-wide in 10.3.2; the
+/// server refreshes the board itself. Explicit only, never replayed.
+public protocol TemporaryOverrideClearing: Sendable {
+    func clearTemporaryOverride() async throws
+}
+
+extension LiveFiestaBoardService: TemporaryOverrideClearing {
+    public func clearTemporaryOverride() async throws {
+        let result = try await response(APIRequest(.delete, path: ["settings", "temporary-override"]))
+        guard (200..<300).contains(result.status) else { throw FiestaBoardError.unknownMutationOutcome }
+    }
+}

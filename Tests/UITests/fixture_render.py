@@ -107,6 +107,12 @@ def charset_fields(board, lines):
                 if len(cell) == 1 and cell != cell.upper() and cell.upper().isascii():
                     issues.append({'row': row, 'col': col, 'token': {'type': 'char', 'value': cell}, 'reason': 'case',
                                    'fallback': {'type': 'char', 'value': cell.upper()}})
+                elif len(cell) == 1 and cell.isalpha() and not cell.isascii():
+                    # P5, mock-only: a letter outside the flap set is reason `char` (10.3.2 uses
+                    # `char` with a substitute, `fixtures/charset-golden.json`); the fixture's
+                    # substitute is `?`, which the real table is not proven to use.
+                    issues.append({'row': row, 'col': col, 'token': {'type': 'char', 'value': cell}, 'reason': 'char',
+                                   'fallback': {'type': 'char', 'value': '?'}})
                 col += 1
     return {'charset': charset, 'charset_issues': issues if charset is not None else None}
 

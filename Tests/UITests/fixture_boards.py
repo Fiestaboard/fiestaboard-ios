@@ -160,6 +160,10 @@ PAGES = [
     {'id': 'lower', 'name': 'Mixed Case', 'type': 'template', 'device_type': 'flagship',
      'template': ['UPPER ROW', 'lower row kept', 'THIRD'], 'line_metadata': [{'alignment': 'center', 'wrap': False}],
      'shows': ['UPPER ROW', 'LOWER ROW KEPT', 'THIRD']},
+    # P5: charset issues on five rows (case on 1, 3, 5, 6; mock-only `char` on 4), for the grouped list.
+    {'id': 'accents', 'name': 'Charset Mix', 'type': 'template', 'device_type': 'flagship',
+     'template': ['hello', 'WORLD', 'more lower', 'PIñA CAFé', 'last row', 'end'],
+     'shows': ['HELLO', 'WORLD', 'MORE LOWER', 'PI?A CAF?', 'LAST ROW', 'END']},
     # W4 (WEB-P4): 10.3.2 requires display_type on a single page and row configs on a composite,
     # and stamps both with the page protocols.
     {'id': 'single', 'name': 'Weather (single)', 'type': 'single', 'device_type': 'flagship', 'template': None,
@@ -294,6 +298,10 @@ def save_page(state, page_id, body):
     return 200, {'page': updated, 'incompatible_references': []}
 
 
+def override_active(state):
+    return state['scenario'] == 'override' and not state.get('override_cleared')
+
+
 def board_entry(b):
     return next((x for x in BOARDS if x['summary']['id'] == b), None)
 
@@ -339,7 +347,7 @@ def detail(state, entry):
             'resolved_page_id': shown if (active or scheduled) else None,
             'resolved_next_check_seconds': 2 if (active or scheduled) == COLLECTION_ID else None,
             'source': source, 'default_page_id': None,
-            'override_expires_at': '2026-10-31T09:09:00Z' if (is_kitchen and sc == 'override') else None,
+            'override_expires_at': '2026-10-31T09:09:00Z' if (is_kitchen and override_active(state)) else None,
             'layers': [{'x': 40, 'y': 2, 'width': 2, 'height': 2,
                         'rgba': 'AP8A/wD/AP8A/wD/AP8A/w=='}] if s['id'] == 'pixoo' else None}
 
@@ -407,6 +415,11 @@ def handle(prefix, route, method, body, query, store):
             state['sync'] = {'foreign': False, 'overwritten': False, 'kept': False}
         return 200, {'board_id': entry['summary']['id'], 'page_id': live['active_page_id'], 'sent': not live['paused'],
                      'reason': None if not live['paused'] else 'paused', 'device_observed': False}
+    if method == 'DELETE' and route == 'settings/temporary-override':
+        # P5 (B8): the ✕ on the override badge; 10.3.2 answers {revert_mode} and refreshes.
+        was = override_active(state)
+        state['override_cleared'] = True
+        return 200, {'revert_mode': 'schedule' if was else None}
     if method == 'DELETE' and route == 'board/external-frame':
         if board_id == 'kitchen':
             state['sync']['kept'] = False
@@ -456,7 +469,7 @@ def handle(prefix, route, method, body, query, store):
             out['board_id'] = board_id
             return 200, out
         out['schedule_enabled'] = state['boards'][entry['summary']['id']]['schedule_enabled']
-        override = sc == 'override' and board_id == 'kitchen'
+        override = override_active(state) and board_id == 'kitchen'
         out['temporary_override'] = {'active': override, 'page_id': 'note' if override else None,
                                      'expires_at': '2026-10-31T09:09:00Z' if override else None,
                                      'remaining_seconds': 540 if override else None,

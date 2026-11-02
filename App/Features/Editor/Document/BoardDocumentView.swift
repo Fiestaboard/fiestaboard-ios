@@ -133,6 +133,8 @@ struct BoardDocumentView: UIViewRepresentable {
     var onPicker: (InsertPickerKind) -> Void = { _ in }
     /// Draw on board (W4: reachable from the keyboard accessory, like the toolbar's pencil).
     var onDraw: () -> Void = {}
+    /// Rows spread out to fill a document taller than its natural height (P5, iPad portrait).
+    var fillsRows = false
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -195,6 +197,7 @@ struct BoardDocumentView: UIViewRepresentable {
         }
         coordinator.refreshAccessory()
         container.boardRows = boardRows
+        if container.fillsRows != fillsRows { container.fillsRows = fillsRows; container.setNeedsLayout() }
         container.refreshGutter(rows: buffer.rows, caretRows: buffer.caretRows)
     }
 
@@ -524,6 +527,16 @@ final class BoardDocumentContainer: UIView {
     /// Placeholder on row 1 only (B12), shown while the whole document is empty.
     private let placeholder = UILabel()
     var boardRows = 6
+    /// Spread the rows over the whole height when there is room (P5): at most 2.4 × the line.
+    var fillsRows = false
+    static let maxRowStretch: CGFloat = 2.4
+    /// The row height for a document `height` tall holding `rows` rows, or nil for natural rows.
+    static func filledRowHeight(height: CGFloat, rows: Int, insets: UIEdgeInsets, lineHeight: CGFloat) -> CGFloat? {
+        guard rows > 0 else { return nil }
+        let row = ((height - insets.top - insets.bottom) / CGFloat(rows)).rounded(.down)
+        guard row > lineHeight + 2 else { return nil }
+        return min(row, (lineHeight * maxRowStretch).rounded(.down))
+    }
     /// The board's width in tiles: a faint guide marks it, and text past it is dimmed.
     var boardColumns = 22 { didSet { if oldValue != boardColumns { setNeedsLayout() } } }
     private let columnGuide = CAShapeLayer()
@@ -557,6 +570,13 @@ final class BoardDocumentContainer: UIView {
         super.layoutSubviews()
         gutter.frame = CGRect(x: 0, y: 0, width: RowGutterView.width, height: bounds.height)
         textView.frame = CGRect(x: RowGutterView.width, y: 0, width: max(0, bounds.width - RowGutterView.width), height: bounds.height)
+        let rowHeight = fillsRows ? Self.filledRowHeight(height: bounds.height, rows: max(boardRows, lastRows.count),
+                                                          insets: textView.textContainerInset,
+                                                          lineHeight: BoardDocumentView.Coordinator.font.lineHeight) : nil
+        if rowHeight != textView.rowHeight, textView.markedTextRange == nil {
+            textView.rowHeight = rowHeight
+            textView.rerenderChips()
+        }
         refreshGutter(rows: lastRows, caretRows: lastCaret)
     }
     func refreshGutter(rows: [String], caretRows: ClosedRange<Int>) {
@@ -565,8 +585,9 @@ final class BoardDocumentContainer: UIView {
         placeholder.font = BoardDocumentView.Coordinator.font
         placeholder.isHidden = !rows.allSatisfy(\.isEmpty)
         let lineHeight = placeholder.font.lineHeight
+        let rowLift = max(0, ((textView.rowHeight ?? lineHeight) - lineHeight) / 2)
         placeholder.frame = CGRect(x: textView.textContainerInset.left + textView.textContainer.lineFragmentPadding,
-                                   y: textView.textContainerInset.top, width: max(0, textView.bounds.width - 24), height: lineHeight)
+                                   y: textView.textContainerInset.top + rowLift, width: max(0, textView.bounds.width - 24), height: lineHeight)
         // Column guide: one segment per row, where the board cuts that row (P1).
         let path = guidePath()
         columnGuide.isHidden = path == nil

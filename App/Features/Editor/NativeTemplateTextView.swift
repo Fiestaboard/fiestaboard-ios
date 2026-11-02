@@ -139,12 +139,32 @@ final class TemplateUITextView: UITextView {
     /// Extra styling after the text is set (the document's board-width guide and overflow dimming).
     var decorate: ((NSMutableAttributedString) -> Void)?
     private var lastRender: (rich: Bool, font: UIFont, color: UIColor)?
+    /// A fixed row height taller than the font's line (P5), or nil for the natural line.
+    var rowHeight: CGFloat?
+    /// The caret keeps the text's height, centred in a taller row.
+    override func caretRect(for position: UITextPosition) -> CGRect {
+        var rect = super.caretRect(for: position)
+        if let rowHeight, let font = lastRender?.font, rowHeight > font.lineHeight + 0.5, rect.height > font.lineHeight + 1 {
+            let height = font.lineHeight
+            rect.origin.y = rect.maxY - (rowHeight + height) / 2 - (rect.height - rowHeight) / 2
+            rect.size.height = height
+        }
+        return rect
+    }
     private var traitRegistration: (any UITraitChangeRegistration)?
 
     func setTemplate(_ source: String, rich: Bool, font: UIFont, sourceSelection: NSRange, color: UIColor = .label) {
         lastRender = (rich, font, color)
         registerChipTraitChanges()
-        let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: color]
+        var attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: color]
+        if let rowHeight, rowHeight > font.lineHeight + 0.5 {
+            // P5: rows spread to fill the document's height (iPad portrait, keyboard down); the
+            // glyphs and chips sit in the middle of each taller row.
+            let style = NSMutableParagraphStyle()
+            style.minimumLineHeight = rowHeight; style.maximumLineHeight = rowHeight
+            attributes[.paragraphStyle] = style
+            attributes[.baselineOffset] = ((rowHeight - font.lineHeight) / 2).rounded()
+        }
         let result = NSMutableAttributedString(string: "")
         if rich {
             for fragment in TemplateSyntax.fragments(source) {

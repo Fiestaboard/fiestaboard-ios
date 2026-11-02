@@ -300,6 +300,21 @@ public enum BoardPolling {
         pollSelectedMessage()
     }
 
+    /// Whether this connection can cancel an override at all (P5, B8).
+    public var canClearOverride: Bool { reader() is any TemporaryOverrideClearing }
+    /// The last cancel failed (shown beside the badge until the next try).
+    @Published public private(set) var overrideClearFailed = false
+
+    /// The ✕ on the override badge (B8): `DELETE /settings/temporary-override`, then the status
+    /// and the board are re-read on the post-send schedule. Nothing retries on its own.
+    public func clearTemporaryOverride() async {
+        guard let writer = reader() as? any TemporaryOverrideClearing else { return }
+        overrideClearFailed = false
+        do { try await writer.clearTemporaryOverride() } catch { overrideClearFailed = true }
+        pollActive()
+        noteSend()
+    }
+
     private func pollOtherFrames() {
         guard let reader = reader() else { return }
         let others = store.boards.filter { $0.id != store.selectedBoardID }

@@ -38,6 +38,8 @@ enum EditorStrings {
     static let noteArray = "Note Array"
     static let panel = "Panel"
     static let showWhen = "Show when"
+    static let advanced = "Advanced"
+    static func shownWhen(_ condition: String) -> String { "Shown when \(condition)" }
     static let displayRestrictions = "Display restrictions"
     static let addText = "Add text"
     static let addCanvas = "Add canvas"
@@ -107,24 +109,54 @@ enum EditorStrings {
     static func validationIssue(_ issue: TemplateValidationIssue) -> String {
         "Line \(issue.line), column \(max(0, issue.column) + 1): \(issue.message)"
     }
-    /// B16 charset issues from `charset_issues` (0-based `row`/`col`): "Line L, column C: this
-    /// board can't show “X” and draws “Y” instead.", at most five, then "…and N more".
-    static func charsetIssueLines(_ issues: [TemplateCharsetIssue], limit: Int = 5) -> [String] {
-        func describe(_ token: TemplateCharsetIssue.Token?) -> String {
-            guard let token else { return "?" }
-            if token.kind == "color" { return "\(token.code ?? "?") tile" }
-            if let icon = token.icon { return "\(icon) icon" }
-            if token.value == " " { return "a blank" }
-            return token.value ?? "?"
+    /// B16 charset issues from `charset_issues` (0-based `row`/`col`), grouped per row and per
+    /// reason (P5; the same wording as Android AND-P5), in row order:
+    /// "Line 2: lowercase letters show as capitals on this board (12)."
+    /// "Line 4: “é” and “ñ” can't be shown; the board draws ? (2)."
+    static func charsetIssueGroups(_ issues: [TemplateCharsetIssue]) -> [String] {
+        struct Group { var row: Int; var reason: String; var firstCol: Int; var tokens: [String] = []; var fallbacks: [String] = []; var count = 0 }
+        var groups: [Group] = []
+        for issue in issues {
+            let reason = issue.reason ?? ""
+            let index: Int
+            if let found = groups.firstIndex(where: { $0.row == issue.row && $0.reason == reason }) { index = found }
+            else { groups.append(Group(row: issue.row, reason: reason, firstCol: issue.col)); index = groups.count - 1 }
+            groups[index].count += 1
+            groups[index].firstCol = min(groups[index].firstCol, issue.col)
+            let token = charsetThing(issue.token, quoted: true), fallback = charsetThing(issue.fallback, quoted: false)
+            if !groups[index].tokens.contains(token) { groups[index].tokens.append(token) }
+            if !groups[index].fallbacks.contains(fallback) { groups[index].fallbacks.append(fallback) }
         }
-        var lines = issues.prefix(limit).map { issue in
-            let shown = describe(issue.token), drawn = describe(issue.fallback)
-            let quote = { (text: String) in text.hasSuffix(" tile") || text.hasSuffix(" icon") || text == "a blank" ? text : "“\(text)”" }
-            return "Line \(issue.row + 1), column \(issue.col + 1): this board can't show \(quote(shown)) and draws \(quote(drawn)) instead."
+        return groups.sorted { ($0.row, $0.firstCol) < ($1.row, $1.firstCol) }.map { group in
+            let line = "Line \(group.row + 1): "
+            switch group.reason {
+            case "case": return line + "lowercase letters show as capitals on this board (\(group.count))."
+            case "colorSpan": return line + "colored text shows without its color on this board (\(group.count))."
+            default:
+                let shown = group.tokens.count > 3
+                    ? group.tokens.prefix(3).joined(separator: ", ") + " and \(group.tokens.count - 3) more"
+                    : listJoined(group.tokens)
+                return line + "\(shown) can't be shown; the board draws \(group.fallbacks.joined(separator: " or ")) (\(group.count))."
+            }
         }
-        if issues.count > limit { lines.append("…and \(issues.count - limit) more") }
-        return lines
     }
+    private static let tileNames = ["63": "red", "64": "orange", "65": "yellow", "66": "green", "67": "blue",
+                                    "68": "violet", "69": "white", "70": "black", "71": "filled"]
+    /// A token as the list names it: “é” (quoted when it is what you wrote), a blank, the red
+    /// tile, the sun icon.
+    static func charsetThing(_ token: TemplateCharsetIssue.Token?, quoted: Bool) -> String {
+        guard let token else { return "?" }
+        if let icon = token.icon { return "the \(icon) icon" }
+        if token.kind == "color" { return "the \(token.code.flatMap { tileNames[$0] } ?? token.code ?? "color") tile" }
+        guard let value = token.value else { return "?" }
+        if value == " " { return "a blank" }
+        return quoted ? "“\(value)”" : value
+    }
+    static func listJoined(_ items: [String]) -> String {
+        items.count <= 1 ? (items.first ?? "") : items.dropLast().joined(separator: ", ") + " and " + items[items.count - 1]
+    }
+    static let showAllIssues = "Show all"
+    static let showFewerIssues = "Show less"
 
     static func lineCounter(_ count: Int, limit: Int) -> String {
         count > limit ? "\(count) / \(limit) lines — exceeds the \(limit)-line board limit" : "\(count) / \(limit) lines"

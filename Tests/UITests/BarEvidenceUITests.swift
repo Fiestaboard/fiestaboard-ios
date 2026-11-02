@@ -71,16 +71,17 @@ import XCTest
 
     /// B16 (W4, real-server behaviour): "Mixed Case" keeps its lowercase row; on the Kitchen
     /// (a flap board) the render reports each lowercase letter in `charset_issues`, and the editor
-    /// lists them ("Line 2, column 1: this board can't show “l” and draws “L” instead.", five,
-    /// then "…and N more"). The document is not changed.
+    /// lists them, grouped per row and reason (P5: "Line 2: lowercase letters show as capitals on
+    /// this board (12)."). The document is not changed.
     func testCharsetIssuesAreListed() throws {
         let app = try signIn(scenario: "manual")
         let document = openEditor(app, page: "Mixed Case")
         XCTAssertTrue(((document.value as? String) ?? "").contains("lower row kept"), "the lowercase row is kept as written")
         let issues = element(app, "charsetIssues")
         XCTAssertTrue(issues.waitForExistence(timeout: 8), app.debugDescription)
-        XCTAssertTrue(issues.label.contains("Line 2, column 1: this board can't show “l” and draws “L” instead."), issues.label)
-        XCTAssertTrue(issues.label.contains("…and 7 more"), issues.label)
+        // Re-recorded (P5): grouped per row and reason, not one line per letter.
+        XCTAssertEqual(issues.label, "Line 2: lowercase letters show as capitals on this board (12).")
+        XCTAssertFalse(element(app, "charsetIssuesShowAll").exists, "one group fits: no Show all")
         shot(app, "W4-B16-charset-issues", settle: 3)
         close(app)
     }

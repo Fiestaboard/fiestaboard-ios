@@ -61,6 +61,10 @@ struct EditorRoot: View {
     /// so the board keeps its size and is never covered (B30), on a phone and on iPad.
     private var compactTyping: Bool { isTextInputActive }
 
+    /// iPad portrait, keyboard down (P5): no empty band under the document; the board grows to
+    /// its stretch limit and the rows fill the rest.
+    private var fillsHeight: Bool { sizeClass == .regular && !compactTyping && !showsCanvases }
+
     /// The stage's display when it is an LED pixel matrix (PLAN B24).
     private var pixelDisplay: PixelDisplay? { PixelDisplay(model.boards.first { $0.id == model.selectedBoardID }) }
     private var showsCanvases: Bool { editingCanvases && pixelDisplay != nil && model.lines != nil }
@@ -84,7 +88,8 @@ struct EditorRoot: View {
                 if !showsCanvases { DocumentToolbar(model: model, buffer: buffer, pipeline: pipeline, rich: $rich, slots: drawSlot) }
             }
             StageDocumentLayout(minDocumentWidth: TemplateWorkspaceView.documentWidth(columns: boardCols),
-                                minDocumentHeight: TemplateWorkspaceView.documentHeight(rows: min(boardRows, 3))) {
+                                minDocumentHeight: TemplateWorkspaceView.documentHeight(rows: min(boardRows, 3)),
+                                fillsHeight: fillsHeight) {
                 stage
                 VStack(alignment: .leading, spacing: 10) {
                     if let notice = model.recoveryNotice { recoveryBanner(notice) }
@@ -110,7 +115,7 @@ struct EditorRoot: View {
                         TemplateWorkspaceView(model: model, buffer: buffer, pipeline: pipeline,
                                               isTextInputActive: $isTextInputActive, rich: $rich,
                                               onDraw: canDraw ? { startDrawing() } : nil,
-                                              charsetIssues: pipeline.state.charsetIssues)
+                                              charsetIssues: pipeline.state.charsetIssues, fillsHeight: fillsHeight)
                     }
                     if let message = model.message, !Self.isRoutineMessage(message) {
                         Text(message).font(.caption).foregroundStyle(.secondary).lineLimit(3)
@@ -479,6 +484,9 @@ struct StageDocumentLayout: Layout {
     /// The document never shrinks below about three rows, so the caret row stays in view.
     var minDocumentHeight: CGFloat = 96
     var spacing: CGFloat = 12
+    /// Stacked layout only: the document takes all the height under the board (P5, iPad
+    /// portrait), instead of hugging its rows.
+    var fillsHeight = false
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         proposal.replacingUnspecifiedDimensions(by: CGSize(width: 400, height: 600))
@@ -512,7 +520,7 @@ struct StageDocumentLayout: Layout {
             }
             stage.place(at: bounds.origin, proposal: ProposedViewSize(width: bounds.width, height: stageHeight))
             let room = max(0, bounds.height - stageHeight - spacing)
-            let documentHeight = min(document.sizeThatFits(ProposedViewSize(width: bounds.width, height: nil)).height, room)
+            let documentHeight = fillsHeight ? room : min(document.sizeThatFits(ProposedViewSize(width: bounds.width, height: nil)).height, room)
             document.place(at: CGPoint(x: bounds.minX, y: bounds.minY + stageHeight + spacing),
                            proposal: ProposedViewSize(width: bounds.width, height: documentHeight))
         }

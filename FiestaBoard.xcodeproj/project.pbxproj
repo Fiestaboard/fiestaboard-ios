@@ -84,6 +84,7 @@
 		759447EBBA7619627DABB4D0 /* SchedulesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 971BC95938B395BCAF17CC76 /* SchedulesView.swift */; };
 		78C410B9A2A2B444B993B0EB /* FiestaBoardKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */; };
 		7BC267E2CBE0C7B7D912FFBB /* EditorRemoteActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3E7BE5F69B8B5D28D44AE0E /* EditorRemoteActions.swift */; };
+		7D39F4CA94AB1625A2194152 /* VoiceOverLabelDumpTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F390E5BDD0C4E31270C8A045 /* VoiceOverLabelDumpTests.swift */; };
 		7DBA4232691B74518CE13653 /* FiestaBoardApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8F61E1D6DA7D9178AE932E5 /* FiestaBoardApp.swift */; };
 		7DF5867A76C387AA1C58930E /* CanvasEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93B36F688F58E798D2EB8384 /* CanvasEditing.swift */; };
 		7E3327DD48E9020CF4B0E3A2 /* CanvasAreaPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88FC48CA3F91EB260F3FD8F8 /* CanvasAreaPicker.swift */; };
@@ -149,6 +150,7 @@
 		E72FF6F47E7D31900577B8CA /* BoardSpeech.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8E18FB72C4DF8369002FD5E /* BoardSpeech.swift */; };
 		E8F1676D2E7396FD25987850 /* StatusReaderRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F18CFA2EA2DBEE5C93C28AA /* StatusReaderRegistry.swift */; };
 		EA8C26DACBAA907A2F8B24C8 /* CapabilityPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3772403D0456CA285BF0FBC5 /* CapabilityPolicy.swift */; };
+		EB8918048053710E0D7C7D0F /* PolishUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BECB0B3DC31A74CE977E8FDF /* PolishUITests.swift */; };
 		ECCD8C8DE3D983B4431AFAAE /* DeploymentURL.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DD4D3175C0AE6D2D868EC75 /* DeploymentURL.swift */; };
 		ED325716E54DC6479A75F103 /* VariablePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB69A54A41CFEB488033456 /* VariablePickerView.swift */; };
 		F0E438AE948797DB1BBE1634 /* BoardLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243B601AF6228C1D6B5AC497 /* BoardLayoutTests.swift */; };
@@ -403,6 +405,7 @@
 		B98F6E2DDC8EAE51732AB38A /* BoardFlipTransition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardFlipTransition.swift; sourceTree = "<group>"; };
 		BA413B675A8CABCA5E05C047 /* Schedules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Schedules.swift; sourceTree = "<group>"; };
 		BD6BE9A9CDCA742A1B397022 /* TemplateChipFactoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateChipFactoryTests.swift; sourceTree = "<group>"; };
+		BECB0B3DC31A74CE977E8FDF /* PolishUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolishUITests.swift; sourceTree = "<group>"; };
 		BF16DDCF129380FBA1D99C7A /* StrokeTransaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokeTransaction.swift; sourceTree = "<group>"; };
 		C035AA6946E7B9F0C3244872 /* LedMarkup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedMarkup.swift; sourceTree = "<group>"; };
 		C038325A589937ADD54B59BD /* DrawMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawMode.swift; sourceTree = "<group>"; };
@@ -431,6 +434,7 @@
 		EFCDF676F77A00F5D87923D1 /* BoardFont.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardFont.swift; sourceTree = "<group>"; };
 		F10565CA2D32497EFEDA162A /* HomeCards.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeCards.swift; sourceTree = "<group>"; };
 		F18E3DC520B729D270F497DF /* SampleValues.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleValues.swift; sourceTree = "<group>"; };
+		F390E5BDD0C4E31270C8A045 /* VoiceOverLabelDumpTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceOverLabelDumpTests.swift; sourceTree = "<group>"; };
 		F4490F7035D0FAA8FEDE9402 /* CollectionContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionContext.swift; sourceTree = "<group>"; };
 		F4AB195B07FBE0B1390B13E5 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		F72D5E21E5D6A566C8AF4873 /* Models+Status.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Models+Status.swift"; sourceTree = "<group>"; };
@@ -531,6 +535,7 @@
 				BD6BE9A9CDCA742A1B397022 /* TemplateChipFactoryTests.swift */,
 				11208C1A2EECBA9BE45CCA05 /* TemplateUITextViewTests.swift */,
 				161D8A798461B87445FF0872 /* TerminologyTests.swift */,
+				F390E5BDD0C4E31270C8A045 /* VoiceOverLabelDumpTests.swift */,
 			);
 			name = AppTests;
 			path = Tests/AppTests;
@@ -725,6 +730,7 @@
 				6C3F1838186E744DA302ABA0 /* EditorUITests.swift */,
 				6BBD25933907F3239D01D6CC /* FormulaUITests.swift */,
 				EFA6B31F1D4A49A278398FFE /* IntegrationUITests.swift */,
+				BECB0B3DC31A74CE977E8FDF /* PolishUITests.swift */,
 				7387870A8F4C81B3ED477AB0 /* SaveUITests.swift */,
 			);
 			name = UITests;
@@ -1166,6 +1172,7 @@
 				2B60831683DA1544E9E5D5C4 /* EditorUITests.swift in Sources */,
 				82C97A471315A3DDFFC9C514 /* FormulaUITests.swift in Sources */,
 				3130713C85FE68151D21B7FA /* IntegrationUITests.swift in Sources */,
+				EB8918048053710E0D7C7D0F /* PolishUITests.swift in Sources */,
 				50582601962AE7A4F44A1E9D /* SaveUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1179,6 +1186,7 @@
 				1F4559915E486F9E2FB5C7CF /* TemplateChipFactoryTests.swift in Sources */,
 				F22480C129F5A9223D737196 /* TemplateUITextViewTests.swift in Sources */,
 				F218BBC6F20AA71BCE632754 /* TerminologyTests.swift in Sources */,
+				7D39F4CA94AB1625A2194152 /* VoiceOverLabelDumpTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

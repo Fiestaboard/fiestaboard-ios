@@ -20,6 +20,8 @@ import FiestaBoardEditorState
     @State private var removeShape = false
     @State private var showPageStyle = false
     @State private var showBlockStyle = false
+    /// B26 (P5): Show when and Priority sit under "Advanced", with summary chips when set.
+    @State private var showAdvanced = false
     @State private var announcement = ""
     @State private var repairContainer: FlexibleLocation?
     @State private var repairInherits = false
@@ -37,6 +39,7 @@ import FiestaBoardEditorState
                             selectedShape = issue.shapeIndex
                             if issue.blockID == nil { showPageStyle = true }
                             if case .blockStyle = issue.location { showBlockStyle = true }
+                            if case .block = issue.location, ["if", "priority"].contains(issue.key) { showAdvanced = true }
                             DispatchQueue.main.async { fieldFocus = fieldID(issue.location, issue.key) }
                             announcement = issue.message
                             onRevealIssue(issue)
@@ -200,8 +203,13 @@ import FiestaBoardEditorState
                     Text("This block type is retained in full. Its content is read-only in this app.").font(.footnote)
                 }
                 if block.isKnown {
-                    draftField(EditorStrings.showWhen, .block(block.id), "if")
-                    draftField("Priority", .block(block.id), "priority", numeric: true)
+                    DisclosureGroup(EditorStrings.advanced, isExpanded: $showAdvanced) {
+                        VStack(alignment: .leading, spacing: 12) {
+                            draftField(EditorStrings.showWhen, .block(block.id), "if")
+                            draftField("Priority", .block(block.id), "priority", numeric: true)
+                        }
+                    }.disclosureGroupStyle(FlexibleInspectorDisclosureStyle())
+                    if !showAdvanced { advancedSummary(block.id) }
                     DisclosureGroup("Block style", isExpanded: $showBlockStyle) {
                         containerControls(.blockStyle(block.id), title: "block style", optional: true)
                         styleFields(.blockStyle(block.id))
@@ -210,6 +218,24 @@ import FiestaBoardEditorState
             }.id("flexibleInspector")
         } else {
             Text("Add or select a block to edit its content.").foregroundStyle(.secondary)
+        }
+    }
+    /// "Shown when {{weather.rain}}" · "Priority 5": what "Advanced" holds, while it is closed.
+    @ViewBuilder private func advancedSummary(_ id: String) -> some View {
+        let condition = model.flexibleText(.block(id), key: "if")
+        let priority = model.flexibleText(.block(id), key: "priority")
+        let chips = (condition.isEmpty ? [] : [EditorStrings.shownWhen(condition)]) + (priority.isEmpty ? [] : ["Priority \(priority)"])
+        if !chips.isEmpty {
+            FlowLayout(spacing: 6) {
+                ForEach(chips, id: \.self) { chip in
+                    Text(chip).font(.caption.weight(.medium)).lineLimit(1).truncationMode(.middle)
+                        .padding(.horizontal, 8).padding(.vertical, 3)
+                        .background(Capsule().fill(Color.accentColor.opacity(0.12)))
+                        .foregroundStyle(Color.accentColor)
+                }
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("flexibleAdvancedSummary")
         }
     }
     @ViewBuilder private func canvasInspector(_ id: String) -> some View {

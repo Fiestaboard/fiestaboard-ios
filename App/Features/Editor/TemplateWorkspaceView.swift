@@ -95,6 +95,9 @@ struct TemplateWorkspaceView: View {
     /// The chosen display's `charset_issues` from the last render (B16, W4): lowercase on a flap
     /// board, or a character it lacks, is listed, never silently changed in the document.
     var charsetIssues: [TemplateCharsetIssue] = []
+    /// iPad portrait with the keyboard down (P5): the document takes the height under the board
+    /// and its rows spread to fill it.
+    var fillsHeight = false
     @State private var tokenEditing: TokenEditing?
     @EnvironmentObject private var catalog: EditorCatalogStore
 
@@ -141,7 +144,7 @@ struct TemplateWorkspaceView: View {
                               onEditToken: { source, range in editToken(source, range, commands) },
                               variables: commands.variables, boardColumns: boardColumns,
                               onInsert: commands.insert, onFormula: commands.insertFormula, onPicker: commands.openPicker,
-                              onDraw: { onDraw?() })
+                              onDraw: { onDraw?() }, fillsRows: fillsHeight)
                 // Hugs its rows (B33: the board stays the largest element); scrolls when capped.
                 .frame(minHeight: 80, idealHeight: Self.documentHeight(rows: max(rows.count, boardRows)))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(overflow ? Color.orange : Color(uiColor: .separator), lineWidth: overflow ? 2 : 0.5))
@@ -186,15 +189,7 @@ struct TemplateWorkspaceView: View {
                     .accessibilityIdentifier("unknownVariableIssue")
             }
             if !charsetIssues.isEmpty {
-                VStack(alignment: .leading, spacing: 3) {
-                    ForEach(Array(EditorStrings.charsetIssueLines(charsetIssues).enumerated()), id: \.offset) { _, line in
-                        Label { Text(line) } icon: { Image(systemName: "character.cursor.ibeam").foregroundStyle(.orange) }
-                            .font(.footnote)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("charsetIssues")
+                CharsetIssueList(lines: EditorStrings.charsetIssueGroups(charsetIssues))
             }
             if rich, catalog.isLoaded, !catalog.variablesAvailable {
                 // B32: no plugins on this server.
@@ -304,5 +299,69 @@ private struct TemplateTokenSheet: View {
                 }
             }
         }.presentationDetents([.medium, .large])
+    }
+}
+
+/// B16 charset issues, grouped per row and reason (P5). Collapsed it is at most three lines, one
+/// per group, so the list never grows into the board's room; "Show all" opens the rest in place
+/// (scrolling past about eight lines).
+struct CharsetIssueList: View {
+    var lines: [String]
+    static let collapsedCount = 3
+    @State private var expanded = false
+    @State private var width: CGFloat = 0
+    @State private var widest: CGFloat = 0
+
+    /// More groups than fit, or a group that doesn't fit on its one line.
+    private var hasMore: Bool { lines.count > Self.collapsedCount || widest > width + 0.5 }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Group {
+                if expanded {
+                    ScrollView { entries(lines, oneLine: false) }
+                        .frame(maxHeight: 150)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    entries(Array(lines.prefix(Self.collapsedCount)), oneLine: true)
+                }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel((expanded ? lines : Array(lines.prefix(Self.collapsedCount))).joined(separator: "\n"))
+            .accessibilityIdentifier("charsetIssues")
+            if hasMore || expanded {
+                Button(expanded ? EditorStrings.showFewerIssues : EditorStrings.showAllIssues + " (\(lines.count))") {
+                    withAnimation(.easeInOut(duration: 0.2)) { expanded.toggle() }
+                }
+                .font(.footnote.weight(.semibold))
+                .buttonStyle(.borderless)
+                .accessibilityIdentifier("charsetIssuesShowAll")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { width = $0 }
+        // Each group's one-line width, measured off-screen, tells whether a line is cut.
+        .background(alignment: .topLeading) {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(lines.prefix(Self.collapsedCount).enumerated()), id: \.offset) { _, line in row(line).fixedSize() }
+            }
+            .fixedSize()
+            .hidden()
+            .accessibilityHidden(true)
+            .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { widest = $0 }
+        }
+    }
+
+    private func entries(_ shown: [String], oneLine: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            ForEach(Array(shown.enumerated()), id: \.offset) { _, line in
+                row(line).lineLimit(oneLine ? 1 : nil).truncationMode(.tail)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    private func row(_ line: String) -> some View {
+        Label { Text(line) } icon: { Image(systemName: "character.cursor.ibeam").foregroundStyle(.orange) }
+            .font(.footnote)
     }
 }
