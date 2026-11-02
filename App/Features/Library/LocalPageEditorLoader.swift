@@ -83,7 +83,7 @@ private typealias LoaderState<Value> = SwiftUI.State<Value>
                 })
                 let boards = store.boards.compactMap { board -> EditorBoardChoice? in
                     guard let target = try? BoardTarget(deployment: snapshot.deployment, boardID: board.id) else { return nil }
-                    return EditorBoardChoice(name: board.name, target: target)
+                    return EditorBoardChoice(name: board.name, target: target, rows: board.rows, cols: board.cols)
                 }
                 editor = try LocalPageEditorView(rawDocumentData: snapshot.data, identity: identity,
                                                 draftStore: LocalDraftResources.store.get(), remote: actions, boards: boards)

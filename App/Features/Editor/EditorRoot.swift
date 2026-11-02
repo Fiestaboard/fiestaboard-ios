@@ -104,7 +104,10 @@ struct EditorRoot: View {
             guard !started else { return }
             started = true
             titleDraft = model.name
-            if model.selectedBoardID == nil, let id = model.rememberedBoardID ?? model.boards.first?.id { model.chooseBoard(id) }
+            if model.selectedBoardID == nil,
+               let id = EditorBoardChoice.initialChoice(model.boards, remembered: model.rememberedBoardID, rows: boardRows, cols: boardCols) {
+                model.chooseBoard(id)
+            }
             pipeline.flush()
             await model.checkRecovery()
         }
@@ -162,6 +165,13 @@ struct EditorRoot: View {
         guard pipeline.state.lines != nil, case .physical(let frame) = model.lastPreview?.surface else { return nil }
         return frame
     }
+    /// "Doesn't fit · 6 × 22" when the chosen display's grid isn't the page's (P1: a Note page
+    /// on the Flagship "Kitchen" used to read "3 × 15 · Kitchen" as if it fit).
+    private var fitNote: String? {
+        guard let board = model.boards.first(where: { $0.id == model.selectedBoardID }),
+              board.fits(rows: boardRows, cols: boardCols) == false, let rows = board.rows, let cols = board.cols else { return nil }
+        return EditorStrings.doesNotFit(rows: rows, cols: cols)
+    }
     /// Plain and short, and only when it explains something on the board.
     private var stageFootnote: String? {
         guard hasDynamicTokens, !compactTyping else { return nil }
@@ -191,7 +201,7 @@ struct EditorRoot: View {
     private var stage: some View {
         PreviewStage(lines: stageLines, rows: boardRows, cols: boardCols, isPanel: isPanel, physical: physicalFrame,
                      state: pipeline.state, boards: model.boards, selectedBoardID: model.selectedBoardID,
-                     fitNote: nil, footnote: stageFootnote, disabled: model.editingFrozen,
+                     fitNote: fitNote, footnote: stageFootnote, disabled: model.editingFrozen,
                      onChooseBoard: { model.chooseBoard($0) }, onRetry: { pipeline.retry() }, onRefresh: { pipeline.flush() },
                      geometry: model.pageGeometry,
                      onChooseGeometry: { shape in pipeline.flush(); model.setGeometry(shape); pipeline.flush() })

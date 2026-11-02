@@ -88,7 +88,8 @@ struct PagesListView: View {
     private func card(_ page: Page, wide: Bool) -> some View {
         let geometry = PageGeometry(page)
         return NavigationLink {
-            PageDetailView(page: page, store: store, prepare: { prepare(page.id) })
+            PageDetailView(page: page, store: store, prepare: { prepare(page.id) },
+                           thumbnail: geometry == nil ? nil : AnyView(thumbnail(page, geometry: geometry)))
         } label: {
             VStack(alignment: .leading, spacing: 8) {
                 thumbnail(page, geometry: geometry)

@@ -264,6 +264,8 @@ final class TemplateUITextView: UITextView {
     /// The token's full source for the callout and the detail line: `weather.temperature | pad:3`,
     /// `ƒ IF(…)` in full, plus the reason when the board will show ???.
     var fullName: String { TemplateChip.detail(source: source, chip: chip) }
+    /// A colour tile reads as itself; it has no detail line.
+    var isTile: Bool { if case .tile? = chip?.style { return true }; return false }
 
     init(fragment: TemplateSyntax.Fragment, font: UIFont, variables: VariableCatalog? = nil, traits: UITraitCollection = .current) {
         source = fragment.source

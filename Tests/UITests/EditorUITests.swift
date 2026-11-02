@@ -17,7 +17,7 @@ import XCTest
     /// Demo → Pages → New page (Flagship) → the document editor.
     private func openNewPage(_ app: XCUIApplication, name: String) -> XCUIElement {
         app.launchArguments = ["--demo"]; app.launch()
-        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
         openPages(app)
         let create = app.buttons["newLibraryPage"]
         XCTAssertTrue(create.waitForExistence(timeout: 5)); create.tap()
@@ -250,7 +250,7 @@ import XCTest
         reveal(password, app); password.tap(); password.typeText("fixture-password")
         let signIn = app.buttons["connectionSignIn"]
         reveal(signIn, app); signIn.tap()
-        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
+        XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
     }
 
     /// P1 compact chips (fixture "Good Morning"): a variable chip is a short label (the field, with
@@ -306,6 +306,59 @@ import XCTest
         if discard.waitForExistence(timeout: 2) { discard.tap() }
     }
 
+    /// P1 item 4: a Note page opens on a Note display ("Desk"), so the header no longer reads
+    /// "3 × 15 · Kitchen"; choosing the Flagship Kitchen says it doesn't fit. Desk Note's centred
+    /// rows render centred (fixture fallback alignment).
+    func testNotePageOpensOnAFittingDisplay() throws {
+        let app = XCUIApplication()
+        try connectToFixture(app, scenario: "manual")
+        openPages(app)
+        let row = app.staticTexts["Desk Note"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
+        app.buttons["editLocalDraft"].tap()
+        XCTAssertTrue(app.textViews["boardDocument"].waitForExistence(timeout: 8))
+        let picker = app.buttons["evaluationBoardPicker"]
+        XCTAssertEqual(picker.value as? String, "Desk")
+        XCTAssertFalse(app.staticTexts["boardFitNote"].exists)
+        XCTAssertTrue(waitForStage(app, timeout: 5) { $0.first == "     HELLO" }, "Row 1 is centred: \(stageLines(app))")
+        attach(app, "P1-4-note-fits-desk-\(device())")
+        picker.tap()
+        let kitchen = app.buttons["Kitchen · 6 × 22, doesn't fit"].firstMatch
+        XCTAssertTrue(kitchen.waitForExistence(timeout: 3), "The menu shows each display's size")
+        kitchen.tap()
+        let note = app.staticTexts["boardFitNote"]
+        XCTAssertTrue(note.waitForExistence(timeout: 3))
+        XCTAssertEqual(note.label, "Doesn't fit · 6 × 22")
+        attach(app, "P1-4-note-on-kitchen-doesnt-fit-\(device())")
+        // Put the remembered choice back for other runs.
+        picker.tap(); app.buttons["Desk · 3 × 15"].firstMatch.tap()
+        app.navigationBars.buttons["Close"].tap()
+        let discard = app.buttons["Discard and leave"]
+        if discard.waitForExistence(timeout: 2) { discard.tap() }
+    }
+
+    /// P1 item 4: with changes off, Home shows the plain "turned off · Turn on" line and no greyed
+    /// Change page / Compose tiles; the page screen leads with the board and plain words.
+    func testHomeChangesOffAndPlainPageScreen() throws {
+        let app = XCUIApplication()
+        try connectToFixture(app, scenario: "manual")
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "homeChangesOff").firstMatch.waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["Compose text"].exists)
+        XCTAssertFalse(app.buttons["changePage"].exists)
+        XCTAssertTrue(app.buttons["boardControlsEntry"].exists)
+        attach(app, "P1-4-home-changes-off-\(device())")
+        openPages(app)
+        let row = app.staticTexts["Good Morning"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
+        XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.buttons["editLocalDraft"].label, "Edit Page")
+        for jargon in ["Page content · read-only", "Template expressions are shown as source. Plugins are not rendered here.", "Edit local draft"] {
+            XCTAssertFalse(app.staticTexts[jargon].exists, jargon)
+        }
+        XCTAssertTrue(app.staticTexts["Changing this board from the app is turned off. Turn it on in Settings."].exists)
+        attach(app, "P1-4-page-detail-\(device())")
+    }
+
     /// B19 through the fixture's `POST /templates/render` (table + toy fallback): typing in the
     /// Lobby page reaches the board via a real request/response, within 750 ms of the last key.
     func testTypingReachesTheBoardThroughFixtureRender() throws {
@@ -317,7 +370,10 @@ import XCTest
         app.buttons["editLocalDraft"].tap()
         let document = app.textViews["boardDocument"]
         XCTAssertTrue(document.waitForExistence(timeout: 8), app.debugDescription)
-        XCTAssertEqual(app.buttons["evaluationBoardPicker"].value as? String, "Kitchen")
+        // Re-recorded (P1, item 4): the stage opens on a display the page fits. Lobby is a 12 × 29
+        // panel, which is the fixture's "Living room TV", not the Flagship "Kitchen".
+        XCTAssertEqual(app.buttons["evaluationBoardPicker"].value as? String, "Living room TV")
+        XCTAssertFalse(app.staticTexts["boardFitNote"].exists)
         XCTAssertTrue(waitForStage(app, timeout: 5) { $0.first == "WELCOME TO THE LOBBY" }, "First server frame: \(stageLines(app))")
         XCTAssertEqual(app.staticTexts["boardSizeReadout"].label, "Board size 12 by 29")
         placeCaret(row: 3, app, document)

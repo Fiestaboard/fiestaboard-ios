@@ -43,7 +43,7 @@ import XCTest
     }
     func testSameScopeCreationDraftRecoversExactNativeInputAfterRelaunch() throws {
         let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
-        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
         openCreation(app)
         let name = "Collection recovery UI " + UUID().uuidString
         let nameField = app.textFields["collectionName"]
@@ -58,7 +58,7 @@ import XCTest
         XCTAssertTrue(keep.waitForExistence(timeout: 3)); keep.tap()
         XCTAssertTrue(app.buttons["createCollection"].waitForExistence(timeout: 5))
         app.terminate(); app.launch()
-        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
         openCreation(app)
         let recover = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Recover ‘" + name + "’")).firstMatch
         reveal(recover, app: app, upwards: false)
@@ -84,7 +84,7 @@ import XCTest
             throw XCTSkip("Controller must seed Tests/Fixtures/CollectionRecovery originals; see setup.md")
         }
         let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
-        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
         destination("Settings", app: app)
         for disconnected in [false, true] {
             if disconnected {

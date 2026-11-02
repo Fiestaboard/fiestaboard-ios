@@ -27,7 +27,23 @@ public struct EditorBoardChoice: Identifiable, Sendable {
     public var id: String { target.boardID }
     public let name: String
     public let target: BoardTarget
-    public init(name: String, target: BoardTarget) { self.name = name; self.target = target }
+    /// The display's grid, when known: the stage picks a display the page fits (P1).
+    public let rows: Int?
+    public let cols: Int?
+    public init(name: String, target: BoardTarget, rows: Int? = nil, cols: Int? = nil) {
+        self.name = name; self.target = target; self.rows = rows; self.cols = cols
+    }
+    /// Whether a page of `rows` × `cols` shows on this display as authored; nil when unknown.
+    public func fits(rows: Int, cols: Int) -> Bool? {
+        guard let ownRows = self.rows, let ownCols = self.cols else { return nil }
+        return ownRows == rows && ownCols == cols
+    }
+    /// The display the editor opens on: the one remembered for this page, else the first that
+    /// fits the page, else the first one (whose header then says it doesn't fit).
+    public static func initialChoice(_ boards: [EditorBoardChoice], remembered: String?, rows: Int, cols: Int) -> String? {
+        if let remembered, boards.contains(where: { $0.id == remembered }) { return remembered }
+        return boards.first(where: { $0.fits(rows: rows, cols: cols) == true })?.id ?? boards.first?.id
+    }
 }
 public enum EditorRemoteStatus: Equatable, Sendable {
     case idle, saving, conflict, unknownOutcome, reading, comparison

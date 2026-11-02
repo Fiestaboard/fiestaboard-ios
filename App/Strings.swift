@@ -1,5 +1,6 @@
 import Foundation
 import FiestaBoardDocuments
+import FiestaBoardKit
 
 /// The editor's user-facing labels (iOS-E1's `Strings+Editor.swift`, merged here by iOS-E2).
 /// Wording follows the web's terms (`reports/web-terminology-glossary.md`); `TerminologyTests`
@@ -94,6 +95,11 @@ enum EditorStrings {
         return reason
     }
     static func fits(_ name: String) -> String { "Fits \(name)" }
+    static func doesNotFit(rows: Int, cols: Int) -> String { "Doesn't fit · \(rows) × \(cols)" }
+    static func displayChoice(_ name: String, rows: Int?, cols: Int?, fits: Bool?) -> String {
+        guard let rows, let cols else { return name }
+        return fits == false ? "\(name) · \(rows) × \(cols), doesn't fit" : "\(name) · \(rows) × \(cols)"
+    }
     static func sizeReadout(rows: Int, cols: Int) -> String { "\(rows) × \(cols)" }
 
     static func lineCounter(_ count: Int, limit: Int) -> String {
@@ -111,4 +117,24 @@ enum EditorStrings {
     static let reloadAction = "Preserve local draft and reload"
     static let keepLocalWork = "Keep local work"
     static let reloadMessage = "Your current work is saved on this device first. Undo history is cleared so an old server revision cannot return."
+}
+
+/// Pages and page detail, in plain words (P1).
+enum LibraryStrings {
+    static let webOnly = "This kind of page is edited in the web app."
+    static let textSection = "Text"
+    static func blocks(_ count: Int) -> String { count == 1 ? "1 block" : "\(count) blocks" }
+    static func showOn(_ board: String?) -> String { board.map { "Show on \($0)" } ?? "Show on a display" }
+    /// Kit's action reasons are written for engineers; these say the same thing plainly.
+    static func plain(_ reason: ActionDisabledReason) -> String {
+        switch reason {
+        case .changesDisabled: "Changing this board from the app is turned off. Turn it on in Settings."
+        case .noDisplay: "Choose a display first."
+        case .disconnected: "Connect to your FiestaBoard first."
+        case .busy: "Wait for the board to finish."
+        case .readbackRequired: "Refresh to see the board before making another change."
+        case .unsupportedOperation, .unsupportedDocument, .unsupportedRevisionProtocol, .missingRevision:
+            "This can't be done from the app with this server. Use the web app."
+        }
+    }
 }

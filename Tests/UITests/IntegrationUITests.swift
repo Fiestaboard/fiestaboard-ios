@@ -58,7 +58,7 @@ import XCTest
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad only")
         XCUIDevice.shared.orientation = .landscapeLeft
         let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
-        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
         openPages(app)
         XCTAssertTrue(waitForSidebar(app, visible: true))
         let create = app.buttons["newLibraryPage"]
@@ -103,7 +103,7 @@ import XCTest
         close(app)
 
         app.terminate(); app.launchArguments = ["--demo"]; app.launch()
-        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
         openPages(app)
         let create = app.buttons["newLibraryPage"]
         XCTAssertTrue(create.waitForExistence(timeout: 5)); create.tap()
@@ -251,7 +251,7 @@ import XCTest
         reveal(password, app); password.tap(); password.typeText("fixture-password")
         let signIn = app.buttons["connectionSignIn"]
         reveal(signIn, app); signIn.tap()
-        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 15), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
+        XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
     }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
         for _ in 0..<8 where !(element.exists && element.isHittable) { app.swipeUp() }

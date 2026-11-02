@@ -8,53 +8,62 @@ struct PageDetailView: View {
     let page: Page
     @ObservedObject var store: BoardStore
     let prepare: () -> Void
+    /// The page as a board (the Pages list's thumbnail), shown first when there is one (P1).
+    var thumbnail: AnyView? = nil
     @LibraryState private var editing = false
     @LibraryState private var confirmingDelete = false
     @Environment(\.dismiss) private var dismiss
 
+    private var editable: Bool { page.supportsTemplateEditing || CapabilityPolicy.supportsFlexibleDocument(page) }
+    private var boardName: String? { store.boards.first(where: { $0.id == store.selectedBoardID })?.name }
+
+    // P1: plain words. No "read-only", "local draft", "native draft", "plugins are not rendered
+    // here" or "deployment"; the board picture first, then what you can do with the page.
     var body: some View {
         Form {
-            Section("Page content · read-only") {
-                if let lines = page.template {
-                    Text(lines.joined(separator: "\n")).font(.body.monospaced()).textSelection(.enabled)
-                } else {
-                    LabeledContent("Content type", value: page.type)
-                    if let format = page.deviceType { LabeledContent("Display format", value: format) }
-                    if let blocks = page.blockSummaries {
-                        Text("\(blocks.count) content blocks").font(.caption).foregroundStyle(.secondary)
-                        ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
-                            if block.kind == "text", let text = block.text {
-                                Text(text).font(.body.monospaced()).textSelection(.enabled)
-                            } else {
-                                Label(block.kind == "canvas" ? "Canvas" : block.kind.capitalized,
-                                    systemImage: block.kind == "canvas" ? "paintpalette" : "square.dashed")
-                            }
-                        }
-                        Text("Content summary · expressions and visual blocks are not rendered.")
-                            .font(.footnote).foregroundStyle(.secondary)
-                    }
-                }
-                if page.template != nil {
-                    Text("Template expressions are shown as source. Plugins are not rendered here.")
-                        .font(.footnote).foregroundStyle(.secondary)
+            if let thumbnail {
+                Section {
+                    thumbnail.frame(maxWidth: 560).frame(maxWidth: .infinity)
+                        .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12))
+                        .listRowBackground(Color.clear)
                 }
             }
-            Section("Page editing") {
-                if !page.supportsTemplateEditing && !CapabilityPolicy.supportsFlexibleDocument(page) {
-                    Text("This document cannot be edited in this native draft. Open the web editor for its full content and display previews.")
+            Section {
+                if editable {
+                    Button { editing = true } label: { Label(EditorStrings.navigationTitle, systemImage: "pencil") }
+                        .disabled(store.status == nil || store.connecting)
+                        .accessibilityIdentifier("editLocalDraft")
+                } else {
+                    Text(LibraryStrings.webOnly)
                     if let url = store.webEditorURL(pageID: page.id) {
                         Link("Open in web editor", destination: url).accessibilityIdentifier("openWebEditor")
                     }
-                } else {
-                    Button("Edit local draft") { editing = true }
-                        .disabled(store.status == nil || store.connecting)
-                        .accessibilityIdentifier("editLocalDraft")
-                    Text("Edit the full page document, keep a local draft, and explicitly evaluate or save supported changes when the deployment allows it.")
-                        .font(.footnote).foregroundStyle(.secondary)
+                }
+                Button { prepare() } label: { Label(LibraryStrings.showOn(boardName), systemImage: "rectangle.on.rectangle") }
+                    .disabled(!store.canWrite)
+                if let reason = store.boardActionDisabledReason {
+                    Text(LibraryStrings.plain(reason)).font(.footnote).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("showOnBoardDisabledReason")
+                }
+            }
+            if let lines = page.template, lines.contains(where: { !$0.isEmpty }) {
+                Section(LibraryStrings.textSection) {
+                    Text(lines.joined(separator: "\n")).font(.body.monospaced()).textSelection(.enabled)
+                }
+            } else if let blocks = page.blockSummaries {
+                Section(LibraryStrings.blocks(blocks.count)) {
+                    ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
+                        if block.kind == "text", let text = block.text {
+                            Text(text).font(.body.monospaced()).textSelection(.enabled)
+                        } else {
+                            Label(block.kind == "canvas" ? "Canvas" : block.kind.capitalized,
+                                  systemImage: block.kind == "canvas" ? "paintpalette" : "square.dashed")
+                        }
+                    }
                 }
             }
             if let library = store.pageLibrary {
-                Section("Manage page") {
+                Section {
                     PageLibraryFeedback(library: library, store: store, showsCreationCapability: false)
                     Button("Delete page", role: .destructive) {
                         Task {
@@ -64,18 +73,10 @@ struct PageDetailView: View {
                     }
                     .accessibilityIdentifier("deleteLibraryPage")
                     .disabled(store.pageDeletionDisabledReason(for: page) != nil)
-                    if let reason = store.pageDeletionDisabledReason(for: page) {
-                        Text(reason.message).font(.footnote).foregroundStyle(.secondary)
+                    // The same reason as Show's above is not repeated.
+                    if let reason = store.pageDeletionDisabledReason(for: page), reason != store.boardActionDisabledReason {
+                        Text(LibraryStrings.plain(reason)).font(.footnote).foregroundStyle(.secondary)
                     }
-                }
-            }
-            Section {
-                Text("Destination: \(store.boards.first(where: { $0.id == store.selectedBoardID })?.name ?? "No selected board")")
-                Button(store.status?.isDemo == true ? "Simulate showing on board" : "Show on board", action: prepare)
-                    .disabled(!store.canWrite)
-                if let reason = store.boardActionDisabledReason {
-                    Text(reason.message).font(.footnote).foregroundStyle(.secondary)
-                        .accessibilityIdentifier("showOnBoardDisabledReason")
                 }
             }
         }
@@ -90,7 +91,7 @@ struct PageDetailView: View {
             }
             Button("Cancel", role: .cancel) { store.cancelPageDeletion() }
         } message: {
-            Text("This removes the page from the server. References can prevent deletion; an active display may receive a replacement page. This cannot be undone here.")
+            Text("This removes the page for everyone. A display showing it moves to another page. This can't be undone.")
         }
         // iOS-E2 (B29): a navigation destination on iPad, a full-screen cover on a phone.
         .modifier(EditorPresentation(isPresented: $editing) { LocalPageEditorLoader(pageID: page.id, store: store) })

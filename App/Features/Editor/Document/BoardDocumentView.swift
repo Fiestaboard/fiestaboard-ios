@@ -202,13 +202,13 @@ struct BoardDocumentView: UIViewRepresentable {
                 var found: TemplateAttachment?
                 let range = NSIntersectionRange(selection, NSRange(location: 0, length: text.length))
                 text.enumerateAttribute(.attachment, in: range) { value, _, stop in
-                    if let attachment = value as? TemplateAttachment, attachment.chip != nil { found = attachment; stop.pointee = true }
+                    if let attachment = value as? TemplateAttachment, attachment.chip != nil, !attachment.isTile { found = attachment; stop.pointee = true }
                 }
                 return found?.fullName
             }
             guard selection.location > 0, selection.location <= text.length,
                   let attachment = text.attribute(.attachment, at: selection.location - 1, effectiveRange: nil) as? TemplateAttachment,
-                  attachment.chip != nil else { return nil }
+                  attachment.chip != nil, !attachment.isTile else { return nil }
             return attachment.fullName
         }
 

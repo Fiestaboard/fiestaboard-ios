@@ -46,7 +46,7 @@ struct PreviewStage: View {
                 .accessibilityIdentifier("boardSizeReadout")
             picker
             if let fitNote {
-                Text(fitNote).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                Text(fitNote).font(.caption).foregroundStyle(.orange).lineLimit(1)
                     .accessibilityIdentifier("boardFitNote")
             }
             Spacer(minLength: 4)
@@ -83,7 +83,8 @@ struct PreviewStage: View {
             Section(EditorStrings.yourDisplays) {
                 ForEach(boards) { board in
                     Button { onChooseBoard(board.id) } label: {
-                        if board.id == selectedBoardID { Label(board.name, systemImage: "checkmark") } else { Text(board.name) }
+                        let title = EditorStrings.displayChoice(board.name, rows: board.rows, cols: board.cols, fits: board.fits(rows: rows, cols: cols))
+                        if board.id == selectedBoardID { Label(title, systemImage: "checkmark") } else { Text(title) }
                     }
                 }
             }

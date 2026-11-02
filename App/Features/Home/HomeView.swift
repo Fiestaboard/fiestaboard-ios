@@ -157,7 +157,7 @@ struct HomeView<ChangePage: View, Controls: View>: View {
         case .changesDisabled?:
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Image(systemName: "lock").foregroundStyle(.secondary)
-                Text("Changing this board from the app is turned off.").foregroundStyle(.secondary)
+                Text("Changing this board from the app is turned off").foregroundStyle(.secondary)
                 Spacer(minLength: 4)
                 Button("Turn on", action: openSettings).font(.callout.weight(.semibold))
             }
@@ -176,14 +176,27 @@ struct HomeView<ChangePage: View, Controls: View>: View {
 
     /// Three equal quick actions in one row (icon over label), so the board
     /// keeps the screen and the lower half has room for the cards.
+    /// While changes from the app are off (or the server can't take them), Change page and Compose
+    /// are not shown greyed out: the plain "turned off · Turn on" line under the row says why (P1).
+    private var writeActionsHidden: Bool {
+        switch store.boardActionDisabledReason {
+        case .changesDisabled?, .unsupportedOperation?: return true
+        default: return false
+        }
+    }
+
     private func actions(wide: Bool) -> some View {
         HStack(spacing: 10) {
-            NavigationLink { changePage() } label: { QuickAction(title: "Change page", systemImage: "rectangle.stack", prominent: true) }
-                .disabled(!store.canWrite).accessibilityIdentifier("changePage")
-            Button(action: compose) { QuickAction(title: "Compose text", systemImage: "square.and.pencil") }
-                .disabled(!store.canWrite)
+            if !writeActionsHidden {
+                NavigationLink { changePage() } label: { QuickAction(title: "Change page", systemImage: "rectangle.stack", prominent: true) }
+                    .disabled(!store.canWrite).accessibilityIdentifier("changePage")
+                Button(action: compose) { QuickAction(title: "Compose text", systemImage: "square.and.pencil") }
+                    .disabled(!store.canWrite)
+            }
             NavigationLink { controls() } label: { QuickAction(title: "Board controls", systemImage: "slider.horizontal.3") }
                 .accessibilityIdentifier("boardControlsEntry")
+                .frame(maxWidth: writeActionsHidden ? (wide ? 200 : 160) : .infinity)
+            if writeActionsHidden { Spacer(minLength: 0) }
         }
         .buttonStyle(.plain)
         .frame(maxWidth: wide ? 640 : .infinity, alignment: .leading)

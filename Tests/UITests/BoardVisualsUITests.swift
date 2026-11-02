@@ -272,7 +272,7 @@ final class BoardVisualsUITests: XCTestCase {
     @MainActor
     func testLibraryCreateSheetKeyboardAndOutcome() throws {
         let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
-        XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
         selectDestination("Pages", in: app)
         let create = app.buttons["newLibraryPage"]
         XCTAssertTrue(create.waitForExistence(timeout: 5)); create.tap()
