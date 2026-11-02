@@ -49,6 +49,12 @@ import FiestaBoardEditorState
     func focus() { if let textView, textView.isEditable, !textView.isFirstResponder { textView.becomeFirstResponder() } }
     /// Insert formula was tapped; the workspace presents the formula sheet (iOS-F1 seam).
     @Published var formulaRequest: FormulaRequest?
+    /// Variables, Colors or Formatting was tapped; the workspace presents that picker (iOS-F1).
+    @Published var pickerRequest: InsertPickerKind?
+    func requestPicker(_ kind: InsertPickerKind) {
+        savedSelection = textView?.selectedRange
+        pickerRequest = kind
+    }
     /// Source selection to restore when the formula sheet inserts (the text view loses focus).
     fileprivate(set) var savedSelection: NSRange?
     func requestFormula(editing: NSRange? = nil, expression: String = "") {
@@ -94,6 +100,10 @@ struct BoardDocumentView: UIViewRepresentable {
         var canUndo: Bool
         var canRedo: Bool
         var enabled: Bool
+        /// iOS-F1 (B32): Variables off when the server has none; Colors/Formatting only when listed.
+        var variablesEnabled = true
+        var colorsShown = true
+        var formattingShown = true
     }
     @ObservedObject var buffer: DocumentBuffer
     /// The session's rows, padded for display to the board's rows.
@@ -117,6 +127,8 @@ struct BoardDocumentView: UIViewRepresentable {
     var boardColumns: Int = 22
     var onInsert: (String) -> Void = { _ in }
     var onFormula: () -> Void = {}
+    /// Opens the Variables / Colors / Formatting picker (iOS-F1).
+    var onPicker: (InsertPickerKind) -> Void = { _ in }
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -250,11 +262,6 @@ struct BoardDocumentView: UIViewRepresentable {
         /// Align left/center/right · Wrap) plus Hide keyboard (`editorHideKeyboard`), so the
         /// toolbar stays in reach while the keyboard covers the screen (PLAN B15/B30).
         private var accessoryItems: [String: UIButton] = [:]
-        var pickers: InsertPickers {
-            InsertPickers(variables: parent.variables, onInsert: { [weak self] in self?.parent.onInsert($0) },
-                          onFormula: { [weak self] in self?.parent.onFormula() })
-        }
-
         func accessoryBar() -> UIView {
             let bar = UIInputView(frame: CGRect(x: 0, y: 0, width: 320, height: 48), inputViewStyle: .keyboard)
             bar.allowsSelfSizing = true
@@ -283,19 +290,10 @@ struct BoardDocumentView: UIViewRepresentable {
                 return button
             }
             func gap() -> UIView { let view = UIView(); view.widthAnchor.constraint(equalToConstant: 4).isActive = true; return view }
-            func menuItem(_ id: String, _ title: String, _ symbol: String, _ menu: @escaping (InsertPickers) -> UIMenu) -> UIButton {
-                let button = item(id, title, symbol) { _ in }
-                // Menus keep the keyboard up and the caret where it is (PLAN B30).
-                button.menu = UIMenu(children: [UIDeferredMenuElement.uncached { [weak self] completion in
-                    guard let self else { return completion([]) }
-                    completion(menu(self.pickers).children)
-                }])
-                button.showsMenuAsPrimaryAction = true
-                return button
-            }
-            let variables = menuItem("accessory_variables", EditorStrings.variables, "curlybraces") { $0.variablesUIMenu() }
-            let colors = menuItem("accessory_colors", EditorStrings.colors, "paintpalette") { $0.colorsUIMenu() }
-            let formatting = menuItem("accessory_formatting", EditorStrings.formatting, "textformat") { $0.formattingUIMenu() }
+            // iOS-F1: searchable pickers in a sheet replace the wave-2 menus (B22).
+            let variables = item("accessory_variables", EditorStrings.variables, "curlybraces") { $0.parent.onPicker(.variables) }
+            let colors = item("accessory_colors", EditorStrings.colors, "paintpalette") { $0.parent.onPicker(.colors) }
+            let formatting = item("accessory_formatting", EditorStrings.formatting, "textformat") { $0.parent.onPicker(.formatting) }
             let formula = item("accessory_formula", EditorStrings.insertFormula, "function") { $0.parent.onFormula() }
             let undo = item("accessory_undo", EditorStrings.undo, "arrow.uturn.backward") { $0.parent.onUndo() }
             let redo = item("accessory_redo", EditorStrings.redo, "arrow.uturn.forward") { $0.parent.onRedo() }
@@ -339,6 +337,9 @@ struct BoardDocumentView: UIViewRepresentable {
                 if button.isSelected != selected { button.isSelected = selected }
                 if button.isEnabled != (enabled && state.enabled) { button.isEnabled = enabled && state.enabled }
             }
+            set("accessory_variables", enabled: state.variablesEnabled)
+            accessoryItems["accessory_colors"]?.isHidden = !state.colorsShown
+            accessoryItems["accessory_formatting"]?.isHidden = !state.formattingShown
             set("accessory_undo", enabled: state.canUndo)
             set("accessory_redo", enabled: state.canRedo)
             set("accessory_alignLeft", selected: state.alignment == "left")

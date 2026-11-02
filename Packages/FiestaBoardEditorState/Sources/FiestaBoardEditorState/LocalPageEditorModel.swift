@@ -316,6 +316,8 @@ public final class LocalPageEditorModel: ObservableObject {
         guard let current = lines, current != rows else { return }
         mutate { try $0.replaceTemplateRows(rows) }
     }
+    /// Commits a draw-mode stroke as one undo step (PLAN B23, iOS-F1).
+    public func applyStroke(_ stroke: StrokeTransaction) { mutate { try $0.applyStroke(stroke) } }
     /// The page's stored board shape (PLAN B20) and its change, one undo step.
     public var pageGeometry: PageGeometry? { lines == nil ? nil : session.document.geometry }
     public func setGeometry(_ geometry: PageGeometry) { mutate { try $0.setGeometry(geometry) } }

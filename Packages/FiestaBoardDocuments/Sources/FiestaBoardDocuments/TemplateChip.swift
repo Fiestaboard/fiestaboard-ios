@@ -41,8 +41,23 @@ public struct TemplateChip: Equatable, Sendable {
         }
     }
 
-    /// Characters of a formula's expression shown in its compact pill (`ƒ IF(weathe…`), as AND-P1.
-    public static let compactFormulaLength = 9
+    /// Characters of a formula's expression shown in its compact pill when it starts with neither a
+    /// function nor a variable (`ƒ 1+2`).
+    public static let compactFormulaLength = 6
+
+    /// The compact label of a formula, shared with Android (`TemplateChips.compactFormulaName`):
+    /// the outer function as `IF(…)` (`NOW()` when it takes no arguments), else the first 6
+    /// characters and "…".
+    public static func formulaHead(_ expression: String) -> String {
+        let flat = expression.replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespaces)
+        if let match = flat.range(of: #"^[A-Za-z_][A-Za-z0-9_]*\s*\("#, options: .regularExpression) {
+            let name = flat[match].dropLast().trimmingCharacters(in: .whitespaces).uppercased()
+            let rest = flat[match.upperBound...].trimmingCharacters(in: .whitespaces)
+            return name + (rest == ")" ? "()" : "(…)")
+        }
+        return flat.count > compactFormulaLength ? String(flat.prefix(compactFormulaLength)) + "…" : flat
+    }
     /// A variable's short name longer than this falls back to its last segment (AND-P1).
     public static let shortNameLimit = 12
 
@@ -60,9 +75,11 @@ public struct TemplateChip: Equatable, Sendable {
             let joined = segments.joined(separator: ".")
             return joined.count > Self.shortNameLimit ? segments.last! : joined
         case .formula:
-            guard title != "new formula" else { return title }
-            let expression = title.hasSuffix("…") ? String(title.dropLast()) : title
-            return expression.count > Self.compactFormulaLength ? String(expression.prefix(Self.compactFormulaLength)) + "…" : expression
+            // Fully compact, like a variable chip (iOS-F1): the outer function's name (`IF`), else
+            // the first variable's short name, else the expression's start. The callout, the
+            // detail line and VoiceOver carry the whole formula.
+            guard title != "new formula" else { return "new" }
+            return Self.formulaHead(title.hasSuffix("…") ? String(title.dropLast()) : title)
         case .fill:
             guard title.lowercased() != "fill_space" else { return "fill" }
             let character = title.split(separator: ":", maxSplits: 1).dropFirst().first.map(String.init) ?? ""
@@ -77,6 +94,7 @@ public struct TemplateChip: Equatable, Sendable {
         switch style {
         case .unknownVariable: return "!"
         case .variable: return plugin?.first.map { String($0).uppercased() }
+        case .formula: return "ƒ"
         default: return nil
         }
     }
