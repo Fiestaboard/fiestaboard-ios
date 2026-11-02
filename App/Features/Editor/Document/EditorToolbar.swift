@@ -26,6 +26,9 @@ struct EditorToolbar: View {
         }
         .disabled(!enabled)
         .padding(.vertical, 2)
+        // W4 (B31): icon-only buttons in fixed 34 pt cells; at accessibility sizes the glyphs
+        // overlapped. Capped like a system toolbar; the labels stay in VoiceOver and long-press.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     private var row: some View {

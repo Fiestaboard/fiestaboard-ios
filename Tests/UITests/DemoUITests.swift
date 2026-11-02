@@ -963,7 +963,9 @@ final class ConnectionUITests: XCTestCase {
         XCTAssertEqual(row(1), "NATIVE {{weather.temperature}}" + original)
         // Tap the chip (just after "NATIVE ") to edit its source. Re-recorded (W2, B14): the first
         // tap puts the caret after the chip and outlines it; a second tap opens it.
-        let charWidth = ("M" as NSString).size(withAttributes: [.font: UIFont.monospacedSystemFont(ofSize: UIFont.preferredFont(forTextStyle: .body).pointSize, weight: .regular)]).width
+        // Re-recorded (W4): the document font is body × 1.35 on iPad (larger rows), so is the cell width.
+        let documentSize = (UIFont.preferredFont(forTextStyle: .body).pointSize * (UIDevice.current.userInterfaceIdiom == .pad ? 1.35 : 1)).rounded()
+        let charWidth = ("M" as NSString).size(withAttributes: [.font: UIFont.monospacedSystemFont(ofSize: documentSize, weight: .regular)]).width
         let chip = document.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 9 + 7 * charWidth + 24, dy: gutter.frame.midY - document.frame.minY))
         chip.tap(); Thread.sleep(forTimeInterval: 0.6); chip.tap()
         let tokenSource = app.textFields["tokenSource"]

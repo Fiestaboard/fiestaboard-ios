@@ -35,6 +35,8 @@ struct EditorRoot: View {
     /// Text | Canvases (PLAN B24), offered only while the stage shows an LED pixel display.
     @RootState private var editingCanvases = false
     @StateObject private var canvasState = CanvasEditorState()
+    @RootState private var canvasScroll = ScrollPosition()
+    @RootState private var canvasScrollY: CGFloat = 0
 
     init(model: LocalPageEditorModel) {
         self.model = model
@@ -90,18 +92,20 @@ struct EditorRoot: View {
                     if pixelDisplay != nil && model.lines != nil { surfacePicker }
                     else if !model.canvases.isEmpty { notPixelNotice }
                     if showsCanvases, let display = pixelDisplay {
-                        ScrollView {
-                            // W4: a drag that starts on a drawing surface edits it, so a rail on
-                            // the trailing edge (no gestures of its own) always scrolls the panel.
-                            HStack(alignment: .top, spacing: 6) {
+                        // W4: a drag that starts on a drawing surface edits it, so a rail beside
+                        // the panel scrolls it from anywhere.
+                        HStack(alignment: .top, spacing: 6) {
+                            ScrollView {
                                 CanvasesPanel(model: model, state: canvasState, display: display, gridRows: boardRows, gridCols: boardCols,
                                               onCommitted: { pipeline.edited() })
-                                CanvasScrollRail()
+                                    .padding(.bottom, 12)
                             }
-                            .padding(.bottom, 12)
+                            .scrollPosition($canvasScroll)
+                            .onScrollGeometryChange(for: CGFloat.self, of: { $0.contentOffset.y }) { _, y in canvasScrollY = y }
+                            .scrollIndicators(.visible)
+                            .scrollDismissesKeyboard(.interactively)
+                            CanvasScrollRail { delta in canvasScroll.scrollTo(y: max(0, canvasScrollY - delta)) }
                         }
-                        .scrollIndicators(.visible)
-                        .scrollDismissesKeyboard(.interactively)
                     } else {
                         TemplateWorkspaceView(model: model, buffer: buffer, pipeline: pipeline,
                                               isTextInputActive: $isTextInputActive, rich: $rich,
@@ -557,6 +561,9 @@ struct DocumentDetailsSheet: View {
 /// The canvases panel's scroll rail (W4): a strip with a grip, beside the area grid, pixel pad and
 /// shapes surface, where a drag always scrolls (those surfaces take drags that start on them).
 struct CanvasScrollRail: View {
+    /// The finger's vertical travel since the last change (content follows the finger).
+    var onScroll: (CGFloat) -> Void
+    @State private var last: CGFloat = 0
     var body: some View {
         RoundedRectangle(cornerRadius: 6)
             .fill(Color(uiColor: .tertiarySystemFill))
@@ -571,6 +578,10 @@ struct CanvasScrollRail: View {
             }
             .frame(width: 22)
             .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .gesture(DragGesture(minimumDistance: 2)
+                .onChanged { value in onScroll(value.translation.height - last); last = value.translation.height }
+                .onEnded { _ in last = 0 })
             .accessibilityElement()
             .accessibilityLabel(CanvasStrings.scrollRail)
             .accessibilityIdentifier("canvasesPanelHandle")
