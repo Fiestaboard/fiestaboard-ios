@@ -152,6 +152,12 @@ import XCTest
         for id in ["accessory_undo", "accessory_redo", "accessory_alignRight", "accessory_wrap", "editorHideKeyboard"] {
             XCTAssertTrue(app.buttons[id].exists, id)
         }
+        // W2 integration: Wrap must be reachable without scrolling on a phone (it fell off the
+        // 440 pt row at 40 pt buttons).
+        if UIDevice.current.userInterfaceIdiom == .phone {
+            XCTAssertTrue(app.buttons["accessory_wrap"].isHittable, "accessory_wrap is on screen")
+            XCTAssertTrue(app.buttons["editorHideKeyboard"].isHittable, "Hide stays pinned")
+        }
         XCTAssertTrue(waitForStage(app) { $0.count > 2 && $0[1].hasPrefix(" ") && $0[1].trimmingCharacters(in: .whitespaces) == "TWO" }, "\(stageLines(app))")
         let lines = stageLines(app)
         XCTAssertEqual(lines[0], "ONE", "Row 1 unchanged"); XCTAssertEqual(lines[2], "THREE", "Row 3 unchanged")

@@ -190,7 +190,7 @@ struct BoardDocumentView: UIViewRepresentable {
             func item(_ id: String, _ title: String, _ symbol: String, _ action: @escaping (Coordinator) -> Void) -> UIButton {
                 var configuration = UIButton.Configuration.plain()
                 configuration.image = UIImage(systemName: symbol)
-                configuration.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 6, bottom: 6, trailing: 6)
+                configuration.contentInsets = NSDirectionalEdgeInsets(top: 6, leading: 4, bottom: 6, trailing: 4)
                 let button = UIButton(configuration: configuration, primaryAction: UIAction { [weak self] _ in
                     guard let self else { return }
                     action(self)
@@ -203,12 +203,15 @@ struct BoardDocumentView: UIViewRepresentable {
                 }
                 button.accessibilityLabel = title
                 button.accessibilityIdentifier = id
-                button.widthAnchor.constraint(equalToConstant: 40).isActive = true
+                // 34 pt keeps all ten actions (through Wrap) inside a 440 pt phone's row beside the
+                // pinned Hide key; at 40 pt Wrap fell past the edge (W2 integration). Narrower
+                // phones still scroll.
+                button.widthAnchor.constraint(equalToConstant: 34).isActive = true
                 button.heightAnchor.constraint(equalToConstant: 38).isActive = true
                 accessoryItems[id] = button
                 return button
             }
-            func gap() -> UIView { let view = UIView(); view.widthAnchor.constraint(equalToConstant: 6).isActive = true; return view }
+            func gap() -> UIView { let view = UIView(); view.widthAnchor.constraint(equalToConstant: 4).isActive = true; return view }
             func menuItem(_ id: String, _ title: String, _ symbol: String, _ menu: @escaping (InsertPickers) -> UIMenu) -> UIButton {
                 let button = item(id, title, symbol) { _ in }
                 // Menus keep the keyboard up and the caret where it is (PLAN B30).
