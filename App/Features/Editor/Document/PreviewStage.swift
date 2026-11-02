@@ -83,9 +83,14 @@ struct PreviewStage: View {
             Section(EditorStrings.yourDisplays) {
                 ForEach(boards) { board in
                     Button { onChooseBoard(board.id) } label: {
-                        let title = EditorStrings.displayChoice(board.name, rows: board.rows, cols: board.cols, fits: board.fits(rows: rows, cols: cols))
-                        if board.id == selectedBoardID { Label(title, systemImage: "checkmark") } else { Text(title) }
+                        // Title = the display's name (tests and VoiceOver find it by name); its size
+                        // and whether the page fits are the menu item's subtitle (P1).
+                        if board.id == selectedBoardID { Label(board.name, systemImage: "checkmark") } else { Text(board.name) }
+                        if let detail = EditorStrings.displayChoiceDetail(rows: board.rows, cols: board.cols, fits: board.fits(rows: rows, cols: cols)) {
+                            Text(detail)
+                        }
                     }
+                    .accessibilityIdentifier("boardChoice_\(board.id)")
                 }
             }
             Button(EditorStrings.noDisplay) { onChooseBoard(nil) }

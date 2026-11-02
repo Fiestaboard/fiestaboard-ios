@@ -323,15 +323,17 @@ import XCTest
         XCTAssertTrue(waitForStage(app, timeout: 5) { $0.first == "     HELLO" }, "Row 1 is centred: \(stageLines(app))")
         attach(app, "P1-4-note-fits-desk-\(device())")
         picker.tap()
-        let kitchen = app.buttons["Kitchen · 6 × 22, doesn't fit"].firstMatch
-        XCTAssertTrue(kitchen.waitForExistence(timeout: 3), "The menu shows each display's size")
+        let kitchen = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Kitchen")).firstMatch
+        XCTAssertTrue(kitchen.waitForExistence(timeout: 3))
+        XCTAssertEqual(kitchen.label, "Kitchen, 6 × 22 · doesn't fit", "The menu gives each display's size and says Kitchen doesn't fit")
+        attach(app, "P1-4-display-menu-\(device())")
         kitchen.tap()
         let note = app.staticTexts["boardFitNote"]
         XCTAssertTrue(note.waitForExistence(timeout: 3))
         XCTAssertEqual(note.label, "Doesn't fit · 6 × 22")
         attach(app, "P1-4-note-on-kitchen-doesnt-fit-\(device())")
         // Put the remembered choice back for other runs.
-        picker.tap(); app.buttons["Desk · 3 × 15"].firstMatch.tap()
+        picker.tap(); app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Desk,")).firstMatch.tap()
         app.navigationBars.buttons["Close"].tap()
         let discard = app.buttons["Discard and leave"]
         if discard.waitForExistence(timeout: 2) { discard.tap() }

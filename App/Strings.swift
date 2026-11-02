@@ -96,9 +96,9 @@ enum EditorStrings {
     }
     static func fits(_ name: String) -> String { "Fits \(name)" }
     static func doesNotFit(rows: Int, cols: Int) -> String { "Doesn't fit · \(rows) × \(cols)" }
-    static func displayChoice(_ name: String, rows: Int?, cols: Int?, fits: Bool?) -> String {
-        guard let rows, let cols else { return name }
-        return fits == false ? "\(name) · \(rows) × \(cols), doesn't fit" : "\(name) · \(rows) × \(cols)"
+    static func displayChoiceDetail(rows: Int?, cols: Int?, fits: Bool?) -> String? {
+        guard let rows, let cols else { return nil }
+        return fits == false ? "\(rows) × \(cols) · doesn't fit" : "\(rows) × \(cols)"
     }
     static func sizeReadout(rows: Int, cols: Int) -> String { "\(rows) × \(cols)" }
 

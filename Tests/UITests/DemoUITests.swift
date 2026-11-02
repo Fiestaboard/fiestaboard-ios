@@ -361,7 +361,9 @@ final class ConnectionUITests: XCTestCase {
         app.buttons["editLocalDraft"].tap()
         let picker = app.buttons["evaluationBoardPicker"]
         reveal(picker, app); picker.tap()
-        app.buttons["Contract board"].tap()
+        // Re-recorded (P1 item 4): display menu items carry their size as a subtitle, so the
+        // item's label reads "Contract board, 6 × 22".
+        app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Contract board")).firstMatch.tap()
         let preview = app.buttons["previewPage"]
         reveal(preview, app); XCTAssertTrue(preview.isEnabled); preview.tap()
         let surface = app.descendants(matching: .any).matching(identifier: "physicalPreview").firstMatch
