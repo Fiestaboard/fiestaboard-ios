@@ -146,7 +146,7 @@ struct CreateLibraryPageView: View {
                             // the field first responder, so the next tap (the format menu)
                             // brought the keyboard back. Resign with it (E1 open issue 5).
                             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-                                nameFocused = false
+                                if nameFocused { nameFocused = false }
                             }
                         Picker("Display format", selection: $library.isPanel) {
                             Text("Split-flap · 6 × 22").tag(false)
