@@ -46,9 +46,9 @@ struct EditorRoot: View {
     private var boardCols: Int { geometry?.columns ?? 22 }
     private var isPanel: Bool { geometry?.isPanel ?? false }
 
-    /// Phone with the keyboard up: the title and toolbar step aside (the keyboard accessory
-    /// mirrors the toolbar) so the board keeps its full size above the rows (B30).
-    private var compactTyping: Bool { sizeClass == .compact && isTextInputActive }
+    /// Keyboard up: the title and toolbar step aside (the keyboard accessory mirrors the toolbar)
+    /// so the board keeps its size and is never covered (B30), on a phone and on iPad.
+    private var compactTyping: Bool { isTextInputActive }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -324,8 +324,10 @@ struct StageDocumentLayout: Layout {
             let stageWidth = bounds.width - spacing - documentWidth
             let documentHeight = min(document.sizeThatFits(ProposedViewSize(width: documentWidth, height: nil)).height, bounds.height)
             document.place(at: bounds.origin, proposal: ProposedViewSize(width: documentWidth, height: documentHeight))
+            // Never taller than the room above the keyboard: the board scales down instead (B30).
+            let stageHeight = min(stage.sizeThatFits(ProposedViewSize(width: stageWidth, height: nil)).height, bounds.height)
             stage.place(at: CGPoint(x: bounds.minX + documentWidth + spacing, y: bounds.minY),
-                        proposal: ProposedViewSize(width: stageWidth, height: nil))
+                        proposal: ProposedViewSize(width: stageWidth, height: stageHeight))
         } else {
             // The stage keeps its full size; the document gives way down to ~3 rows (B30), and only
             // then does the board scale down.
