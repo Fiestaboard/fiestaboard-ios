@@ -31,12 +31,20 @@ enum DraftTab: String, CaseIterable, Hashable, Identifiable {
 struct DraftScene: View {
     @StateObject private var store: BoardStore
     @StateObject private var connection: ConnectionModel
+    @StateObject private var boardStatus: BoardStatus
     init(persistence: ConnectionPersistence) {
         let store = BoardStore()
         _store = StateObject(wrappedValue: store)
+        _boardStatus = StateObject(wrappedValue: BoardStatus(store: store, reader: {
+            StatusReaderRegistry.shared.reader(for: store.connectionLabel)
+        }))
         _connection = StateObject(wrappedValue: ConnectionModel(
             store: store, catalog: persistence.catalog, discovery: BonjourServerDiscovery(),
-            preferences: .standard, serviceFactory: { LiveFiestaBoardService(deployment: $0, vault: KeychainSessionVault()) }))
+            preferences: .standard, serviceFactory: {
+                let service = LiveFiestaBoardService(deployment: $0, vault: KeychainSessionVault())
+                StatusReaderRegistry.shared.register(service)
+                return service
+            }))
     }
     @DraftState private var tab: DraftTab? = .home
     @DraftState private var compactColumn = NavigationSplitViewColumn.detail
@@ -80,6 +88,7 @@ struct DraftScene: View {
         }
         .onChange(of: store.connecting) { _, connecting in
             if !connecting && store.status == nil { connection.storeConnectionChanged(); candidateWrites = false }
+            if !connecting && store.status != nil { boardStatus.start() } else if store.status == nil { boardStatus.stop() }
         }
         .sheet(isPresented: $composing, onDismiss: {
             if let action = reviewAfterCompose { reviewAfterCompose = nil; pending = action }
@@ -145,7 +154,13 @@ struct DraftScene: View {
 
     @ViewBuilder private var destination: some View {
         switch tab ?? .home {
-        case .home: home
+        case .home:
+            NavigationStack {
+                HomeView(store: store, status: boardStatus, compose: { composing = true },
+                         preparePage: { pending = store.prepare(.page($0)) },
+                         changePage: { pageChooser }, controls: { boardControlsDestination() },
+                         banner: { connectionBanner })
+            }
         case .displays: displays
         case .pages: library
         case .collections: NavigationStack { CollectionsView(store: store) }
@@ -313,7 +328,7 @@ struct DraftScene: View {
         List(store.pages) { page in
             Button { pending = store.prepare(.page(page.id)) } label: { Label(page.name, systemImage: "rectangle.stack") }
                 .disabled(!store.canWrite)
-        }.navigationTitle("Show on selected board")
+        }.navigationTitle("Change page")
     }
     private var displays: some View {
         NavigationStack {
