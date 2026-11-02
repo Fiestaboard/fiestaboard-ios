@@ -29,7 +29,11 @@ public struct LocalPageEditorView: View {
     private var usesDocumentEditor: Bool { !model.supportsFlexibleEditing && model.lines != nil }
 
     public var body: some View {
-        if usesDocumentEditor { EditorRoot(model: model) } else { formEditor }
+        if usesDocumentEditor { EditorRoot(model: model) } else {
+            // The form editor (flexible and other non-document pages) gives the iPad split view
+            // the same signal as EditorRoot, so the sidebar collapses for every editor (B29).
+            formEditor.preference(key: EditorIsOpenKey.self, value: true)
+        }
     }
 
     private var formEditor: some View {
