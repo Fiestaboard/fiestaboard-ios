@@ -79,8 +79,6 @@ struct EditorRoot: View {
         .frame(maxWidth: 1180, maxHeight: .infinity, alignment: .top)
         .frame(maxWidth: .infinity)
         .background(Color(uiColor: .systemBackground))
-        // iPad: a page-sized sheet, wide enough for the stage beside the document.
-        .presentationSizing(.page)
         .overlay(alignment: .bottom) { toastView }
         .navigationTitle(EditorStrings.navigationTitle)
         .navigationBarTitleDisplayMode(.inline)
