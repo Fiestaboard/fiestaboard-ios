@@ -15,10 +15,10 @@ struct PagesListView: View {
     @State private var creatingPage = false
     /// The page just created, waiting for the create sheet to close.
     @State private var createdPage: CreatedPage?
-    /// The editor for it: pushed on regular width, a full-screen cover on compact (B29).
-    @State private var pushedEditor: CreatedPage?
-    @State private var coveredEditor: CreatedPage?
-    @Environment(\.horizontalSizeClass) private var sizeClass
+    /// The editor for it, shown like every editor (`EditorPresentation`, B29): pushed on
+    /// regular width, a full-screen cover on compact.
+    @State private var editorPageID: String?
+    @State private var showingEditor = false
 
     struct CreatedPage: Identifiable, Hashable { let id: String }
 
@@ -69,21 +69,18 @@ struct PagesListView: View {
                 }
             }
         }
-        .navigationDestination(item: $pushedEditor) { page in
-            LocalPageEditorLoader(pageID: page.id, store: store)
-                .onDisappear { store.pageLibrary?.dismissCompletion() }
-        }
-        .fullScreenCover(item: $coveredEditor, onDismiss: { store.pageLibrary?.dismissCompletion() }) { page in
-            NavigationStack { LocalPageEditorLoader(pageID: page.id, store: store) }
-        }
-        .onChange(of: store.connectionLabel) { _, _ in creatingPage = false; pushedEditor = nil; coveredEditor = nil }
+        .modifier(EditorPresentation(isPresented: $showingEditor) {
+            if let id = editorPageID { LocalPageEditorLoader(pageID: id, store: store) }
+        })
+        .onChange(of: showingEditor) { _, showing in if !showing { store.pageLibrary?.dismissCompletion() } }
+        .onChange(of: store.connectionLabel) { _, _ in creatingPage = false; showingEditor = false }
     }
 
     /// The create sheet closed: open the new page's editor, if one was made.
     private func openCreatedPage() {
         guard let page = createdPage else { store.pageLibrary?.dismissCompletion(); return }
         createdPage = nil
-        if sizeClass == .regular { pushedEditor = page } else { coveredEditor = page }
+        editorPageID = page.id; showingEditor = true
     }
 
     // MARK: cards

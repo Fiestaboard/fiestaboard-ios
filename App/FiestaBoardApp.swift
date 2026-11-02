@@ -52,6 +52,8 @@ struct DraftScene: View {
     }
     @DraftState private var tab: DraftTab? = .home
     @DraftState private var compactColumn = NavigationSplitViewColumn.detail
+    /// The sidebar hides while a page editor is open so the board gets the full width (B29).
+    @DraftState private var columnVisibility = NavigationSplitViewVisibility.automatic
     @DraftState private var composing = false
     @DraftState private var textDraft = ""
     @DraftState private var reviewAfterCompose: PreparedAction?
@@ -67,7 +69,7 @@ struct DraftScene: View {
             if store.status == nil {
                 ConnectionView(model: connection, store: store)
             } else {
-                NavigationSplitView(preferredCompactColumn: $compactColumn) {
+                NavigationSplitView(columnVisibility: $columnVisibility, preferredCompactColumn: $compactColumn) {
                     List(DraftTab.allCases, selection: $tab) { destination in
                         NavigationLink(value: destination) {
                             Label(destination.rawValue, systemImage: destination.symbol)
@@ -79,6 +81,11 @@ struct DraftScene: View {
                     destination
                 }
                 .navigationSplitViewStyle(.balanced)
+                // EditorRoot reports EditorIsOpenKey while it is on screen (iOS-E2): full width
+                // while editing, and the sidebar comes back when the editor closes.
+                .onPreferenceChange(EditorIsOpenKey.self) { open in
+                    withAnimation(.easeInOut(duration: 0.25)) { columnVisibility = open ? .detailOnly : .automatic }
+                }
             }
         }
         .tint(accent)

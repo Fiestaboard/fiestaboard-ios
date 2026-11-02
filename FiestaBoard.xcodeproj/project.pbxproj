@@ -76,6 +76,7 @@
 		8731E7E9E82A7BE2C0F2AF0B /* BoardControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39882C2621927BF6BC8C856A /* BoardControlsView.swift */; };
 		8804386F24AF8BDB3CCB26DF /* SaveStatusChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = E75805E7CEFAF72C972DF8E9 /* SaveStatusChip.swift */; };
 		888ED1CA44C9B8197CEF8322 /* BoardTables.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CF8A0D71245FFA302EDD63D /* BoardTables.swift */; };
+		8B1E5679492D524D3346CF77 /* EditorPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 065715F661A235683CCA6A66 /* EditorPresentation.swift */; };
 		8BDEEFEE71FB88D45F504691 /* FiestaBoardRender.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8FBC75D21814880B62B94594 /* FiestaBoardRender.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8CFC43B3AA777E3F0EE5DD3F /* ServerDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADD3E20169D98490321CE3F4 /* ServerDiscovery.swift */; };
 		8D3AD7946A5C657AAF013D03 /* TemplateSyntax.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10B4ECDC3AC96A79FEB3E9B8 /* TemplateSyntax.swift */; };
@@ -251,6 +252,7 @@
 
 /* Begin PBXFileReference section */
 		0148624436D9E73C46C262C2 /* BoardLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardLayout.swift; sourceTree = "<group>"; };
+		065715F661A235683CCA6A66 /* EditorPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorPresentation.swift; sourceTree = "<group>"; };
 		07FC5948A1A2BF18D9D2F81A /* LocalDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDraftStore.swift; sourceTree = "<group>"; };
 		0889FC6B6D55878B12953F10 /* PreviewStage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewStage.swift; sourceTree = "<group>"; };
 		08A7CF83290AB187BA76D6AE /* Service+Status.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Service+Status.swift"; sourceTree = "<group>"; };
@@ -549,6 +551,7 @@
 		5E5CD822A3DDB6BB84BBA845 /* Editor */ = {
 			isa = PBXGroup;
 			children = (
+				065715F661A235683CCA6A66 /* EditorPresentation.swift */,
 				14DCA60302FF7F66D64DBC69 /* EditorRoot.swift */,
 				88D20A64E911A3536D1F434B /* FlexibleWorkspaceView.swift */,
 				8086EA8450423EC1F62DCF79 /* LocalPageEditorModel.swift */,
@@ -1091,6 +1094,7 @@
 				6F7EE5175EA21722C7C5DEBB /* CollectionsView.swift in Sources */,
 				18EB9C22DE4A28BA68F2AD14 /* ConnectionView.swift in Sources */,
 				B82369937127BBB2BF333909 /* DisplaysView.swift in Sources */,
+				8B1E5679492D524D3346CF77 /* EditorPresentation.swift in Sources */,
 				0F8A7F5A8B4859B2AFDA6ADF /* EditorRoot.swift in Sources */,
 				FD00D3B3DED293855C3156BE /* EditorToolbar.swift in Sources */,
 				7DBA4232691B74518CE13653 /* FiestaBoardApp.swift in Sources */,
