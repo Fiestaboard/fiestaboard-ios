@@ -98,13 +98,14 @@ final class TemplateChipTests: XCTestCase {
         XCTAssertEqual(chip("{{baywheels.stations.0.name}}")?.shortTitle, "name", "indexes dropped; over 12 → last segment")
         XCTAssertEqual(chip("{{stocks.items.0.price}}")?.shortTitle, "items.price")
         XCTAssertEqual(chip("{{weather.temperature|zeropad:2|upper|lower|wrap|pad}}")?.compactFilters, ["02", "AB", "ab", "↵", "pad"])
-        // Re-recorded (iOS-F1): formula chips are fully compact, like variable chips: the outer
-        // function's name on an ƒ mark (was `ƒ IF(weathe…`); the callout shows the whole formula.
-        XCTAssertEqual(chip(#"{{= IF(weather.temperature>70,"HI","") }}"#)?.shortTitle, "IF")
-        XCTAssertEqual(chip(#"{{= NOW() }}"#)?.shortTitle, "NOW")
-        XCTAssertEqual(chip(#"{{= upper (date_time.day_of_week) }}"#)?.shortTitle, "UPPER")
-        XCTAssertEqual(chip(#"{{= weather.temperature * 2 }}"#)?.shortTitle, "temperature")
-        XCTAssertEqual(chip(#"{{= 1 + 2 + 3 }}"#)?.shortTitle, "1 + 2 …")
+        // Re-recorded (iOS-F1): formula chips are compact like variable chips, with the same
+        // label as Android (`compactFormulaName`): the outer function as `IF(…)` on an ƒ mark (was
+        // `ƒ IF(weathe…`); the callout shows the whole formula.
+        XCTAssertEqual(chip(#"{{= IF(weather.temperature>70,"HI","") }}"#)?.shortTitle, "IF(…)")
+        XCTAssertEqual(chip(#"{{= NOW() }}"#)?.shortTitle, "NOW()")
+        XCTAssertEqual(chip(#"{{= upper (date_time.day_of_week) }}"#)?.shortTitle, "UPPER(…)")
+        XCTAssertEqual(chip(#"{{= weather.temperature * 2 }}"#)?.shortTitle, "weathe…")
+        XCTAssertEqual(chip(#"{{= 1 + 2 }}"#)?.shortTitle, "1 + 2")
         XCTAssertEqual(chip("{{=}}")?.shortTitle, "new")
         XCTAssertEqual(chip(#"{{= IF(1>0,"A","B") }}"#)?.sourceMark, "ƒ")
         XCTAssertEqual(chip("{{date_time.time}}")?.sourceMark, "D")

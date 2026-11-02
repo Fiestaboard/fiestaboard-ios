@@ -92,7 +92,7 @@ struct VariablePickerView: View {
                             .accessibilityAddTraits(.isHeader)
                     }
                     PillFlowLayout(spacing: 6) {
-                        ForEach(group.fields) { field in pill(field, label: field.name) }
+                        ForEach(group.fields) { field in pill(field, label: field.label) }
                     }
                 }
             }
@@ -120,7 +120,7 @@ struct VariablePickerView: View {
                                                     set: { open in if open { expanded.insert(key) } else { expanded.remove(key) } })) {
                     PillFlowLayout(spacing: 6) {
                         ForEach(item.fields) { field in
-                            pill(field, label: String(field.name.split(separator: ".").last ?? Substring(field.name)))
+                            pill(field, label: field.label)
                         }
                     }
                     .padding(.vertical, 4)
@@ -152,8 +152,9 @@ struct VariablePickerView: View {
             .overlay(Capsule().strokeBorder(Color(uiColor: TemplateChipRenderer.violet).opacity(0.45), style: StrokeStyle(lineWidth: 1, dash: [3, 2])))
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(field.preview.map { "\(field.path), now \($0)" } ?? field.path)
-        .accessibilityHint(field.summary ?? "")
+        // Readable label on screen; the raw path stays in the hint (and in search).
+        .accessibilityLabel(field.preview.map { "\(label), now \($0)" } ?? label)
+        .accessibilityHint([field.summary, "{{\(field.path)}}"].compactMap { $0 }.joined(separator: ". "))
         .accessibilityIdentifier("insertVariable_\(field.path)")
     }
 }

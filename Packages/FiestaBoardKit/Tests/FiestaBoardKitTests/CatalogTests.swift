@@ -59,6 +59,26 @@ final class VariableCatalogTests: XCTestCase {
         XCTAssertEqual(TemplateCatalog.titleCase("home-assistant"), "Home Assistant")
     }
 
+    /// Pills read as words, not keys (the same rule as Android's `VariableTree`/`Naming.sentence`);
+    /// the raw path stays the pill's value and is still searchable.
+    func testFieldsHaveReadableLabels() throws {
+        let catalog = try catalog()
+        func label(_ path: String) -> String? {
+            catalog.plugins.flatMap { $0.groups.flatMap(\.fields) + $0.arrays.flatMap { $0.items.flatMap(\.fields) } }.first { $0.path == path }?.label
+        }
+        XCTAssertEqual(label("weather.temperature"), "Temperature")
+        XCTAssertEqual(label("weather.feels_like"), "Feels like")
+        XCTAssertEqual(label("date_time.day_of_week"), "Day of week")
+        XCTAssertEqual(label("stocks.AAPL.price"), "AAPL price", "Tickers keep their capitals")
+        XCTAssertEqual(label("baywheels.station_count"), "Station count")
+        XCTAssertEqual(label("baywheels.stations.1.bikes"), "Bikes", "An item's pill names its own field")
+        let labelled = try TemplateCatalog(variablesData: Data(#"{"variables":{"x":["t_2"]},"variable_metadata":{"x":{"t_2":{"label":"Outside temp"}}}}"#.utf8))
+        XCTAssertEqual(labelled.plugins.first?.groups.first?.fields.first?.label, "Outside temp", "The metadata's label wins")
+        XCTAssertEqual(TemplateCatalog.sentence("UV_index"), "UV index")
+        XCTAssertEqual(catalog.filtered("day_of_week").first?.groups.first?.fields.map(\.path), ["date_time.day_of_week"], "The raw key still searches")
+        XCTAssertEqual(catalog.filtered("day of week").first?.groups.first?.fields.map(\.path), ["date_time.day_of_week"])
+    }
+
     func testArraysBecomeIndexedItemsWithAnEmptyArrayHint() throws {
         let catalog = try catalog()
         let bay = try XCTUnwrap(catalog.plugins.first { $0.id == "baywheels" })

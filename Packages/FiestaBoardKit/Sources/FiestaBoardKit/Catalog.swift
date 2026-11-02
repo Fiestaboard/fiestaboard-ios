@@ -14,8 +14,12 @@ public struct TemplateCatalog: Equatable, Sendable {
         public let path: String
         public let preview: String?
         public let summary: String?
-        public init(name: String, path: String, preview: String? = nil, summary: String? = nil) {
+        /// Readable label (shared rule with Android `VariableTree`): the metadata's `label`, else
+        /// the name in sentence case (`day_of_week` → `Day of week`, `AAPL.price` → `AAPL price`).
+        public let label: String
+        public init(name: String, path: String, preview: String? = nil, summary: String? = nil, label: String? = nil) {
             self.name = name; self.path = path; self.preview = preview; self.summary = summary
+            self.label = label ?? TemplateCatalog.sentence(name)
         }
         /// The faded value beside a pill (B22: 12 characters, then "…").
         public var shortPreview: String? {
@@ -146,7 +150,8 @@ public struct TemplateCatalog: Equatable, Sendable {
                     if let text = info["example"] as? String { return text }
                     return nil
                 }()
-                return Field(name: name, path: pluginID + "." + name, preview: preview, summary: info["description"] as? String)
+                let label = (info["label"] as? String).flatMap { $0.isEmpty ? nil : $0 }
+                return Field(name: name, path: pluginID + "." + name, preview: preview, summary: info["description"] as? String, label: label)
             }
             // Array variables: declared in the manifest, or seen as `name.N.field` / `name.*.field`.
             var arrayNames = manifest.map { Array($0.arrays.keys) } ?? []
@@ -164,7 +169,10 @@ public struct TemplateCatalog: Equatable, Sendable {
                     let rest = parts[2...].joined(separator: ".")
                     if parts[1] == "*" { if !fieldNames.contains(rest) { fieldNames.append(rest) }; continue }
                     guard let index = Int(parts[1]) else { continue }
-                    items[index, default: []].append(field(name))
+                    // An item's pill reads as its own field (`Bikes`), not the whole indexed path.
+                    let full = field(name)
+                    items[index, default: []].append(Field(name: full.name, path: full.path, preview: full.preview, summary: full.summary,
+                                                           label: meta(name)["label"] as? String ?? Self.sentence(rest)))
                     if !fieldNames.contains(rest) { fieldNames.append(rest) }
                 }
                 let labelField = manifest?.arrays[arrayName]?.labelField ?? "name"
@@ -187,7 +195,8 @@ public struct TemplateCatalog: Equatable, Sendable {
             // Ungrouped fields go last, under "General", only when the plugin declares groups.
             order = order.filter { $0 != nil } + order.filter { $0 == nil }
             let groups = order.map { key in
-                Group(key: key, label: key.flatMap { groupLabels[$0] } ?? (groupLabels.isEmpty ? "" : "General"), fields: byGroup[key] ?? [])
+                Group(key: key, label: key.flatMap { groupLabels[$0].map { $0.isEmpty ? Self.titleCase(key!) : $0 } } ?? (groupLabels.isEmpty ? "" : "General"),
+                      fields: byGroup[key] ?? [])
             }
             plugins.append(Plugin(id: pluginID, name: manifest?.name ?? Self.titleCase(pluginID), icon: manifest?.icon,
                                   groups: groups, arrays: arrays))
@@ -222,6 +231,15 @@ public struct TemplateCatalog: Equatable, Sendable {
             .map { $0.prefix(1).uppercased() + $0.dropFirst() }
             .joined(separator: " ")
     }
+    /// Field names in sentence case (Android `Naming.sentence`): split on `._-` and spaces; a word
+    /// already in capitals (`AAPL`) keeps them; the first word is capitalised, the rest lowercased.
+    public static func sentence(_ id: String) -> String {
+        let words = id.split(whereSeparator: { "._- ".contains($0) }).map(String.init)
+        return words.enumerated().map { index, word in
+            if word.count > 1 && word.allSatisfy({ !$0.isLetter || $0.isUppercase }) { return word }
+            return index == 0 ? word.prefix(1).uppercased() + word.dropFirst() : word.lowercased()
+        }.joined(separator: " ")
+    }
     /// `fill_space_repeat` → `Fill space repeat`.
     public static func sentenceCase(_ id: String) -> String {
         let words = id.replacingOccurrences(of: "_", with: " ")
@@ -242,7 +260,7 @@ public struct TemplateCatalog: Equatable, Sendable {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         guard !trimmed.isEmpty else { return true }
         if field.path.lowercased().contains(trimmed) || plugin.name.lowercased().contains(trimmed) { return true }
-        let haystack = words(plugin.id) + words(plugin.name) + words(field.name) + words(context)
+        let haystack = words(plugin.id) + words(plugin.name) + words(field.name) + words(field.label) + words(context)
         return words(trimmed).allSatisfy { term in haystack.contains { $0.hasPrefix(term) || (term.count >= 3 && $0.contains(term)) } }
     }
 

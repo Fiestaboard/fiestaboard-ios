@@ -45,27 +45,18 @@ public struct TemplateChip: Equatable, Sendable {
     /// function nor a variable (`ƒ 1+2`).
     public static let compactFormulaLength = 6
 
-    /// The compact label of a formula (iOS-F1): `IF(weather.temperature>70,…)` → `IF`;
-    /// `weather.temperature * 2` → `temperature`; `"HI"` → `"HI"`; longer leftovers are cut.
+    /// The compact label of a formula, shared with Android (`TemplateChips.compactFormulaName`):
+    /// the outer function as `IF(…)` (`NOW()` when it takes no arguments), else the first 6
+    /// characters and "…".
     public static func formulaHead(_ expression: String) -> String {
-        let trimmed = expression.trimmingCharacters(in: .whitespaces)
-        let scalars = Array(trimmed)
-        var index = 0
-        while index < scalars.count, scalars[index].isLetter || scalars[index].isNumber || scalars[index] == "_" || scalars[index] == "." { index += 1 }
-        let word = String(scalars[..<index])
-        var after = index
-        while after < scalars.count, scalars[after] == " " { after += 1 }
-        if !word.isEmpty, !word.contains("."), after < scalars.count, scalars[after] == "(", word.first?.isLetter == true {
-            return word.uppercased()
+        let flat = expression.replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespaces)
+        if let match = flat.range(of: #"^[A-Za-z_][A-Za-z0-9_]*\s*\("#, options: .regularExpression) {
+            let name = flat[match].dropLast().trimmingCharacters(in: .whitespaces).uppercased()
+            let rest = flat[match.upperBound...].trimmingCharacters(in: .whitespaces)
+            return name + (rest == ")" ? "()" : "(…)")
         }
-        if let first = word.first, first.isLetter || first == "_" {
-            let segments = word.split(separator: ".").map(String.init).filter { Int($0) == nil }
-            if let last = segments.last {
-                let short = segments.count > 1 ? segments.dropFirst().joined(separator: ".") : last
-                return short.count > shortNameLimit ? last : short
-            }
-        }
-        return trimmed.count > compactFormulaLength ? String(trimmed.prefix(compactFormulaLength)) + "…" : trimmed
+        return flat.count > compactFormulaLength ? String(flat.prefix(compactFormulaLength)) + "…" : flat
     }
     /// A variable's short name longer than this falls back to its last segment (AND-P1).
     public static let shortNameLimit = 12
