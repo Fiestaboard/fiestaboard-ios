@@ -32,12 +32,24 @@ enum EditorStrings {
     static let formulaExamples = "Examples"
     static let editingMode = "Editing mode"
     static let boardSize = "Board size"
+    static let flagship = "Flagship"
+    static let note = "Note"
+    static let noteArray = "Note Array"
+    static let panel = "Panel"
+    static let showWhen = "Show when"
+    static let displayRestrictions = "Display restrictions"
+    static let addText = "Add text"
+    static let addCanvas = "Add canvas"
+    static let addSpacer = "Add spacer"
+    static func addBlock(_ kind: String) -> String {
+        switch kind { case "text": addText; case "canvas": addCanvas; case "spacer": addSpacer; default: "Add \(kind)" }
+    }
     static func shapeName(_ shape: PageGeometry) -> String {
         switch shape.deviceType {
-        case "flagship": return "Flagship · 6 × 22"
-        case "note": return "Note · 3 × 15"
-        case "note_array": return "Note Array (\(shape.notesWide ?? 1) wide / \(shape.notesTall ?? 1) tall) · \(shape.rows) × \(shape.columns)"
-        case "panel": return "Panel · \(shape.rows) × \(shape.columns)"
+        case "flagship": return "\(flagship) · 6 × 22"
+        case "note": return "\(note) · 3 × 15"
+        case "note_array": return "\(noteArray) (\(shape.notesWide ?? 1) wide / \(shape.notesTall ?? 1) tall) · \(shape.rows) × \(shape.columns)"
+        case "panel": return "\(panel) · \(shape.rows) × \(shape.columns)"
         default: return "\(shape.rows) × \(shape.columns)"
         }
     }

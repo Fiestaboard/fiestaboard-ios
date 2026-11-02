@@ -62,7 +62,7 @@ import FiestaBoardEditorState
                     choice("Vertical alignment", .layout, "valign", ["top", "middle", "bottom", "spread"])
                     choice("Layout", .layout, "kind", ["stack"])
                     draftField("Gap", .layout, "gap", numeric: true, named: ["none", "small", "medium", "large"])
-                    containerControls(.targets, title: "target restrictions", optional: true)
+                    containerControls(.targets, title: EditorStrings.displayRestrictions.lowercased(), optional: true)
                     targetField("Allowed board IDs", key: "boards")
                     targetField("Allowed technologies", key: "technology")
                     Text("Separate target IDs with commas. Empty means an empty restriction list; use Inherit to remove the restriction.").font(.caption).foregroundStyle(.secondary)
@@ -141,7 +141,7 @@ import FiestaBoardEditorState
                 Spacer()
                 Menu {
                     ForEach(["text", "canvas", "spacer"], id: \.self) { kind in
-                        Button("Add \(kind.capitalized)", systemImage: icon(kind)) {
+                        Button(EditorStrings.addBlock(kind), systemImage: icon(kind)) {
                             finishTyping(); selectedID = model.addBlock(kind); selectedShape = nil; selection = TemplateTextSelection(); announcement = "Added \(kind) block."
                         }.accessibilityIdentifier("addFlexible_\(kind)")
                     }
@@ -200,7 +200,7 @@ import FiestaBoardEditorState
                     Text("This block type is retained in full. Its content is read-only in this app.").font(.footnote)
                 }
                 if block.isKnown {
-                    draftField("Condition expression", .block(block.id), "if")
+                    draftField(EditorStrings.showWhen, .block(block.id), "if")
                     draftField("Priority", .block(block.id), "priority", numeric: true)
                     DisclosureGroup("Block style", isExpanded: $showBlockStyle) {
                         containerControls(.blockStyle(block.id), title: "block style", optional: true)
