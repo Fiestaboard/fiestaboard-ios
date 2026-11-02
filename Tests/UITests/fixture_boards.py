@@ -143,8 +143,11 @@ PAGES = [
      'template': ['WELCOME TO THE LOBBY', '{{blue}}{{blue}}{{blue}}'], 'shows': ['WELCOME TO THE LOBBY', '{blue}{blue}{blue}']},
     {'id': 'pixel', 'name': 'Pixel Clock', 'type': 'template', 'device_type': 'panel', 'grid_rows': 10, 'grid_cols': 16,
      'template': ['{{date_time.time}}'],
-     'canvases': [{'id': 'sun', 'area': {'row': 0, 'col': 0, 'rows': 5, 'cols': 8},
-                   'content': {'size': [32, 30], 'background': None, 'palette': {'a': 'yellow'}, 'pixels': ['aa'], 'shapes': []}}],
+     # Areas are 1-based (`CanvasArea`, ge=1). iOS-F2: a circle and a gradient (drawn hatched as "preserved").
+     'canvases': [{'id': 'sun', 'area': {'row': 1, 'col': 1, 'rows': 5, 'cols': 8},
+                   'content': {'size': [32, 30], 'background': None, 'palette': {'a': 'yellow'}, 'pixels': ['aa'],
+                               'shapes': [{'type': 'circle', 'cx': 16, 'cy': 12, 'r': 8, 'fill': 'yellow'},
+                                          {'type': 'gradient', 'from': '#000033', 'to': '#3366ff', 'x': 0, 'y': 24, 'w': 32, 'h': 6}]}}],
      'shows': ['08:15']},
     {'id': 'lower', 'name': 'Mixed Case', 'type': 'template', 'device_type': 'flagship',
      'template': ['UPPER ROW', 'lower row kept', 'THIRD'], 'line_metadata': [{'alignment': 'center', 'wrap': False}],

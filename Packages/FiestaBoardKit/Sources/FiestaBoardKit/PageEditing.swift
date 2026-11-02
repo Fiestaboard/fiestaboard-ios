@@ -14,23 +14,30 @@ public struct PageSavePatch: Encodable, Sendable, Equatable {
     /// Board shape change (PLAN B20/§2.4): raw `device_type` / `notes_*` / `grid_*` values by key.
     public let geometryData: [String: Data]
     public static let geometryKeys = ["device_type", "notes_wide", "notes_tall", "grid_rows", "grid_cols"]
+    /// A legacy page's pixel canvases (PLAN B24/§2.4): the raw `canvases` bytes, `null` or an array of objects.
+    public let canvasesData: Data?
     public var hasFlexibleFields: Bool { blocksData != nil || styleData != nil || layoutData != nil || targetsData != nil }
     public init(name: String? = nil, template: [String]? = nil, lineMetadataData: Data? = nil,
                 blocksData: Data? = nil, styleData: Data? = nil, layoutData: Data? = nil, targetsData: Data? = nil,
-                geometryData: [String: Data] = [:], expectedRevision: String) {
+                geometryData: [String: Data] = [:], canvasesData: Data? = nil, expectedRevision: String) {
         self.name = name; self.template = template; self.lineMetadataData = lineMetadataData
-        self.geometryData = geometryData
+        self.geometryData = geometryData; self.canvasesData = canvasesData
         self.blocksData = blocksData; self.styleData = styleData; self.layoutData = layoutData; self.targetsData = targetsData
         self.expectedRevision = expectedRevision
     }
     enum CodingKeys: String, CodingKey { case name, template, expectedRevision = "expected_revision" }
     public func validate() throws {
-        guard name != nil || template != nil || lineMetadataData != nil || hasFlexibleFields || !geometryData.isEmpty,
-              geometryData.keys.allSatisfy(Self.geometryKeys.contains), !hasFlexibleFields || geometryData.isEmpty,
+        guard name != nil || template != nil || lineMetadataData != nil || hasFlexibleFields || !geometryData.isEmpty || canvasesData != nil,
+              geometryData.keys.allSatisfy(Self.geometryKeys.contains), !hasFlexibleFields || (geometryData.isEmpty && canvasesData == nil),
               !expectedRevision.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               name.map({ (1...100).contains($0.unicodeScalars.count) && !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) ?? true,
               !hasFlexibleFields || (template == nil && lineMetadataData == nil) else { throw FiestaBoardError.pageWritesDisabled }
         if let lineMetadataData { try RawJSONObject.validateObjectArray(lineMetadataData) }
+        if let canvasesData, canvasesData != Data("null".utf8) {
+            // Same checks as line_metadata (objects only, no duplicate keys), plus the server's limit of 8.
+            try RawJSONObject.validateObjectArray(canvasesData)
+            guard case .array(let canvases) = try LosslessJSON.parse(canvasesData), canvases.count <= 8 else { throw FiestaBoardError.pageWritesDisabled }
+        }
         if hasFlexibleFields {
             var root: LosslessJSONObject = ["name": .string(name ?? "Page"), "type": .string("flexible"), "document_protocol": .string("page-document-v2"), "blocks": .array([.object(["id": .string("default"), "kind": .string("spacer")])])]
             for (key, bytes) in rawFields {
@@ -43,6 +50,7 @@ public struct PageSavePatch: Encodable, Sendable, Equatable {
     private var rawFields: [(String, Data)] {
         [("line_metadata", lineMetadataData), ("blocks", blocksData), ("style", styleData), ("layout", layoutData), ("targets", targetsData)].compactMap { key, value in value.map { (key, $0) } }
             + Self.geometryKeys.compactMap { key in geometryData[key].map { (key, $0) } }
+            + (canvasesData.map { [("canvases", $0)] } ?? [])
     }
     public func encode(to encoder: any Encoder) throws {
         guard rawFields.isEmpty else { throw FiestaBoardError.pageWritesDisabled }

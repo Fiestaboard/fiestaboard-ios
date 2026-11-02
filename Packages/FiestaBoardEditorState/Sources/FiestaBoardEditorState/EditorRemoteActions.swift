@@ -30,8 +30,14 @@ public struct EditorBoardChoice: Identifiable, Sendable {
     /// The display's grid, when known: the stage picks a display the page fits (P1).
     public let rows: Int?
     public let cols: Int?
-    public init(name: String, target: BoardTarget, rows: Int? = nil, cols: Int? = nil) {
+    /// What the display is (`/v1/boards`), so the editor can tell a pixel matrix (PLAN B24).
+    public let deviceType: String?
+    public let deviceModel: String?
+    public let charset: String?
+    public init(name: String, target: BoardTarget, rows: Int? = nil, cols: Int? = nil,
+                deviceType: String? = nil, deviceModel: String? = nil, charset: String? = nil) {
         self.name = name; self.target = target; self.rows = rows; self.cols = cols
+        self.deviceType = deviceType; self.deviceModel = deviceModel; self.charset = charset
     }
     /// Whether a page of `rows` × `cols` shows on this display as authored; nil when unknown.
     public func fits(rows: Int, cols: Int) -> Bool? {

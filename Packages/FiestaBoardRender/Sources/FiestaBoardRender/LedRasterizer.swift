@@ -71,6 +71,12 @@ public enum LedRasterizer {
 
     // MARK: Public entry
 
+    /// One glyph's rows (`#` lit) of an LED face (`"3x5"` / `"5x7"`), for canvas text shapes
+    /// drawn by the editor (PLAN B24). Nil when the face lacks the character.
+    public static func glyphRows(_ character: Character, font: String) -> [String]? {
+        fonts[font]?.glyphs[String(character)]
+    }
+
     /// The device frame for `frame` on an LED `model`. Content precedence is
     /// `cells` → `codes` → `message` (as `BoardFrame.boardCells`); a message
     /// keeps its case (`model.preservesCase`); layers draw last.

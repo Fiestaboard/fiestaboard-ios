@@ -95,6 +95,13 @@ public struct DocumentEditingSession: Sendable {
         try candidate.applyStroke(stroke)
         try adopt(candidate, action: "Paint")
     }
+    /// A legacy page's pixel canvases (PLAN B24/§2.4), one undo step per call: a whole drag,
+    /// paint stroke or inspector change is committed once, when it ends.
+    public mutating func setCanvases(_ canvases: [LegacyCanvas], action: String = "Edit canvases") throws {
+        var candidate = document
+        try candidate.setCanvases(canvases)
+        try adopt(candidate, action: action)
+    }
     public mutating func setLineAlignment(at index: Int, alignment: String) throws {
         var candidate = document
         try candidate.setLineAlignment(at: index, alignment: alignment)
