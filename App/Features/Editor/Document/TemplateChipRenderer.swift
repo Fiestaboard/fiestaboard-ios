@@ -48,28 +48,6 @@ import FiestaBoardRender
         ("M" as NSString).size(withAttributes: [.font: UIFont.monospacedSystemFont(ofSize: font.pointSize, weight: .regular)]).width
     }
 
-    /// A small mark for where a variable comes from: an SF Symbol for common plugins, otherwise
-    /// nil (the renderer draws the plugin's first letter instead).
-    static func pluginSymbol(_ plugin: String) -> String? {
-        switch plugin.lowercased() {
-        case "weather": return "cloud.sun.fill"
-        case "date_time", "datetime", "clock", "visual_clock", "word_clock": return "clock.fill"
-        case "stocks", "crypto", "currency": return "chart.line.uptrend.xyaxis"
-        case "home_assistant": return "house.fill"
-        case "baywheels", "lyft_bike_share": return "bicycle"
-        case "muni", "traffic", "wsdot": return "tram.fill"
-        case "sports_scores": return "sportscourt.fill"
-        case "moon_phase": return "moon.fill"
-        case "calendar", "calendar_sub", "reminders", "trash_day": return "calendar"
-        case "surf", "tide_times", "river_flow": return "water.waves"
-        case "uv_index", "solar_activity", "sun_art": return "sun.max.fill"
-        case "rss_reader", "hacker_news", "reddit_hot", "on_this_day", "national_day": return "newspaper.fill"
-        case "last_fm", "plex", "white_noise": return "music.note"
-        case "nearby_aircraft", "airport_board", "iss_tracker", "spacecraft_launches": return "airplane"
-        default: return nil
-        }
-    }
-
     /// The chip's image and its attachment bounds (baseline-relative) for `font`. Every chip but a
     /// tile is a whole number of document cells wide, at most `maxCells`, so text after a chip stays
     /// on the column grid (P1).
@@ -78,42 +56,33 @@ import FiestaBoardRender
         // No taller than a text line, so rows with chips keep the same pitch as plain rows.
         let height = (font.lineHeight - 1).rounded(.down)
         let cell = cellWidth(font)
-        let labelFont = UIFont.systemFont(ofSize: (font.pointSize * 0.76).rounded(), weight: .semibold, width: .condensed)
+        let labelFont = UIFont.systemFont(ofSize: (font.pointSize * 0.72).rounded(), weight: .semibold, width: .condensed)
         let filterFont = UIFont.systemFont(ofSize: (font.pointSize * 0.62).rounded(), weight: .bold, width: .condensed)
         let markFont = UIFont.systemFont(ofSize: (font.pointSize * 0.58).rounded(), weight: .heavy)
         let palette = palette(chip.style)
         let symbolConfiguration = UIImage.SymbolConfiguration(font: UIFont.systemFont(ofSize: (font.pointSize * 0.62).rounded(), weight: .semibold))
-        var symbol: UIImage? = {
+        let symbol: UIImage? = {
             switch chip.style {
-            case .unknownVariable: return UIImage(systemName: "exclamationmark.circle.fill", withConfiguration: symbolConfiguration)?.withTintColor(.systemOrange, renderingMode: .alwaysOriginal)
-            case .variable: return chip.plugin.flatMap(pluginSymbol).flatMap { UIImage(systemName: $0, withConfiguration: symbolConfiguration) }?.withTintColor(palette.text.withAlphaComponent(0.75), renderingMode: .alwaysOriginal)
             case .fill: return UIImage(systemName: "arrow.left.and.right", withConfiguration: symbolConfiguration)?.withTintColor(palette.text, renderingMode: .alwaysOriginal)
             case .icon: return UIImage(systemName: iconSymbol(chip.title), withConfiguration: symbolConfiguration)?.withTintColor(.label, renderingMode: .alwaysOriginal)
             default: return nil
             }
         }()
-        // A plugin without a symbol gets its initial in a small disc, so the source still shows.
-        var mark: String? = {
-            guard symbol == nil, case .variable = chip.style, let plugin = chip.plugin, let first = plugin.first else { return nil }
-            return String(first).uppercased()
-        }()
-        let markDiameter = (markFont.lineHeight * 1.05).rounded()
+        // Source mark (shared with AND-P1): the plugin's initial, white on a dot in the chip's ink;
+        // "!" on an amber dot for a variable that will draw ???.
+        let mark = chip.sourceMark
+        let markInk: UIColor = { if case .unknownVariable = chip.style { return .systemOrange }; return palette.stroke }()
+        let markDiameter = (markFont.lineHeight * 1.0).rounded()
         let prefix: String? = { if case .formula = chip.style { return "ƒ" }; return nil }()
         let prefixFont = UIFont.systemFont(ofSize: font.pointSize * 0.86, weight: .bold).italic
         let labelAttributes: [NSAttributedString.Key: Any] = [.font: labelFont, .foregroundColor: palette.text]
         let filterAttributes: [NSAttributedString.Key: Any] = [.font: filterFont, .foregroundColor: palette.text]
-        let padding: CGFloat = 5, gap: CGFloat = 3
+        let padding: CGFloat = 4, gap: CGFloat = 2
         let badges = chip.compactFilters
-        let badgeWidths = badges.map { ($0 as NSString).size(withAttributes: filterAttributes).width.rounded(.up) + 6 }
+        let badgeWidths = badges.map { ($0 as NSString).size(withAttributes: filterAttributes).width.rounded(.up) + 5 }
         let badgesWidth = badgeWidths.reduce(0) { $0 + $1 + gap }
         let label = chip.shortTitle
         let labelWidth = (label as NSString).size(withAttributes: labelAttributes).width.rounded(.up)
-        // The label wins over the source mark: when the chip would be capped, the plugin's mark goes
-        // (the callout and the spoken label still name it); the warning "!" always stays.
-        if case .variable = chip.style {
-            let markWidth = (symbol?.size.width ?? (mark != nil ? markDiameter : 0)) + gap
-            if padding + markWidth + labelWidth + badgesWidth + padding > CGFloat(maxCells) * cell { symbol = nil; mark = nil }
-        }
         var leading = padding
         if let symbol { leading += symbol.size.width + gap }
         if mark != nil { leading += markDiameter + gap }
@@ -141,8 +110,8 @@ import FiestaBoardRender
                 }
                 if let mark {
                     let disc = CGRect(x: x, y: (size.height - markDiameter) / 2, width: markDiameter, height: markDiameter)
-                    palette.stroke.withAlphaComponent(0.28).setFill(); UIBezierPath(ovalIn: disc).fill()
-                    let attributes: [NSAttributedString.Key: Any] = [.font: markFont, .foregroundColor: palette.text]
+                    markInk.setFill(); UIBezierPath(ovalIn: disc).fill()
+                    let attributes: [NSAttributedString.Key: Any] = [.font: markFont, .foregroundColor: UIColor.white]
                     let markSize = (mark as NSString).size(withAttributes: attributes)
                     (mark as NSString).draw(at: CGPoint(x: disc.midX - markSize.width / 2, y: disc.midY - markSize.height / 2), withAttributes: attributes)
                     x += markDiameter + gap
@@ -167,7 +136,7 @@ import FiestaBoardRender
                     guard sub.maxX <= size.width - 3 else { break }
                     let subPath = UIBezierPath(roundedRect: sub, cornerRadius: sub.height / 2)
                     palette.stroke.withAlphaComponent(0.24).setFill(); subPath.fill()
-                    (badge as NSString).draw(at: CGPoint(x: sub.minX + 3, y: sub.midY - filterFont.lineHeight / 2), withAttributes: filterAttributes)
+                    (badge as NSString).draw(at: CGPoint(x: sub.minX + 2.5, y: sub.midY - filterFont.lineHeight / 2), withAttributes: filterAttributes)
                     x += badgeWidth + gap
                 }
             }

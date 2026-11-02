@@ -18,6 +18,16 @@ import FiestaBoardEditorState
     fileprivate var syncedSource: String?
     fileprivate weak var textView: TemplateUITextView?
 
+    /// The full source of the chip just before the caret, or the first chip in the selection
+    /// (`weather.temperature | pad:3`, a formula in full, the ??? reason): the detail line under
+    /// the document (`chip-detail`, shared with AND-P1).
+    @Published private(set) var chipDetail: String?
+    fileprivate func setChipDetail(_ detail: String?) {
+        guard detail != chipDetail else { return }
+        // Selection callbacks can arrive inside a SwiftUI update; publish on the next turn.
+        DispatchQueue.main.async { [weak self] in if self?.chipDetail != detail { self?.chipDetail = detail } }
+    }
+
     var caretRow: Int { caretRows.lowerBound }
     var source: String { rows.joined(separator: "\n") }
 
@@ -182,6 +192,25 @@ struct BoardDocumentView: UIViewRepresentable {
         lazy var chipMenu = UIEditMenuInteraction(delegate: self)
         private var calloutChip: Int?
         private weak var calloutView: TemplateUITextView?
+
+        /// The chip the detail line describes: the one just before a caret, or the first one a
+        /// selection covers.
+        static func chipDetail(_ view: TemplateUITextView) -> String? {
+            guard let text = view.attributedText, text.length > 0, view.markedTextRange == nil else { return nil }
+            let selection = view.selectedRange
+            if selection.length > 0 {
+                var found: TemplateAttachment?
+                let range = NSIntersectionRange(selection, NSRange(location: 0, length: text.length))
+                text.enumerateAttribute(.attachment, in: range) { value, _, stop in
+                    if let attachment = value as? TemplateAttachment, attachment.chip != nil { found = attachment; stop.pointee = true }
+                }
+                return found?.fullName
+            }
+            guard selection.location > 0, selection.location <= text.length,
+                  let attachment = text.attribute(.attachment, at: selection.location - 1, effectiveRange: nil) as? TemplateAttachment,
+                  attachment.chip != nil else { return nil }
+            return attachment.fullName
+        }
 
         static func chipRect(_ view: TemplateUITextView, at index: Int) -> CGRect {
             let glyphRange = view.layoutManager.glyphRange(forCharacterRange: NSRange(location: index, length: 1), actualCharacterRange: nil)
@@ -359,6 +388,7 @@ struct BoardDocumentView: UIViewRepresentable {
             if let tapped = tappedChip, !(view.selectedRange.length == 0 && [tapped, tapped + 1].contains(view.selectedRange.location)) { tappedChip = nil }
             view.updateChipOutlines(tapped: tappedChip)
             let buffer = parent.buffer
+            buffer.setChipDetail(Self.chipDetail(view))
             buffer.adopt(rows: buffer.rows, caret: caretRows(view), dirty: false)
             (view.superview as? BoardDocumentContainer)?.refreshGutter(rows: buffer.rows, caretRows: buffer.caretRows)
         }
@@ -387,6 +417,7 @@ struct BoardDocumentView: UIViewRepresentable {
             }
             let rows = source.components(separatedBy: "\n")
             let buffer = parent.buffer
+            buffer.setChipDetail(Self.chipDetail(view))
             guard rows != buffer.rows else { return }
             buffer.adopt(rows: rows, caret: caretRows(view), dirty: true)
             (view.superview as? BoardDocumentContainer)?.refreshGutter(rows: buffer.rows, caretRows: buffer.caretRows)

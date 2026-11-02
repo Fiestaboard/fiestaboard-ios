@@ -41,15 +41,28 @@ public struct TemplateChip: Equatable, Sendable {
         }
     }
 
-    /// The short label drawn inside a compact chip: the field for variables (`temperature`), `fill`
-    /// or `fill -` for flexible space, the expression preview for formulas. The full name and
-    /// filters live in `fullName`, the accessibility label and the chip's tap callout.
+    /// Characters of a formula's expression shown in its compact pill (`ƒ IF(weathe…`), as AND-P1.
+    public static let compactFormulaLength = 9
+    /// A variable's short name longer than this falls back to its last segment (AND-P1).
+    public static let shortNameLimit = 12
+
+    /// The short label drawn inside a compact chip (shared design with AND-P1, a48ce26): for a
+    /// variable, the field without its plugin and with numeric indexes dropped, or only the last
+    /// segment when that is longer than 12 characters (`temperature`, `AAPL.price`,
+    /// `stations.0.name` → `name`); for a formula, its first 9 characters and "…"; `fill` or
+    /// `fill -` for flexible space. The full name lives in `title`/`filters` and the spoken label.
     public var shortTitle: String {
         switch style {
         case .variable, .unknownVariable:
-            guard plugin != nil, let dot = title.firstIndex(of: ".") else { return title }
-            let rest = title[title.index(after: dot)...]
-            return rest.isEmpty ? title : String(rest)
+            guard plugin != nil else { return title }
+            let segments = title.split(separator: ".").dropFirst().map(String.init).filter { Int($0) == nil }
+            guard !segments.isEmpty else { return title }
+            let joined = segments.joined(separator: ".")
+            return joined.count > Self.shortNameLimit ? segments.last! : joined
+        case .formula:
+            guard title != "new formula" else { return title }
+            let expression = title.hasSuffix("…") ? String(title.dropLast()) : title
+            return expression.count > Self.compactFormulaLength ? String(expression.prefix(Self.compactFormulaLength)) + "…" : expression
         case .fill:
             guard title.lowercased() != "fill_space" else { return "fill" }
             let character = title.split(separator: ":", maxSplits: 1).dropFirst().first.map(String.init) ?? ""
@@ -58,21 +71,48 @@ public struct TemplateChip: Equatable, Sendable {
         }
     }
 
-    /// Filters as tiny badges inside a compact chip: `pad:3` → `↔3`, `truncate:5` → `≤5`,
-    /// `zeropad:2` → `0…2`, `upper` → `AB`, `lower` → `ab`; anything else as written.
+    /// The source mark drawn on a dot at the chip's start: the plugin's initial, upper-case
+    /// (`W` for weather), or "!" for a variable that will draw ???. Nil for other kinds.
+    public var sourceMark: String? {
+        switch style {
+        case .unknownVariable: return "!"
+        case .variable: return plugin?.first.map { String($0).uppercased() }
+        default: return nil
+        }
+    }
+
+    /// Filters as tiny badges inside a compact chip (AND-P1): `pad:3` → `3`, `truncate:5` → `≤5`,
+    /// `zeropad:2` → `02`, `upper` → `AB`, `lower` → `ab`, `wrap` → `↵`; anything else as written.
     public var compactFilters: [String] {
         filters.map { filter in
             let pieces = filter.split(separator: ":", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
             let name = pieces.first?.lowercased() ?? filter
             let argument = pieces.count > 1 ? pieces[1] : ""
             switch name {
-            case "pad": return "↔" + argument
-            case "truncate": return "≤" + argument
-            case "zeropad": return "0…" + argument
+            case "pad" where !argument.isEmpty: return argument
+            case "truncate" where !argument.isEmpty: return "≤" + argument
+            case "zeropad" where !argument.isEmpty: return "0" + argument
             case "upper": return "AB"
             case "lower": return "ab"
+            case "wrap": return "↵"
             default: return filter
             }
+        }
+    }
+
+    /// The full source for the detail line under the document (`chip-detail`): `weather.temperature
+    /// | pad:3`, a formula in full, the reason when the board will show ???.
+    public static func detail(source: String, chip: TemplateChip?) -> String {
+        var inner = source.hasPrefix("{{") ? String(source.dropFirst(2).dropLast(2)) : String(source.dropFirst().dropLast())
+        inner = inner.trimmingCharacters(in: .whitespaces)
+        guard let chip else { return inner }
+        switch chip.style {
+        case .variable: return ([chip.title] + chip.filters).joined(separator: " | ")
+        case .unknownVariable(let reason): return ([chip.title] + chip.filters).joined(separator: " | ") + " — " + reason
+        case .formula:
+            if inner.hasPrefix("=") { inner = String(inner.dropFirst()).trimmingCharacters(in: .whitespaces) }
+            return "ƒ " + (inner.isEmpty ? chip.title : inner)
+        default: return inner
         }
     }
 

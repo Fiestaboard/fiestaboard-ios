@@ -261,19 +261,9 @@ final class TemplateUITextView: UITextView {
     private(set) var outlined = false
     private var font: UIFont
 
-    /// The token's full name for the tap callout: `weather.temperature | pad:3`, `= IF(…)`.
-    var fullName: String {
-        var inner = source.hasPrefix("{{") ? String(source.dropFirst(2).dropLast(2)) : String(source.dropFirst().dropLast())
-        inner = inner.trimmingCharacters(in: .whitespaces)
-        guard let chip else { return inner }
-        switch chip.style {
-        case .variable, .unknownVariable: return ([chip.title] + chip.filters).joined(separator: " | ")
-        case .formula:
-            if inner.hasPrefix("=") { inner = String(inner.dropFirst()).trimmingCharacters(in: .whitespaces) }
-            return "ƒ " + (inner.isEmpty ? chip.title : inner)
-        default: return inner
-        }
-    }
+    /// The token's full source for the callout and the detail line: `weather.temperature | pad:3`,
+    /// `ƒ IF(…)` in full, plus the reason when the board will show ???.
+    var fullName: String { TemplateChip.detail(source: source, chip: chip) }
 
     init(fragment: TemplateSyntax.Fragment, font: UIFont, variables: VariableCatalog? = nil, traits: UITraitCollection = .current) {
         source = fragment.source

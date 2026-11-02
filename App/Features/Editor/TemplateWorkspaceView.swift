@@ -122,6 +122,14 @@ struct TemplateWorkspaceView: View {
                 // Hugs its rows (B33: the board stays the largest element); scrolls when capped.
                 .frame(minHeight: 80, idealHeight: Self.documentHeight(rows: max(rows.count, boardRows)))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(overflow ? Color.orange : Color(uiColor: .separator), lineWidth: overflow ? 2 : 0.5))
+            if rich, let detail = buffer.chipDetail {
+                // The chip at the caret, in full (compact chips show only a short name; AND-P1).
+                Text(detail)
+                    .font(.footnote.monospaced()).foregroundStyle(.secondary)
+                    .lineLimit(2).truncationMode(.middle)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityIdentifier("chip-detail")
+            }
             HStack(alignment: .center) {
                 Text(EditorStrings.lineCounter(count, limit: boardRows))
                     .font(.caption.monospacedDigit()).foregroundStyle(overflow ? .orange : .secondary)

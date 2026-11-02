@@ -56,6 +56,7 @@ import FiestaBoardDocuments
         XCTAssertEqual(filtered.boardWidth, 3)
         XCTAssertEqual(long.fullName, "home_assistant.living_room_temperature | pad:3 | upper")
         XCTAssertEqual(formula.fullName, #"ƒ IF(weather.temperature>70,"HI","")"#)
+        XCTAssertLessThanOrEqual(filtered.bounds.width / cell, 10.001, "{{weather.temperature|pad:3}} is about 10 cells (AND-P1 target)")
     }
 
     /// P1: the column guide counts a chip's *board* cells, so it means "the board ends here" on
