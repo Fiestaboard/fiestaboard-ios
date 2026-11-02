@@ -235,7 +235,7 @@ public final class LocalPageEditorModel: ObservableObject {
     public var baselineRevision: String? {
         if case .string(let value) = session.baseline.root["revision"] { value } else { nil }
     }
-    private var editableFields: [String] { supportsFlexibleEditing ? ["name", "blocks", "style", "layout", "targets"] : ["name", "template", "line_metadata"] + PageGeometry.keys }
+    private var editableFields: [String] { supportsFlexibleEditing ? ["name", "blocks", "style", "layout", "targets"] : ["name", "template", "line_metadata", "canvases"] + PageGeometry.keys }
     public var hasServerChanges: Bool { editableFields.contains { session.document.root[$0] != session.baseline.root[$0] } }
     public var serverSaveDisabledReason: String? {
         guard let remote else { return "Server saving is unavailable for this local document." }
@@ -261,6 +261,9 @@ public final class LocalPageEditorModel: ObservableObject {
                 return "This template or its metadata cannot be safely saved. Keep it as a local draft."
             }
             guard !lines.isEmpty else { return "Add at least one template line before saving to the server." }
+            if session.document.root["canvases"] != session.baseline.root["canvases"], let problem = session.document.canvasProblems.first {
+                return problem
+            }
         }
         if remoteStatus == .conflict { return "The page changed on the server. Fetch it for comparison before choosing a reload." }
         if remoteStatus == .unknownOutcome { return "The save result is unknown. Fetch the server page and choose a reload before another save." }
@@ -323,6 +326,15 @@ public final class LocalPageEditorModel: ObservableObject {
     public var geometryShrinks: Bool {
         guard let now = session.document.geometry, let saved = session.baseline.geometry else { return false }
         return now.shrinks(from: saved)
+    }
+    /// A legacy page's pixel canvases (PLAN B24); empty for flexible pages and read-only shapes.
+    public var canvases: [LegacyCanvas] { lines == nil ? [] : session.document.legacyCanvases }
+    public var canvasesAreEditable: Bool { lines != nil && session.document.canvasesAreEditable }
+    /// Why the server would refuse the canvases as they stand (id, area, something to draw).
+    public var canvasProblems: [String] { lines == nil ? [] : session.document.canvasProblems }
+    /// One undo step: a whole drag, stroke or field change, committed when it ends.
+    public func setCanvases(_ canvases: [LegacyCanvas], action: String = "Edit canvases") {
+        mutate { try $0.setCanvases(canvases, action: action) }
     }
     /// Rows as Plain mode shows them, with `{wrap}`/alignment prefixes (PLAN B18).
     public var plainLines: [String]? { supportsLocalAuthoring ? session.document.plainRows : nil }
@@ -387,7 +399,7 @@ public final class LocalPageEditorModel: ObservableObject {
         for key in PageGeometry.keys { if let data = try? changedRaw(key) { geometry[key] = data } }
         guard let patch = try? PageSavePatch(name: name, template: template, lineMetadataData: metadata,
             blocksData: changedRaw("blocks"), styleData: changedRaw("style"), layoutData: changedRaw("layout"), targetsData: changedRaw("targets"),
-            geometryData: geometry, expectedRevision: revision) else { return }
+            geometryData: geometry, canvasesData: changedRaw("canvases"), expectedRevision: revision) else { return }
         isPreparingRemoteSave = true
         guard await saveDraft() else { isPreparingRemoteSave = false; return }
         isPreparingRemoteSave = false

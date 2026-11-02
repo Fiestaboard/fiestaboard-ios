@@ -26,6 +26,12 @@ struct PreviewStage: View {
     /// The page's board shape and its change (PLAN B20); nil hides the size section.
     var geometry: PageGeometry? = nil
     var onChooseGeometry: ((PageGeometry) -> Void)? = nil
+    /// The chosen display when it is an LED pixel matrix (PLAN B24): the stage draws LEDs, with
+    /// the page's canvases as layers.
+    var led: DisplayModel? = nil
+    var layers: [PixelLayer] = []
+    /// The LED board's largest height (smaller while the canvases panel needs the room).
+    var ledMaxHeight: CGFloat = 320
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -134,6 +140,11 @@ struct PreviewStage: View {
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("boardStage")
             .accessibilityValue(lines.joined(separator: "\n"))
+        } else if let led {
+            BoardFrameView(frame: BoardFrame(rows: rows, cols: cols, message: lines.joined(separator: "\n"), layers: layers),
+                           model: led, size: .fit, animated: false)
+                .frame(maxHeight: ledMaxHeight)
+                .accessibilityIdentifier("boardStage")
         } else {
             StageBoard(lines: lines, rows: rows, cols: cols, isPanel: isPanel, loading: state.adoptedRenders == 0 && state.isUpdating)
                 .accessibilityIdentifier("boardStage")

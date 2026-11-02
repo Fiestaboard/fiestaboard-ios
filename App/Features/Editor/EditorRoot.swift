@@ -3,6 +3,7 @@ import UIKit
 import FiestaBoardDocuments
 import FiestaBoardEditorState
 import FiestaBoardKit
+import FiestaBoardRender
 
 private typealias RootState<Value> = SwiftUI.State<Value>
 
@@ -26,6 +27,9 @@ struct EditorRoot: View {
     @RootState private var toast: String?
     @RootState private var titleDraft = ""
     @RootState private var started = false
+    /// Text | Canvases (PLAN B24), offered only while the stage shows an LED pixel display.
+    @RootState private var editingCanvases = false
+    @StateObject private var canvasState = CanvasEditorState()
 
     init(model: LocalPageEditorModel) {
         self.model = model
@@ -50,13 +54,17 @@ struct EditorRoot: View {
     /// so the board keeps its size and is never covered (B30), on a phone and on iPad.
     private var compactTyping: Bool { isTextInputActive }
 
+    /// The stage's display when it is an LED pixel matrix (PLAN B24).
+    private var pixelDisplay: PixelDisplay? { PixelDisplay(model.boards.first { $0.id == model.selectedBoardID }) }
+    private var showsCanvases: Bool { editingCanvases && pixelDisplay != nil && model.lines != nil }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             if let reason = saveDisabledReason { saveReason(reason) }
             if !compactTyping {
                 title
                 // The toolbar sits directly under the title (B12/B15); the keyboard accessory mirrors it.
-                DocumentToolbar(model: model, buffer: buffer, pipeline: pipeline, rich: $rich)
+                if !showsCanvases { DocumentToolbar(model: model, buffer: buffer, pipeline: pipeline, rich: $rich) }
             }
             StageDocumentLayout(minDocumentWidth: TemplateWorkspaceView.documentWidth(columns: boardCols),
                                 minDocumentHeight: TemplateWorkspaceView.documentHeight(rows: min(boardRows, 3))) {
@@ -64,8 +72,19 @@ struct EditorRoot: View {
                 VStack(alignment: .leading, spacing: 10) {
                     if let notice = model.recoveryNotice { recoveryBanner(notice) }
                     if model.saveStatus.needsAttention { attentionBanner }
-                    TemplateWorkspaceView(model: model, buffer: buffer, pipeline: pipeline,
-                                          isTextInputActive: $isTextInputActive, rich: $rich)
+                    if pixelDisplay != nil && model.lines != nil { surfacePicker }
+                    else if !model.canvases.isEmpty { notPixelNotice }
+                    if showsCanvases, let display = pixelDisplay {
+                        ScrollView {
+                            CanvasesPanel(model: model, state: canvasState, display: display, gridRows: boardRows, gridCols: boardCols,
+                                          onCommitted: { pipeline.edited() })
+                                .padding(.bottom, 12)
+                        }
+                        .scrollDismissesKeyboard(.interactively)
+                    } else {
+                        TemplateWorkspaceView(model: model, buffer: buffer, pipeline: pipeline,
+                                              isTextInputActive: $isTextInputActive, rich: $rich)
+                    }
                     if let message = model.message, !Self.isRoutineMessage(message) {
                         Text(message).font(.caption).foregroundStyle(.secondary).lineLimit(3)
                             .accessibilityIdentifier("editorMessage")
@@ -199,12 +218,77 @@ struct EditorRoot: View {
     }
 
     private var stage: some View {
-        PreviewStage(lines: stageLines, rows: boardRows, cols: boardCols, isPanel: isPanel, physical: physicalFrame,
+        PreviewStage(lines: pixelDisplay == nil ? stageLines : Self.blankHidden(stageLines, canvasState.canvases(model), rows: boardRows, cols: boardCols), rows: boardRows, cols: boardCols, isPanel: isPanel, physical: physicalFrame,
                      state: pipeline.state, boards: model.boards, selectedBoardID: model.selectedBoardID,
                      fitNote: fitNote, footnote: stageFootnote, disabled: model.editingFrozen,
                      onChooseBoard: { model.chooseBoard($0) }, onRetry: { pipeline.retry() }, onRefresh: { pipeline.flush() },
                      geometry: model.pageGeometry,
-                     onChooseGeometry: { shape in pipeline.flush(); model.setGeometry(shape); pipeline.flush() })
+                     onChooseGeometry: { shape in pipeline.flush(); model.setGeometry(shape); pipeline.flush() },
+                     led: pixelDisplay?.model, layers: stageLayers,
+                     ledMaxHeight: showsCanvases && sizeClass == .compact ? 200 : 320)
+            .overlay(alignment: .bottomTrailing) { stageLayerProbe }
+    }
+
+    // MARK: Canvases (PLAN B24)
+
+    /// Text under a `hide` canvas is blank on the board (`covered_cells`); plain rows are blanked
+    /// here too, so the local drawing matches (markup rows are left to the server).
+    static func blankHidden(_ lines: [String], _ canvases: [LegacyCanvas], rows: Int, cols: Int) -> [String] {
+        let hidden = CanvasRaster.hiddenCells(canvases, rows: rows, cols: cols)
+        guard !hidden.isEmpty else { return lines }
+        return lines.enumerated().map { r, line in
+            guard !line.contains("{") else { return line }
+            return String(line.enumerated().map { c, ch in hidden.contains([r, c]) ? " " : ch })
+        }
+    }
+
+    /// The canvases on the stage: the server's layers when its render is current, else the editor's
+    /// own drawing of the committed (or in-gesture) canvases, so painting and dragging show at once.
+    private var stageLayers: [PixelLayer] {
+        guard let display = pixelDisplay else { return [] }
+        if canvasState.live == nil, !model.previewStale, pipeline.state.lines != nil,
+           let preview = model.lastPreview, !preview.isSimulated, !preview.layers.isEmpty {
+            return preview.layers.compactMap { layer in
+                Data(base64Encoded: layer.rgba).map { PixelLayer(x: layer.x, y: layer.y, w: layer.width, h: layer.height, rgba: $0) }
+            }
+        }
+        return display.layers(canvasState.canvases(model))
+    }
+    /// A test hook: the layers' lit-pixel count and bounds, so UI tests see the stage change.
+    private var stageLayerProbe: some View {
+        let layers = pixelDisplay == nil ? [] : stageLayers
+        var lit = 0
+        for layer in layers { var i = 3; while i < layer.rgba.count { if layer.rgba[i] > 0 { lit += 1 }; i += 4 } }
+        return Color.clear.frame(width: 1, height: 1)
+            .accessibilityElement()
+            .accessibilityLabel("Canvas layers")
+            .accessibilityValue("\(layers.count) layers, \(lit) lit")
+            .accessibilityIdentifier("stageCanvasLayers")
+    }
+
+    private var surfacePicker: some View {
+        Picker(CanvasStrings.editingSurface, selection: Binding(get: { editingCanvases }, set: { canvases in
+            pipeline.flush(); buffer.resignFocus(); editingCanvases = canvases
+        })) {
+            Text(CanvasStrings.text).tag(false)
+            Text(CanvasStrings.canvases).tag(true)
+        }
+        .pickerStyle(.segmented)
+        .frame(maxWidth: 260)
+        .disabled(model.editingFrozen)
+        .accessibilityIdentifier("editingSurface")
+    }
+
+    private var notPixelNotice: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: "square.grid.3x3.square").foregroundStyle(.secondary)
+            Text(CanvasStrings.notPixelNotice).font(.footnote).foregroundStyle(.secondary)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(uiColor: .secondarySystemBackground), in: RoundedRectangle(cornerRadius: 10))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("canvasNotPixelNotice")
     }
 
     // MARK: Toolbar
