@@ -53,4 +53,15 @@ final class TemplateChipTests: XCTestCase {
         XCTAssertNil(TemplateInsertion.formula("  "))
         XCTAssertNil(TemplateInsertion.formula("a}}b"))
     }
+
+    func testSampleValuesReadLikeABoard() {
+        let catalog = VariableCatalog.sample(authoritative: true)
+        let rows = SampleValues.resolve([
+            "TEMP {{weather.temperature|pad:3}}° {{weather.condition}}",
+            #"{{= IF(weather.temperature > 70, "WARM", "COOL") }} {{red}}"#,
+            "{{bogus.thing}} {{= BOGUS(1) }}",
+            "{{= UPPER(date_time.day_of_week) }}",
+        ], catalog: catalog)
+        XCTAssertEqual(rows, ["TEMP  72° SUNNY", "WARM {{red}}", "??? ???", "SUNDAY"])
+    }
 }

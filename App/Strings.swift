@@ -1,7 +1,8 @@
 import Foundation
 
-/// Labels introduced by the document editor (iOS-E1, D1). iOS-E2 merges these into
-/// `App/Strings.swift` in wave 2. Wording follows the web's terms (`reports/web-terminology-glossary.md`).
+/// The editor's user-facing labels (iOS-E1's `Strings+Editor.swift`, merged here by iOS-E2).
+/// Wording follows the web's terms (`reports/web-terminology-glossary.md`); `TerminologyTests`
+/// checks the glossary terms against `Fixtures/shared/terminology.json`.
 enum EditorStrings {
     static let navigationTitle = "Edit Page"
     static let titlePlaceholder = "My Custom Page"
@@ -18,6 +19,18 @@ enum EditorStrings {
     static let rich = "Rich"
     static let plain = "Plain"
     static let documentDetails = "Document details"
+    static let variables = "Variables"
+    static let colors = "Colors"
+    static let formatting = "Formatting"
+    static let insertFormula = "Insert formula"
+    static let drawOnBoard = "Draw on board"
+    static let insert = "Insert"
+    static let cancel = "Cancel"
+    static let formulaPlaceholder = "IF(weather.temperature > 70, \"WARM\", \"COOL\")"
+    static let formulaFooter = "The server works out the value each time the board updates."
+    static let formulaExamples = "Examples"
+    static let editingMode = "Editing mode"
+    static func unknownVariableIssue(row: Int, name: String, reason: String) -> String { "Row \(row) · \(name): \(reason)" }
 
     static let discardTitle = "Discard unsaved changes?"
     static let discardMessage = "Your changes have not been saved to the server. A recovery copy stays on this device."
@@ -31,8 +44,9 @@ enum EditorStrings {
     static let displayPickerLabel = "Display preview"
     static let yourDisplays = "Your displays"
     static let noDisplay = "No display (local preview)"
-    static let localPreviewNote = "Local preview · choose a display for the server's render"
-    static let simulatedPreviewNote = "Demo · local preview, expressions are not evaluated"
+    static let sampleValuesNote = "Sample values"
+    static let chooseDisplayNote = "Choose a display to see live values"
+    static func saveOff(_ reason: String) -> String { "Can't save: \(reason)" }
     static func fits(_ name: String) -> String { "Fits \(name)" }
     static func sizeReadout(rows: Int, cols: Int) -> String { "\(rows) × \(cols)" }
 
