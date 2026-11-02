@@ -62,6 +62,45 @@ final class TemplateChipTests: XCTestCase {
             "{{bogus.thing}} {{= BOGUS(1) }}",
             "{{= UPPER(date_time.day_of_week) }}",
         ], catalog: catalog)
-        XCTAssertEqual(rows, ["TEMP  72° SUNNY", "WARM {{red}}", "??? ???", "SUNDAY"])
+        // Re-recorded (P1): `pad:3` is the server's `ljust(3)[:3]` ("72 "), not a right-justify.
+        XCTAssertEqual(rows, ["TEMP 72 ° SUNNY", "WARM {{red}}", "??? ???", "SUNDAY"])
+    }
+
+    /// The server's filters (`src/templates/engine.py`): pad = ljust(N)[:N], truncate cuts,
+    /// zeropad left-pads with zeros and keeps a leading minus.
+    func testSampleFiltersMatchTheServer() {
+        let catalog = VariableCatalog.sample(authoritative: true)
+        func value(_ inner: String) -> String { SampleValues.variable(inner, catalog) }
+        XCTAssertEqual(value("weather.temperature|pad:4"), "72  ")
+        XCTAssertEqual(value("weather.condition|pad:3"), "SUN")
+        XCTAssertEqual(value("weather.condition|truncate:2"), "SU")
+        XCTAssertEqual(value("weather.temperature|zeropad:4"), "0072")
+        XCTAssertEqual(value("weather.condition|lower"), "sunny")
+    }
+
+    /// P1 compact chips: the label is the field, the plugin a source mark, filters tiny badges,
+    /// and the token's board width is known when a filter or a sample value fixes it.
+    func testCompactLabelsAndBoardWidth() throws {
+        let padded = try XCTUnwrap(chip("{{weather.temperature|pad:3}}"))
+        XCTAssertEqual(padded.plugin, "weather")
+        XCTAssertEqual(padded.shortTitle, "temperature")
+        XCTAssertEqual(padded.compactFilters, ["↔3"])
+        XCTAssertEqual(padded.boardWidth(), 3)
+        XCTAssertEqual(padded.title, "weather.temperature", "the identifier is kept whole")
+        let bare = try XCTUnwrap(chip("{{weather.temperature}}"))
+        XCTAssertNil(bare.boardWidth(), "unknown until rendered")
+        XCTAssertEqual(bare.boardWidth(sampleLength: 2), 2)
+        XCTAssertEqual(chip("{{weather.condition|truncate:3}}")?.boardWidth(sampleLength: 5), 3)
+        XCTAssertEqual(chip("{{date_time.day|zeropad:2}}")?.boardWidth(sampleLength: 1), 2)
+        XCTAssertEqual(chip("{{weather.condition|truncate:3}}")?.compactFilters, ["≤3"])
+        XCTAssertEqual(chip("{{stocks.items.0.price}}")?.shortTitle, "items.0.price")
+        XCTAssertNil(chip("{{nodot}}")?.plugin)
+        XCTAssertEqual(chip("{{nodot}}")?.shortTitle, "nodot")
+        XCTAssertEqual(chip("{{red}}")?.boardWidth(), 1)
+        XCTAssertNil(chip(#"{{= IF(1>0,"A","B") }}"#)?.boardWidth())
+        XCTAssertEqual(chip("{{fill_space}}")?.shortTitle, "fill")
+        XCTAssertEqual(chip("{{fill_space_repeat:-}}")?.shortTitle, "fill -")
+        XCTAssertEqual(chip("{{bogus.thing}}", .sample(authoritative: true))?.boardWidth(), 3, "??? is three cells")
+        XCTAssertEqual(VariableCatalog.sample(authoritative: false).preview(of: "WEATHER.temperature"), "72")
     }
 }

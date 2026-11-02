@@ -138,6 +138,7 @@ struct BoardDocumentView: UIViewRepresentable {
         tap.cancelsTouchesInView = false
         tap.delegate = context.coordinator
         view.addGestureRecognizer(tap)
+        view.addInteraction(context.coordinator.chipMenu)
         view.variables = variables
         view.fontProvider = { Coordinator.font }
         view.decorate = { [weak container] text in BoardDocumentContainer.dimOverflow(text, columns: container?.effectiveColumns ?? 22) }
@@ -171,9 +172,50 @@ struct BoardDocumentView: UIViewRepresentable {
         container.refreshGutter(rows: buffer.rows, caretRows: buffer.caretRows)
     }
 
-    final class Coordinator: NSObject, UITextViewDelegate, UIGestureRecognizerDelegate {
+    final class Coordinator: NSObject, UITextViewDelegate, UIGestureRecognizerDelegate, @preconcurrency UIEditMenuInteractionDelegate {
         var parent: BoardDocumentView
         init(_ parent: BoardDocumentView) { self.parent = parent }
+
+        /// The chip callout (P1): a tap on a compact chip shows its full name and filters
+        /// (`weather.temperature | pad:3`) in the system edit menu, with Edit and Delete. The edit
+        /// menu keeps the keyboard up and the caret where it is.
+        lazy var chipMenu = UIEditMenuInteraction(delegate: self)
+        private var calloutChip: Int?
+        private weak var calloutView: TemplateUITextView?
+
+        static func chipRect(_ view: TemplateUITextView, at index: Int) -> CGRect {
+            let glyphRange = view.layoutManager.glyphRange(forCharacterRange: NSRange(location: index, length: 1), actualCharacterRange: nil)
+            var rect = view.layoutManager.boundingRect(forGlyphRange: glyphRange, in: view.textContainer)
+            rect.origin.x += view.textContainerInset.left; rect.origin.y += view.textContainerInset.top
+            return rect
+        }
+        func showCallout(_ view: TemplateUITextView, chip index: Int) {
+            calloutChip = index; calloutView = view
+            let rect = Self.chipRect(view, at: index)
+            chipMenu.presentEditMenu(with: UIEditMenuConfiguration(identifier: "chipCallout" as NSString, sourcePoint: CGPoint(x: rect.midX, y: rect.minY)))
+        }
+        func editMenuInteraction(_ interaction: UIEditMenuInteraction, menuFor configuration: UIEditMenuConfiguration, suggestedActions: [UIMenuElement]) -> UIMenu? {
+            guard let view = calloutView, let index = calloutChip, index < view.attributedText.length,
+                  let token = view.attributedText.attribute(.attachment, at: index, effectiveRange: nil) as? TemplateAttachment else { return nil }
+            let range = NSRange(location: index, length: 1)
+            let open = UIAction(title: token.fullName, image: UIImage(systemName: "pencil")) { [weak self, weak view] _ in
+                guard let self, let view else { return }
+                view.selectedRange = range
+                self.tappedChip = nil
+                view.tokenTapped?(token.source, view.sourceSelection)
+            }
+            open.accessibilityLabel = "Edit \(token.accessibilityLabel ?? token.fullName)"
+            let delete = UIAction(title: "Delete", image: UIImage(systemName: "trash"), attributes: .destructive) { [weak view] _ in
+                guard let view, view.isEditable, NSMaxRange(range) <= view.attributedText.length else { return }
+                view.selectedRange = range
+                view.deleteBackward()
+            }
+            return UIMenu(children: [open, delete])
+        }
+        func editMenuInteraction(_ interaction: UIEditMenuInteraction, targetRectFor configuration: UIEditMenuConfiguration) -> CGRect {
+            guard let view = calloutView, let index = calloutChip, index < view.attributedText.length else { return .null }
+            return Self.chipRect(view, at: index)
+        }
 
         /// Keyboard accessory: mirrors the document toolbar under the title (Undo · Redo ·
         /// Align left/center/right · Wrap) plus Hide keyboard (`editorHideKeyboard`), so the
@@ -406,16 +448,19 @@ struct BoardDocumentView: UIViewRepresentable {
                 guard rect.insetBy(dx: -3, dy: -3).contains(point) else { continue }
                 if tappedChip == candidate {
                     // A second tap on the outlined chip opens it (formula sheet or token editor).
+                    chipMenu.dismissMenu()
                     view.selectedRange = range
                     view.tokenTapped?(token.source, view.sourceSelection)
                     return
                 }
-                // The caret goes after the chip, never inside it; the chip is outlined (B14).
+                // The caret goes after the chip, never inside it; the chip is outlined (B14) and its
+                // callout shows the full name (P1).
                 DispatchQueue.main.async { [weak self, weak view] in
                     guard let self, let view else { return }
                     self.tappedChip = candidate
                     view.selectedRange = NSRange(location: candidate + 1, length: 0)
                     view.updateChipOutlines(tapped: candidate)
+                    self.showCallout(view, chip: candidate)
                     if let token = view.attributedText.attribute(.attachment, at: candidate, effectiveRange: nil) as? TemplateAttachment {
                         UIAccessibility.post(notification: .announcement, argument: token.accessibilityLabel)
                     }
@@ -477,44 +522,132 @@ final class BoardDocumentContainer: UIView {
         let lineHeight = placeholder.font.lineHeight
         placeholder.frame = CGRect(x: textView.textContainerInset.left + textView.textContainer.lineFragmentPadding,
                                    y: textView.textContainerInset.top, width: max(0, textView.bounds.width - 24), height: lineHeight)
-        // Column guide at the board's width (text-only rows line up with it exactly).
-        let advance = ("M" as NSString).size(withAttributes: [.font: BoardDocumentView.Coordinator.font]).width
-        let x = (textView.textContainerInset.left + textView.textContainer.lineFragmentPadding + CGFloat(boardColumns) * advance).rounded() + 0.5
-        let height = max(textView.contentSize.height, textView.bounds.height)
-        let visible = dimsOverflow && x < textView.bounds.width - 4
-        columnGuide.isHidden = !visible
+        // Column guide: one segment per row, where the board cuts that row (P1).
+        let path = guidePath()
+        columnGuide.isHidden = path == nil
         CATransaction.begin(); CATransaction.setDisableActions(true)
-        columnGuide.path = UIBezierPath(rect: CGRect(x: x, y: 0, width: 0, height: height)).cgPath
+        columnGuide.path = path
         CATransaction.commit()
     }
 
-    /// Dims everything past the board's width on rows whose width is known (text and tiles; a
-    /// variable or formula's width is only known after the server renders it) — PLAN B16 / web §d.4.
+    /// Where the board cuts one row of the document (PLAN B16, P1). Text and tiles are one cell;
+    /// a chip counts its *board* width (`TemplateAttachment.boardWidth`, e.g. `pad:3` → 3), not its
+    /// drawn width, so the guide marks where the board really ends even on chip rows. Flexible
+    /// space fills what is left. A token whose width is only known after the server renders it
+    /// makes the row `unknown`: no guide and no dimming there.
+    enum RowFit: Equatable {
+        case unknown
+        /// The row fits with `remaining` empty cells after its last character.
+        case fits(remaining: Int)
+        /// The board cuts inside the character at `index` (display offset), `fraction` of the way
+        /// into it (0 for text: the cut is at its leading edge).
+        case cut(index: Int, fraction: CGFloat)
+    }
+    static func rowFit(_ text: NSAttributedString, range: NSRange, columns: Int) -> RowFit {
+        var widths: [Int] = []
+        var fills = 0
+        for index in range.location..<NSMaxRange(range) {
+            if let attachment = text.attribute(.attachment, at: index, effectiveRange: nil) as? TemplateAttachment {
+                if case .fill? = attachment.chip?.style { fills += 1; widths.append(0); continue }
+                guard let width = attachment.boardWidth else { return .unknown }
+                widths.append(width)
+            } else { widths.append(1) }
+        }
+        let total = widths.reduce(0, +)
+        if fills > 0, total <= columns { return .fits(remaining: 0) }
+        var column = 0
+        for (offset, width) in widths.enumerated() where width > 0 {
+            if column + width > columns {
+                return .cut(index: range.location + offset, fraction: CGFloat(columns - column) / CGFloat(width))
+            }
+            column += width
+        }
+        return .fits(remaining: columns - total)
+    }
+
+    static func hasFill(_ text: NSAttributedString, range: NSRange) -> Bool {
+        var found = false
+        text.enumerateAttribute(.attachment, in: range) { value, _, stop in
+            if case .fill? = (value as? TemplateAttachment)?.chip?.style { found = true; stop.pointee = true }
+        }
+        return found
+    }
+
+    /// Display ranges of each row (paragraph), without the newline.
+    static func rowRanges(_ string: NSString) -> [NSRange] {
+        var ranges: [NSRange] = []
+        var start = 0
+        while true {
+            let newline = string.range(of: "\n", options: [], range: NSRange(location: start, length: string.length - start))
+            let end = newline.location == NSNotFound ? string.length : newline.location
+            ranges.append(NSRange(location: start, length: end - start))
+            if newline.location == NSNotFound { break }
+            start = end + 1
+        }
+        return ranges
+    }
+
+    /// Dims everything the board cuts off, row by row, from `rowFit` (PLAN B16 / web §d.4).
     static func dimOverflow(_ text: NSMutableAttributedString, columns: Int) {
         let full = NSRange(location: 0, length: text.length)
         text.removeAttribute(.foregroundColor, range: full)
         text.addAttribute(.foregroundColor, value: UIColor.label, range: full)
-        let string = text.string as NSString
-        var start = 0
-        while start <= string.length {
-            let newline = string.range(of: "\n", options: [], range: NSRange(location: start, length: string.length - start))
-            let end = newline.location == NSNotFound ? string.length : newline.location
-            var column = 0, cut: Int?
-            var index = start
-            while index < end {
-                if let attachment = text.attribute(.attachment, at: index, effectiveRange: nil) as? TemplateAttachment {
-                    guard case .tile? = attachment.chip?.style else { cut = nil; break }
-                }
-                column += 1
-                if column > columns, cut == nil { cut = index }
-                index += 1
+        guard columns < Int.max else { return }
+        for range in rowRanges(text.string as NSString) {
+            guard case .cut(let index, let fraction) = rowFit(text, range: range, columns: columns) else { continue }
+            let from = fraction > 0 ? index + 1 : index
+            if from < NSMaxRange(range) {
+                text.addAttribute(.foregroundColor, value: UIColor.tertiaryLabel, range: NSRange(location: from, length: NSMaxRange(range) - from))
             }
-            if index == end, let cut, cut < end {
-                text.addAttribute(.foregroundColor, value: UIColor.tertiaryLabel, range: NSRange(location: cut, length: end - cut))
-            }
-            if newline.location == NSNotFound { break }
-            start = end + 1
         }
+    }
+
+    /// The column guide as one short dashed segment per row, each where the board cuts that row
+    /// (rows of plain text line up into one straight line, as before; a chip row's segment sits
+    /// where its chips' board cells end). Rows of unknown width get none.
+    func guidePath() -> CGPath? {
+        guard dimsOverflow, let text = textView.attributedText, textView.bounds.width > 0 else { return nil }
+        let layout = textView.layoutManager, container = textView.textContainer
+        let inset = textView.textContainerInset
+        let advance = ("M" as NSString).size(withAttributes: [.font: BoardDocumentView.Coordinator.font]).width
+        let origin = inset.left + container.lineFragmentPadding
+        let path = UIBezierPath()
+        let string = text.string as NSString
+        for range in Self.rowRanges(string) {
+            // The row's vertical extent: its line fragments (an empty last row is the extra fragment).
+            var rowRect: CGRect
+            if range.length == 0 && range.location >= string.length {
+                rowRect = layout.extraLineFragmentRect
+                if rowRect.isEmpty, string.length == 0 { rowRect = CGRect(x: 0, y: 0, width: 0, height: BoardDocumentView.Coordinator.font.lineHeight) }
+            } else {
+                let characters = NSRange(location: range.location, length: max(1, range.length))
+                let glyphs = layout.glyphRange(forCharacterRange: characters, actualCharacterRange: nil)
+                rowRect = layout.lineFragmentRect(forGlyphAt: glyphs.location, effectiveRange: nil)
+                if glyphs.length > 1 { rowRect = rowRect.union(layout.lineFragmentRect(forGlyphAt: NSMaxRange(glyphs) - 1, effectiveRange: nil)) }
+            }
+            guard !rowRect.isEmpty else { continue }
+            let x: CGFloat
+            switch Self.rowFit(text, range: range, columns: boardColumns) {
+            case .unknown: continue
+            case .fits(let remaining):
+                // Flexible space makes the row exactly full: a mark at its end says nothing useful.
+                if Self.hasFill(text, range: range) { continue }
+                if range.length == 0 { x = origin + CGFloat(remaining) * advance }
+                else {
+                    let last = layout.glyphRange(forCharacterRange: NSRange(location: NSMaxRange(range) - 1, length: 1), actualCharacterRange: nil)
+                    x = layout.boundingRect(forGlyphRange: last, in: container).maxX + inset.left + CGFloat(remaining) * advance
+                }
+            case .cut(let index, let fraction):
+                let glyph = layout.glyphRange(forCharacterRange: NSRange(location: index, length: 1), actualCharacterRange: nil)
+                let box = layout.boundingRect(forGlyphRange: glyph, in: container)
+                x = box.minX + fraction * box.width + inset.left
+            }
+            let lineX = x.rounded() + 0.5
+            guard lineX < textView.bounds.width - 4 else { continue }
+            path.move(to: CGPoint(x: lineX, y: rowRect.minY + inset.top))
+            path.addLine(to: CGPoint(x: lineX, y: rowRect.maxY + inset.top))
+        }
+        return path.cgPath
     }
     override var accessibilityElements: [Any]? {
         get { [textView] + (gutter.accessibilityElements ?? []) }

@@ -30,6 +30,79 @@ public struct TemplateChip: Equatable, Sendable {
 
     public static let formulaPreviewLength = 20
 
+    /// The plugin a variable reads from (`weather` in `weather.temperature`); nil for other kinds.
+    /// The chip shows it as a small source mark, so the label itself can be just the field.
+    public var plugin: String? {
+        switch style {
+        case .variable, .unknownVariable:
+            guard let dot = title.firstIndex(of: "."), dot != title.startIndex else { return nil }
+            return String(title[..<dot])
+        default: return nil
+        }
+    }
+
+    /// The short label drawn inside a compact chip: the field for variables (`temperature`), `fill`
+    /// or `fill -` for flexible space, the expression preview for formulas. The full name and
+    /// filters live in `fullName`, the accessibility label and the chip's tap callout.
+    public var shortTitle: String {
+        switch style {
+        case .variable, .unknownVariable:
+            guard plugin != nil, let dot = title.firstIndex(of: ".") else { return title }
+            let rest = title[title.index(after: dot)...]
+            return rest.isEmpty ? title : String(rest)
+        case .fill:
+            guard title.lowercased() != "fill_space" else { return "fill" }
+            let character = title.split(separator: ":", maxSplits: 1).dropFirst().first.map(String.init) ?? ""
+            return character.isEmpty ? "fill" : "fill \(character)"
+        default: return title
+        }
+    }
+
+    /// Filters as tiny badges inside a compact chip: `pad:3` → `↔3`, `truncate:5` → `≤5`,
+    /// `zeropad:2` → `0…2`, `upper` → `AB`, `lower` → `ab`; anything else as written.
+    public var compactFilters: [String] {
+        filters.map { filter in
+            let pieces = filter.split(separator: ":", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
+            let name = pieces.first?.lowercased() ?? filter
+            let argument = pieces.count > 1 ? pieces[1] : ""
+            switch name {
+            case "pad": return "↔" + argument
+            case "truncate": return "≤" + argument
+            case "zeropad": return "0…" + argument
+            case "upper": return "AB"
+            case "lower": return "ab"
+            default: return filter
+            }
+        }
+    }
+
+    /// How many board cells the token fills, when that is known before the server renders it
+    /// (PLAN B16 column guide): a colour tile is one; `pad:N` makes a variable exactly N; with a
+    /// known value length (`sampleLength`), `truncate:N` caps it and `zeropad:N` widens it, as the
+    /// server's filters do. An unknown variable renders `???`. Formulas, flexible space, spans and
+    /// icons are unknown (nil): their width depends on the render.
+    public func boardWidth(sampleLength: Int? = nil) -> Int? {
+        switch style {
+        case .tile: return 1
+        case .variable, .unknownVariable:
+            var width: Int?
+            if case .unknownVariable = style { width = 3 } else { width = sampleLength }
+            for filter in filters {
+                let pieces = filter.split(separator: ":", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
+                guard let name = pieces.first?.lowercased() else { continue }
+                let argument = pieces.count > 1 ? Int(pieces[1]) : nil
+                switch (name, argument) {
+                case ("pad", let n?): width = max(0, n)
+                case ("truncate", let n?): width = width.map { min($0, max(0, n)) }
+                case ("zeropad", let n?): width = width.map { max($0, n) }
+                default: break
+                }
+            }
+            return width
+        case .formula, .fill, .span, .icon: return nil
+        }
+    }
+
     /// Board colour names a tile may use, normalised (`purple` is violet, `filled` is black).
     public static func tileColor(_ name: String) -> String {
         switch name.lowercased() {
@@ -125,6 +198,15 @@ public struct VariableCatalog: Equatable, Sendable {
             return .unknown(reason: "\(plugin.name) has no “\(field)” value. The board shows ??? here.")
         }
         return .known
+    }
+
+    /// The sample value of a `plugin.field` path (case-insensitive), when the catalog has one.
+    public func preview(of path: String) -> String? {
+        let segments = path.split(separator: ".").map(String.init)
+        guard segments.count >= 2,
+              let plugin = plugins.first(where: { $0.id.caseInsensitiveCompare(segments[0]) == .orderedSame }),
+              let field = plugin.fields.first(where: { $0.name.caseInsensitiveCompare(segments[1]) == .orderedSame }) else { return nil }
+        return field.preview
     }
 
     /// The sample catalog shown until the server's list is wired (iOS-F1). Mirrors the fixture

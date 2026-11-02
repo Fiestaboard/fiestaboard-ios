@@ -35,8 +35,17 @@ public enum SampleValues {
             let pieces = filter.split(separator: ":", maxSplits: 1).map(String.init)
             let argument = pieces.count > 1 ? Int(pieces[1]) : nil
             switch (pieces[0].lowercased(), argument) {
-            case ("pad", let n?): if value.count < n { value = String(repeating: " ", count: n - value.count) + value }
-            case ("truncate", let n?): value = String(value.prefix(n))
+            // The server's filters: `pad:N` is `ljust(N)[:N]`, `truncate:N` cuts to N, and
+            // `zeropad:N` left-pads with zeros, keeping a leading minus
+            // (`src/templates/engine.py`).
+            case ("pad", let n?): value = String((value + String(repeating: " ", count: max(0, n - value.count))).prefix(max(0, n)))
+            case ("truncate", let n?): value = String(value.prefix(max(0, n)))
+            case ("zeropad", let n?) where n > 0:
+                let negative = value.hasPrefix("-")
+                let digits = negative ? String(value.dropFirst()) : value
+                let width = negative ? n - 1 : n
+                value = (negative ? "-" : "") + String(repeating: "0", count: max(0, width - digits.count)) + digits
+            case ("lower", _): value = value.lowercased()
             case ("upper", _): value = value.uppercased()
             default: break
             }

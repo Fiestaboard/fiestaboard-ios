@@ -38,42 +38,94 @@ import FiestaBoardRender
         return .label
     }
 
-    static let maxWidth: CGFloat = 230
+    /// A compact chip is at most this many monospace cells wide (P1): the document keeps the
+    /// board's shape, and the full name lives in the callout and the accessibility label.
+    static let maxCells = 10
+    static let minCells = 2
 
-    /// The chip's image and its attachment bounds (baseline-relative) for `font`.
+    /// One monospace cell of the document at `font`'s size (the board's column pitch in the editor).
+    static func cellWidth(_ font: UIFont) -> CGFloat {
+        ("M" as NSString).size(withAttributes: [.font: UIFont.monospacedSystemFont(ofSize: font.pointSize, weight: .regular)]).width
+    }
+
+    /// A small mark for where a variable comes from: an SF Symbol for common plugins, otherwise
+    /// nil (the renderer draws the plugin's first letter instead).
+    static func pluginSymbol(_ plugin: String) -> String? {
+        switch plugin.lowercased() {
+        case "weather": return "cloud.sun.fill"
+        case "date_time", "datetime", "clock", "visual_clock", "word_clock": return "clock.fill"
+        case "stocks", "crypto", "currency": return "chart.line.uptrend.xyaxis"
+        case "home_assistant": return "house.fill"
+        case "baywheels", "lyft_bike_share": return "bicycle"
+        case "muni", "traffic", "wsdot": return "tram.fill"
+        case "sports_scores": return "sportscourt.fill"
+        case "moon_phase": return "moon.fill"
+        case "calendar", "calendar_sub", "reminders", "trash_day": return "calendar"
+        case "surf", "tide_times", "river_flow": return "water.waves"
+        case "uv_index", "solar_activity", "sun_art": return "sun.max.fill"
+        case "rss_reader", "hacker_news", "reddit_hot", "on_this_day", "national_day": return "newspaper.fill"
+        case "last_fm", "plex", "white_noise": return "music.note"
+        case "nearby_aircraft", "airport_board", "iss_tracker", "spacecraft_launches": return "airplane"
+        default: return nil
+        }
+    }
+
+    /// The chip's image and its attachment bounds (baseline-relative) for `font`. Every chip but a
+    /// tile is a whole number of document cells wide, at most `maxCells`, so text after a chip stays
+    /// on the column grid (P1).
     static func render(_ chip: TemplateChip, font: UIFont, traits: UITraitCollection, outlined: Bool = false) -> (UIImage, CGRect) {
         if case .tile(let color) = chip.style { return tile(color: color, font: font, traits: traits, outlined: outlined) }
         // No taller than a text line, so rows with chips keep the same pitch as plain rows.
         let height = (font.lineHeight - 1).rounded(.down)
-        let labelFont = UIFont.monospacedSystemFont(ofSize: (font.pointSize * 0.8).rounded(), weight: .semibold)
-        let filterFont = UIFont.monospacedSystemFont(ofSize: (font.pointSize * 0.68).rounded(), weight: .medium)
+        let cell = cellWidth(font)
+        let labelFont = UIFont.systemFont(ofSize: (font.pointSize * 0.76).rounded(), weight: .semibold, width: .condensed)
+        let filterFont = UIFont.systemFont(ofSize: (font.pointSize * 0.62).rounded(), weight: .bold, width: .condensed)
+        let markFont = UIFont.systemFont(ofSize: (font.pointSize * 0.58).rounded(), weight: .heavy)
         let palette = palette(chip.style)
-        let symbol: UIImage? = {
-            let configuration = UIImage.SymbolConfiguration(font: labelFont)
+        let symbolConfiguration = UIImage.SymbolConfiguration(font: UIFont.systemFont(ofSize: (font.pointSize * 0.62).rounded(), weight: .semibold))
+        var symbol: UIImage? = {
             switch chip.style {
-            case .unknownVariable: return UIImage(systemName: "exclamationmark.circle.fill", withConfiguration: configuration)?.withTintColor(.systemOrange, renderingMode: .alwaysOriginal)
-            case .fill: return UIImage(systemName: "arrow.left.and.right", withConfiguration: configuration)?.withTintColor(palette.text, renderingMode: .alwaysOriginal)
-            case .icon: return UIImage(systemName: iconSymbol(chip.title), withConfiguration: configuration)?.withTintColor(.label, renderingMode: .alwaysOriginal)
+            case .unknownVariable: return UIImage(systemName: "exclamationmark.circle.fill", withConfiguration: symbolConfiguration)?.withTintColor(.systemOrange, renderingMode: .alwaysOriginal)
+            case .variable: return chip.plugin.flatMap(pluginSymbol).flatMap { UIImage(systemName: $0, withConfiguration: symbolConfiguration) }?.withTintColor(palette.text.withAlphaComponent(0.75), renderingMode: .alwaysOriginal)
+            case .fill: return UIImage(systemName: "arrow.left.and.right", withConfiguration: symbolConfiguration)?.withTintColor(palette.text, renderingMode: .alwaysOriginal)
+            case .icon: return UIImage(systemName: iconSymbol(chip.title), withConfiguration: symbolConfiguration)?.withTintColor(.label, renderingMode: .alwaysOriginal)
             default: return nil
             }
         }()
+        // A plugin without a symbol gets its initial in a small disc, so the source still shows.
+        var mark: String? = {
+            guard symbol == nil, case .variable = chip.style, let plugin = chip.plugin, let first = plugin.first else { return nil }
+            return String(first).uppercased()
+        }()
+        let markDiameter = (markFont.lineHeight * 1.05).rounded()
         let prefix: String? = { if case .formula = chip.style { return "ƒ" }; return nil }()
-        let prefixFont = UIFont.systemFont(ofSize: font.pointSize * 0.92, weight: .bold).italic
+        let prefixFont = UIFont.systemFont(ofSize: font.pointSize * 0.86, weight: .bold).italic
         let labelAttributes: [NSAttributedString.Key: Any] = [.font: labelFont, .foregroundColor: palette.text]
         let filterAttributes: [NSAttributedString.Key: Any] = [.font: filterFont, .foregroundColor: palette.text]
-        let padding: CGFloat = 7, gap: CGFloat = 4
+        let padding: CGFloat = 5, gap: CGFloat = 3
+        let badges = chip.compactFilters
+        let badgeWidths = badges.map { ($0 as NSString).size(withAttributes: filterAttributes).width.rounded(.up) + 6 }
+        let badgesWidth = badgeWidths.reduce(0) { $0 + $1 + gap }
+        let label = chip.shortTitle
+        let labelWidth = (label as NSString).size(withAttributes: labelAttributes).width.rounded(.up)
+        // The label wins over the source mark: when the chip would be capped, the plugin's mark goes
+        // (the callout and the spoken label still name it); the warning "!" always stays.
+        if case .variable = chip.style {
+            let markWidth = (symbol?.size.width ?? (mark != nil ? markDiameter : 0)) + gap
+            if padding + markWidth + labelWidth + badgesWidth + padding > CGFloat(maxCells) * cell { symbol = nil; mark = nil }
+        }
         var leading = padding
         if let symbol { leading += symbol.size.width + gap }
+        if mark != nil { leading += markDiameter + gap }
         if let prefix { leading += (prefix as NSString).size(withAttributes: [.font: prefixFont]).width + gap }
-        let filterWidths = chip.filters.map { ($0 as NSString).size(withAttributes: filterAttributes).width + 8 }
-        let filtersWidth = filterWidths.reduce(0) { $0 + $1 + gap }
-        let labelWidth = (chip.title as NSString).size(withAttributes: labelAttributes).width
-        let width = min(maxWidth, (leading + labelWidth + filtersWidth + padding).rounded(.up))
-        let size = CGSize(width: max(width, height), height: height)
+        let natural = leading + labelWidth + badgesWidth + padding
+        let cells = min(maxCells, max(minCells, Int((natural / cell).rounded(.up))))
+        let size = CGSize(width: CGFloat(cells) * cell, height: height)
         let format = UIGraphicsImageRendererFormat(for: traits)
         let image = UIGraphicsImageRenderer(size: size, format: format).image { _ in
             traits.performAsCurrent {
-                let rect = CGRect(origin: .zero, size: size).insetBy(dx: 0.75, dy: 0.75)
+                // A 1 pt margin each side keeps neighbouring chips from touching.
+                let rect = CGRect(origin: .zero, size: size).insetBy(dx: 1.25, dy: 0.75)
                 let path = UIBezierPath(roundedRect: rect, cornerRadius: rect.height / 2)
                 palette.fill.setFill(); path.fill()
                 path.lineWidth = palette.dashed ? 1 : 1.5
@@ -87,25 +139,36 @@ import FiestaBoardRender
                 if let symbol {
                     symbol.draw(at: CGPoint(x: x, y: (size.height - symbol.size.height) / 2)); x += symbol.size.width + gap
                 }
+                if let mark {
+                    let disc = CGRect(x: x, y: (size.height - markDiameter) / 2, width: markDiameter, height: markDiameter)
+                    palette.stroke.withAlphaComponent(0.28).setFill(); UIBezierPath(ovalIn: disc).fill()
+                    let attributes: [NSAttributedString.Key: Any] = [.font: markFont, .foregroundColor: palette.text]
+                    let markSize = (mark as NSString).size(withAttributes: attributes)
+                    (mark as NSString).draw(at: CGPoint(x: disc.midX - markSize.width / 2, y: disc.midY - markSize.height / 2), withAttributes: attributes)
+                    x += markDiameter + gap
+                }
                 if let prefix {
                     let attributes: [NSAttributedString.Key: Any] = [.font: prefixFont, .foregroundColor: palette.text]
                     let prefixSize = (prefix as NSString).size(withAttributes: attributes)
                     (prefix as NSString).draw(at: CGPoint(x: x, y: (size.height - prefixSize.height) / 2), withAttributes: attributes)
                     x += prefixSize.width + gap
                 }
-                let room = max(0, size.width - x - padding - filtersWidth)
-                let style = NSMutableParagraphStyle(); style.lineBreakMode = .byTruncatingMiddle
+                // Badges keep their room; the label gives way (truncated) when the chip is capped.
+                let room = max(0, size.width - x - padding - badgesWidth)
+                let style = NSMutableParagraphStyle()
+                let isVariable: Bool = { switch chip.style { case .variable, .unknownVariable: return true; default: return false } }()
+                style.lineBreakMode = isVariable && label.contains(".") ? .byTruncatingMiddle : .byTruncatingTail
                 var attributes = labelAttributes; attributes[.paragraphStyle] = style
-                (chip.title as NSString).draw(in: CGRect(x: x, y: (size.height - labelFont.lineHeight) / 2, width: room, height: labelFont.lineHeight), withAttributes: attributes)
+                (label as NSString).draw(in: CGRect(x: x, y: (size.height - labelFont.lineHeight) / 2, width: room, height: labelFont.lineHeight), withAttributes: attributes)
                 x += min(room, labelWidth) + gap
-                // Filters are sub-chips *inside* the chip's bounds (B13).
-                for (filter, filterWidth) in zip(chip.filters, filterWidths) {
-                    let sub = CGRect(x: x, y: 3.5, width: filterWidth, height: size.height - 7)
-                    guard sub.maxX <= size.width - 4 else { break }
+                // Filters are tiny sub-chips *inside* the chip's bounds (B13).
+                for (badge, badgeWidth) in zip(badges, badgeWidths) {
+                    let sub = CGRect(x: x, y: 3.5, width: badgeWidth, height: size.height - 7)
+                    guard sub.maxX <= size.width - 3 else { break }
                     let subPath = UIBezierPath(roundedRect: sub, cornerRadius: sub.height / 2)
-                    palette.stroke.withAlphaComponent(0.22).setFill(); subPath.fill()
-                    (filter as NSString).draw(at: CGPoint(x: sub.minX + 4, y: sub.midY - filterFont.lineHeight / 2), withAttributes: filterAttributes)
-                    x += filterWidth + gap
+                    palette.stroke.withAlphaComponent(0.24).setFill(); subPath.fill()
+                    (badge as NSString).draw(at: CGPoint(x: sub.minX + 3, y: sub.midY - filterFont.lineHeight / 2), withAttributes: filterAttributes)
+                    x += badgeWidth + gap
                 }
             }
         }

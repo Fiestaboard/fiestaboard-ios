@@ -35,10 +35,47 @@ import FiestaBoardDocuments
         XCTAssertLessThan(Int(pixel[2]), 120, "blue channel")
     }
 
-    func testFiltersWidenTheChipInsideItsBounds() throws {
+    /// Re-recorded (P1, compact chips): a chip used to be as wide as its full path plus filters
+    /// (`weather.temperature|pad:3` ≈ 20 cells). It is now a whole number of document cells, at
+    /// most `maxCells`, so text after it stays on the column grid; the pad:3 badge is still drawn
+    /// inside the chip, and nothing is lost from the source or the spoken label.
+    func testChipsAreCompactWholeCellsWithFiltersInside() throws {
+        let cell = TemplateChipRenderer.cellWidth(font)
         let plain = try XCTUnwrap(attachments("{{weather.temperature}}").first)
         let filtered = try XCTUnwrap(attachments("{{weather.temperature|pad:3}}").first)
-        XCTAssertGreaterThan(filtered.bounds.width, plain.bounds.width, "the pad:3 sub-chip is drawn inside the chip")
+        let long = try XCTUnwrap(attachments("{{home_assistant.living_room_temperature|pad:3|upper}}").first)
+        let formula = try XCTUnwrap(attachments(#"{{= IF(weather.temperature>70,"HI","") }}"#).first)
+        for chip in [plain, filtered, long, formula] {
+            let cells = chip.bounds.width / cell
+            XCTAssertEqual(cells, cells.rounded(), accuracy: 0.001, "\(chip.source) is whole cells")
+            XCTAssertLessThanOrEqual(cells, CGFloat(TemplateChipRenderer.maxCells) + 0.001, "\(chip.source) is compact")
+        }
+        XCTAssertGreaterThanOrEqual(filtered.bounds.width, plain.bounds.width, "the pad:3 badge is drawn inside the chip")
+        XCTAssertEqual(filtered.source, "{{weather.temperature|pad:3}}", "the identifier and filters are kept")
+        XCTAssertEqual(filtered.fullName, "weather.temperature | pad:3")
+        XCTAssertEqual(filtered.boardWidth, 3)
+        XCTAssertEqual(long.fullName, "home_assistant.living_room_temperature | pad:3 | upper")
+        XCTAssertEqual(formula.fullName, #"ƒ IF(weather.temperature>70,"HI","")"#)
+    }
+
+    /// P1: the column guide counts a chip's *board* cells, so it means "the board ends here" on
+    /// chip rows too: pad:3 is three cells, a tile one; a bare variable is unknown on a live server.
+    func testRowFitCountsBoardCellsNotDrawnWidth() {
+        func fit(_ source: String, columns: Int = 22, variables: VariableCatalog? = nil) -> BoardDocumentContainer.RowFit {
+            let text = NSMutableAttributedString()
+            for fragment in TemplateSyntax.fragments(source) {
+                if fragment.kind == .text { text.append(NSAttributedString(string: fragment.source)) }
+                else { text.append(NSAttributedString(attachment: TemplateAttachment(fragment: fragment, font: font, variables: variables))) }
+            }
+            return BoardDocumentContainer.rowFit(text, range: NSRange(location: 0, length: text.length), columns: columns)
+        }
+        XCTAssertEqual(fit("TEMP {{weather.temperature|pad:3}}°"), .fits(remaining: 13))
+        XCTAssertEqual(fit("{{red}}{{red}}HELLO"), .fits(remaining: 15))
+        XCTAssertEqual(fit("TEMP {{weather.temperature}}"), .unknown)
+        XCTAssertEqual(fit("TEMP {{weather.temperature}}", variables: .sample(authoritative: true)), .fits(remaining: 15), "the demo's sample value is 72")
+        XCTAssertEqual(fit("ABCDEFGHIJKLMNOPQRS{{weather.temperature|pad:6}}"), .cut(index: 19, fraction: 0.5))
+        XCTAssertEqual(fit("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), .cut(index: 22, fraction: 0))
+        XCTAssertEqual(fit("HI{{fill_space}}THERE"), .fits(remaining: 0))
     }
 
     func testAccessibilityLabels() {

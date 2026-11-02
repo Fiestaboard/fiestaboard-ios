@@ -253,6 +253,45 @@ import XCTest
         XCTAssertTrue(app.buttons["Compose text"].waitForExistence(timeout: 10), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
     }
 
+    /// P1 compact chips (fixture "Good Morning"): a variable chip is a short label (the field, with
+    /// its source as a small mark) no wider than a few board cells; a tap shows its full name and
+    /// filters in a callout, whose Edit opens the exact source. The chip stays one character.
+    func testCompactChipCalloutShowsTheFullName() throws {
+        let app = XCUIApplication()
+        try connectToFixture(app, scenario: "manual")
+        openPages(app)
+        let row = app.staticTexts["Good Morning"].firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
+        app.buttons["editLocalDraft"].tap()
+        let document = app.textViews["boardDocument"]
+        XCTAssertTrue(document.waitForExistence(timeout: 8), app.debugDescription)
+        XCTAssertTrue(waitForStage(app, timeout: 5) { $0.first?.contains("GOOD MORNING") == true }, "\(stageLines(app))")
+        attach(app, "P1-1-chips-\(device())")
+        // Row 2 starts with the pad:3 chip: tap its middle.
+        let charWidth = ("M" as NSString).size(withAttributes: [.font: UIFont.monospacedSystemFont(ofSize: UIFont.preferredFont(forTextStyle: .body).pointSize, weight: .regular)]).width
+        let gutter = app.staticTexts["documentRow_2"]
+        XCTAssertTrue(gutter.waitForExistence(timeout: 3))
+        let chip = document.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 9 + 2 * charWidth, dy: gutter.frame.midY - document.frame.minY))
+        chip.tap()
+        let callout = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "weather.temperature | pad:3")).firstMatch
+        XCTAssertTrue(callout.waitForExistence(timeout: 4), "The callout names the variable and its filter")
+        attach(app, "P1-1-chip-callout-\(device())")
+        callout.tap()
+        let tokenSource = app.textFields["tokenSource"]
+        XCTAssertTrue(tokenSource.waitForExistence(timeout: 4), "Edit opens the chip's source")
+        XCTAssertEqual(tokenSource.value as? String, "{{weather.temperature|pad:3}}")
+        app.navigationBars.buttons["Cancel"].tap()
+        XCTAssertTrue(source(document).components(separatedBy: "\n")[1].hasPrefix("{{weather.temperature|pad:3}}"), source(document))
+        // Keyboard up: the chips and the stage together.
+        placeCaret(row: 3, app, document)
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5))
+        attach(app, "P1-1-chips-keyboard-up-\(device())")
+        app.buttons["editorHideKeyboard"].tap()
+        app.navigationBars.buttons["Close"].tap()
+        let discard = app.buttons["Discard and leave"]
+        if discard.waitForExistence(timeout: 2) { discard.tap() }
+    }
+
     /// B19 through the fixture's `POST /templates/render` (table + toy fallback): typing in the
     /// Lobby page reaches the board via a real request/response, within 750 ms of the last key.
     func testTypingReachesTheBoardThroughFixtureRender() throws {

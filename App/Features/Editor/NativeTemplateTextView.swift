@@ -255,12 +255,35 @@ final class TemplateUITextView: UITextView {
 @MainActor final class TemplateAttachment: NSTextAttachment {
     let source: String
     let chip: TemplateChip?
+    /// Board cells this token fills, when known before the server renders (P1 column guide): from
+    /// its filters, or from the catalog's sample value when the catalog is the server's own.
+    let boardWidth: Int?
     private(set) var outlined = false
     private var font: UIFont
 
+    /// The token's full name for the tap callout: `weather.temperature | pad:3`, `= IF(…)`.
+    var fullName: String {
+        var inner = source.hasPrefix("{{") ? String(source.dropFirst(2).dropLast(2)) : String(source.dropFirst().dropLast())
+        inner = inner.trimmingCharacters(in: .whitespaces)
+        guard let chip else { return inner }
+        switch chip.style {
+        case .variable, .unknownVariable: return ([chip.title] + chip.filters).joined(separator: " | ")
+        case .formula:
+            if inner.hasPrefix("=") { inner = String(inner.dropFirst()).trimmingCharacters(in: .whitespaces) }
+            return "ƒ " + (inner.isEmpty ? chip.title : inner)
+        default: return inner
+        }
+    }
+
     init(fragment: TemplateSyntax.Fragment, font: UIFont, variables: VariableCatalog? = nil, traits: UITraitCollection = .current) {
         source = fragment.source
-        chip = TemplateChip(fragment: fragment, variables: variables)
+        let chip = TemplateChip(fragment: fragment, variables: variables)
+        self.chip = chip
+        let sample: Int? = {
+            guard let variables, variables.isAuthoritative, let chip, case .variable = chip.style else { return nil }
+            return variables.preview(of: chip.title)?.count
+        }()
+        boardWidth = chip?.boardWidth(sampleLength: sample)
         self.font = font
         super.init(data: nil, ofType: nil)
         accessibilityLabel = chip?.accessibilityLabel ?? fragment.label
