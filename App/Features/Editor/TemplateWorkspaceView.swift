@@ -8,6 +8,8 @@ import FiestaBoardEditorState
     let model: LocalPageEditorModel
     let buffer: DocumentBuffer
     let pipeline: PreviewPipeline
+    /// The server's catalogs (iOS-F1); nil falls back to the built-in sample.
+    var catalog: EditorCatalogStore? = nil
 
     var alignment: String { model.lineAlignment(buffer.caretRow) }
     var wrap: Bool { model.lineWrap(buffer.caretRow) }
@@ -44,11 +46,17 @@ import FiestaBoardEditorState
         buffer.insert(source)
     }
     func insertFormula() { guard enabled else { return }; commitNow(); buffer.requestFormula() }
-    /// The variables the menus offer and the chips check. Wave 2: the built-in sample, which may
-    /// only warn about unknown variables in the demo (whose variables it is); iOS-F1 swaps in
-    /// the server's `GET /v1/variables` and makes it authoritative everywhere.
-    var variables: VariableCatalog { .sample(authoritative: model.isSimulated) }
-    var pickers: InsertPickers { InsertPickers(variables: variables, onInsert: insert, onFormula: insertFormula) }
+    /// Variables / Colors / Formatting: a searchable picker in a sheet (iOS-F1, B22).
+    func openPicker(_ kind: InsertPickerKind) { guard enabled else { return }; commitNow(); buffer.requestPicker(kind) }
+    /// The variables the pickers offer and the chips check: the server's `GET /v1/variables`
+    /// (authoritative), else the built-in sample, which may only warn about unknown variables in
+    /// the demo (whose variables it is).
+    var variables: VariableCatalog { catalog?.variables ?? .sample(authoritative: model.isSimulated) }
+    var pickers: InsertPickers {
+        InsertPickers(variables: variables, onInsert: insert, onFormula: insertFormula, onPicker: openPicker,
+                      variablesEnabled: catalog?.variablesAvailable ?? true,
+                      colorsShown: catalog?.colorsAvailable ?? true, formattingShown: catalog?.formattingAvailable ?? true)
+    }
     func redo() { commitNow(); model.redo(); commitNow() }
 }
 
@@ -58,13 +66,17 @@ struct DocumentToolbar: View {
     @ObservedObject var buffer: DocumentBuffer
     var pipeline: PreviewPipeline
     @Binding var rich: Bool
+    @EnvironmentObject private var catalog: EditorCatalogStore
+    /// Draw on board (iOS-F1) slots in before the insert buttons.
+    var slots: AnyView? = nil
 
     var body: some View {
-        let commands = DocumentCommands(model: model, buffer: buffer, pipeline: pipeline)
+        let commands = DocumentCommands(model: model, buffer: buffer, pipeline: pipeline, catalog: catalog)
         EditorToolbar(alignment: commands.alignment, wrap: commands.wrap,
                       canUndo: commands.canUndo, canRedo: commands.canRedo, enabled: commands.enabled,
                       pickers: commands.pickers,
-                      onUndo: commands.undo, onRedo: commands.redo, onAlign: commands.align, onWrap: commands.setWrap)
+                      onUndo: commands.undo, onRedo: commands.redo, onAlign: commands.align, onWrap: commands.setWrap,
+                      slots: slots)
     }
 }
 
@@ -78,6 +90,7 @@ struct TemplateWorkspaceView: View {
     @Binding var isTextInputActive: Bool
     @Binding var rich: Bool
     @State private var tokenEditing: TokenEditing?
+    @EnvironmentObject private var catalog: EditorCatalogStore
 
     private var geometry: TemplateGeometry? { model.authoringGeometry }
     var boardRows: Int { geometry?.rows ?? 6 }
@@ -107,18 +120,20 @@ struct TemplateWorkspaceView: View {
         let rows = buffer.rows
         let count = Self.lineCount(rows, boardRows: boardRows)
         let overflow = count > boardRows
-        let commands = DocumentCommands(model: model, buffer: buffer, pipeline: pipeline)
+        let commands = DocumentCommands(model: model, buffer: buffer, pipeline: pipeline, catalog: catalog)
         VStack(alignment: .leading, spacing: 6) {
             BoardDocumentView(buffer: buffer, sessionRows: Self.displayRows((rich ? model.lines : model.plainLines) ?? [], boardRows: boardRows),
                               boardRows: boardRows, rich: rich, uppercase: uppercase, editable: !model.editingFrozen,
                               onEdited: { pipeline.edited() }, onCommitNow: { commands.commitNow() },
                               onFocusChange: { isTextInputActive = $0 },
                               accessory: .init(alignment: commands.alignment, wrap: commands.wrap,
-                                               canUndo: commands.canUndo, canRedo: commands.canRedo, enabled: commands.enabled),
+                                               canUndo: commands.canUndo, canRedo: commands.canRedo, enabled: commands.enabled,
+                                               variablesEnabled: catalog.variablesAvailable,
+                                               colorsShown: catalog.colorsAvailable, formattingShown: catalog.formattingAvailable),
                               onUndo: commands.undo, onRedo: commands.redo, onAlign: commands.align, onWrap: commands.setWrap,
                               onEditToken: { source, range in editToken(source, range, commands) },
                               variables: commands.variables, boardColumns: boardColumns,
-                              onInsert: commands.insert, onFormula: commands.insertFormula)
+                              onInsert: commands.insert, onFormula: commands.insertFormula, onPicker: commands.openPicker)
                 // Hugs its rows (B33: the board stays the largest element); scrolls when capped.
                 .frame(minHeight: 80, idealHeight: Self.documentHeight(rows: max(rows.count, boardRows)))
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(overflow ? Color.orange : Color(uiColor: .separator), lineWidth: overflow ? 2 : 0.5))
@@ -157,6 +172,15 @@ struct TemplateWorkspaceView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .accessibilityIdentifier("unknownVariableIssue")
             }
+            if rich, catalog.isLoaded, !catalog.variablesAvailable {
+                // B32: no plugins on this server.
+                Label(CatalogStrings.noVariables, systemImage: "puzzlepiece.extension")
+                    .font(.footnote).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(CatalogStrings.noVariables)
+                    .accessibilityIdentifier("noVariablesNote")
+            }
             if overflow {
                 Label(EditorStrings.overflowWarning(limit: boardRows), systemImage: "exclamationmark.triangle.fill")
                     .font(.footnote).foregroundStyle(.orange)
@@ -167,9 +191,15 @@ struct TemplateWorkspaceView: View {
             }
         }
         .sheet(item: $buffer.formulaRequest, onDismiss: { buffer.focus() }) { request in
-            FormulaInsertSheet(initialExpression: request.expression) { source in
+            // iOS-F1 (B21): catalogs, colouring and live validation.
+            FormulaEditorSheet(store: catalog, initialExpression: request.expression, isEditing: request.replacing != nil) { source in
                 if let range = request.replacing { buffer.replace(sourceRange: range, with: source, rich: rich) }
                 else { buffer.insertAfterSheet(source) }
+            }
+        }
+        .sheet(item: $buffer.pickerRequest, onDismiss: { buffer.focus() }) { kind in
+            InsertPickerSheet(kind: kind, store: catalog, drawsHeart: geometry.map { $0.rows == 3 && $0.columns == 15 } ?? false) { source in
+                buffer.insertAfterSheet(source)
             }
         }
         .sheet(item: $tokenEditing) { draft in

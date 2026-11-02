@@ -26,6 +26,10 @@ struct PreviewStage: View {
     /// The page's board shape and its change (PLAN B20); nil hides the size section.
     var geometry: PageGeometry? = nil
     var onChooseGeometry: ((PageGeometry) -> Void)? = nil
+    /// Draw mode (iOS-F1, B23): tiles change at once (no flip), and a layer over the board
+    /// takes the drag. Given the board's unstretched size and its display model.
+    var animated = true
+    var drawOverlay: ((CGSize, DisplayModel) -> AnyView)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -135,7 +139,8 @@ struct PreviewStage: View {
             .accessibilityIdentifier("boardStage")
             .accessibilityValue(lines.joined(separator: "\n"))
         } else {
-            StageBoard(lines: lines, rows: rows, cols: cols, isPanel: isPanel, loading: state.adoptedRenders == 0 && state.isUpdating)
+            StageBoard(lines: lines, rows: rows, cols: cols, isPanel: isPanel, loading: state.adoptedRenders == 0 && state.isUpdating,
+                       animated: animated, drawOverlay: drawOverlay)
                 .accessibilityIdentifier("boardStage")
         }
     }
@@ -150,6 +155,8 @@ struct StageBoard: View {
     var cols: Int
     var isPanel: Bool
     var loading: Bool
+    var animated = true
+    var drawOverlay: ((CGSize, DisplayModel) -> AnyView)? = nil
 
     private var deviceType: String {
         if isPanel { return "panel" }
@@ -173,8 +180,10 @@ struct StageBoard: View {
                 let natural = proxy.size.width / aspect
                 let stretch = min(Self.maxStretch, max(1, proxy.size.height / max(natural, 1)))
                 BoardFrameView(frame: BoardFrame.fromLines(lines, rows: rows, cols: cols), model: model,
-                               size: .fit, animated: true, loading: loading)
+                               size: .fit, animated: animated, loading: loading)
                     .frame(width: proxy.size.width, height: natural)
+                    // Inside the stretch: the overlay's drag locations are board coordinates.
+                    .overlay { drawOverlay?(CGSize(width: proxy.size.width, height: natural), model) }
                     .scaleEffect(x: 1, y: stretch, anchor: .top)
                     .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
             }

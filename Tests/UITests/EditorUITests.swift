@@ -415,9 +415,11 @@ import XCTest
         let document = openNewPage(app, name: "Chips")
         placeCaret(row: 1, app, document)
         document.typeText("TEMP ")
-        pick(app, "accessory_variables", ["Weather", "insertVariable_weather.temperature"])
+        // Re-recorded (iOS-F1): Variables is a searchable picker in a sheet (B22), not a menu, so
+        // there is no plugin submenu to open and the keyboard comes back when the sheet closes.
+        pick(app, "accessory_variables", ["insertVariable_weather.temperature"])
         XCTAssertTrue(waitForCondition(timeout: 3) { self.source(document).hasPrefix("TEMP {{weather.temperature}}") }, source(document))
-        XCTAssertTrue(app.keyboards.firstMatch.exists, "The keyboard stays up after a menu insert")
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 3), "The keyboard is back after the picker inserts")
         document.typeText(" ")
         pick(app, "accessory_colors", ["insertColor_red"])
         XCTAssertTrue(waitForCondition(timeout: 3) { self.source(document).hasPrefix("TEMP {{weather.temperature}} {{red}}") }, source(document))
@@ -430,8 +432,13 @@ import XCTest
         app.buttons["accessory_formula"].tap()
         let expression = app.textFields["formulaExpression"].exists ? app.textFields["formulaExpression"] : app.textViews["formulaExpression"]
         XCTAssertTrue(expression.waitForExistence(timeout: 3))
+        expression.tap()
         expression.typeText(#"IF(weather.temperature > 70, "WARM", "COOL")"#)
-        app.buttons["formulaInsert"].tap()
+        // Re-recorded (iOS-F1): the formula editor (B21) enables Insert (`formulaConfirm`) only once
+        // the expression has validated.
+        let insert = app.buttons["formulaConfirm"]
+        XCTAssertTrue(waitForCondition(timeout: 4) { insert.isEnabled })
+        insert.tap()
         XCTAssertTrue(waitForCondition(timeout: 3) { self.source(document).components(separatedBy: "\n").dropFirst().first == #"{{= IF(weather.temperature > 70, "WARM", "COOL") }}"# }, source(document))
         XCTAssertTrue(waitForStage(app) { $0.count > 1 && $0[1] == "WARM" }, "\(stageLines(app))")
         // Backspace right after the pill deletes the whole pill (one character for the caret).

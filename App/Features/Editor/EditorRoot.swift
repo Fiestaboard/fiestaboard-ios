@@ -26,6 +26,11 @@ struct EditorRoot: View {
     @RootState private var toast: String?
     @RootState private var titleDraft = ""
     @RootState private var started = false
+    /// The server's variables and functions (iOS-F1, B21/B22/B32), shared with the pickers.
+    @StateObject private var catalog = EditorCatalogStore()
+    /// Draw on board (iOS-F1, B23).
+    @StateObject private var draw = DrawModeController()
+    @RootState private var drawMode = false
 
     init(model: LocalPageEditorModel) {
         self.model = model
@@ -53,10 +58,20 @@ struct EditorRoot: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             if let reason = saveDisabledReason { saveReason(reason) }
+            if drawMode {
+                // B23: the rows collapse; the toolbar becomes swatches, eraser and stamps; the board
+                // takes the width and paints as you drag.
+                title
+                DrawModeBar(controller: draw, canUndo: model.canUndo, canRedo: model.canRedo,
+                            onUndo: { model.undo(); pipeline.flush() }, onRedo: { model.redo(); pipeline.flush() },
+                            onDone: endDrawing)
+                stage.padding(.top, 8)
+                Spacer(minLength: 0)
+            } else {
             if !compactTyping {
                 title
                 // The toolbar sits directly under the title (B12/B15); the keyboard accessory mirrors it.
-                DocumentToolbar(model: model, buffer: buffer, pipeline: pipeline, rich: $rich)
+                DocumentToolbar(model: model, buffer: buffer, pipeline: pipeline, rich: $rich, slots: drawSlot)
             }
             StageDocumentLayout(minDocumentWidth: TemplateWorkspaceView.documentWidth(columns: boardCols),
                                 minDocumentHeight: TemplateWorkspaceView.documentHeight(rows: min(boardRows, 3))) {
@@ -73,7 +88,9 @@ struct EditorRoot: View {
                 }
             }
             .padding(.top, compactTyping ? 0 : 8)
+            }
         }
+        .environmentObject(catalog)
         .animation(.easeInOut(duration: 0.2), value: compactTyping)
         .padding(.horizontal, sizeClass == .compact ? 12 : 16).padding(.top, compactTyping ? 4 : 14).padding(.bottom, 8)
         .frame(maxWidth: 1180, maxHeight: .infinity, alignment: .top)
@@ -111,6 +128,7 @@ struct EditorRoot: View {
             pipeline.flush()
             await model.checkRecovery()
         }
+        .task { await catalog.load(deploymentID: model.identity.deploymentID, isSimulated: model.isSimulated) }
         .onChange(of: model.name) { _, name in if name != titleDraft { titleDraft = name } }
         .onChange(of: model.selectedBoardID) { _, _ in pipeline.targetChanged() }
         // Recovery, reload or a save changed the session on its own: show its render.
@@ -198,13 +216,55 @@ struct EditorRoot: View {
         .accessibilityIdentifier("saveDisabledReason")
     }
 
+    // MARK: Draw on board (iOS-F1, B23)
+
+    /// Split-flap pages with a cell stage only (LED faces and pixel surfaces have their own canvas).
+    private var canDraw: Bool { !isPanel && physicalFrame == nil && model.lines != nil && !model.editingFrozen }
+    private var drawSlot: AnyView? {
+        guard canDraw else { return nil }
+        return AnyView(Button(action: startDrawing) {
+            Image(systemName: "pencil.tip.crop.circle").frame(width: 34, height: 32).contentShape(Rectangle())
+        }
+        .buttonStyle(.borderless)
+        .help(EditorStrings.drawOnBoard).contextMenu { Text(EditorStrings.drawOnBoard) }
+        .accessibilityLabel(EditorStrings.drawOnBoard)
+        .accessibilityIdentifier("toolbar_draw"))
+    }
+    private func startDrawing() {
+        pipeline.flush()
+        buffer.resignFocus()
+        draw.cancel()
+        drawMode = true
+    }
+    private func endDrawing() {
+        draw.cancel()
+        drawMode = false
+        pipeline.flush()
+    }
+    private func commitStroke() {
+        guard let stroke = draw.finish(rows: model.lines ?? [], cols: boardCols) else { return }
+        model.applyStroke(stroke)
+        UIAccessibility.post(notification: .announcement, argument: "Painted \(stroke.paintedRows.count) row\(stroke.paintedRows.count == 1 ? "" : "s")")
+    }
+    /// While drawing, painted and positional left-aligned rows are drawn locally at once; the
+    /// rest keep the server's last render (web `drawPreviewMessage`).
+    private var drawStageLines: [String] {
+        StrokeTransaction.preview(rows: model.lines ?? [], serverLines: stageLines,
+                                  alignment: { model.lineAlignment($0) }, wrap: { model.lineWrap($0) },
+                                  pending: draw.pending, brush: draw.brush, boardRows: boardRows, cols: boardCols)
+    }
+
     private var stage: some View {
-        PreviewStage(lines: stageLines, rows: boardRows, cols: boardCols, isPanel: isPanel, physical: physicalFrame,
+        PreviewStage(lines: drawMode ? drawStageLines : stageLines, rows: boardRows, cols: boardCols, isPanel: isPanel, physical: physicalFrame,
                      state: pipeline.state, boards: model.boards, selectedBoardID: model.selectedBoardID,
                      fitNote: fitNote, footnote: stageFootnote, disabled: model.editingFrozen,
                      onChooseBoard: { model.chooseBoard($0) }, onRetry: { pipeline.retry() }, onRefresh: { pipeline.flush() },
                      geometry: model.pageGeometry,
-                     onChooseGeometry: { shape in pipeline.flush(); model.setGeometry(shape); pipeline.flush() })
+                     onChooseGeometry: { shape in pipeline.flush(); model.setGeometry(shape); pipeline.flush() },
+                     animated: !drawMode,
+                     drawOverlay: drawMode ? { size, displayModel in
+                         AnyView(DrawCanvasOverlay(size: size, model: displayModel, controller: draw, onCommit: commitStroke))
+                     } : nil)
     }
 
     // MARK: Toolbar

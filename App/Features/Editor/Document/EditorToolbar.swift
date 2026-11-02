@@ -31,9 +31,10 @@ struct EditorToolbar: View {
     private var row: some View {
         HStack(spacing: 2) {
             if let slots { slots; divider }
-            menu(EditorStrings.variables, "curlybraces", id: "toolbar_variables") { pickers.variablesMenu }
-            menu(EditorStrings.colors, "paintpalette", id: "toolbar_colors") { pickers.colorsMenu }
-            menu(EditorStrings.formatting, "textformat", id: "toolbar_formatting") { pickers.formattingMenu }
+            // iOS-F1: searchable pickers in a sheet (B22) instead of the wave-2 menus.
+            button(EditorStrings.variables, "curlybraces", id: "toolbar_variables", disabled: !pickers.variablesEnabled) { pickers.onPicker(.variables) }
+            if pickers.colorsShown { button(EditorStrings.colors, "paintpalette", id: "toolbar_colors") { pickers.onPicker(.colors) } }
+            if pickers.formattingShown { button(EditorStrings.formatting, "textformat", id: "toolbar_formatting") { pickers.onPicker(.formatting) } }
             button(EditorStrings.insertFormula, "function", id: "toolbar_formula") { pickers.onFormula() }
             divider
             button(EditorStrings.undo, "arrow.uturn.backward", id: "toolbar_undo", disabled: !canUndo) { onUndo() }
@@ -54,14 +55,6 @@ struct EditorToolbar: View {
             .frame(width: 34, height: 32)
             .background(selected ? Color.accentColor.opacity(0.18) : .clear, in: RoundedRectangle(cornerRadius: 7))
             .contentShape(Rectangle())
-    }
-
-    private func menu<Content: View>(_ title: String, _ symbol: String, id: String, @ViewBuilder content: () -> Content) -> some View {
-        Menu { content() } label: { icon(symbol, selected: false) }
-            .menuStyle(.button).buttonStyle(.borderless)
-            .help(title)
-            .accessibilityLabel(title)
-            .accessibilityIdentifier(id)
     }
 
     private func button(_ title: String, _ symbol: String, id: String, selected: Bool = false, disabled: Bool = false, action: @escaping () -> Void) -> some View {
