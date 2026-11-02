@@ -81,6 +81,11 @@ public struct DocumentEditingSession: Sendable {
     public mutating func setGeometry(_ geometry: PageGeometry) throws {
         var candidate = document
         try candidate.setGeometry(geometry)
+        // Empty rows past the new board's last row are padding, not content: drop them in the same step.
+        if var rows = candidate.editableTemplateLines {
+            while rows.count > geometry.rows, rows.last?.isEmpty == true { rows.removeLast() }
+            if rows.count != candidate.editableTemplateLines?.count { try candidate.replaceTemplateRows(rows) }
+        }
         try adopt(candidate, action: "Change board size")
     }
     public mutating func setLineAlignment(at index: Int, alignment: String) throws {

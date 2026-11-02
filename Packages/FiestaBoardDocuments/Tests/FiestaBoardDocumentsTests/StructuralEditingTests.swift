@@ -95,5 +95,8 @@ final class StructuralEditingTests: XCTestCase {
         try session.setGeometry(.note)
         try session.undo()
         XCTAssertEqual(session.document, original, "one undo step restores the shape")
+        var padded = try DocumentEditingSession(data: Data(#"{"type":"template","template":["A","","","B","",""]}"#.utf8))
+        try padded.setGeometry(.note)
+        XCTAssertEqual(padded.document.templateLines, ["A", "", "", "B"], "only trailing empty rows past the board go")
     }
 }

@@ -25,6 +25,11 @@
       "sha256": "6a81d90e6b755440ad813c43ef2e5b18a5b5666a92b5e401fb55745a560d2880",
       "writer": "iOS-E1",
       "date": "2026-10-31"
+    },
+    "terminology.json": {
+      "sha256": "c1acbd1b5598373056f98649ce9105078f4b8b8ccf921ee9b3322b6f4dd2a527",
+      "writer": "iOS-E2",
+      "date": "2026-11-01"
     }
   }
 }
