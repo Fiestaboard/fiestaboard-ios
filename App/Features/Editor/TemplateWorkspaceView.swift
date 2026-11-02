@@ -21,7 +21,9 @@ import FiestaBoardEditorState
     /// Toolbar actions on a row the session doesn't store yet (a new page's display padding)
     /// first store the visible rows.
     private func ensureRowStored(_ row: Int) {
-        if row >= (model.lines?.count ?? 0) { model.commitRows(buffer.rows); buffer.markCommitted() }
+        guard row >= (model.lines?.count ?? 0) else { return }
+        if buffer.plainMode { model.commitPlainRows(buffer.rows) } else { model.commitRows(buffer.rows) }
+        buffer.markCommitted()
     }
     private func selectedRows() -> [Int] { Array(buffer.caretRows).filter { $0 < max(buffer.rows.count, 1) } }
     func align(_ alignment: String) {
@@ -107,7 +109,7 @@ struct TemplateWorkspaceView: View {
         let overflow = count > boardRows
         let commands = DocumentCommands(model: model, buffer: buffer, pipeline: pipeline)
         VStack(alignment: .leading, spacing: 6) {
-            BoardDocumentView(buffer: buffer, sessionRows: Self.displayRows(model.lines ?? [], boardRows: boardRows),
+            BoardDocumentView(buffer: buffer, sessionRows: Self.displayRows((rich ? model.lines : model.plainLines) ?? [], boardRows: boardRows),
                               boardRows: boardRows, rich: rich, uppercase: uppercase, editable: !model.editingFrozen,
                               onEdited: { pipeline.edited() }, onCommitNow: { commands.commitNow() },
                               onFocusChange: { isTextInputActive = $0 },
@@ -131,6 +133,15 @@ struct TemplateWorkspaceView: View {
                 .pickerStyle(.segmented).frame(maxWidth: 128).controlSize(.small)
                 .disabled(!commands.enabled)
                 .accessibilityIdentifier("editingMode")
+            }
+            if !rich {
+                VStack(alignment: .leading, spacing: 3) {
+                    ForEach(EditorStrings.plainHelp, id: \.self) { line in
+                        Text("• " + line).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("plainHelp")
             }
             ForEach(Array(unknownVariables(rows, commands.variables).prefix(3).enumerated()), id: \.offset) { _, issue in
                 Label { Text(issue) } icon: { Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.orange) }

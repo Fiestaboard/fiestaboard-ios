@@ -10,6 +10,8 @@ import FiestaBoardEditorState
     @Published private(set) var rows: [String] = []
     /// Rows touched by the caret or selection.
     @Published private(set) var caretRows: ClosedRange<Int> = 0...0
+    /// Plain mode: rows carry `{wrap}`/alignment prefixes and commit through `commitPlainRows`.
+    var plainMode = false
     /// The buffer has typing the session has not seen yet.
     private(set) var isDirty = false
     /// Source last pushed from the session; the session wins only when it changes on its own.
@@ -110,6 +112,7 @@ struct BoardDocumentView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> BoardDocumentContainer {
         let container = BoardDocumentContainer()
+        buffer.plainMode = !rich
         container.boardColumns = boardColumns
         container.dimsOverflow = rich
         let view = container.textView
@@ -151,6 +154,7 @@ struct BoardDocumentView: UIViewRepresentable {
             || coordinator.parent.variables != variables || coordinator.parent.boardColumns != boardColumns
         coordinator.parent = self
         let view = container.textView
+        buffer.plainMode = !rich
         view.variables = variables
         container.boardColumns = boardColumns
         container.dimsOverflow = rich

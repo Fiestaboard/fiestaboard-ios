@@ -17,10 +17,12 @@ struct EditorRoot: View {
     @StateObject private var buffer: DocumentBuffer
     @StateObject private var pipeline: PreviewPipeline
     @RootState private var isTextInputActive = false
-    @RootState private var rich = true
+    /// Rich | Plain persists across launches (PLAN B18).
+    @AppStorage("editor.richMode") private var rich = true
     @RootState private var confirmClose = false
     @RootState private var confirmReload = false
     @RootState private var showDetails = false
+    @RootState private var confirmResize = false
     @RootState private var toast: String?
     @RootState private var titleDraft = ""
     @RootState private var started = false
@@ -32,7 +34,7 @@ struct EditorRoot: View {
         _pipeline = StateObject(wrappedValue: PreviewPipeline(
             commit: { [weak model, weak buffer] in
                 guard let model, let buffer, buffer.isDirty else { return }
-                model.commitRows(buffer.rows)
+                if buffer.plainMode { model.commitPlainRows(buffer.rows) } else { model.commitRows(buffer.rows) }
                 buffer.markCommitted()
                 model.scheduleDraftSave()
             },
@@ -94,6 +96,11 @@ struct EditorRoot: View {
             Button(EditorStrings.keepLocalWork, role: .cancel) {}
         } message: { Text(EditorStrings.reloadMessage) }
         .sheet(isPresented: $showDetails) { DocumentDetailsSheet(model: model) }
+        .confirmationDialog(EditorStrings.resizeTitle, isPresented: $confirmResize, titleVisibility: .visible) {
+            Button(EditorStrings.resizeAndSave, role: .destructive) { save(confirmedResize: true) }
+                .accessibilityIdentifier("resizeAndSave")
+            Button(EditorStrings.keepEditing, role: .cancel) {}
+        } message: { Text(EditorStrings.resizeMessage) }
         .task {
             guard !started else { return }
             started = true
@@ -186,7 +193,9 @@ struct EditorRoot: View {
         PreviewStage(lines: stageLines, rows: boardRows, cols: boardCols, isPanel: isPanel, physical: physicalFrame,
                      state: pipeline.state, boards: model.boards, selectedBoardID: model.selectedBoardID,
                      fitNote: nil, footnote: stageFootnote, disabled: model.editingFrozen,
-                     onChooseBoard: { model.chooseBoard($0) }, onRetry: { pipeline.retry() }, onRefresh: { pipeline.flush() })
+                     onChooseBoard: { model.chooseBoard($0) }, onRetry: { pipeline.retry() }, onRefresh: { pipeline.flush() },
+                     geometry: model.pageGeometry,
+                     onChooseGeometry: { shape in pipeline.flush(); model.setGeometry(shape); pipeline.flush() })
     }
 
     // MARK: Toolbar
@@ -274,10 +283,12 @@ struct EditorRoot: View {
         model.endEditingSession()
         dismiss()
     }
-    private func save() {
+    private func save(confirmedResize: Bool = false) {
         pipeline.flush()
         buffer.resignFocus()
         guard model.canSaveToServer else { return }
+        // B28: shrinking a saved page's board asks first.
+        if model.geometryShrinks && !confirmedResize { confirmResize = true; return }
         Task {
             await model.saveToServer()
             guard model.remoteStatus == .idle, !model.hasServerChanges else { return }

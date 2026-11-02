@@ -115,3 +115,84 @@ public struct TemplateGeometry: Equatable, Sendable {
         }
     }
 }
+
+/// A legacy page's board shape as stored (`device_type` + `notes_*` / `grid_*`), PLAN B20.
+public struct PageGeometry: Equatable, Sendable, Hashable {
+    public let deviceType: String
+    public let notesWide: Int?
+    public let notesTall: Int?
+    public let gridRows: Int?
+    public let gridCols: Int?
+    public static let keys = ["device_type", "notes_wide", "notes_tall", "grid_rows", "grid_cols"]
+
+    public init(deviceType: String, notesWide: Int? = nil, notesTall: Int? = nil, gridRows: Int? = nil, gridCols: Int? = nil) {
+        self.deviceType = deviceType; self.notesWide = notesWide; self.notesTall = notesTall
+        self.gridRows = gridRows; self.gridCols = gridCols
+    }
+    public static let flagship = PageGeometry(deviceType: "flagship")
+    public static let note = PageGeometry(deviceType: "note")
+    public static func noteArray(wide: Int, tall: Int) -> PageGeometry { PageGeometry(deviceType: "note_array", notesWide: wide, notesTall: tall) }
+    public static func panel(rows: Int, cols: Int) -> PageGeometry { PageGeometry(deviceType: "panel", gridRows: rows, gridCols: cols) }
+
+    public var rows: Int {
+        switch deviceType {
+        case "note": 3
+        case "note_array": 3 * (notesTall ?? 1)
+        case "panel": gridRows ?? 6
+        default: 6
+        }
+    }
+    public var columns: Int {
+        switch deviceType {
+        case "note": 15
+        case "note_array": 15 * (notesWide ?? 1)
+        case "panel": gridCols ?? 22
+        default: 22
+        }
+    }
+    /// True when this shape is smaller than `other` in either direction (content may be cut off).
+    public func shrinks(from other: PageGeometry) -> Bool { rows < other.rows || columns < other.columns }
+}
+
+extension PageDocument {
+    /// The stored shape, or nil when it isn't one the editor understands.
+    public var geometry: PageGeometry? {
+        guard let shape = TemplateGeometry(document: self) else { return nil }
+        func int(_ key: String) -> Int? { if case .number(let n) = root[key] { return Int(n) }; return nil }
+        switch root["device_type"] {
+        case .string("note"): return .note
+        case .string("note_array"): return .noteArray(wide: int("notes_wide") ?? 1, tall: int("notes_tall") ?? 1)
+        case .string("panel"): return .panel(rows: shape.rows, cols: shape.columns)
+        default: return .flagship
+        }
+    }
+
+    /// Changes the page's board shape (PLAN B20/§2.4). Writes only the keys the new shape needs;
+    /// every other key, including the old shape's now-unused ones, keeps its exact bytes (the
+    /// server ignores `notes_*` off note arrays and clears `grid_*` off panels itself).
+    public mutating func setGeometry(_ geometry: PageGeometry) throws {
+        guard pageType == "template", editableTemplateLines != nil else { throw DocumentError.unsupportedTemplate }
+        func number(_ value: Int?, _ range: ClosedRange<Int>) throws -> LosslessJSON {
+            guard let value, range.contains(value) else { throw DocumentError.invalidLine }
+            return .number(String(value))
+        }
+        var candidate = root
+        switch geometry.deviceType {
+        case "flagship", "note": break
+        case "note_array":
+            candidate["notes_wide"] = try number(geometry.notesWide, 1...8)
+            candidate["notes_tall"] = try number(geometry.notesTall, 1...8)
+        case "panel":
+            candidate["grid_rows"] = try number(geometry.gridRows, 3...96)
+            candidate["grid_cols"] = try number(geometry.gridCols, 10...128)
+        default: throw DocumentError.unsupportedTemplate
+        }
+        if self.geometry == geometry { return }
+        candidate["device_type"] = .string(geometry.deviceType)
+        // Keep an unchanged number's lexeme ("2" vs "2.0") when the value is the same.
+        for key in ["notes_wide", "notes_tall", "grid_rows", "grid_cols"] {
+            if let old = root[key], case .number(let a) = old, case .number(let b)? = candidate[key], Int(a) == Int(b) { candidate[key] = old }
+        }
+        root = candidate
+    }
+}

@@ -1,4 +1,5 @@
 import Foundation
+import FiestaBoardDocuments
 
 /// The editor's user-facing labels (iOS-E1's `Strings+Editor.swift`, merged here by iOS-E2).
 /// Wording follows the web's terms (`reports/web-terminology-glossary.md`); `TerminologyTests`
@@ -30,6 +31,25 @@ enum EditorStrings {
     static let formulaFooter = "The server works out the value each time the board updates."
     static let formulaExamples = "Examples"
     static let editingMode = "Editing mode"
+    static let boardSize = "Board size"
+    static func shapeName(_ shape: PageGeometry) -> String {
+        switch shape.deviceType {
+        case "flagship": return "Flagship · 6 × 22"
+        case "note": return "Note · 3 × 15"
+        case "note_array": return "Note Array (\(shape.notesWide ?? 1) wide / \(shape.notesTall ?? 1) tall) · \(shape.rows) × \(shape.columns)"
+        case "panel": return "Panel · \(shape.rows) × \(shape.columns)"
+        default: return "\(shape.rows) × \(shape.columns)"
+        }
+    }
+    static let resizeTitle = "Change board size?"
+    static let resizeMessage = "Content that doesn't fit the smaller board will be cut off."
+    static let resizeAndSave = "Resize and save"
+    static let plainHelp = [
+        "{{weather.temperature}} shows a variable",
+        "{{red}}, {{blue}}… draw colour tiles",
+        "{{= IF(…) }} is a formula",
+        "Start a row with {center}, {right} or {wrap} to align or wrap it",
+    ]
     static func unknownVariableIssue(row: Int, name: String, reason: String) -> String { "Row \(row) · \(name): \(reason)" }
 
     static let discardTitle = "Discard unsaved changes?"
@@ -46,7 +66,21 @@ enum EditorStrings {
     static let noDisplay = "No display (local preview)"
     static let sampleValuesNote = "Sample values"
     static let chooseDisplayNote = "Choose a display to see live values"
-    static func saveOff(_ reason: String) -> String { "Can't save: \(reason)" }
+    static func saveOff(_ reason: String) -> String { "Can't save: \(plainSaveReason(reason))" }
+    /// The save gate's reasons are written for engineers; the editor says them plainly. The exact
+    /// reason stays in Document details.
+    static func plainSaveReason(_ reason: String) -> String {
+        let lower = reason.lowercased()
+        if lower.contains("opt-in") || lower.contains("page-revision") || lower.contains("revision protocol") || lower.contains("server version") {
+            return "this server doesn't accept page edits from the app."
+        }
+        if lower.contains("unavailable for this local document") { return "this page isn't connected to a server." }
+        if lower.contains("unsupported editing protocol") || lower.contains("cannot be safely saved") { return "the app can't save this kind of page yet." }
+        if lower.contains("outside supported author fields") || lower.contains("complete line metadata") { return "some of these changes can't be saved from the app." }
+        if lower.contains("at least one template line") { return "add some text first." }
+        if lower.contains("changed on the server") { return "the page changed on the server. Compare first." }
+        return reason
+    }
     static func fits(_ name: String) -> String { "Fits \(name)" }
     static func sizeReadout(rows: Int, cols: Int) -> String { "\(rows) × \(cols)" }
 

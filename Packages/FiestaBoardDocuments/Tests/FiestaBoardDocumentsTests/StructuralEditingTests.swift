@@ -67,4 +67,33 @@ final class StructuralEditingTests: XCTestCase {
         XCTAssertThrowsError(try document.setLineAlignment(at: 0, alignment: "invalid"))
         XCTAssertEqual(document, before)
     }
+
+    /// PLAN B20/§2.4: a geometry change writes only the shape's keys; everything else is byte-identical.
+    func testSetGeometryIsLossless() throws {
+        let raw = #"{"id":"p","revision":"r1","name":"N","type":"template","device_type":"flagship","template":["lower","B"],"line_metadata":[{"alignment":"center","x":1.50}],"grid_rows":null,"future":12345678901234567890}"#
+        let original = try PageDocument(data: Data(raw.utf8))
+        var document = original
+        XCTAssertEqual(document.geometry, .flagship)
+        try document.setGeometry(.noteArray(wide: 2, tall: 1))
+        XCTAssertEqual(document.geometry, .noteArray(wide: 2, tall: 1))
+        XCTAssertEqual(TemplateGeometry(document: document)?.columns, 30)
+        guard case .object(let changed) = try document.changedFields(from: original) else { return XCTFail() }
+        XCTAssertEqual(Set(changed.keys), ["device_type", "notes_wide", "notes_tall"])
+        let text = String(decoding: try document.serializedData(), as: UTF8.self)
+        for kept in [#""lower""#, #""x":1.50"#, "12345678901234567890", #""grid_rows":null"#, #""revision":"r1""#] { XCTAssertTrue(text.contains(kept), kept) }
+        try document.setGeometry(.note)
+        XCTAssertEqual(TemplateGeometry(document: document)?.rows, 3)
+        XCTAssertTrue(PageGeometry.note.shrinks(from: .flagship))
+        XCTAssertFalse(PageGeometry.flagship.shrinks(from: .note))
+        try document.setGeometry(.panel(rows: 12, cols: 29))
+        XCTAssertEqual(document.root["grid_cols"], .number("29"))
+        let before = document
+        XCTAssertThrowsError(try document.setGeometry(.panel(rows: 1, cols: 29)))
+        XCTAssertThrowsError(try document.setGeometry(PageGeometry(deviceType: "future")))
+        XCTAssertEqual(document, before)
+        var session = try DocumentEditingSession(data: Data(raw.utf8))
+        try session.setGeometry(.note)
+        try session.undo()
+        XCTAssertEqual(session.document, original, "one undo step restores the shape")
+    }
 }

@@ -43,7 +43,8 @@ import FiestaBoardRender
     /// The chip's image and its attachment bounds (baseline-relative) for `font`.
     static func render(_ chip: TemplateChip, font: UIFont, traits: UITraitCollection, outlined: Bool = false) -> (UIImage, CGRect) {
         if case .tile(let color) = chip.style { return tile(color: color, font: font, traits: traits, outlined: outlined) }
-        let height = (font.lineHeight + 2).rounded(.up)
+        // No taller than a text line, so rows with chips keep the same pitch as plain rows.
+        let height = (font.lineHeight - 1).rounded(.down)
         let labelFont = UIFont.monospacedSystemFont(ofSize: (font.pointSize * 0.8).rounded(), weight: .semibold)
         let filterFont = UIFont.monospacedSystemFont(ofSize: (font.pointSize * 0.68).rounded(), weight: .medium)
         let palette = palette(chip.style)
@@ -108,7 +109,7 @@ import FiestaBoardRender
                 }
             }
         }
-        return (image, CGRect(x: 0, y: font.descender - 1, width: size.width, height: size.height))
+        return (image, CGRect(x: 0, y: font.descender + 0.5, width: size.width, height: size.height))
     }
 
     /// A colour token as a real board tile: the shared tile painter at about 1.5ch × 1em.
