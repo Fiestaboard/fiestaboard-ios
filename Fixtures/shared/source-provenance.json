@@ -2,9 +2,10 @@
   "about": "Mirrors of /Volumes/ExtHD/fiestaboard-mobile-handoff/fixtures (PLAN §4.0). Never edit a mirror; copy the canonical file and record its sha256 here.",
   "files": {
     "render-cases.json": {
-      "sha256": "0c83c554d362512ee50f6ff72c0f4b2d573095caa48b52edba6fc4da3d47e6ee",
-      "writer": "iOS-R1",
-      "date": "2026-10-31"
+      "sha256": "78222e275a4070682798d148dcae4ea4c82dad493a2907221d6886ab1019a67d",
+      "writer": "iOS-P1",
+      "date": "2026-11-02",
+      "note": "page_morning row 2 corrected to the server pad:3 (ljust): \"72 ° SUNNY\""
     },
     "led-golden.json": {
       "sha256": "3bd2560b7fc7b3b9c6baeaac206a3a7b1bad6a28d19b861160ca53d3022d1521",
@@ -32,9 +33,10 @@
       "date": "2026-11-01"
     },
     "render-cases.r2.json": {
-      "sha256": "ea2a77cee497bf7b1bec09772f3408ebb68a57d36c7f5e54b630e3dc222ab762",
-      "writer": "iOS-R2",
-      "date": "2026-11-01"
+      "sha256": "25913e83586c30f03858d26a4a6767aa284e8e0b6c77149d23025bbeb958176d",
+      "writer": "iOS-P1",
+      "date": "2026-11-02",
+      "note": "page_morning row 2 corrected to the server pad:3 (ljust): \"72 ° SUNNY\""
     }
   }
 }

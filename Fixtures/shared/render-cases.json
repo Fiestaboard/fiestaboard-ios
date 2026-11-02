@@ -197,10 +197,10 @@
    "response": {
     "status": 200,
     "body": {
-     "rendered": "     GOOD MORNING     \n 72° SUNNY            \n                      \n        {63}{64}{65}{66}{67}{68}        \nWARM OUT              \n----------------------",
+     "rendered": "     GOOD MORNING     \n72 ° SUNNY            \n                      \n        {63}{64}{65}{66}{67}{68}        \nWARM OUT              \n----------------------",
      "lines": [
       "     GOOD MORNING     ",
-      " 72° SUNNY            ",
+      "72 ° SUNNY            ",
       "                      ",
       "        {63}{64}{65}{66}{67}{68}        ",
       "WARM OUT              ",

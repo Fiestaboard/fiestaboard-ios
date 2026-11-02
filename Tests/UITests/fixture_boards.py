@@ -130,7 +130,7 @@ PAGES = [
                   '{{red}}{{orange}}{{yellow}}{{green}}{{blue}}{{violet}}',
                   '{{= IF(weather.temperature > 70, "WARM OUT", "BRING A COAT") }}', '{{fill_space_repeat:-}}'],
      'line_metadata': [{'alignment': 'center', 'wrap': False}, {'alignment': 'left', 'wrap': False}, {'alignment': 'left', 'wrap': False}, {'alignment': 'center', 'wrap': False}],
-     'shows': ['GOOD MORNING', ' 72° SUNNY', '', '{red}{orange}{yellow}{green}{blue}{violet}', 'WARM OUT', '----------------------']},
+     'shows': ['GOOD MORNING', '72 ° SUNNY', '', '{red}{orange}{yellow}{green}{blue}{violet}', 'WARM OUT', '----------------------']},
     {'id': 'note', 'name': 'Desk Note', 'type': 'template', 'device_type': 'note',
      'template': ['HELLO', '{{date_time.time}}', '{{red}} LOVE {{red}}'],
      'line_metadata': [{'alignment': 'center', 'wrap': False}, {'alignment': 'center', 'wrap': False}],
