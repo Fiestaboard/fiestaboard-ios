@@ -1,6 +1,6 @@
 import XCTest
 
-final class LaunchUITests: XCTestCase {
+@MainActor final class LaunchUITests: XCTestCase {
     func testLaunchShowsConnectionEntry() {
         let app = isolatedApplication()
         app.launchArguments = ["--uitesting"]
