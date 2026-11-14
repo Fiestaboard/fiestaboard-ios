@@ -208,8 +208,8 @@ import XCTest
         app.launchArguments = []; app.launch()
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
         func revealForm(_ element: XCUIElement) {
-            for _ in 0..<8 where !(element.exists && element.isHittable) { app.swipeUp() }
-            for _ in 0..<8 where !(element.exists && element.isHittable) { app.swipeDown() }
+            for _ in 0..<8 { if element.exists && element.isHittable { break }; app.swipeUp() }
+            for _ in 0..<8 { if element.exists && element.isHittable { break }; app.swipeDown() }
         }
         let address = app.textFields["connectionAddress"]
         XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 8))

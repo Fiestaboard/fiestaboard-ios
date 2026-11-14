@@ -24,8 +24,8 @@ import XCTest
     }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
         // Saved servers from earlier runs pile up above the address field: allow plenty of swipes.
-        for _ in 0..<20 where !(element.exists && element.isHittable) { app.swipeUp() }
-        for _ in 0..<20 where !(element.exists && element.isHittable) { app.swipeDown() }
+        for _ in 0..<20 { if element.exists && element.isHittable { break }; app.swipeUp() }
+        for _ in 0..<20 { if element.exists && element.isHittable { break }; app.swipeDown() }
     }
     private func waitFor(_ timeout: TimeInterval = 4, _ condition: () -> Bool) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)

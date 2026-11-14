@@ -18,8 +18,8 @@ extension XCTestCase {
         app.launchArguments = arguments
         app.launch()
         func reveal(_ element: XCUIElement) {
-            for _ in 0..<12 where !(element.exists && element.isHittable) { app.swipeUp() }
-            for _ in 0..<12 where !(element.exists && element.isHittable) { app.swipeDown() }
+            for _ in 0..<12 { if element.exists && element.isHittable { break }; app.swipeUp() }
+            for _ in 0..<12 { if element.exists && element.isHittable { break }; app.swipeDown() }
         }
         let address = app.textFields["connectionAddress"]
         XCTAssertTrue(address.waitForExistence(timeout: 10))

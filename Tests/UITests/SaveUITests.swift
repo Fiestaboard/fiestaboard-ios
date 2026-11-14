@@ -262,8 +262,8 @@ import XCTest
         return false
     }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
-        for _ in 0..<20 where !(element.exists && element.isHittable) { app.swipeUp() }
-        for _ in 0..<20 where !(element.exists && element.isHittable) { app.swipeDown() }
+        for _ in 0..<20 { if element.exists && element.isHittable { break }; app.swipeUp() }
+        for _ in 0..<20 { if element.exists && element.isHittable { break }; app.swipeDown() }
     }
     private func placeCaret(row n: Int, _ app: XCUIApplication, _ document: XCUIElement) {
         let gutter = app.staticTexts["documentRow_\(n)"]

@@ -141,7 +141,7 @@ import XCTest
         for _ in 0..<6 where !row.isHittable { app.swipeUp() }
         row.tap()
         let edit = app.buttons["editLocalDraft"]
-        for _ in 0..<4 where !(edit.exists && edit.isHittable) { app.swipeUp() }
+        for _ in 0..<4 { if edit.exists && edit.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(edit.waitForExistence(timeout: 5)); edit.tap()
         let document = app.textViews["boardDocument"]
         XCTAssertTrue(document.waitForExistence(timeout: 8), app.debugDescription)
@@ -161,8 +161,8 @@ import XCTest
         return false
     }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
-        for _ in 0..<20 where !(element.exists && element.isHittable) { app.swipeUp() }
-        for _ in 0..<20 where !(element.exists && element.isHittable) { app.swipeDown() }
+        for _ in 0..<20 { if element.exists && element.isHittable { break }; app.swipeUp() }
+        for _ in 0..<20 { if element.exists && element.isHittable { break }; app.swipeDown() }
     }
     private func shot(_ app: XCUIApplication, _ name: String, settle: TimeInterval = 1.5) {
         Thread.sleep(forTimeInterval: settle)

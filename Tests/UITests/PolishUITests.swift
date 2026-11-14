@@ -208,7 +208,12 @@ import XCTest
         document.typeText("KEEP ME"); Thread.sleep(forTimeInterval: 3.5) // the automatic checkpoint (2 s)
         app.terminate(); Thread.sleep(forTimeInterval: 1.5)
         app.launch()
-        XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15), app.debugDescription)
+        // A relaunch shows the connection picker. Reuse the persisted deployment,
+        // not a fresh fixture prefix, so this still exercises draft recovery.
+        let saved = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "board-manual-")).firstMatch
+        XCTAssertTrue(saved.waitForExistence(timeout: 10), app.debugDescription)
+        reveal(saved, app); saved.tap()
+        authenticate(app)
         let reopened = openEditor(app, page: "Hello World")
         let banner = element(app, "recoveryBanner")
         XCTAssertTrue(banner.waitForExistence(timeout: 8), app.debugDescription)
@@ -258,6 +263,10 @@ import XCTest
         let app = isolatedApplication()
         app.launchArguments = []; app.launch()
         connect(app, path: "board-\(scenario)-" + UUID().uuidString.prefix(8).lowercased())
+        authenticate(app)
+        return app
+    }
+    private func authenticate(_ app: XCUIApplication) {
         let username = app.textFields["Username"]
         XCTAssertTrue(username.waitForExistence(timeout: 10), app.debugDescription)
         reveal(username, app); username.tap(); username.typeText("fixture_admin")
@@ -266,7 +275,6 @@ import XCTest
         let signIn = app.buttons["connectionSignIn"]
         reveal(signIn, app); signIn.tap()
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15), app.debugDescription)
-        return app
     }
     private func selectDestination(_ name: String, in app: XCUIApplication) {
         let destination = element(app, "destination-" + name)
@@ -286,7 +294,7 @@ import XCTest
         for _ in 0..<8 where !row.isHittable { app.swipeUp() }
         row.tap()
         let edit = app.buttons["editLocalDraft"]
-        for _ in 0..<4 where !(edit.exists && edit.isHittable) { app.swipeUp() }
+        for _ in 0..<4 { if edit.exists && edit.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(edit.waitForExistence(timeout: 5)); edit.tap()
         let document = app.textViews["boardDocument"]
         XCTAssertTrue(document.waitForExistence(timeout: 8), app.debugDescription)
@@ -306,8 +314,8 @@ import XCTest
         return false
     }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
-        for _ in 0..<12 where !(element.exists && element.isHittable) { app.swipeUp() }
-        for _ in 0..<16 where !(element.exists && element.isHittable) { app.swipeDown() }
+        for _ in 0..<12 { if element.exists && element.isHittable { break }; app.swipeUp() }
+        for _ in 0..<16 { if element.exists && element.isHittable { break }; app.swipeDown() }
     }
     private func shot(_ app: XCUIApplication, _ name: String, settle: TimeInterval = 1.5, window: XCUIApplication? = nil) {
         Thread.sleep(forTimeInterval: settle)

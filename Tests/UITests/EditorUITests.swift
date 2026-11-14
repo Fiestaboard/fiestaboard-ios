@@ -222,8 +222,8 @@ import XCTest
 
     private var fixturePort: Int { Int(ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "") ?? 18442 }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
-        for _ in 0..<8 where !(element.exists && element.isHittable) { app.swipeUp() }
-        for _ in 0..<8 where !(element.exists && element.isHittable) { app.swipeDown() }
+        for _ in 0..<8 { if element.exists && element.isHittable { break }; app.swipeUp() }
+        for _ in 0..<8 { if element.exists && element.isHittable { break }; app.swipeDown() }
     }
     /// Connect and sign in to the mock fixture's `/board-<scenario>-<id>/` prefix (iOS-R1 hook).
     private func connectToFixture(_ app: XCUIApplication, scenario: String) throws {

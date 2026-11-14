@@ -254,7 +254,7 @@ import XCTest
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
     }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
-        for _ in 0..<8 where !(element.exists && element.isHittable) { app.swipeUp() }
-        for _ in 0..<8 where !(element.exists && element.isHittable) { app.swipeDown() }
+        for _ in 0..<8 { if element.exists && element.isHittable { break }; app.swipeUp() }
+        for _ in 0..<8 { if element.exists && element.isHittable { break }; app.swipeDown() }
     }
 }
