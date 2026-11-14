@@ -35,10 +35,15 @@ for model in 'iPhone 17' 'iPad Air 11-inch (M4)'; do
     -derivedDataPath "$ios_build_root/dd-$ios_slice"
     -clonedSourcePackagesDirPath "$ios_build_root/spm"
     -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1
-    CODE_SIGNING_ALLOWED=NO)
-  # XCTest executes suites serially with parallel testing disabled. One invocation
-  # per device avoids restarting the simulator service for every test class.
-  result="$ios_build_root/results/$ios_slice/$(date +%s)-$udid.xcresult"
-  if ! xcodebuild "${args[@]}" -resultBundlePath "$result" test; then simulator_failed=1; fi
+    CODE_SIGN_IDENTITY=-)
+  # Run unit/renderer checks before UI automation puts sustained load on the device.
+  result="$ios_build_root/results/$ios_slice/$(date +%s)-$udid"
+  if xcodebuild "${args[@]}" -skip-testing:FiestaBoardUITests -resultBundlePath "$result-units.xcresult" test; then
+    if ! xcodebuild "${args[@]}" -only-testing:FiestaBoardUITests -resultBundlePath "$result-ui.xcresult" test-without-building; then simulator_failed=1; fi
+  else
+    simulator_failed=1
+  fi
+  # Release this job's selected simulator before starting the next device/archive.
+  xcrun simctl shutdown "$udid"
 done
 exit "$simulator_failed"

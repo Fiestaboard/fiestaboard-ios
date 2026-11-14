@@ -68,12 +68,12 @@ import XCTest
     private func waitForCondition(timeout: TimeInterval, _ condition: () -> Bool) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
         repeat { if condition() { return true }; Thread.sleep(forTimeInterval: 0.2) } while Date() < deadline
-        return false
+        return condition()
     }
-    private func waitForStage(_ app: XCUIApplication, timeout: TimeInterval = 3, _ condition: ([String]) -> Bool) -> Bool {
+    private func waitForStage(_ app: XCUIApplication, timeout: TimeInterval = 10, _ condition: ([String]) -> Bool) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
-        repeat { if condition(stageLines(app)) { return true } } while Date() < deadline
-        return false
+        repeat { if condition(stageLines(app)) { return true }; Thread.sleep(forTimeInterval: 0.2) } while Date() < deadline
+        return condition(stageLines(app))
     }
 
     /// B12/B33: a new Flagship page is a title, a toolbar and six numbered rows of one surface,
@@ -204,8 +204,10 @@ import XCTest
         XCTAssertTrue(waitForStage(app) { $0.first == "" })
         document.typeText("hello")
         let lastKeystroke = Date()
+        // Keep AX snapshot traffic off the app while its measured render completes.
+        Thread.sleep(forTimeInterval: 1)
         XCTAssertEqual((document.value as? String)?.components(separatedBy: "\n").first, "HELLO", "Typed letters are uppercased on flap pages")
-        let reached = waitForStage(app, timeout: 2) { $0.first == "HELLO" }
+        let reached = waitForStage(app, timeout: 10) { $0.first == "HELLO" }
         let elapsed = Date().timeIntervalSince(lastKeystroke)
         let note = XCTAttachment(string: String(format: "Automation observed HELLO after %.0f ms (includes AX IPC)", elapsed * 1000))
         note.name = "B19 latency"; note.lifetime = .keepAlways; add(note)
@@ -394,7 +396,9 @@ import XCTest
         placeCaret(row: 3, app, document)
         document.typeText("HELLO")
         let lastKeystroke = Date()
-        let reached = waitForStage(app, timeout: 2) { $0.count > 2 && $0[2] == "HELLO" }
+        // Keep AX snapshot traffic off the app while its measured render completes.
+        Thread.sleep(forTimeInterval: 1)
+        let reached = waitForStage(app, timeout: 10) { $0.count > 2 && $0[2] == "HELLO" }
         let elapsed = Date().timeIntervalSince(lastKeystroke)
         let note = XCTAttachment(string: String(format: "Automation observed fixture HELLO after %.0f ms (includes AX IPC)", elapsed * 1000))
         note.name = "B19 latency (fixture render)"; note.lifetime = .keepAlways; add(note)

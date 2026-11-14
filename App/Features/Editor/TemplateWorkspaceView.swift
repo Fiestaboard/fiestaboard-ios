@@ -98,6 +98,7 @@ struct TemplateWorkspaceView: View {
     /// iPad portrait with the keyboard down (P5): the document takes the height under the board
     /// and its rows spread to fill it.
     var fillsHeight = false
+    var maximumDocumentHeight: CGFloat? = nil
     @State private var tokenEditing: TokenEditing?
     @EnvironmentObject private var catalog: EditorCatalogStore
 
@@ -146,8 +147,10 @@ struct TemplateWorkspaceView: View {
                               onInsert: commands.insert, onFormula: commands.insertFormula, onPicker: commands.openPicker,
                               onDraw: { onDraw?() }, fillsRows: fillsHeight)
                 // Hugs its rows (B33: the board stays the largest element); scrolls when capped.
-                .frame(minHeight: 80, idealHeight: Self.documentHeight(rows: max(rows.count, boardRows)))
+                .frame(minHeight: 80, idealHeight: Self.documentHeight(rows: max(rows.count, boardRows)),
+                       maxHeight: fillsHeight ? maximumDocumentHeight : nil)
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(overflow ? Color.orange : Color(uiColor: .separator), lineWidth: overflow ? 2 : 0.5))
+            if fillsHeight { Spacer(minLength: 0) }
             if rich {
                 // The chip at the caret, in full (compact chips show only a short name; AND-P1).
                 // W4: its line is always reserved, so moving the caret over chips never nudges

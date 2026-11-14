@@ -166,7 +166,7 @@ import XCTest
         document.typeKey(.rightArrow, modifierFlags: []); Thread.sleep(forTimeInterval: 1.2) // after the chip
         document.typeKey(.leftArrow, modifierFlags: .shift); Thread.sleep(forTimeInterval: 1.5) // outlined
         document.typeKey(.rightArrow, modifierFlags: []); Thread.sleep(forTimeInterval: 1)
-        document.typeKey(.delete, modifierFlags: []); Thread.sleep(forTimeInterval: 1.5)   // whole chip gone
+        document.typeText(XCUIKeyboardKey.delete.rawValue); Thread.sleep(forTimeInterval: 1.5)   // whole chip gone
         let value = (document.value as? String) ?? ""
         XCTAssertFalse(value.contains("weather.temperature"), value)
         XCTAssertTrue(value.contains("° {{weather.condition}}"), "the rest of row 2 is untouched: \(value)")

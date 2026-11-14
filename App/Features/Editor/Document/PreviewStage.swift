@@ -36,11 +36,13 @@ struct PreviewStage: View {
     var layers: [PixelLayer] = []
     /// The LED board's largest height (smaller while the canvases panel needs the room).
     var ledMaxHeight: CGFloat = 320
+    var onBoardHeightChange: (CGFloat) -> Void = { _ in }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             header
             board
+                .onGeometryChange(for: CGFloat.self, of: { $0.size.height }, action: onBoardHeightChange)
                 .frame(maxWidth: .infinity)
             if let footnote {
                 Text(footnote).font(.caption2).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .center)

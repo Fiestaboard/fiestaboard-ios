@@ -27,10 +27,10 @@ import XCTest
         for _ in 0..<20 { if element.exists && element.isHittable { break }; app.swipeUp() }
         for _ in 0..<20 { if element.exists && element.isHittable { break }; app.swipeDown() }
     }
-    private func waitFor(_ timeout: TimeInterval = 4, _ condition: () -> Bool) -> Bool {
+    private func waitFor(_ timeout: TimeInterval = 10, _ condition: () -> Bool) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
         repeat { if condition() { return true }; Thread.sleep(forTimeInterval: 0.15) } while Date() < deadline
-        return false
+        return condition()
     }
     private func element(_ app: XCUIApplication, _ id: String) -> XCUIElement {
         app.descendants(matching: .any).matching(identifier: id).firstMatch

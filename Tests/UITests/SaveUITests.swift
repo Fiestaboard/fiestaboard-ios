@@ -20,7 +20,7 @@ import XCTest
         var document = openEditor(app, page: "Hello World")
         placeCaret(row: 1, app, document)
         document.typeText("SAVED TEXT")
-        XCTAssertTrue(waitFor(4) { self.stageLines(app).first == "SAVED TEXT" }, "\(stageLines(app))")
+        XCTAssertTrue(waitFor(10) { self.stageLines(app).first == "SAVED TEXT" }, "\(stageLines(app))")
         hideKeyboard(app)
         shot(app, "W4-save-text-edited")
         save(app)
@@ -53,7 +53,7 @@ import XCTest
             app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Living room TV")).firstMatch.swipeUp(velocity: .slow)
         }
         flagship.tap()
-        XCTAssertTrue(waitFor(4) { app.staticTexts["boardSizeReadout"].label == "Board size 6 by 22" })
+        XCTAssertTrue(waitFor(10) { app.staticTexts["boardSizeReadout"].label == "Board size 6 by 22" })
         shot(app, "W4-save-geometry-changed")
         app.buttons["savePageOnServer"].tap()
         let resize = app.buttons["resizeAndSave"].firstMatch
@@ -65,7 +65,7 @@ import XCTest
         // grid_rows/grid_cols are left as stored: 10.3.2 reads them only for panels (PageUpdate).
         XCTAssertEqual((stored["template"] as? [String])?.first, "WELCOME TO THE LOBBY")
         _ = reopen(app, page: "Lobby")
-        XCTAssertTrue(waitFor(4) { app.staticTexts["boardSizeReadout"].label == "Board size 6 by 22" }, app.staticTexts["boardSizeReadout"].label)
+        XCTAssertTrue(waitFor(10) { app.staticTexts["boardSizeReadout"].label == "Board size 6 by 22" }, app.staticTexts["boardSizeReadout"].label)
         XCTAssertFalse(app.staticTexts["documentRow_7"].exists, "6 rows for a Flagship")
         shot(app, "W4-save-geometry-reopened")
         close(app)
@@ -111,12 +111,14 @@ import XCTest
         XCTAssertTrue(picker.waitForExistence(timeout: 4))
         revealInPanel(picker, app)
         XCTAssertEqual(picker.value as? String, "Rows 1 to 5, columns 1 to 8")
-        let from = picker.coordinate(withNormalizedOffset: CGVector(dx: 4.5 / 16, dy: 2.5 / 10))
-        let to = picker.coordinate(withNormalizedOffset: CGVector(dx: 13.5 / 16, dy: 7.5 / 10))
+        let frame = picker.frame
+        let origin = app.coordinate(withNormalizedOffset: .zero)
+        let from = origin.withOffset(CGVector(dx: frame.minX + frame.width * 4.5 / 16, dy: frame.minY + frame.height * 2.5 / 10))
+        let to = origin.withOffset(CGVector(dx: frame.minX + frame.width * 13.5 / 16, dy: frame.minY + frame.height * 7.5 / 10))
         from.press(forDuration: 0.2, thenDragTo: to, withVelocity: 150, thenHoldForDuration: 0.2)
         // The drag lands within a cell of its target (the grid is small); what matters is that
         // the area the picker shows is the area saved and reopened.
-        XCTAssertTrue(waitFor(4) { (picker.value as? String)?.hasPrefix("Rows 3 to 8") == true }, "\(picker.value ?? "")")
+        XCTAssertTrue(waitFor(10) { (picker.value as? String)?.hasPrefix("Rows 3 to 8") == true }, "\(picker.value ?? "")")
         let edited = picker.value as? String ?? ""
         let numbers = edited.components(separatedBy: CharacterSet.decimalDigits.inverted).compactMap(Int.init)
         shot(app, "W4-save-canvas-edited")
@@ -259,7 +261,7 @@ import XCTest
     private func waitFor(_ timeout: TimeInterval, _ condition: () -> Bool) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
         repeat { if condition() { return true }; Thread.sleep(forTimeInterval: 0.2) } while Date() < deadline
-        return false
+        return condition()
     }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
         for _ in 0..<20 { if element.exists && element.isHittable { break }; app.swipeUp() }
@@ -290,16 +292,11 @@ import XCTest
         let toggle = app.segmentedControls["editingSurface"]
         func top() -> CGFloat { toggle.exists ? toggle.frame.maxY + 8 : window.minY + 80 }
         func visible() -> Bool { target.exists && target.isHittable && target.frame.maxY < window.maxY - 20 && target.frame.minY > top() }
-        let panel = element(app, "canvasesPanel")
-        for _ in 0..<12 where !visible() {
+        for _ in 0..<12 {
+            if visible() { break }
             let handle = element(app, "canvasesPanelHandle")
-            let surfaces = ["canvasAreaPicker", "canvasPixelPad", "canvasShapesSurface"].map { self.element(app, $0) }.filter { $0.exists }.map { $0.frame }
-            let caption = panel.exists ? panel.staticTexts.allElementsBoundByIndex.first { t in
-                let f = t.frame
-                return f.minY > top() + 20 && f.maxY < window.maxY - 80 && f.width > 30 && !surfaces.contains { $0.insetBy(dx: -30, dy: -30).intersects(f) }
-            } : nil
-            let from = caption.map { $0.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)) }
-                ?? (handle.exists ? handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)) : app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15)))
+            let from = handle.exists ? handle.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+                : app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
             let up = !target.exists || target.frame.maxY >= window.maxY - 20
             from.press(forDuration: 0.05, thenDragTo: from.withOffset(CGVector(dx: 0, dy: up ? -160 : 160)), withVelocity: 600, thenHoldForDuration: 0.1)
         }

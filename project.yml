@@ -93,6 +93,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: App/Info.plist
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]": Tests/Support/Simulator.entitlements
         SUPPORTS_MACCATALYST: NO
         ENABLE_USER_SCRIPT_SANDBOXING: YES
     dependencies:

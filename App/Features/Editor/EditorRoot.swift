@@ -27,6 +27,7 @@ struct EditorRoot: View {
     @RootState private var toast: String?
     @RootState private var titleDraft = ""
     @RootState private var started = false
+    @RootState private var stageBoardHeight: CGFloat = 0
     /// The server's variables and functions (iOS-F1, B21/B22/B32), shared with the pickers.
     @StateObject private var catalog = EditorCatalogStore()
     /// Draw on board (iOS-F1, B23).
@@ -115,7 +116,8 @@ struct EditorRoot: View {
                         TemplateWorkspaceView(model: model, buffer: buffer, pipeline: pipeline,
                                               isTextInputActive: $isTextInputActive, rich: $rich,
                                               onDraw: canDraw ? { startDrawing() } : nil,
-                                              charsetIssues: pipeline.state.charsetIssues, fillsHeight: fillsHeight)
+                                              charsetIssues: pipeline.state.charsetIssues, fillsHeight: fillsHeight,
+                                              maximumDocumentHeight: stageBoardHeight > 0 ? stageBoardHeight : nil)
                     }
                     if let message = model.message, !Self.isRoutineMessage(message) {
                         Text(message).font(.caption).foregroundStyle(.secondary).lineLimit(3)
@@ -302,7 +304,8 @@ struct EditorRoot: View {
                          AnyView(DrawCanvasOverlay(size: size, model: displayModel, stretch: stretch, controller: draw, onCommit: commitStroke))
                      } : nil,
                      led: pixelDisplay?.model, layers: stageLayers,
-                     ledMaxHeight: showsCanvases && sizeClass == .compact ? 200 : 320)
+                     ledMaxHeight: showsCanvases && sizeClass == .compact ? 200 : 320,
+                     onBoardHeightChange: { stageBoardHeight = $0 })
             .overlay(alignment: .bottomTrailing) { stageLayerProbe }
             #if DEBUG
             .overlay(alignment: .topTrailing) {
