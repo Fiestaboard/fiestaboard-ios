@@ -1,0 +1,6 @@
+{
+  "ui-a": ["BoardVisualsUITests", "LaunchUITests"],
+  "ui-b": ["EditorUITests"],
+  "ui-c": ["BarEvidenceUITests", "CanvasUITests", "IntegrationUITests", "SaveUITests"],
+  "ui-d": ["FormulaUITests", "PolishUITests"]
+}
