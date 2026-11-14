@@ -13,6 +13,19 @@ extension XCTestCase {
             .containing(.staticText, identifier: name).firstMatch
     }
 
+    /// Cold simulator keyboard startup may accept a caret without becoming ready for typing.
+    @MainActor func typeConnectionAddress(_ text: String, into address: XCUIElement, in app: XCUIApplication,
+                                         file: StaticString = #filePath, line: UInt = #line) {
+        for _ in 0..<2 {
+            address.tap()
+            if app.keyboards.firstMatch.waitForExistence(timeout: 8) {
+                address.typeText(text)
+                return
+            }
+        }
+        XCTFail("The connection address keyboard must be ready before typing", file: file, line: line)
+    }
+
     /// Real app sign-in against the loopback HTTP fixture, never a shipping demo path.
     @MainActor func launchFixture(_ app: XCUIApplication, arguments: [String] = []) {
         app.launchArguments = arguments
@@ -25,9 +38,8 @@ extension XCTestCase {
         // At accessibility sizes the form may not instantiate this off-screen row yet.
         reveal(address)
         XCTAssertTrue(address.waitForExistence(timeout: 10))
-        address.tap()
         let port = ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "18442"
-        address.typeText("http://127.0.0.1:\(port)/board-manual-\(UUID().uuidString.lowercased())")
+        typeConnectionAddress("http://127.0.0.1:\(port)/board-manual-\(UUID().uuidString.lowercased())", into: address, in: app)
         let localHTTP = app.switches["connectionLocalHTTP"]
         reveal(localHTTP)
         // At accessibility sizes a visible label makes the whole switch "hittable"
