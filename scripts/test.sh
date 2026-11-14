@@ -26,6 +26,7 @@ export TEST_RUNNER_FIXTURE_PORT="$fixture_port"
 curl --fail --retry 10 --retry-connrefused --retry-delay 1 "http://127.0.0.1:$fixture_port/ready"
 for model in 'iPhone 17' 'iPad Air 11-inch (M4)'; do
   udid=$(xcrun simctl list devices available --json | python3 scripts/select-ios-simulator.py "$model")
+  xcrun simctl bootstatus "$udid" -b
   args=(-project FiestaBoard.xcodeproj -scheme FiestaBoard
     -destination "platform=iOS Simulator,id=$udid"
     -derivedDataPath "$ios_build_root/dd-$ios_slice"
