@@ -149,6 +149,7 @@ struct TemplateWorkspaceView: View {
                 // Hugs its rows (B33: the board stays the largest element); scrolls when capped.
                 .frame(minHeight: 80, idealHeight: Self.documentHeight(rows: max(rows.count, boardRows)),
                        maxHeight: fillsHeight ? maximumDocumentHeight : nil)
+                .layoutPriority(fillsHeight ? 1 : 0)
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(overflow ? Color.orange : Color(uiColor: .separator), lineWidth: overflow ? 2 : 0.5))
             if fillsHeight { Spacer(minLength: 0) }
             if rich {
