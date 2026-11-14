@@ -51,14 +51,24 @@ extension XCTestCase {
             let top = app.navigationBars.firstMatch.frame.maxY
             return localHTTP.frame.midY > top + 8 && localHTTP.frame.midY < bottom - 8
         }
-        for _ in 0..<12 {
-            if switchTapIsVisible() { break }
-            if localHTTP.exists && localHTTP.frame.midY <= app.navigationBars.firstMatch.frame.maxY + 8 {
-                app.swipeDown()
-            } else { app.swipeUp() }
+        // Require the observed state transition, as the other fixture helpers do.
+        // A cold tap can be delivered inside the visible switch without activating it.
+        for _ in 0..<3 {
+            if localHTTP.value as? String == "1" { break }
+            for _ in 0..<12 {
+                if switchTapIsVisible() { break }
+                if localHTTP.exists && localHTTP.frame.midY <= app.navigationBars.firstMatch.frame.maxY + 8 {
+                    app.swipeDown()
+                } else { app.swipeUp() }
+            }
+            guard switchTapIsVisible() else {
+                XCTFail("HTTP switch tap point must be above the keyboard")
+                return
+            }
+            localHTTP.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+            _ = XCTWaiter.wait(for: [XCTNSPredicateExpectation(
+                predicate: NSPredicate(format: "value == '1'"), object: localHTTP)], timeout: 2)
         }
-        XCTAssertTrue(switchTapIsVisible(), "HTTP switch tap point must be above the keyboard")
-        if localHTTP.value as? String != "1" { localHTTP.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap() }
         XCTAssertEqual(localHTTP.value as? String, "1", "Explicitly allow the loopback HTTP fixture before connecting")
         let connect = app.buttons["connectionConnect"]
         reveal(connect); connect.tap()
