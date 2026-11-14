@@ -308,9 +308,9 @@ struct EditorRoot: View {
             .overlay(alignment: .topTrailing) {
                 Color.clear.frame(width: 1, height: 1)
                     .accessibilityElement()
+                    .accessibilityLabel("Preview input latency")
                     .accessibilityIdentifier("previewInputLatency")
                     .accessibilityValue(pipeline.state.inputToPreviewSeconds.map { String($0) } ?? "pending")
-                    .allowsHitTesting(false)
             }
             #endif
     }
