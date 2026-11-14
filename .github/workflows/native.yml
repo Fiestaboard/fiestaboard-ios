@@ -101,7 +101,10 @@ jobs:
         if: always()
         with:
           name: native-units-${{ matrix.device }}
-          path: ~/Library/Developer/FiestaBoard/ios/results/${{ env.IOS_SLICE }}
+          path: |
+            ~/Library/Developer/FiestaBoard/ios/results/${{ env.IOS_SLICE }}
+            build/parity
+            Tests/__Snapshots__/iOS27
           retention-days: 14
 
   device-ui:
