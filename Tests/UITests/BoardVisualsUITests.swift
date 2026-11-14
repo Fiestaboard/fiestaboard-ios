@@ -266,7 +266,7 @@ final class BoardVisualsUITests: XCTestCase {
     /// "Page created. Open its editor…" note.
     @MainActor
     func testLibraryCreateSheetKeyboardAndOutcome() throws {
-        let app = XCUIApplication(); launchFixture(app)
+        let app = isolatedApplication(); launchFixture(app)
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
         selectDestination("Pages", in: app)
         let create = app.buttons["newLibraryPage"]
@@ -316,7 +316,7 @@ final class BoardVisualsUITests: XCTestCase {
     }
 
     @MainActor private func launchSignedIn(scenario: String) -> XCUIApplication {
-        let app = XCUIApplication(); app.launchArguments = []; app.launch()
+        let app = isolatedApplication(); app.launchArguments = []; app.launch()
         let alias = "board-\(scenario)-" + UUID().uuidString.prefix(6).lowercased()
         let address = app.textFields["connectionAddress"]
         XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 10))

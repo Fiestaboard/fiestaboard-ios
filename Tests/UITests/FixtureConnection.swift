@@ -1,6 +1,13 @@
 import XCTest
 
 extension XCTestCase {
+    /// A fresh namespace per application object; relaunching that object preserves state.
+    @MainActor func isolatedApplication() -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchEnvironment["FIESTABOARD_TEST_NAMESPACE"] = UUID().uuidString
+        return app
+    }
+
     /// Real app sign-in against the loopback HTTP fixture, never a shipping demo path.
     @MainActor func launchFixture(_ app: XCUIApplication, arguments: [String] = []) {
         app.launchArguments = arguments

@@ -17,7 +17,7 @@ import XCTest
     func testIPadSidebarFollowsTheEditorForAnExistingPage() throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad only")
         XCUIDevice.shared.orientation = .portrait
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         // Sign in upright: the iPad connection form is flaky in landscape (E1 open issue 5).
         try connectToFixture(app, scenario: "manual")
         XCUIDevice.shared.orientation = .landscapeLeft
@@ -57,7 +57,7 @@ import XCTest
     func testIPadSidebarAndRotationForANewPage() throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad only")
         XCUIDevice.shared.orientation = .landscapeLeft
-        let app = XCUIApplication(); launchFixture(app)
+        let app = isolatedApplication(); launchFixture(app)
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
         openPages(app)
         XCTAssertTrue(waitForSidebar(app, visible: true))
@@ -94,7 +94,7 @@ import XCTest
 
     func testPhoneEditorIsFullScreenOnBothPaths() throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .phone, "iPhone only")
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         try connectToFixture(app, scenario: "manual")
         openPages(app)
         openEditor(app, page: "Good Morning")

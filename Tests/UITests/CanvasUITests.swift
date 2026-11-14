@@ -13,7 +13,7 @@ final class CanvasUITests: XCTestCase {
     /// First visible result: add a rectangle, drag it on the pixel grid, see the stage's layer move;
     /// the dragged values are whole numbers; one Undo puts it back.
     func testDragRectangleUpdatesTheStage() throws {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         try openPixelClock(app)
         let surface = app.segmentedControls["editingSurface"]
         XCTAssertTrue(surface.waitForExistence(timeout: 5), "Text | Canvases appears on the Pixoo (an LED pixel display)")
@@ -65,7 +65,7 @@ final class CanvasUITests: XCTestCase {
 
     /// Area drag-select, bleed/scale/text controls, the Draw tab and the expression lock.
     func testAreaDrawAndExpressionLock() throws {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         try openPixelClock(app)
         app.segmentedControls["editingSurface"].buttons["Canvases"].tap()
         let picker = element(app, "canvasAreaPicker")
@@ -110,7 +110,7 @@ final class CanvasUITests: XCTestCase {
 
     /// The split-flap notice: on a Flagship display the toggle goes and the page says why.
     func testSplitFlapDisplayShowsTheNotice() throws {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         try openPixelClock(app)
         XCTAssertTrue(app.segmentedControls["editingSurface"].waitForExistence(timeout: 5))
         let picker = app.buttons["evaluationBoardPicker"]

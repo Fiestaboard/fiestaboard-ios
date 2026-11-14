@@ -2,7 +2,7 @@ import XCTest
 
 final class LaunchUITests: XCTestCase {
     func testLaunchShowsConnectionEntry() {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         app.launchArguments = ["--uitesting"]
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 15))

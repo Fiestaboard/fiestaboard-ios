@@ -62,7 +62,7 @@ public enum ActionDisabledReason: Sendable, Equatable {
         case .unsupportedDocument: "Deletion of this document type or document protocol is unavailable in this app. Use the web interface."
         case .unsupportedRevisionProtocol: "This page does not provide a revision protocol supported for deletion. Use the web interface."
         case .missingRevision: "This page does not report a valid revision for safe deletion. Read the current page or use the web interface."
-        case .changesDisabled: "Changes are turned off for this connection. Enable changes in Settings to use this supported action."
+        case .changesDisabled: "This connection does not allow changes. Reconnect to try again."
         case .busy: "Wait for the current request to finish before using this action."
         case .readbackRequired: "The previous result needs review. Read current state before starting another action."
         }

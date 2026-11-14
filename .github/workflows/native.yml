@@ -11,7 +11,7 @@ concurrency:
 jobs:
   build-and-test:
     runs-on: ${{ fromJSON(vars.NATIVE_RUNNER || '["xcode-27"]') }}
-    timeout-minutes: 45
+    timeout-minutes: 120
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
       IOS_SLICE: ci
@@ -43,7 +43,7 @@ jobs:
           node scripts/vocabulary/check-vocabulary.mjs
       - name: Host package suites
         run: scripts/test.sh packages
-      - name: App-hosted and launch UI suites on both tier-1 devices
+      - name: App-hosted and retained UI suites on both tier-1 devices
         run: scripts/test.sh simulators
       - name: Release archive and probe guard
         if: ${{ !cancelled() }}

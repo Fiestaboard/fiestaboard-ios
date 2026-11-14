@@ -150,7 +150,7 @@ import XCTest
         URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
         semaphore.wait()
         try XCTSkipUnless(ready, "Start the fixture: FIXTURE_PORT=\(fixturePort) python3 Tests/UITests/fixture_server.py")
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         app.launchArguments = []; app.launch()
         alias = "board-manual-" + UUID().uuidString.prefix(8).lowercased()
         let address = app.textFields["connectionAddress"]

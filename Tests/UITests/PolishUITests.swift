@@ -56,7 +56,7 @@ import XCTest
 
     /// B26 (P5): Show when and Priority sit under "Advanced"; when set and closed, a chip says so.
     func testShowWhenAndPriorityAreAdvanced() throws {
-        let app = XCUIApplication(); app.launchArguments = []; app.launch()
+        let app = isolatedApplication(); app.launchArguments = []; app.launch()
         connect(app, path: "flexible-" + UUID().uuidString.prefix(8).lowercased())
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15))
         selectDestination("Pages", in: app)
@@ -255,7 +255,7 @@ import XCTest
         URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
         semaphore.wait()
         try XCTSkipUnless(ready, "Start the fixture: FIXTURE_PORT=\(fixturePort) python3 Tests/UITests/fixture_server.py")
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         app.launchArguments = []; app.launch()
         connect(app, path: "board-\(scenario)-" + UUID().uuidString.prefix(8).lowercased())
         let username = app.textFields["Username"]

@@ -72,7 +72,7 @@ import XCTest
     /// B12/B33: a new Flagship page is a title, a toolbar and six numbered rows of one surface,
     /// under the pinned 6×22 board. No JSON, no per-row fields, no inspector.
     func testNewPageIsBoardShaped() {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         let document = openNewPage(app, name: "Board shaped")
         XCTAssertEqual(app.textViews.matching(identifier: "boardDocument").count, 1, "Exactly one document surface")
         XCTAssertEqual((document.value as? String)?.components(separatedBy: "\n").count, 6, "The surface's value spans six paragraphs")
@@ -134,7 +134,7 @@ import XCTest
 
     /// B15: Align/Wrap act on the caret row and reflect it; the stage row follows.
     func testAlignAndWrapFollowCaretRow() {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         let document = openNewPage(app, name: "Align test")
         placeCaret(row: 1, app, document); document.typeText("ONE")
         placeCaret(row: 2, app, document); document.typeText("TWO")
@@ -182,7 +182,7 @@ import XCTest
     /// B19: typed letters reach the stage within 750 ms of the last keystroke (UI-test clock;
     /// mock fixture RTT ≈ 0, so this measures the 250 ms debounce plus the pipeline).
     func testTypingReachesTheBoard() {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         let document = openNewPage(app, name: "Typing test")
         // iPad runs this in landscape: the wide layout (board beside the document). Portrait iPad
         // stacks like the phone, which the phone run covers.
@@ -257,7 +257,7 @@ import XCTest
     /// its source as a small mark) no wider than a few board cells; a tap shows its full name and
     /// filters in a callout, whose Edit opens the exact source. The chip stays one character.
     func testCompactChipCalloutShowsTheFullName() throws {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         try connectToFixture(app, scenario: "manual")
         openPages(app)
         let row = app.staticTexts["Good Morning"].firstMatch
@@ -310,7 +310,7 @@ import XCTest
     /// "3 × 15 · Kitchen"; choosing the Flagship Kitchen says it doesn't fit. Desk Note's centred
     /// rows render centred (fixture fallback alignment).
     func testNotePageOpensOnAFittingDisplay() throws {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         try connectToFixture(app, scenario: "manual")
         openPages(app)
         let row = app.staticTexts["Desk Note"].firstMatch
@@ -342,7 +342,7 @@ import XCTest
     /// P1 item 4: with changes off, Home shows the plain "turned off · Turn on" line and no greyed
     /// Change page / Compose tiles; the page screen leads with the board and plain words.
     func testHomeControlActionsAndPlainPageScreen() throws {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         try connectToFixture(app, scenario: "manual")
         XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "homeChangesOff").firstMatch.exists)
         XCTAssertTrue(app.buttons["Compose text"].exists)
@@ -364,7 +364,7 @@ import XCTest
     /// B19 through the fixture's `POST /templates/render` (table + toy fallback): typing in the
     /// Lobby page reaches the board via a real request/response, within 750 ms of the last key.
     func testTypingReachesTheBoardThroughFixtureRender() throws {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         try connectToFixture(app, scenario: "manual")
         openPages(app)
         let row = app.staticTexts["Lobby"].firstMatch
@@ -411,7 +411,7 @@ import XCTest
     /// the caret (the keyboard stays up); the board follows; Backspace removes a chip whole; an
     /// unknown variable is flagged with a reason for the board's ???.
     func testInsertChipsFromTheKeyboardAccessory() {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         let document = openNewPage(app, name: "Chips")
         placeCaret(row: 1, app, document)
         document.typeText("TEMP ")
@@ -467,7 +467,7 @@ import XCTest
     /// Web port: Return at the end of a row on a padded new page moves to the next row instead of
     /// adding a 7th ("7 / 6" on a beginner's first Return).
     func testReturnMovesToTheNextEmptyRow() {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         let document = openNewPage(app, name: "Return test")
         placeCaret(row: 1, app, document)
         document.typeText("ONE\nTWO\nTHREE")
@@ -480,7 +480,7 @@ import XCTest
     /// B30/B33 (phone): all six rows and the whole board are visible with the keyboard down, and
     /// the stage is the largest element; the title does not truncate.
     func testBoardStaysBigAndAllRowsShow() {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         let document = openNewPage(app, name: "Six rows")
         placeCaret(row: 1, app, document)
         document.typeText("ONE\nTWO\nTHREE\nFOUR\nFIVE\nSIX")
@@ -503,7 +503,7 @@ import XCTest
     /// B12 (Note) / B28: a page whose `line_metadata` is shorter than its rows (fixture "Desk Note",
     /// 3 × 15, two entries for three rows) opens in the document editor, not the read-only form.
     func testShortMetadataNoteOpensInTheDocumentEditor() throws {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         try connectToFixture(app, scenario: "manual")
         openPages(app)
         let row = app.staticTexts["Desk Note"].firstMatch
@@ -527,7 +527,7 @@ import XCTest
 
     /// E1 open issue 4: when Save is off with unsaved changes, the reason sits beside it.
     func testDisabledSaveSaysWhy() throws {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         try connectToFixture(app, scenario: "manual")
         openPages(app)
         let row = app.staticTexts["Lobby"].firstMatch
@@ -553,7 +553,7 @@ import XCTest
 
     /// B18: Plain shows alignment/wrap as prefixes; prefixes typed in Plain become alignment.
     func testPlainModeShowsPrefixes() {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         let document = openNewPage(app, name: "Plain test")
         placeCaret(row: 1, app, document); document.typeText("ONE")
         app.buttons["accessory_alignCenter"].tap()
@@ -576,7 +576,7 @@ import XCTest
     /// B20/B28: choosing Note in the stage header redraws a 3 × 15 board and 3 rows; saving a page
     /// whose board got smaller asks "Change board size?" first.
     func testGeometryChangeAndShrinkConfirmation() {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         let document = openNewPage(app, name: "Shape test")
         placeCaret(row: 1, app, document); document.typeText("HI")
         app.buttons["editorHideKeyboard"].tap()

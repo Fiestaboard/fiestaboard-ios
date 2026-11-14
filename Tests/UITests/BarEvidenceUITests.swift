@@ -30,7 +30,7 @@ import XCTest
     /// B31: the editor at accessibility XL text: chips, tiles and rows re-rasterise at the size.
     /// (The in-app demo: at this size the connection form's fields move out of the helper's reach.)
     func testEditorAtAccessibilityTextSize() throws {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         launchFixture(app, arguments: ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"])
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15))
         let destination = element(app, "destination-Pages")
@@ -93,7 +93,7 @@ import XCTest
         URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
         semaphore.wait()
         try XCTSkipUnless(ready, "Start the fixture: FIXTURE_PORT=\(fixturePort) python3 Tests/UITests/fixture_server.py")
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         app.launchArguments = arguments; app.launch()
         let alias = "board-\(scenario)-" + UUID().uuidString.prefix(8).lowercased()
         let address = app.textFields["connectionAddress"]
