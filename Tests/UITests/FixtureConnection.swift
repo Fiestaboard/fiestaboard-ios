@@ -22,8 +22,10 @@ extension XCTestCase {
             for _ in 0..<12 { if element.exists && element.isHittable { break }; app.swipeDown() }
         }
         let address = app.textFields["connectionAddress"]
+        // At accessibility sizes the form may not instantiate this off-screen row yet.
+        reveal(address)
         XCTAssertTrue(address.waitForExistence(timeout: 10))
-        reveal(address); address.tap()
+        address.tap()
         let port = ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "18442"
         address.typeText("http://127.0.0.1:\(port)/board-manual-\(UUID().uuidString.lowercased())")
         let localHTTP = app.switches["connectionLocalHTTP"]
