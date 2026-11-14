@@ -201,7 +201,7 @@ import XCTest
     /// B28: type, kill the app, reopen: the recovery prompt brings the work back; then leaving
     /// with changes asks "Discard unsaved changes?".
     func testRecordKillAndReopen() throws {
-        let app = try signIn(scenario: "manual")
+        let app = try signIn(scenario: "manual", remember: true)
         let document = openEditor(app, page: "Hello World")
         document.tap(); Thread.sleep(forTimeInterval: 1)
         document.typeKey(.upArrow, modifierFlags: .command)
@@ -213,7 +213,9 @@ import XCTest
         let saved = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "board-manual-")).firstMatch
         XCTAssertTrue(saved.waitForExistence(timeout: 10), app.debugDescription)
         reveal(saved, app); saved.tap()
-        authenticate(app)
+        // Restore, rather than log in again: a fresh login deliberately gets a new
+        // connection ID and must not adopt another connection's draft.
+        XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15), app.debugDescription)
         let reopened = openEditor(app, page: "Hello World")
         let banner = element(app, "recoveryBanner")
         XCTAssertTrue(banner.waitForExistence(timeout: 8), app.debugDescription)
@@ -254,7 +256,7 @@ import XCTest
         let connect = app.buttons["connectionConnect"]
         reveal(connect, app); connect.tap()
     }
-    private func signIn(scenario: String) throws -> XCUIApplication {
+    private func signIn(scenario: String, remember: Bool = false) throws -> XCUIApplication {
         var request = URLRequest(url: URL(string: "http://127.0.0.1:\(fixturePort)/ready")!); request.timeoutInterval = 3
         let semaphore = DispatchSemaphore(value: 0); var ready = false
         URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
@@ -263,15 +265,23 @@ import XCTest
         let app = isolatedApplication()
         app.launchArguments = []; app.launch()
         connect(app, path: "board-\(scenario)-" + UUID().uuidString.prefix(8).lowercased())
-        authenticate(app)
+        authenticate(app, remember: remember)
         return app
     }
-    private func authenticate(_ app: XCUIApplication) {
+    private func authenticate(_ app: XCUIApplication, remember: Bool) {
         let username = app.textFields["Username"]
         XCTAssertTrue(username.waitForExistence(timeout: 10), app.debugDescription)
         reveal(username, app); username.tap(); username.typeText("fixture_admin")
         let password = app.secureTextFields["connectionPassword"]
         reveal(password, app); password.tap(); password.typeText("fixture-password")
+        if remember {
+            let toggle = app.switches["Remember sign-in"]
+            reveal(toggle, app)
+            if toggle.value as? String != "1" {
+                toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+            }
+            XCTAssertEqual(toggle.value as? String, "1", "recovery uses an explicitly remembered connection")
+        }
         let signIn = app.buttons["connectionSignIn"]
         reveal(signIn, app); signIn.tap()
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15), app.debugDescription)
