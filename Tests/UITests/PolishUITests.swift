@@ -157,6 +157,11 @@ import XCTest
     func testRecordCaretOverChips() throws {
         let app = try signIn(scenario: "manual")
         let document = openEditor(app, page: "Good Morning")
+        let original = try XCTUnwrap(document.value as? String)
+        var expectedRows = original.components(separatedBy: "\n")
+        XCTAssertGreaterThan(expectedRows.count, 1)
+        XCTAssertEqual(expectedRows[1], "{{weather.temperature|pad:3}}° {{weather.condition}}")
+        expectedRows[1] = "° {{weather.condition}}"
         document.tap(); Thread.sleep(forTimeInterval: 1)
         let row = app.staticTexts["documentRow_2"]
         XCTAssertTrue(row.waitForExistence(timeout: 3))
@@ -168,10 +173,10 @@ import XCTest
         document.typeKey(.rightArrow, modifierFlags: []); Thread.sleep(forTimeInterval: 1)
         document.typeText(XCUIKeyboardKey.delete.rawValue); Thread.sleep(forTimeInterval: 1.5)   // whole chip gone
         let value = (document.value as? String) ?? ""
-        XCTAssertFalse(value.contains("weather.temperature"), value)
-        XCTAssertTrue(value.contains("° {{weather.condition}}"), "the rest of row 2 is untouched: \(value)")
+        // The later formula also references weather.temperature and must remain intact.
+        XCTAssertEqual(value, expectedRows.joined(separator: "\n"), "only the selected chip is deleted")
         app.buttons["accessory_undo"].tap(); Thread.sleep(forTimeInterval: 1.5)
-        XCTAssertTrue(((document.value as? String) ?? "").contains("{{weather.temperature|pad:3}}°"), "undo brings the chip back")
+        XCTAssertEqual(document.value as? String, original, "undo restores the exact document")
         close(app)
     }
 
