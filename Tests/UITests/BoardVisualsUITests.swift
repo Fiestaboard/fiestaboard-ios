@@ -182,7 +182,7 @@ final class BoardVisualsUITests: XCTestCase {
             try await Task.sleep(nanoseconds: 1_500_000_000)
             shot(app, "W2-B9-\(scenario)")
             if dismiss {
-                XCTAssertFalse(app.buttons["outOfSyncDismiss"].isEnabled, "Dismiss is a write: off while changes are off")
+                XCTAssertTrue(app.buttons["outOfSyncDismiss"].isEnabled, "An authenticated connection can dismiss")
                 enableChanges(app)
                 let button = app.buttons["outOfSyncDismiss"]
                 XCTAssertTrue(button.waitForExistence(timeout: 15)); reveal(button, app)
@@ -287,7 +287,9 @@ final class BoardVisualsUITests: XCTestCase {
         app.buttons["createLibraryPage"].tap()
         XCTAssertTrue(app.navigationBars["Edit Page"].waitForExistence(timeout: 8))
         app.buttons["Close"].tap()
-        XCTAssertTrue(app.staticTexts["Keyboard check"].waitForExistence(timeout: 5))
+        let search = app.searchFields["Find a page"]
+        XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("Keyboard check")
+        XCTAssertTrue(pageCard(app, named: "Keyboard check").waitForExistence(timeout: 5))
         XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Open its editor")).firstMatch.exists,
                        "no stale creation note once the editor has closed")
         shot(app, "W2-library-after-create")

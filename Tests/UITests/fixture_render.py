@@ -14,7 +14,8 @@ entry (`reason: "case"`, uppercase fallback) instead (W4, WEB-P4), per-row align
 `{{color}}` → `{63}`… markers, `{{fill_space}}` / `{{fill_space_repeat:X}}`
 fill the rest of the row, the variables in `VALUES` (shared with the Android
 fixture) are substituted and their `upper`/`lower`/`pad`/`truncate`/`zeropad` filters applied,
-any other variable and every `{{= … }}` formula render `???`.
+any other variable and unlisted `{{= … }}` formula render `???`. The keyboard-accessory
+UI scenario has one explicit formula result in `UI_FORMULA_VALUES`; no general evaluator.
 Validate fallback: valid iff braces and parentheses balance and every `NAME(`
 is a known function; otherwise the server's message shapes (0-based `column`;
 an unclosed call is `Formula #SYNTAX: Missing ')' in call to NAME`, as 10.3.2).
@@ -169,6 +170,8 @@ VALUES = {
     'baywheels.stations.0.name': 'MARKET ST', 'baywheels.stations.0.bikes': '7',
 }
 UNKNOWN = '???'
+# Explicit UI scenario output. Other formulas remain unsupported by the toy fallback.
+UI_FORMULA_VALUES = {'IF(weather.temperature > 70, "WARM", "COOL")': 'WARM'}
 
 
 def lookup(path):
@@ -210,7 +213,7 @@ def expand(inner):
     if name.isdigit() and 63 <= int(name) <= 71:
         return '{%s}' % name
     if stripped.startswith('='):
-        return UNKNOWN  # the fixture never evaluates formulas
+        return UI_FORMULA_VALUES.get(stripped[1:].strip(), UNKNOWN)
     path, *filters = stripped.split('|')
     value = lookup(path)
     if value is None:

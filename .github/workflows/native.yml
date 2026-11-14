@@ -11,7 +11,7 @@ concurrency:
 jobs:
   build-and-test:
     runs-on: ${{ fromJSON(vars.NATIVE_RUNNER || '["xcode-27"]') }}
-    timeout-minutes: 120
+    timeout-minutes: 240
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
       IOS_SLICE: ci

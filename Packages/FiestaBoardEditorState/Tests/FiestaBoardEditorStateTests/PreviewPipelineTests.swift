@@ -54,6 +54,22 @@ import FiestaBoardKit
     }
     private func settle() async { for _ in 0..<20 { await Task.yield() } }
 
+    func testPreviewTimingMeasuresLatestInputAndRejectsStaleReplies() async throws {
+        let pipeline = makePipeline()
+        var now: TimeInterval = 10
+        pipeline.diagnosticNow = { now }
+        pipeline.edited(); await settle(); clock.advance(); await settle()
+        now = 11
+        pipeline.edited(); await settle(); clock.advance(); await settle()
+        try renderer.answer(["OLD"]); await settle()
+        XCTAssertNil(pipeline.state.inputToPreviewSeconds)
+        now = 11.3
+        try renderer.answer(["NEW"]); await settle()
+        XCTAssertEqual(try XCTUnwrap(pipeline.state.inputToPreviewSeconds), 0.3, accuracy: 0.0001)
+        pipeline.edited()
+        XCTAssertNil(pipeline.state.inputToPreviewSeconds)
+    }
+
     func testDebounceCommitsOnceAfterTwoHundredFiftyMillisecondsOfIdle() async throws {
         let pipeline = makePipeline()
         for _ in 0..<5 { pipeline.edited(); await settle() }

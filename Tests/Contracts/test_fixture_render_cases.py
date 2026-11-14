@@ -62,6 +62,16 @@ class FixtureRenderCasesTests(unittest.TestCase):
             out += [(Path(path).name, case) for case in json.loads(Path(path).read_text())['cases']]
         return out
 
+    def test_accessory_formula_fixture_and_unknown_fallback(self):
+        prefix, cookie = self.signed_in()
+        status, result, _ = self.request('POST', prefix + '/templates/render', {
+            'template': ['TEMP {{weather.temperature}} {{red}}',
+                         '{{= IF(weather.temperature > 70, "WARM", "COOL")}}',
+                         '{{= UNMODELED()}}'], 'device_type': 'flagship'}, cookie)
+        self.assertEqual(status, 200)
+        self.assertEqual(result['lines'][1].strip(), 'WARM')
+        self.assertEqual(result['lines'][2].strip(), '???')
+
     def test_every_table_entry_round_trips(self):
         prefix, cookie = self.signed_in()
         cases = self.cases()

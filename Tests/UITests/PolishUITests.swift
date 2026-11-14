@@ -158,8 +158,11 @@ import XCTest
         let app = try signIn(scenario: "manual")
         let document = openEditor(app, page: "Good Morning")
         document.tap(); Thread.sleep(forTimeInterval: 1)
-        document.typeKey(.upArrow, modifierFlags: .command)          // document start
-        document.typeKey(.downArrow, modifierFlags: []); Thread.sleep(forTimeInterval: 1)   // row 2, before the chip
+        let row = app.staticTexts["documentRow_2"]
+        XCTAssertTrue(row.waitForExistence(timeout: 3))
+        document.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: document.frame.width - 12, dy: row.frame.midY - document.frame.minY)).tap()
+        document.typeKey(.leftArrow, modifierFlags: .command) // start of row 2, before the chip
         document.typeKey(.rightArrow, modifierFlags: []); Thread.sleep(forTimeInterval: 1.2) // after the chip
         document.typeKey(.leftArrow, modifierFlags: .shift); Thread.sleep(forTimeInterval: 1.5) // outlined
         document.typeKey(.rightArrow, modifierFlags: []); Thread.sleep(forTimeInterval: 1)

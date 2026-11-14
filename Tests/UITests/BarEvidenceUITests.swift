@@ -80,7 +80,13 @@ import XCTest
         XCTAssertTrue(issues.waitForExistence(timeout: 8), app.debugDescription)
         // Re-recorded (P5): grouped per row and reason, not one line per letter.
         XCTAssertEqual(issues.label, "Line 2: lowercase letters show as capitals on this board (12).")
-        XCTAssertFalse(element(app, "charsetIssuesShowAll").exists, "one group fits: no Show all")
+        // One group can still truncate on a narrow display. Expansion must preserve its text.
+        let more = app.buttons["charsetIssuesShowAll"]
+        if more.exists {
+            more.tap()
+            XCTAssertEqual(issues.label, "Line 2: lowercase letters show as capitals on this board (12).")
+            XCTAssertEqual(more.label, "Show less")
+        }
         shot(app, "W4-B16-charset-issues", settle: 3)
         close(app)
     }

@@ -34,6 +34,7 @@ extension XCTestCase {
         let connect = app.buttons["connectionConnect"]
         reveal(connect); connect.tap()
         let username = app.textFields["Username"]
+        reveal(username)
         XCTAssertTrue(username.waitForExistence(timeout: 10))
         reveal(username); username.tap(); username.typeText("fixture_admin")
         let password = app.secureTextFields["connectionPassword"]

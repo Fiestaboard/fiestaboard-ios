@@ -38,7 +38,8 @@ struct CanvasAreaPicker: View {
                 }
             }
             .contentShape(Rectangle())
-            .gesture(DragGesture(minimumDistance: 0, coordinateSpace: .local)
+            // The grid owns drags that start inside it; scrolling belongs to the adjacent rail.
+            .highPriorityGesture(DragGesture(minimumDistance: 0, coordinateSpace: .local)
                 .onChanged { value in
                     // Only a drag that starts on the grid selects (a scroll grazing its edge doesn't).
                     guard inside(value.startLocation, proxy.size) else { return }

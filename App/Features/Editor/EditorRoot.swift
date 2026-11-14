@@ -304,6 +304,15 @@ struct EditorRoot: View {
                      led: pixelDisplay?.model, layers: stageLayers,
                      ledMaxHeight: showsCanvases && sizeClass == .compact ? 200 : 320)
             .overlay(alignment: .bottomTrailing) { stageLayerProbe }
+            #if DEBUG
+            .overlay(alignment: .topTrailing) {
+                Color.clear.frame(width: 1, height: 1)
+                    .accessibilityElement()
+                    .accessibilityIdentifier("previewInputLatency")
+                    .accessibilityValue(pipeline.state.inputToPreviewSeconds.map { String($0) } ?? "pending")
+                    .allowsHitTesting(false)
+            }
+            #endif
     }
 
     // MARK: Canvases (PLAN B24)

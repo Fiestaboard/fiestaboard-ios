@@ -31,6 +31,10 @@ public final class PreviewPipeline: ObservableObject {
         public var failure: String?
         /// Number of completed render requests whose result was adopted (for tests/diagnostics).
         public var adoptedRenders = 0
+        #if DEBUG
+        /// Monotonic last-input → current preview adoption, excluding test-process AX latency.
+        public var inputToPreviewSeconds: TimeInterval?
+        #endif
     }
     public typealias Sleeper = @MainActor @Sendable (Duration) async throws -> Void
 
@@ -44,6 +48,10 @@ public final class PreviewPipeline: ObservableObject {
     private var pendingRender = false
     /// Advances on every input; a render records the value it started from.
     private var inputGeneration: UInt64 = 0
+    #if DEBUG
+    var diagnosticNow: () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
+    private var lastInputAt: TimeInterval?
+    #endif
     /// Advances when the target/geometry changes or the pipeline is cancelled; results requested
     /// under an older target are discarded.
     private var targetGeneration: UInt64 = 0
@@ -57,6 +65,10 @@ public final class PreviewPipeline: ObservableObject {
 
     /// The editor surface changed (keystroke, paste). Restarts the idle timer.
     public func edited() {
+        #if DEBUG
+        lastInputAt = diagnosticNow()
+        state.inputToPreviewSeconds = nil
+        #endif
         inputGeneration &+= 1
         state.isStale = true
         debounceTask?.cancel()
@@ -76,6 +88,10 @@ public final class PreviewPipeline: ObservableObject {
 
     /// The display or geometry changed: older replies no longer describe this stage.
     public func targetChanged() {
+        #if DEBUG
+        lastInputAt = nil
+        state.inputToPreviewSeconds = nil
+        #endif
         targetGeneration &+= 1
         inputGeneration &+= 1
         state.isStale = true
@@ -135,6 +151,12 @@ public final class PreviewPipeline: ObservableObject {
                 if !(error is CancellationError) { state.failure = Self.describe(error) }
             }
             state.isStale = startedInput != inputGeneration
+            #if DEBUG
+            if case .success = outcome, !state.isStale, let lastInputAt {
+                state.inputToPreviewSeconds = diagnosticNow() - lastInputAt
+                self.lastInputAt = nil
+            }
+            #endif
         }
         if pendingRender {
             pendingRender = false

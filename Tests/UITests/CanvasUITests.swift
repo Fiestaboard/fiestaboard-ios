@@ -73,8 +73,11 @@ import XCTest
         reveal(picker, app)
         XCTAssertEqual(picker.value as? String, "Rows 1 to 5, columns 1 to 8", "picker \(picker.frame), panel \(element(app, "canvasesPanel").frame)")
         // Drag from cell (row 3, col 5) to (row 8, col 14), 1-based.
-        let from = picker.coordinate(withNormalizedOffset: CGVector(dx: 4.5 / 16, dy: 2.5 / 10))
-        let to = picker.coordinate(withNormalizedOffset: CGVector(dx: 13.5 / 16, dy: 7.5 / 10))
+        let frame = picker.frame
+        let origin = app.coordinate(withNormalizedOffset: .zero)
+        let from = origin.withOffset(CGVector(dx: frame.minX + frame.width * 4.5 / 16, dy: frame.minY + frame.height * 2.5 / 10))
+        let to = origin.withOffset(CGVector(dx: frame.minX + frame.width * 13.5 / 16, dy: frame.minY + frame.height * 7.5 / 10))
+        XCTAssertLessThan(frame.minY + frame.height * 7.5 / 10, app.windows.firstMatch.frame.maxY - 20)
         from.press(forDuration: 0.2, thenDragTo: to, withVelocity: 150, thenHoldForDuration: 0.2)
         XCTAssertTrue(waitFor(4) { picker.value as? String == "Rows 3 to 8, columns 5 to 14" }, "\(picker.value ?? "")")
         XCTAssertEqual(fieldValue(app, "canvasAreaRow"), "3"); XCTAssertEqual(fieldValue(app, "canvasAreaCols"), "10")
@@ -144,22 +147,12 @@ import XCTest
         let toggle = app.segmentedControls["editingSurface"]
         func top() -> CGFloat { toggle.exists ? toggle.frame.maxY + 8 : window.minY + 80 }
         func visible() -> Bool { element.exists && element.isHittable && element.frame.maxY < window.maxY - 20 && element.frame.minY > top() }
-        let panel = app.descendants(matching: .any).matching(identifier: "canvasesPanel").firstMatch
-        for _ in 0..<12 where !visible() {
-            // Drag the panel's own scroll view by its header area, never across a drawing surface.
-            // Start on a caption of the panel that overlaps no drawing surface.
-            let surfaces = ["canvasAreaPicker", "canvasPixelPad", "canvasShapesSurface"].map { self.element(app, $0) }.filter { $0.exists }.map { $0.frame }
-            let captions = ["Pixel canvases", "Canvas ID", "Area (board character cells)", "Row", "Column", "Rows", "Columns",
-                            "Drag across the grid to set the area, or use the row and column fields.", "Bleed to the panel edge", "Scale",
-                            "Text under the canvas", "Drag to paint. Each stroke is one undo step.", "Fill", "Outline", "Only if",
-                            "Tap a shape to select it, drag to move it, drag a handle to resize. Values snap to whole pixels.",
-                            "Every field takes a number or colour, or an expression such as {{weather.temperature}}."]
-            let texts = panel.exists ? panel.staticTexts.matching(NSPredicate(format: "label IN %@", captions)).allElementsBoundByIndex : []
-            let caption = texts.first { t in
-                let f = t.frame
-                return f.minY > top() + 20 && f.maxY < window.maxY - 80 && f.width > 30 && !surfaces.contains { $0.insetBy(dx: -30, dy: -30).intersects(f) }
-            }
-            let from = caption.map { $0.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)) } ?? app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15))
+        for _ in 0..<12 {
+            if visible() { break }
+            // The dedicated rail scrolls without editing the area/pixel/shape surfaces.
+            let rail = self.element(app, "canvasesPanelHandle")
+            let from = rail.exists ? rail.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+                : app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
             let up = !element.exists || element.frame.maxY >= window.maxY - 20
             from.press(forDuration: 0.05, thenDragTo: from.withOffset(CGVector(dx: 0, dy: up ? -160 : 160)), withVelocity: 600, thenHoldForDuration: 0.1)
         }

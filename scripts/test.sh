@@ -24,9 +24,12 @@ fixture_pid=$!
 trap 'kill "$fixture_pid" 2>/dev/null || true' EXIT
 export TEST_RUNNER_FIXTURE_PORT="$fixture_port"
 curl --fail --retry 10 --retry-connrefused --retry-delay 1 "http://127.0.0.1:$fixture_port/ready"
+simulator_failed=0
 for model in 'iPhone 17' 'iPad Air 11-inch (M4)'; do
   udid=$(xcrun simctl list devices available --json | python3 scripts/select-ios-simulator.py "$model")
   xcrun simctl bootstatus "$udid" -b
+  # A fresh simulator otherwise presents the first-use slide-to-type sheet over the editor.
+  xcrun simctl spawn "$udid" defaults write com.apple.keyboard.preferences DidShowContinuousPathIntroduction -bool YES
   args=(-project FiestaBoard.xcodeproj -scheme FiestaBoard
     -destination "platform=iOS Simulator,id=$udid"
     -derivedDataPath "$ios_build_root/dd-$ios_slice"
@@ -36,5 +39,6 @@ for model in 'iPhone 17' 'iPad Air 11-inch (M4)'; do
   # XCTest executes suites serially with parallel testing disabled. One invocation
   # per device avoids restarting the simulator service for every test class.
   result="$ios_build_root/results/$ios_slice/$(date +%s)-$udid.xcresult"
-  xcodebuild "${args[@]}" -resultBundlePath "$result" test
+  if ! xcodebuild "${args[@]}" -resultBundlePath "$result" test; then simulator_failed=1; fi
 done
+exit "$simulator_failed"
