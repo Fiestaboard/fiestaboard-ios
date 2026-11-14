@@ -18,7 +18,7 @@ import XCTest
         XCTAssertEqual(receipt.pageData, Data(page.utf8))
     }
     func testDemoPageSavePersistsAndRotatesRevisionWithoutChangingBoard() async throws {
-        let demo = try DemoFiestaBoardService()
+        let demo = try FixtureFiestaBoardService()
         _ = try await demo.connect(allowCandidateWrites: true)
         let before = try await demo.page(id: "page-selected")
         let target = try BoardTarget(deployment: demo.deployment, boardID: "board-2")

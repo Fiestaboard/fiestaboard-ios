@@ -4,7 +4,7 @@ import XCTest
 @MainActor
 final class DemoTests: XCTestCase {
     func testDemoIsDeterministicAndActionsAreExplicitlySimulated() async throws {
-        let service = try DemoFiestaBoardService()
+        let service = try FixtureFiestaBoardService()
         let status = try await service.connect(allowCandidateWrites: false)
         XCTAssertTrue(status.isDemo)
         XCTAssertTrue(service.isDemo)
@@ -39,7 +39,7 @@ final class DemoTests: XCTestCase {
         XCTAssertEqual(partialState.characters?.first.map { Array($0.prefix(4)) }, [14,5,24,20])
         XCTAssertEqual(partialState.characters?.last, changed.characters?.last, "Failed region must retain its earlier content")
         XCTAssertTrue(changed.characters?.last?.contains(1) == true, "Retention assertion needs nonblank previous content")
-        for simulation in [DemoSimulation.rejected, .unknown] {
+        for simulation in [FixtureSimulation.rejected, .unknown] {
             await service.setSimulation(simulation)
             do { _ = try await service.sendText("NEXT", to: target); XCTFail("Expected simulation") }
             catch {

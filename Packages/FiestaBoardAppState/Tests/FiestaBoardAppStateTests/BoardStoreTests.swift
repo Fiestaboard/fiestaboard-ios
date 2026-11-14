@@ -5,7 +5,7 @@ import FiestaBoardKit
 @MainActor final class BoardStoreTests: XCTestCase {
     func testDemoLoadsAndCapturedTargetIsInvalidatedByBoardChange() async throws {
         let store = BoardStore()
-        await store.connect(try DemoFiestaBoardService()).value
+        await store.connect(try FixtureFiestaBoardService()).value
         XCTAssertEqual(store.status?.access, .simulated)
         XCTAssertEqual(store.board?.summary.id, "board-2")
         let action = try XCTUnwrap(store.prepare(.text("CAPTURED")))
@@ -16,7 +16,7 @@ import FiestaBoardKit
     }
     func testConfirmationUsesOriginalTextAndSuppressesDuplicateTap() async throws {
         let store = BoardStore()
-        await store.connect(try DemoFiestaBoardService()).value
+        await store.connect(try FixtureFiestaBoardService()).value
         let action = try XCTUnwrap(store.prepare(.text("ORIGINAL")))
         let first = store.confirm(action)
         XCTAssertTrue(store.commandBusy)
@@ -27,7 +27,7 @@ import FiestaBoardKit
         XCTAssertTrue(store.message?.contains("Simulated") == true)
     }
     func testUnknownOutcomeRequiresReadbackAndDoesNotReplay() async throws {
-        let demo = try DemoFiestaBoardService()
+        let demo = try FixtureFiestaBoardService()
         let store = BoardStore()
         await store.connect(demo).value
         await demo.setSimulation(.unknown)
@@ -40,7 +40,7 @@ import FiestaBoardKit
         XCTAssertEqual(store.board?.text, "MAYBE")
     }
     func testHeldPageSeparatesSelectionFromReportedOutput() async throws {
-        let demo = try DemoFiestaBoardService()
+        let demo = try FixtureFiestaBoardService()
         let store = BoardStore()
         await store.connect(demo).value
         let previous = store.board?.characters
@@ -86,7 +86,7 @@ import FiestaBoardKit
         XCTAssertEqual(store.board?.text, "ONCE")
     }
     func testPartialAndRejectedOutcomesAreNotAcknowledgedAsSuccess() async throws {
-        let demo = try DemoFiestaBoardService()
+        let demo = try FixtureFiestaBoardService()
         let store = BoardStore()
         await store.connect(demo).value
         await demo.setSimulation(.partial)
@@ -168,7 +168,7 @@ import FiestaBoardKit
             await old.configureLogout(fails: fails, delayed: true)
             let logout = store.logout()
             await old.waitForLogout()
-            await store.connect(try DemoFiestaBoardService()).value
+            await store.connect(try FixtureFiestaBoardService()).value
             let selected = try XCTUnwrap(store.prepare(.text("NEW SESSION")))
             await store.confirm(selected).value
             let newMessage = store.message
@@ -199,7 +199,7 @@ import FiestaBoardKit
         let store = BoardStore()
         let first = store.connect(delayed)
         await delayed.waitUntilBlocked()
-        await store.connect(try DemoFiestaBoardService()).value
+        await store.connect(try FixtureFiestaBoardService()).value
         await delayed.release()
         await first.value
         XCTAssertEqual(store.status?.access, .simulated)
@@ -212,7 +212,7 @@ import FiestaBoardKit
 private actor DelayedService: FiestaBoardService {
     nonisolated let deployment: DeploymentURL
     nonisolated let isDemo = true
-    private let demo: DemoFiestaBoardService
+    private let demo: FixtureFiestaBoardService
     private let delayConnection: Bool
     private var delaySchedule = false
     private var scheduleFailure: FiestaBoardError?
@@ -239,7 +239,7 @@ private actor DelayedService: FiestaBoardService {
     func delayNextMutation() { delayMutation = true }
     private var gate: CheckedContinuation<Void, Never>?
     private var observers: [CheckedContinuation<Void, Never>] = []
-    init(delayConnection: Bool = true) throws { let d = try DemoFiestaBoardService(); demo = d; deployment = d.deployment; self.delayConnection = delayConnection }
+    init(delayConnection: Bool = true) throws { let d = try FixtureFiestaBoardService(); demo = d; deployment = d.deployment; self.delayConnection = delayConnection }
     func waitUntilBlocked() async { if gate != nil { return }; await withCheckedContinuation { observers.append($0) } }
     func release() { gate?.resume(); gate = nil }
     func authStatus() async throws -> AuthStatus { try await demo.authStatus() }
@@ -315,7 +315,7 @@ private actor DelayedService: FiestaBoardService {
 private actor SessionFaultService: FiestaBoardService {
     nonisolated let deployment: DeploymentURL
     nonisolated let isDemo = false
-    private let demo: DemoFiestaBoardService
+    private let demo: FixtureFiestaBoardService
     private var rejectRead = false
     private var pageFailure: FiestaBoardError?
     private var documentContract: (version: String?, advertised: Bool, dev: Bool, hasRevision: Bool)?
@@ -345,7 +345,7 @@ private actor SessionFaultService: FiestaBoardService {
     private var logoutGate: CheckedContinuation<Void, Never>?
     private var logoutObservers: [CheckedContinuation<Void, Never>] = []
     private(set) var sentCount = 0
-    init() throws { let demo = try DemoFiestaBoardService(); self.demo = demo; deployment = demo.deployment }
+    init() throws { let demo = try FixtureFiestaBoardService(); self.demo = demo; deployment = demo.deployment }
     func rejectNextRead() { rejectRead = true }
     func failPages(_ error: FiestaBoardError?) { pageFailure = error }
     func failDetail(_ error: FiestaBoardError?) { detailFailure = error }
@@ -435,7 +435,7 @@ private actor SessionFaultService: FiestaBoardService {
 extension BoardStoreTests {
     func testControlsUseImmutableConfirmationAndConfigurationCopy() async throws {
         let store = BoardStore()
-        await store.connect(try DemoFiestaBoardService()).value
+        await store.connect(try FixtureFiestaBoardService()).value
         let pause = try XCTUnwrap(store.prepare(.configuration(BoardPatch(paused: true))))
         await store.confirm(pause).value
         XCTAssertEqual(store.board?.summary.paused, true)
@@ -452,7 +452,7 @@ extension BoardStoreTests {
         XCTAssertTrue(store.message?.contains("refused") == true)
     }
     func testUnknownConfigurationNeedsRefreshAndCannotBeReplayed() async throws {
-        let demo = try DemoFiestaBoardService(), store = BoardStore()
+        let demo = try FixtureFiestaBoardService(), store = BoardStore()
         await store.connect(demo).value
         await demo.setSimulation(.unknown)
         let action = try XCTUnwrap(store.prepare(.configuration(BoardPatch(scheduleEnabled: true))))
@@ -488,7 +488,7 @@ extension BoardStoreTests {
 
 extension BoardStoreTests {
     func testPageDocumentSnapshotBindsDeploymentAndPageIdentity() async throws {
-        let demo = try DemoFiestaBoardService(), store = BoardStore()
+        let demo = try FixtureFiestaBoardService(), store = BoardStore()
         await store.connect(demo).value
         let snapshot = try await store.loadPageDocument(id: "page-selected")
         XCTAssertEqual(snapshot.id, "page-selected")
@@ -508,7 +508,7 @@ extension BoardStoreTests {
         await service.delayNextPageRead()
         let old = Task { try await store.loadPageDocument(id: "page-selected") }
         await service.waitUntilBlocked()
-        await store.connect(try DemoFiestaBoardService()).value
+        await store.connect(try FixtureFiestaBoardService()).value
         await service.release()
         do { _ = try await old.value; XCTFail("Expected stale snapshot rejection") }
         catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
@@ -526,7 +526,7 @@ extension BoardStoreTests {
 
 extension BoardStoreTests {
     func testRefusedConfigurationStillRequiresReadbackBecauseSettersMayPartiallyApply() async throws {
-        let demo = try DemoFiestaBoardService(), store = BoardStore()
+        let demo = try FixtureFiestaBoardService(), store = BoardStore()
         await store.connect(demo).value
         await demo.setSimulation(.rejected)
         await store.confirm(try XCTUnwrap(store.prepare(.configuration(BoardPatch(paused: true))))).value
@@ -538,7 +538,7 @@ extension BoardStoreTests {
         XCTAssertTrue(store.canWrite)
     }
     func testRestoreUnknownOutcomeRequiresRefreshWithoutClearingPinnedPage() async throws {
-        let demo = try DemoFiestaBoardService(), store = BoardStore()
+        let demo = try FixtureFiestaBoardService(), store = BoardStore()
         await store.connect(demo).value
         let pinned = store.board?.activePageID
         await demo.setSimulation(.unknown)
@@ -557,7 +557,7 @@ extension BoardStoreTests {
 
 extension BoardStoreTests {
     func testPageSaveReturnsNewContextAndRejectsOldContext() async throws {
-        let demo = try DemoFiestaBoardService(), store = BoardStore()
+        let demo = try FixtureFiestaBoardService(), store = BoardStore()
         await store.connect(demo).value
         let original = try await store.loadPageDocument(id: "page-selected")
         XCTAssertTrue(original.editingAccess.canSave)
@@ -569,7 +569,7 @@ extension BoardStoreTests {
         catch { XCTAssertEqual(error as? FiestaBoardError, .stalePageContext) }
     }
     func testSameURLReconnectInvalidatesLoadedPageContext() async throws {
-        let demo = try DemoFiestaBoardService(), store = BoardStore()
+        let demo = try FixtureFiestaBoardService(), store = BoardStore()
         await store.connect(demo).value
         let original = try await store.loadPageDocument(id: "page-selected")
         await store.reconnect(allowCandidateWrites: true).value
@@ -577,7 +577,7 @@ extension BoardStoreTests {
         catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
     }
     func testUnknownPageSaveRequiresExplicitReadAndDoesNotReplay() async throws {
-        let demo = try DemoFiestaBoardService(), store = BoardStore()
+        let demo = try FixtureFiestaBoardService(), store = BoardStore()
         await store.connect(demo).value
         let original = try await store.loadPageDocument(id: "page-selected")
         await demo.setSimulation(.unknown)
@@ -660,7 +660,7 @@ extension BoardStoreTests {
     }
     func testRecoveredBaselineRevisionIsSentUnchangedAndConflicts() async throws {
         let store = BoardStore()
-        await store.connect(try DemoFiestaBoardService()).value
+        await store.connect(try FixtureFiestaBoardService()).value
         let original = try await store.loadPageDocument(id: "page-selected")
         do { _ = try await store.savePage(patch: PageSavePatch(name: "Recovered", expectedRevision: "old-recovered-revision"), context: original.context); XCTFail() }
         catch { XCTAssertEqual(error as? FiestaBoardError, .pageConflict) }
@@ -706,7 +706,7 @@ extension BoardStoreTests {
 
 extension BoardStoreTests {
     func testComparisonReadbackInvalidatesOldPageContextWithoutLosingSession() async throws {
-        let demo = try DemoFiestaBoardService(), store = BoardStore()
+        let demo = try FixtureFiestaBoardService(), store = BoardStore()
         await store.connect(demo).value
         let original = try await store.loadPageDocument(id: "page-selected")
         let comparison = try await store.readbackPage(context: original.context)
@@ -805,7 +805,7 @@ extension BoardStoreTests {
         XCTAssertNotNil(store.board); XCTAssertFalse(store.needsReadback); XCTAssertTrue(store.canWrite)
     }
     func testReconnectDoesNotClearAmbiguousCommandBarrier() async throws {
-        let demo = try DemoFiestaBoardService(); let store = BoardStore(); await store.connect(demo).value
+        let demo = try FixtureFiestaBoardService(); let store = BoardStore(); await store.connect(demo).value
         await demo.setSimulation(.unknown)
         await store.confirm(try XCTUnwrap(store.prepare(.text("UNKNOWN")))).value
         await store.reconnect(allowCandidateWrites: true).value
@@ -844,7 +844,7 @@ extension BoardStoreTests {
         let old = try SessionFaultService(); let store = BoardStore(); await store.connect(old).value
         await old.configureLogout(fails: true, delayed: true)
         let logout = store.logout(); await old.waitForLogout()
-        await store.connect(try DemoFiestaBoardService()).value
+        await store.connect(try FixtureFiestaBoardService()).value
         await old.releaseLogout(); await logout.value
         XCTAssertEqual(store.status?.access, .simulated); XCTAssertNil(store.message)
         XCTAssertEqual(store.logoutNotices.last?.deployment, old.deployment)
@@ -856,7 +856,7 @@ extension BoardStoreTests {
     func testLateOldOptionalPageAuthenticationFailureCannotDisconnectNewServer() async throws {
         let old = try SessionFaultService(); await old.blockPages(); await old.failPages(.unauthenticated)
         let store = BoardStore(); let first = store.connect(old); await old.waitForPages()
-        await store.connect(try DemoFiestaBoardService()).value
+        await store.connect(try FixtureFiestaBoardService()).value
         await old.releasePages(); await first.value
         XCTAssertEqual(store.status?.access, .simulated); XCTAssertFalse(store.pages.isEmpty); XCTAssertNil(store.message)
     }
@@ -865,7 +865,7 @@ extension BoardStoreTests {
 extension BoardStoreTests {
     func testInitialPreferredDetailLoadDoesNotRecoverAmbiguousCommand() async throws {
         for preferred in ["board-2", "board-led"] {
-            let demo = try DemoFiestaBoardService(); let store = BoardStore()
+            let demo = try FixtureFiestaBoardService(); let store = BoardStore()
             await store.connect(demo).value
             await store.selectBoard(preferred).value
             await demo.setSimulation(.unknown)
@@ -952,7 +952,7 @@ private actor StoreDefaultTransport: APITransport {
 extension BoardStoreTests {
     func testDemoFallbackSetAndClearThroughPreparedActions() async throws {
         let store = BoardStore()
-        await store.connect(try DemoFiestaBoardService()).value
+        await store.connect(try FixtureFiestaBoardService()).value
         XCTAssertTrue(store.canChangeDefaultPage)
         let selection = store.board?.activePageID
         let set = try XCTUnwrap(store.prepare(.configuration(BoardPatch(defaultPage: .set("page-weather")))))
@@ -1135,7 +1135,7 @@ extension BoardStoreTests {
         await service.waitUntilBlocked()
         XCTAssertEqual(store.boardActionDisabledReason, .busy)
         await service.release(); await command.value
-        let demo = try DemoFiestaBoardService()
+        let demo = try FixtureFiestaBoardService()
         await store.connect(demo).value
         await demo.setSimulation(.unknown)
         await store.confirm(try XCTUnwrap(store.prepare(.text("MAYBE")))).value
@@ -1152,7 +1152,7 @@ extension BoardStoreTests {
         await service.configureDocumentContract(version: "10.1.20", advertised: true, dev: false, hasRevision: true)
         await store.connect(service, allowCandidateWrites: false).value
         XCTAssertEqual(store.pageManagementDisabledReason, .changesDisabled)
-        await store.connect(try DemoFiestaBoardService()).value
+        await store.connect(try FixtureFiestaBoardService()).value
         XCTAssertNil(store.pageManagementDisabledReason)
         XCTAssertNil(store.webEditorURL(pageID: "page-selected"))
     }

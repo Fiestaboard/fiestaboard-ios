@@ -6,10 +6,10 @@ import FiestaBoardKit
     private func model(_ service: OnboardingService) -> ConnectionModel {
         ConnectionModel(store: BoardStore(), catalog: ServerCatalog(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)), discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, serviceFactory: { _ in service })
     }
-    func testDemoStartupNeverBuildsLiveServiceAndDisconnectReturnsPicker() async throws {
+    func testStartupNeverBuildsLiveServiceAndDisconnectReturnsPicker() async throws {
         let service = try OnboardingService(); let model = model(service)
-        await model.start(demo: true).value
-        XCTAssertEqual(model.phase, .demo)
+        await model.start().value
+        XCTAssertEqual(model.phase, .picker)
         let events = await service.events; XCTAssertTrue(events.isEmpty)
         model.disconnect(); XCTAssertEqual(model.phase, .picker)
     }
@@ -57,7 +57,7 @@ import FiestaBoardKit
         XCTAssertNil(model.snapshot)
         XCTAssertTrue(model.message?.contains("different FiestaBoard installation") == true)
     }
-    func testDemoWithCachedServerNeverInvokesFactoryOrDiscovery() async throws {
+    func testStartupWithCachedServerNeverInvokesFactoryOrDiscovery() async throws {
         let service = try OnboardingService()
         let catalog = ServerCatalog(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
         let saved = try await catalog.upsert(SavedServer(deployment: service.deployment, alias: "Cached", installationID: "installation"))
@@ -65,8 +65,8 @@ import FiestaBoardKit
         prefs.set(saved.id.uuidString, forKey: "FiestaBoard.selectedServerID")
         let calls = FactoryCalls()
         let model = ConnectionModel(store: BoardStore(), catalog: catalog, discovery: ForbiddenDiscovery(), preferences: prefs, serviceFactory: { _ in calls.record(); return service })
-        await model.start(demo: true).value
-        XCTAssertEqual(model.phase, .demo); XCTAssertEqual(calls.count, 0)
+        await model.start().value
+        XCTAssertEqual(model.phase, .picker); XCTAssertEqual(calls.count, 0)
     }
 
     func testCancellingSetupDuringPersistencePreparationCannotSubmitAdministrator() async throws {
@@ -162,7 +162,7 @@ private struct EmptyDiscovery: ServerDiscovering {
 private actor OnboardingService: FiestaBoardService {
     nonisolated let deployment: DeploymentURL
     nonisolated let isDemo = false
-    let demo: DemoFiestaBoardService
+    let demo: FixtureFiestaBoardService
     var events: [String] = []
     var installation = "installation"
     func changeInstallation(_ value: String) { installation = value }
@@ -180,7 +180,7 @@ private actor OnboardingService: FiestaBoardService {
     var gate: CheckedContinuation<Void, Never>?
     var observers: [CheckedContinuation<Void, Never>] = []
     init(usingDemoDeployment: Bool = false) throws {
-        let demo = try DemoFiestaBoardService(); self.demo = demo
+        let demo = try FixtureFiestaBoardService(); self.demo = demo
         deployment = usingDemoDeployment ? demo.deployment : try DeploymentURL("https://board.example.com")
     }
     func blockBootstrap() { blocked = true }

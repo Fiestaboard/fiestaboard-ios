@@ -20,9 +20,7 @@ struct ConnectionView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Image(systemName: "rectangle.split.3x3.fill").font(.largeTitle).foregroundStyle(.orange).accessibilityHidden(true)
                             Text("Connect your FiestaBoard").font(.title.bold())
-                            Text("Connect to your FiestaBoard server or explore with simulated displays.").foregroundStyle(.secondary)
-                            Button("Explore Demo") { model.startDemo() }.buttonStyle(.bordered)
-                                .accessibilityIdentifier("exploreDemo")
+                            Text("Connect to your FiestaBoard hub.").foregroundStyle(.secondary)
                         }.padding(.vertical, 8)
                     }
                     if !model.savedServers.isEmpty {
@@ -88,22 +86,20 @@ struct ConnectionView: View {
                         DisclosureGroup("Identity & compatibility") {
                             LabeledContent("Installation", value: snapshot.identity.installationID).textSelection(.enabled)
                             LabeledContent("Version", value: snapshot.identity.version)
-                            Text("Each feature checks its own server support. Connecting does not enable changes.")
+                            Text("Each feature checks its own hub support. Sign in to control your displays.")
                         }
                         if !snapshot.health.serviceRunning { Text("The server is reachable. Its display service is not currently running.").foregroundStyle(.secondary) }
                     }
                     if case .authentication(let phase) = model.phase {
                         switch phase {
                         case .signIn: SignInView(model: model)
-                        case .chooseAuthentication: SetupView(model: model, choosingAuthentication: true)
-                        case .setupAdministrator: SetupView(model: model, choosingAuthentication: false)
+                        case .chooseAuthentication, .setupAdministrator:
+                            if let url = URL(string: snapshot.deployment.description) {
+                                Link("Finish setup in your browser", destination: url)
+                            }
                         case .ready: EmptyView()
                         }
                     }
-                }
-                Section("Local drafts") {
-                    NavigationLink("Draft recovery & export") { LocalDraftRecoveryView() }
-                        .accessibilityIdentifier("localDraftRecovery")
                 }
                 if !store.logoutNotices.isEmpty {
                     Section("Sign-out status") {

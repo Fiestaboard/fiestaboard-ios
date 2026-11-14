@@ -17,11 +17,7 @@ targets:
     platform: iOS
     sources:
       - path: Packages/FiestaBoardKit/Sources/FiestaBoardKit
-        excludes: [DemoFixtures]
       - path: App/PackageResources.swift
-      - path: Packages/FiestaBoardKit/Sources/FiestaBoardKit/DemoFixtures
-        type: folder
-        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft.core
@@ -137,31 +133,10 @@ schemes:
         FiestaBoardUITests: [test]
         FiestaBoardRenderTests: [test]
         FiestaBoardAppTests: [test]
-    run:
-      commandLineArguments:
-        '--demo': false
     test:
       targets: [FiestaBoardUITests, FiestaBoardRenderTests, FiestaBoardAppTests]
     profile:
       config: Release
-      commandLineArguments:
-        '--demo': false
-    archive:
-      config: Release
-  FiestaBoard Demo:
-    build:
-      targets:
-        FiestaBoard: all
-        FiestaBoardUITests: [test]
-    run:
-      commandLineArguments:
-        '--demo': true
-    test:
-      targets: [FiestaBoardUITests]
-    profile:
-      config: Release
-      commandLineArguments:
-        '--demo': false
     archive:
       config: Release
   FiestaBoard Device Test:
@@ -171,8 +146,6 @@ schemes:
     run:
       config: Debug
       debugEnabled: false
-      commandLineArguments:
-        '--demo': false
     profile:
       config: Release
     archive:

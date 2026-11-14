@@ -70,7 +70,7 @@ struct PagesListView: View {
             }
         }
         .modifier(EditorPresentation(isPresented: $showingEditor) {
-            if let id = editorPageID { LocalPageEditorLoader(pageID: id, store: store) }
+            if let id = editorPageID { PageEditorLoader(pageID: id, store: store) }
         })
         .onChange(of: showingEditor) { _, showing in if !showing { store.pageLibrary?.dismissCompletion() } }
         .onChange(of: store.connectionLabel) { _, _ in creatingPage = false; showingEditor = false }

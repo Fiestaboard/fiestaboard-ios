@@ -7,7 +7,7 @@ let package = Package(
     products: [.library(name: "FiestaBoardKit", targets: ["FiestaBoardKit"])],
     dependencies: [.package(path: "../FiestaBoardDocuments")],
     targets: [
-        .target(name: "FiestaBoardKit", dependencies: ["FiestaBoardDocuments"], resources: [.copy("DemoFixtures")]),
-        .testTarget(name: "FiestaBoardKitTests", dependencies: ["FiestaBoardKit"], resources: [.copy("Fixtures")])
+        .target(name: "FiestaBoardKit", dependencies: ["FiestaBoardDocuments"]),
+        .testTarget(name: "FiestaBoardKitTests", dependencies: ["FiestaBoardKit"], resources: [.copy("Fixtures"), .copy("ServiceFixtures")])
     ]
 )

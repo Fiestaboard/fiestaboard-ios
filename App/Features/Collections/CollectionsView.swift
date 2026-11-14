@@ -17,7 +17,6 @@ private typealias CollectionViewState<Value> = SwiftUI.State<Value>
             Section {
                 Text("Collections choose among member pages. Saving changes stored content; selecting content for a board is a separate action.")
                     .font(.footnote).foregroundStyle(.secondary)
-                if store.status?.isDemo == true { Label("Demo · simulated collection storage", systemImage: "play.rectangle") }
             }
             if store.collectionsLoading { ProgressView("Loading collections…") }
             if let message = store.collectionMessage {

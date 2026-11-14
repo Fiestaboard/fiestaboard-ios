@@ -6,6 +6,8 @@ final class LaunchUITests: XCTestCase {
         app.launchArguments = ["--uitesting"]
         app.launch()
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 15))
-        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["localDraftRecovery"].exists)
+        XCTAssertFalse(app.buttons["exploreDemo"].exists)
     }
 }

@@ -46,22 +46,6 @@ import XCTest
         let mode = element(app, "modeBadge")
         XCTAssertTrue(waitFor(10) { mode.exists && mode.label == "Override: 9m remaining" }, app.debugDescription)
         let cancel = element(app, "overrideCancel")
-        XCTAssertTrue(cancel.exists, "the ✕ is shown with changes off")
-        XCTAssertEqual(cancel.value as? String, "Unavailable")
-        shot(app, "W4b-B8-override-changes-off", settle: 2)
-        cancel.tap()
-        let reason = element(app, "overrideCancelReason")
-        XCTAssertTrue(reason.waitForExistence(timeout: 4), app.debugDescription)
-        XCTAssertEqual(reason.label, "Changing this board from the app is turned off.")
-        shot(app, "W4b-B8-override-reason", settle: 1)
-        XCTAssertTrue(app.buttons["Turn on"].firstMatch.exists)
-        app.buttons["Turn on"].firstMatch.tap()
-        let toggle = app.switches["Enable changes on this server"]
-        reveal(toggle, app)
-        if toggle.value as? String != "1" { toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap() }
-        let apply = app.buttons["Apply change setting"]
-        reveal(apply, app); apply.tap()
-        selectDestination("Home", in: app)
         XCTAssertTrue(waitFor(15) { cancel.exists && (cancel.value as? String ?? "") != "Unavailable" }, app.debugDescription)
         shot(app, "W4b-B8-override-changes-on", settle: 2)
         cancel.tap()
@@ -75,12 +59,6 @@ import XCTest
         let app = XCUIApplication(); app.launchArguments = []; app.launch()
         connect(app, path: "flexible-" + UUID().uuidString.prefix(8).lowercased())
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15))
-        selectDestination("Settings", in: app)
-        let writes = app.switches["Enable changes on this server"]
-        reveal(writes, app); writes.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
-        let apply = app.buttons["Apply change setting"]
-        reveal(apply, app); apply.tap()
-        XCTAssertTrue(app.buttons["Disconnect"].waitForExistence(timeout: 10))
         selectDestination("Pages", in: app)
         let row = app.staticTexts["Flexible document"].firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
@@ -258,7 +236,7 @@ import XCTest
     private func area(_ e: XCUIElement) -> CGFloat { e.frame.width * e.frame.height }
     private func connect(_ app: XCUIApplication, path: String) {
         let address = app.textFields["connectionAddress"]
-        XCTAssertTrue(app.buttons["exploreDemo"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 10))
         reveal(address, app); address.tap(); address.typeText("http://127.0.0.1:\(fixturePort)/" + path)
         let name = app.textFields["Server name (optional)"]
         reveal(name, app); name.tap(); name.typeText(path + "\n")

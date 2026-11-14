@@ -154,7 +154,7 @@ import XCTest
         app.launchArguments = []; app.launch()
         alias = "board-manual-" + UUID().uuidString.prefix(8).lowercased()
         let address = app.textFields["connectionAddress"]
-        XCTAssertTrue(app.buttons["exploreDemo"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 10))
         reveal(address, app); address.tap(); address.typeText("http://127.0.0.1:\(fixturePort)/" + alias)
         let name = app.textFields["Server name (optional)"]
         reveal(name, app); name.tap(); name.typeText(alias + "\n")
@@ -173,17 +173,6 @@ import XCTest
         reveal(password, app); password.tap(); password.typeText("fixture-password")
         let signIn = app.buttons["connectionSignIn"]
         reveal(signIn, app); signIn.tap()
-        XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15), app.debugDescription)
-        selectDestination("Settings", app)
-        let toggle = app.switches["Enable changes on this server"]
-        reveal(toggle, app)
-        if toggle.value as? String != "1" { toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap() }
-        let apply = app.buttons["Apply change setting"]
-        reveal(apply, app); apply.tap()
-        // The reconnect is quick against the loopback fixture; Home then shows Board controls.
-        _ = waitFor(5) { !apply.isEnabled }
-        _ = waitFor(5) { apply.isEnabled }
-        selectDestination("Home", app)
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15), app.debugDescription)
         return app
     }

@@ -146,7 +146,7 @@ final class CollectionTests: XCTestCase, @unchecked Sendable {
     }
 
     func testDemoCRUDAllModesFreshRevisionsAndUnknownCreatesDoNotReplay() async throws {
-        let service = try DemoFiestaBoardService(); _ = try await service.connect()
+        let service = try FixtureFiestaBoardService(); _ = try await service.connect()
         let access = await service.collectionAccess(); XCTAssertTrue(access.canCreate); XCTAssertTrue(access.isSimulated)
         var input = collectionInput(); input.pageIDs = ["page-selected", "page-weather"]
         var record = try await service.createCollection(input)
@@ -292,7 +292,7 @@ extension CollectionTests {
     }
 
     func testDemoConflictReadbackAndUnknownUpdateDelete() async throws {
-        let s = try DemoFiestaBoardService(); _ = try await s.connect()
+        let s = try FixtureFiestaBoardService(); _ = try await s.connect()
         var input = collectionInput(); input.pageIDs = ["page-selected"]
         let first = try await s.createCollection(input), second = try await s.createCollection(input)
         XCTAssertNotEqual(first.id, second.id); XCTAssertNotEqual(first.revision, second.revision)
@@ -380,7 +380,7 @@ extension CollectionTests {
 
 extension CollectionTests {
     func testCreationReviewAcknowledgementAfterReconnectIsIdempotent() async throws {
-        let service = try DemoFiestaBoardService()
+        let service = try FixtureFiestaBoardService()
         _ = try await service.connect()
         var input = collectionInput(); input.pageIDs = ["page-selected"]
         await service.setSimulation(.unknown)

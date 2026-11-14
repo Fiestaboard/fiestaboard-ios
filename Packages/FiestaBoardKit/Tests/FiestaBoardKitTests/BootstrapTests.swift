@@ -60,7 +60,7 @@ final class BootstrapTests: XCTestCase {
         catch { XCTAssertEqual(error as? FiestaBoardError, .wrongProduct) }
     }
     func testDemoBootstrapHasExplicitReadyIdentity() async throws {
-        let value = try await DemoFiestaBoardService().bootstrap()
+        let value = try await FixtureFiestaBoardService().bootstrap()
         XCTAssertEqual(value.phase, .ready)
         XCTAssertEqual(value.identity.installationID, "demo")
     }

@@ -17,16 +17,29 @@ case "${1:-all}" in
   simulators) ;;
   *) echo 'Usage: scripts/test.sh [all|packages|simulators]' >&2; exit 2 ;;
 esac
+# Own a loopback fixture process; never reuse or terminate another session's server.
+fixture_port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
+FIXTURE_PORT="$fixture_port" python3 Tests/UITests/fixture_server.py > "$ios_build_root/results/$ios_slice/fixture.log" 2>&1 &
+fixture_pid=$!
+trap 'kill "$fixture_pid" 2>/dev/null || true' EXIT
+export TEST_RUNNER_FIXTURE_PORT="$fixture_port"
+curl --fail --retry 10 --retry-connrefused --retry-delay 1 "http://127.0.0.1:$fixture_port/ready"
 for model in 'iPhone 17' 'iPad Air 11-inch (M4)'; do
   udid=$(xcrun simctl list devices available --json | python3 scripts/select-ios-simulator.py "$model")
-  result="$ios_build_root/results/$ios_slice/$(date +%s)-$udid.xcresult"
-  xcodebuild -project FiestaBoard.xcodeproj -scheme FiestaBoard \
-    -destination "platform=iOS Simulator,id=$udid" \
-    -derivedDataPath "$ios_build_root/dd-$ios_slice" \
-    -clonedSourcePackagesDirPath "$ios_build_root/spm" \
-    -resultBundlePath "$result" \
-    -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1 \
-    -only-testing:FiestaBoardAppTests -only-testing:FiestaBoardRenderTests \
-    -only-testing:FiestaBoardUITests/LaunchUITests \
-    CODE_SIGNING_ALLOWED=NO test
+  args=(-project FiestaBoard.xcodeproj -scheme FiestaBoard
+    -destination "platform=iOS Simulator,id=$udid"
+    -derivedDataPath "$ios_build_root/dd-$ios_slice"
+    -clonedSourcePackagesDirPath "$ios_build_root/spm"
+    -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1
+    CODE_SIGNING_ALLOWED=NO)
+  xcodebuild "${args[@]}" build-for-testing
+  for suite in FiestaBoardAppTests FiestaBoardRenderTests \
+      FiestaBoardUITests/LaunchUITests FiestaBoardUITests/EditorUITests \
+      FiestaBoardUITests/SaveUITests FiestaBoardUITests/CanvasUITests \
+      FiestaBoardUITests/FormulaUITests FiestaBoardUITests/IntegrationUITests \
+      FiestaBoardUITests/BoardVisualsUITests FiestaBoardUITests/PolishUITests \
+      FiestaBoardUITests/BarEvidenceUITests; do
+    result="$ios_build_root/results/$ios_slice/$(date +%s)-$udid-${suite//\//-}.xcresult"
+    xcodebuild "${args[@]}" -resultBundlePath "$result" "-only-testing:$suite" test-without-building
+  done
 done

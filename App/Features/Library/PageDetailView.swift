@@ -94,7 +94,7 @@ struct PageDetailView: View {
             Text("This removes the page for everyone. A display showing it moves to another page. This can't be undone.")
         }
         // iOS-E2 (B29): a navigation destination on iPad, a full-screen cover on a phone.
-        .modifier(EditorPresentation(isPresented: $editing) { LocalPageEditorLoader(pageID: page.id, store: store) })
+        .modifier(EditorPresentation(isPresented: $editing) { PageEditorLoader(pageID: page.id, store: store) })
         .onChange(of: store.status == nil) { _, disconnected in if disconnected { editing = false } }
         .onChange(of: store.connectionLabel) { _, _ in editing = false }
     }
@@ -158,7 +158,7 @@ struct CreateLibraryPageView: View {
                         }
                     }
                     Section {
-                        Button(library.capability.isSimulated ? "Create simulated page" : "Create page") {
+                        Button("Create page") {
                             Task {
                                 do { let id = try await store.createLibraryPage(); onCreated(id); dismiss() }
                                 catch { /* Input and recovery remain in the retained library state. */ }

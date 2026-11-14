@@ -85,9 +85,6 @@ final class BoardVisualsUITests: XCTestCase {
         let page = app.buttons["Good Morning"]
         XCTAssertTrue(page.waitForExistence(timeout: 5))
         page.tap()
-        let confirm = app.buttons["Confirm board action"]
-        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
-        confirm.tap()
         let back = app.navigationBars.buttons["FiestaBoard"]
         if back.waitForExistence(timeout: 3) { back.tap() }
         waitFor(board, NSPredicate(format: "value CONTAINS %@", "GOOD MORNING"), 8, "flipped frame")
@@ -134,7 +131,7 @@ final class BoardVisualsUITests: XCTestCase {
         for jargon in ["127.0.0.1", "read-only", "checked separately", "Board controls enabled"] {
             XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@", jargon)).firstMatch.exists, jargon)
         }
-        XCTAssertTrue(app.descendants(matching: .any)["homeChangesOff"].exists, "greyed actions explain themselves")
+        XCTAssertFalse(app.descendants(matching: .any)["homeChangesOff"].exists)
         try await Task.sleep(nanoseconds: 2_500_000_000)
         shot(app, "W2-home")
         app.swipeUp()
@@ -214,8 +211,6 @@ final class BoardVisualsUITests: XCTestCase {
         shot(app, "W2-B9-saved-as-page")
         let restore = app.buttons["outOfSyncRestore"]
         reveal(restore, app); restore.tap()
-        let confirm = app.buttons["Confirm board action"]
-        XCTAssertTrue(confirm.waitForExistence(timeout: 5)); confirm.tap()
         XCTAssertTrue(banner.waitForNonExistence(timeout: 15),
                       "Restore puts the page back; outcome: \(app.staticTexts["actionOutcome"].exists ? app.staticTexts["actionOutcome"].label : "none")")
         waitFor(board, NSPredicate(format: "value CONTAINS %@", "HELLO"), 15, "the page is back")
@@ -271,7 +266,7 @@ final class BoardVisualsUITests: XCTestCase {
     /// "Page created. Open its editor…" note.
     @MainActor
     func testLibraryCreateSheetKeyboardAndOutcome() throws {
-        let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
+        let app = XCUIApplication(); launchFixture(app)
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
         selectDestination("Pages", in: app)
         let create = app.buttons["newLibraryPage"]
@@ -317,20 +312,14 @@ final class BoardVisualsUITests: XCTestCase {
     }
 
     @MainActor private func enableChanges(_ app: XCUIApplication) {
-        selectDestination("Settings", in: app)
-        let toggle = app.switches["Enable changes on this server"]
-        reveal(toggle, app)
-        if toggle.value as? String != "1" { toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap() }
-        let apply = app.buttons["Apply change setting"]
-        reveal(apply, app); apply.tap()
-        selectDestination("Home", in: app)
+        XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
     }
 
     @MainActor private func launchSignedIn(scenario: String) -> XCUIApplication {
         let app = XCUIApplication(); app.launchArguments = []; app.launch()
         let alias = "board-\(scenario)-" + UUID().uuidString.prefix(6).lowercased()
         let address = app.textFields["connectionAddress"]
-        XCTAssertTrue(app.buttons["exploreDemo"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 10))
         reveal(address, app); address.tap(); address.typeText("http://127.0.0.1:\(port)/" + alias)
         let name = app.textFields["Server name (optional)"]
         reveal(name, app); name.tap(); name.typeText(alias + "\n")

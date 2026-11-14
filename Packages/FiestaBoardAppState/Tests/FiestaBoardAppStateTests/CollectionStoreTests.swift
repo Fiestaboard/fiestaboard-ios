@@ -213,7 +213,7 @@ private actor CollectionLatch {
 private actor CollectionStoreFixture: FiestaBoardService {
     nonisolated let deployment: DeploymentURL
     nonisolated let isDemo = false
-    private let demo: DemoFiestaBoardService
+    private let demo: FixtureFiestaBoardService
     private var writes = false
     private var stored: PageCollection? = collectionFixtureValue()
     private var replacementScope: VerifiedConnectionScope?
@@ -229,7 +229,7 @@ private actor CollectionStoreFixture: FiestaBoardService {
     private(set) var updateCount = 0
     private(set) var createCount = 0
     private(set) var deleteCount = 0
-    init() throws { demo = try DemoFiestaBoardService(); deployment = demo.deployment }
+    init() throws { demo = try FixtureFiestaBoardService(); deployment = demo.deployment }
     func replaceRemote(name: String, revision: String) { stored = collectionFixtureValue(name, revision: revision) }
     func delayNextRead(_ latch: CollectionLatch) { readLatch = latch }
     func delayNextUpdate(_ latch: CollectionLatch) { updateLatch = latch }

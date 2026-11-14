@@ -18,7 +18,6 @@ private typealias CollectionFormState<Value> = SwiftUI.State<Value>
     var body: some View {
         Form {
             Section {
-                if model.isSimulated { Label("Demo · simulated", systemImage: "play.rectangle") }
                 Text(model.deploymentID).font(.caption).textSelection(.enabled)
                 Text(model.collectionID.map { "Collection ID: \($0)" } ?? "New collection").font(.caption).textSelection(.enabled)
                 Text("Changes are checkpointed on this device. Server saves acknowledge storage; they do not confirm display output or select a board.")
@@ -61,8 +60,8 @@ private typealias CollectionFormState<Value> = SwiftUI.State<Value>
             Button("Discard draft and close", role: .destructive) { model.discard(); if model.status == .ended { dismiss() } }
             Button("Keep editing", role: .cancel) {}
         }
-        .confirmationDialog(model.isSimulated ? "Simulate storing this collection?" : "Store this collection on the server?", isPresented: $confirmSave, titleVisibility: .visible) {
-            Button(model.isSimulated ? "Simulate save" : "Save collection") { Task { await model.save() } }
+        .confirmationDialog("Store this collection on the server?", isPresented: $confirmSave, titleVisibility: .visible) {
+            Button("Save collection") { Task { await model.save() } }
             Button("Cancel", role: .cancel) {}
         } message: { Text("Save ‘\(model.draft.name)’ on \(model.deploymentID). This changes collection storage; it does not select content for a board.") }
         .confirmationDialog("Delete this stored collection?", isPresented: $confirmDelete, titleVisibility: .visible) {
@@ -179,7 +178,7 @@ private typealias CollectionFormState<Value> = SwiftUI.State<Value>
         Section("Stored collection") {
             if let reason = model.disabledReason { Text(reason).font(.footnote).foregroundStyle(.secondary) }
             if let issue = model.validationMessage { Text(issue).font(.footnote).foregroundStyle(.secondary) }
-            Button(model.isSimulated ? "Simulate saving collection…" : "Save collection on server…") { confirmSave = true }
+            Button("Save collection on server…") { confirmSave = true }
                 .disabled(!model.canSave).accessibilityIdentifier("saveCollection")
             if model.collectionID != nil {
                 Button("Compare server collection") { Task { await model.compare() } }.disabled(!model.canCompare)

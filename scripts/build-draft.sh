@@ -7,14 +7,10 @@ case "${1:-simulator}" in
   simulator) draft_destination='generic/platform=iOS Simulator'; draft_products='Debug-iphonesimulator'; draft_action='build' ;;
   device) draft_destination='generic/platform=iOS'; draft_products='Debug-iphoneos'; draft_action='build' ;;
   archive) draft_destination='generic/platform=iOS'; draft_products='Release-iphoneos'; draft_action='archive' ;;
-  *) echo 'Usage: scripts/build-draft.sh [simulator|device|archive] [live|demo]' >&2; exit 2 ;;
+  *) echo 'Usage: scripts/build-draft.sh [simulator|device|archive] ' >&2; exit 2 ;;
 esac
-case "${2:-live}" in
-  live) draft_scheme='FiestaBoard' ;;
-  demo) draft_scheme='FiestaBoard Demo' ;;
-  *) echo 'Scheme must be live or demo' >&2; exit 2 ;;
-esac
-if [[ $# -gt 2 ]]; then echo 'Too many arguments' >&2; exit 2; fi
+draft_scheme=FiestaBoard
+if [[ $# -gt 1 ]]; then echo 'Too many arguments' >&2; exit 2; fi
 draft_output="$HOME/Library/Developer/FiestaBoard/ios"
 mkdir -p "$draft_output/clang"
 draft_build_args=(-project FiestaBoard.xcodeproj -scheme "$draft_scheme"

@@ -57,7 +57,7 @@ import XCTest
     func testIPadSidebarAndRotationForANewPage() throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad only")
         XCUIDevice.shared.orientation = .landscapeLeft
-        let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
+        let app = XCUIApplication(); launchFixture(app)
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
         openPages(app)
         XCTAssertTrue(waitForSidebar(app, visible: true))
@@ -102,7 +102,7 @@ import XCTest
         shot(app, "W2-INT-existing-fullscreen")
         close(app)
 
-        app.terminate(); app.launchArguments = ["--demo"]; app.launch()
+        app.terminate(); launchFixture(app)
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
         openPages(app)
         let create = app.buttons["newLibraryPage"]
@@ -232,7 +232,7 @@ import XCTest
         app.launchArguments = []; app.launch()
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
         let address = app.textFields["connectionAddress"]
-        XCTAssertTrue(app.buttons["exploreDemo"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 10))
         reveal(address, app); address.tap(); address.typeText("http://127.0.0.1:\(port)/" + alias)
         let name = app.textFields["Server name (optional)"]
         reveal(name, app); name.tap(); name.typeText(alias + "\n")

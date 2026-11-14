@@ -31,8 +31,7 @@ import XCTest
     /// (The in-app demo: at this size the connection form's fields move out of the helper's reach.)
     func testEditorAtAccessibilityTextSize() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["--demo", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"]
-        app.launch()
+        launchFixture(app, arguments: ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"])
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15))
         let destination = element(app, "destination-Pages")
         for _ in 0..<5 where !(destination.exists && destination.isHittable) {
@@ -98,7 +97,7 @@ import XCTest
         app.launchArguments = arguments; app.launch()
         let alias = "board-\(scenario)-" + UUID().uuidString.prefix(8).lowercased()
         let address = app.textFields["connectionAddress"]
-        XCTAssertTrue(app.buttons["exploreDemo"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 10))
         reveal(address, app); address.tap(); address.typeText("http://127.0.0.1:\(fixturePort)/" + alias)
         let name = app.textFields["Server name (optional)"]
         reveal(name, app); name.tap(); name.typeText(alias + "\n")

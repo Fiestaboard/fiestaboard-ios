@@ -212,7 +212,7 @@ final class CanvasUITests: XCTestCase {
             for _ in 0..<8 where !(element.exists && element.isHittable) { app.swipeDown() }
         }
         let address = app.textFields["connectionAddress"]
-        XCTAssertTrue(app.buttons["exploreDemo"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 8))
         revealForm(address); address.tap(); address.typeText("http://127.0.0.1:\(port)/" + alias)
         let name = app.textFields["Server name (optional)"]
         revealForm(name); name.tap(); name.typeText(alias + "\n")

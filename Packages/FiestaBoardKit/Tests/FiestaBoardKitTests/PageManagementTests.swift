@@ -142,7 +142,7 @@ extension PageManagementTests {
         XCTAssertEqual(replacement.newActivePageID, "welcome")
     }
     func testDemoCreatesReadsEditsAndDeletesPanelPage() async throws {
-        let s = try DemoFiestaBoardService(); _ = try await s.connect()
+        let s = try FixtureFiestaBoardService(); _ = try await s.connect()
         let capability = await s.pageManagementCapability(); XCTAssertTrue(capability.isSimulated)
         let context = try await s.preparePageCreation(.init(name: "Demo panel", family: .panel(rows: 8, cols: 16), template: ["{red}Hi"]))
         let receipt = try await s.createPage(context: context)
@@ -272,7 +272,7 @@ extension PageManagementTests {
         await t.releaseMutation(); _ = try await current.value
     }
     func testDemoCollectionReferenceRefusesDeletionAndRetainsPage() async throws {
-        let s = try DemoFiestaBoardService(); _ = try await s.connect()
+        let s = try FixtureFiestaBoardService(); _ = try await s.connect()
         let creation = try await s.preparePageCreation(.init(name: "Referenced", family: .flagship))
         let page = try await s.createPage(context: creation)
         _ = try await s.createCollection(.init(name: "Reference", pageIDs: [page.page.id]))

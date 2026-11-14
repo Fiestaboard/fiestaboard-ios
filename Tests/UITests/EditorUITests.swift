@@ -16,7 +16,7 @@ import XCTest
 
     /// Demo → Pages → New page (Flagship) → the document editor.
     private func openNewPage(_ app: XCUIApplication, name: String) -> XCUIElement {
-        app.launchArguments = ["--demo"]; app.launch()
+        launchFixture(app)
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
         openPages(app)
         let create = app.buttons["newLibraryPage"]
@@ -235,7 +235,7 @@ import XCTest
         app.launchArguments = []; app.launch()
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
         let address = app.textFields["connectionAddress"]
-        XCTAssertTrue(app.buttons["exploreDemo"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 8))
         reveal(address, app); address.tap(); address.typeText("http://127.0.0.1:\(fixturePort)/" + alias)
         let name = app.textFields["Server name (optional)"]
         reveal(name, app); name.tap(); name.typeText(alias + "\n")
@@ -341,12 +341,12 @@ import XCTest
 
     /// P1 item 4: with changes off, Home shows the plain "turned off · Turn on" line and no greyed
     /// Change page / Compose tiles; the page screen leads with the board and plain words.
-    func testHomeChangesOffAndPlainPageScreen() throws {
+    func testHomeControlActionsAndPlainPageScreen() throws {
         let app = XCUIApplication()
         try connectToFixture(app, scenario: "manual")
-        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "homeChangesOff").firstMatch.waitForExistence(timeout: 5))
-        XCTAssertFalse(app.buttons["Compose text"].exists)
-        XCTAssertFalse(app.buttons["changePage"].exists)
+        XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "homeChangesOff").firstMatch.exists)
+        XCTAssertTrue(app.buttons["Compose text"].exists)
+        XCTAssertTrue(app.buttons["changePage"].exists)
         XCTAssertTrue(app.buttons["boardControlsEntry"].exists)
         attach(app, "P1-4-home-changes-off-\(device())")
         openPages(app)

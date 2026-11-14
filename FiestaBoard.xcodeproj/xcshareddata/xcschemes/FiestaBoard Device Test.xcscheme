@@ -62,10 +62,6 @@
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>
-         <CommandLineArgument
-            argument = "--demo"
-            isEnabled = "NO">
-         </CommandLineArgument>
       </CommandLineArguments>
    </LaunchAction>
    <ProfileAction
