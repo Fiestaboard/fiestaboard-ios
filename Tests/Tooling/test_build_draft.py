@@ -46,7 +46,7 @@ class BuildDraftTests(unittest.TestCase):
     def test_archive_uses_dedicated_archive_path(self):
         args = self.run_build('archive')
         self.assertEqual(args[-1], 'archive')
-        self.assertEqual(args[args.index('-archivePath') + 1], str(self.root / '.build/FiestaBoard.xcarchive'))
+        self.assertEqual(args[args.index('-archivePath') + 1], str(Path.home() / 'Library/Developer/FiestaBoard/ios/FiestaBoard.xcarchive'))
 
     def test_unknown_mode_never_invokes_xcodebuild(self):
         result = subprocess.run(['/bin/bash', str(self.root / 'scripts/build-draft.sh'), 'unknown'],
