@@ -32,14 +32,8 @@ for model in 'iPhone 17' 'iPad Air 11-inch (M4)'; do
     -clonedSourcePackagesDirPath "$ios_build_root/spm"
     -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1
     CODE_SIGNING_ALLOWED=NO)
-  xcodebuild "${args[@]}" build-for-testing
-  for suite in FiestaBoardAppTests FiestaBoardRenderTests \
-      FiestaBoardUITests/LaunchUITests FiestaBoardUITests/EditorUITests \
-      FiestaBoardUITests/SaveUITests FiestaBoardUITests/CanvasUITests \
-      FiestaBoardUITests/FormulaUITests FiestaBoardUITests/IntegrationUITests \
-      FiestaBoardUITests/BoardVisualsUITests FiestaBoardUITests/PolishUITests \
-      FiestaBoardUITests/BarEvidenceUITests; do
-    result="$ios_build_root/results/$ios_slice/$(date +%s)-$udid-${suite//\//-}.xcresult"
-    xcodebuild "${args[@]}" -resultBundlePath "$result" "-only-testing:$suite" test-without-building
-  done
+  # XCTest executes suites serially with parallel testing disabled. One invocation
+  # per device avoids restarting the simulator service for every test class.
+  result="$ios_build_root/results/$ios_slice/$(date +%s)-$udid.xcresult"
+  xcodebuild "${args[@]}" -resultBundlePath "$result" test
 done
