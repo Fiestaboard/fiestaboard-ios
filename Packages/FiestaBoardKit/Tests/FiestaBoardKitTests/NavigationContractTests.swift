@@ -43,7 +43,7 @@ import XCTest
         XCTAssertEqual(CapabilityPolicy.pageManagementDisabledReason(version: "10.3.2", isDev: false, optedIn: false), .unsupportedOperation)
         XCTAssertEqual(CapabilityPolicy.pageManagementDisabledReason(version: "10.1.20", isDev: false, optedIn: false), .changesDisabled)
         XCTAssertFalse(ActionDisabledReason.unsupportedOperation.message.contains("Enable"))
-        XCTAssertTrue(ActionDisabledReason.changesDisabled.message.contains("Settings"))
+        XCTAssertEqual(ActionDisabledReason.changesDisabled.message, "This connection does not allow changes. Reconnect to try again.")
     }
 
     func testScheduleReadUsesConcreteBoardQueryRetainsEnvelopeAndNeverWrites() async throws {
