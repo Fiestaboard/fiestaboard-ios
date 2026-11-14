@@ -41,6 +41,13 @@ jobs:
           python3 scripts/check-project.py
           node scripts/vocabulary/test-vocabulary.mjs
           node scripts/vocabulary/check-vocabulary.mjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parity reporter tests
+        run: |
+          npm ci --prefix scripts/parity
+          npm test --prefix scripts/parity
       - name: Host package suites
         run: scripts/test.sh packages
       - name: App-hosted and retained UI suites on both tier-1 devices
@@ -54,7 +61,8 @@ jobs:
         if: always()
         run: |
           mkdir -p build/parity
-          echo '{"slice":"I0b","goldens":"I0b renderer seed; XCTest result is authoritative","osMajor":"iOS27","figmaComparison":"not run"}' > build/parity/foundation-status.json
+          echo '{"slice":"I2","goldens":"XCTest result is authoritative; missing golden fails","osMajor":"iOS27","figmaComparison":"reference unavailable; Connecting implementation deferred"}' > build/parity/foundation-status.json
+          node scripts/parity/native-parity.mjs --shots build/parity --out build/parity/report
       - uses: actions/upload-artifact@v4
         if: always()
         with:

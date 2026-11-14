@@ -13,6 +13,7 @@
 		078026B7E4D421E7148C5185 /* CollectionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4490F7035D0FAA8FEDE9402 /* CollectionContext.swift */; };
 		0913F75453BB18F0C0758E7C /* BoardGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32BB9863B236F028ECD38024 /* BoardGeometryTests.swift */; };
 		091F3A1A80C5516291AF98BE /* LedRasterizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C08D403E41B47F96C35871B /* LedRasterizerTests.swift */; };
+		0A62ADE7350A1EF7D2D5A7E3 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 3E5F4083B619A746D44CD59E /* SnapshotTesting */; };
 		0C02ABF56379AD707D1154EA /* GlassProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5846B98CDA945180CC7B8F3 /* GlassProbeTests.swift */; };
 		0C8F0910473C7DC09895B39F /* BoardStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = E77DDDA784DC2225F283D808 /* BoardStatus.swift */; };
 		0F8A7F5A8B4859B2AFDA6ADF /* EditorRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14DCA60302FF7F66D64DBC69 /* EditorRoot.swift */; };
@@ -23,6 +24,7 @@
 		1832C659D12996166FF88C1F /* PageManagement.swift in Sources */ = {isa = PBXBuildFile; fileRef = B111FC6C6933C9409006391C /* PageManagement.swift */; };
 		18EB9C22DE4A28BA68F2AD14 /* ConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 460657FBB5DCDA5016DF814D /* ConnectionView.swift */; };
 		19BDFA978481512FB988BB96 /* FiestaBoardDocuments.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 49BC2ED373F21B24BB1720FB /* FiestaBoardDocuments.framework */; };
+		1A0DE300737B05CF1684F2A5 /* ParityFixtureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77577AB0B30128910FEC564A /* ParityFixtureView.swift */; };
 		1BD276BA3AD5DC9C20E706E4 /* SplineSansMono-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 901CEAE27D523037566492AA /* SplineSansMono-OFL.txt */; };
 		1C3D4029C33ABE2B8C2774C3 /* DisplayModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A4AFA62170739D55EE77AA5 /* DisplayModel.swift */; };
 		1DC85EC6AD31351DCF715362 /* SessionVault.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D0769B4598394A149E221E8 /* SessionVault.swift */; };
@@ -52,6 +54,7 @@
 		3AF1B964616FC06573CF54CF /* CanvasShapesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57E78CF28F4D305B7575EA9B /* CanvasShapesTab.swift */; };
 		3B086D744E54E75ECD8CAA96 /* OutOfSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF0741C9C94B7EE04EE2C6C /* OutOfSync.swift */; };
 		3DF8E15C5CC8983509AE88F3 /* FixtureConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CBC4260FBD8BBA41BFBF327 /* FixtureConnection.swift */; };
+		3FCA15A2B96DF516B0239B99 /* FigmaGeometryRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF511ED96A45C3C1ACBC2D8E /* FigmaGeometryRegistry.swift */; };
 		424BA90671D510ED1CBEC37C /* FormulaEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2911F00B71181DEF07CAB0D4 /* FormulaEditorSheet.swift */; };
 		4297D9B53557AC20F3AB0E4E /* CollectionEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 507EEDE849D0C019D6F42A7E /* CollectionEditing.swift */; };
 		4334BA688E785B24A73DE3E7 /* BoardFlipTransition.swift in Sources */ = {isa = PBXBuildFile; fileRef = B98F6E2DDC8EAE51732AB38A /* BoardFlipTransition.swift */; };
@@ -148,8 +151,11 @@
 		DE6EFCA3FA6FFDF71FDC8AB3 /* BoardFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = E749EBB3341BF783F8887540 /* BoardFrame.swift */; };
 		DEFC5055EE9E6A49BEB57D05 /* NativeTemplateTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D155B6CED8ADFAC77D0F0E6 /* NativeTemplateTextView.swift */; };
 		E05D4B423EE03A5812BAA09F /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3B380D9832C5FAA53AF1EDA /* SignInView.swift */; };
+		E196A0F1550B27C0AA0B9E10 /* GlassProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 289D38D82453F9F4D390146B /* GlassProbe.swift */; };
 		E1C6F0A591B4B27B2DF568B9 /* CanvasUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 329CB2667B0AF52C92B8C25F /* CanvasUITests.swift */; };
 		E30F7894CC2DE1EE719BFA9C /* FiestaBoardEditorState.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0CE51B6E8E630F1CA0FAFFB0 /* FiestaBoardEditorState.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		E44ED4B01D237DB088168E47 /* FigmaNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81E90191BA9A1E89316C89FC /* FigmaNode.swift */; };
+		E4E653C3C1172A9AF200939E /* ParityProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46C67A1E415B837C2FFE203D /* ParityProbe.swift */; };
 		E6BBBAB3BD99634882D9AAE5 /* Service.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F65FAC9659A00AF389AC325 /* Service.swift */; };
 		E72FF6F47E7D31900577B8CA /* BoardSpeech.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8E18FB72C4DF8369002FD5E /* BoardSpeech.swift */; };
 		E8F1676D2E7396FD25987850 /* StatusReaderRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F18CFA2EA2DBEE5C93C28AA /* StatusReaderRegistry.swift */; };
@@ -157,7 +163,9 @@
 		EB8918048053710E0D7C7D0F /* PolishUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BECB0B3DC31A74CE977E8FDF /* PolishUITests.swift */; };
 		ECCD8C8DE3D983B4431AFAAE /* DeploymentURL.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DD4D3175C0AE6D2D868EC75 /* DeploymentURL.swift */; };
 		ED325716E54DC6479A75F103 /* VariablePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB69A54A41CFEB488033456 /* VariablePickerView.swift */; };
+		EE460C80F84745804F7080C4 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2512A0EBAC2A895F58C8C2B /* Snapshot.swift */; };
 		F0E438AE948797DB1BBE1634 /* BoardLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243B601AF6228C1D6B5AC497 /* BoardLayoutTests.swift */; };
+		F18D73674B88F338AC475D79 /* GlassProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 289D38D82453F9F4D390146B /* GlassProbe.swift */; };
 		F218BBC6F20AA71BCE632754 /* TerminologyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 161D8A798461B87445FF0872 /* TerminologyTests.swift */; };
 		F22480C129F5A9223D737196 /* TemplateUITextViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11208C1A2EECBA9BE45CCA05 /* TemplateUITextViewTests.swift */; };
 		F631808CB73FF331EBEBE437 /* BoardCanvasTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48001C341291CD87E52A402 /* BoardCanvasTests.swift */; };
@@ -324,6 +332,7 @@
 		25D509B9A9222E9426B8AD17 /* Service+Preview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Service+Preview.swift"; sourceTree = "<group>"; };
 		2662195EBC75B32C6C4D1F53 /* Formula.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formula.swift; sourceTree = "<group>"; };
 		27FA85577B2370468BEDF1F7 /* CollectionEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionEditorView.swift; sourceTree = "<group>"; };
+		289D38D82453F9F4D390146B /* GlassProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassProbe.swift; sourceTree = "<group>"; };
 		2911F00B71181DEF07CAB0D4 /* FormulaEditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulaEditorSheet.swift; sourceTree = "<group>"; };
 		2CBC4260FBD8BBA41BFBF327 /* FixtureConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureConnection.swift; sourceTree = "<group>"; };
 		2E21A61E3064CBB07099A3E1 /* FiestaBoardAppState.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FiestaBoardAppState.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -349,6 +358,7 @@
 		4368DB1EAAF6F199DC1CCAAA /* BoardMessageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardMessageParser.swift; sourceTree = "<group>"; };
 		43E15996708A4A5B2F939B0C /* Bootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bootstrap.swift; sourceTree = "<group>"; };
 		460657FBB5DCDA5016DF814D /* ConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionView.swift; sourceTree = "<group>"; };
+		46C67A1E415B837C2FFE203D /* ParityProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParityProbe.swift; sourceTree = "<group>"; };
 		49BC2ED373F21B24BB1720FB /* FiestaBoardDocuments.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FiestaBoardDocuments.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5028E15ABB1CBC95D7E77C44 /* CollectionEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionEditorModel.swift; sourceTree = "<group>"; };
 		507EEDE849D0C019D6F42A7E /* CollectionEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionEditing.swift; sourceTree = "<group>"; };
@@ -371,11 +381,13 @@
 		6C3F1838186E744DA302ABA0 /* EditorUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorUITests.swift; sourceTree = "<group>"; };
 		6F6CAAB627C155DC2D02DE3B /* PreviewPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewPipeline.swift; sourceTree = "<group>"; };
 		7387870A8F4C81B3ED477AB0 /* SaveUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveUITests.swift; sourceTree = "<group>"; };
+		77577AB0B30128910FEC564A /* ParityFixtureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParityFixtureView.swift; sourceTree = "<group>"; };
 		78BA57525989C1533ACFDBD0 /* HomeSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSummary.swift; sourceTree = "<group>"; };
 		7AD9A30C4F8E872D7431FC6E /* FlapTilePainter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlapTilePainter.swift; sourceTree = "<group>"; };
 		7C08D403E41B47F96C35871B /* LedRasterizerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedRasterizerTests.swift; sourceTree = "<group>"; };
 		8086EA8450423EC1F62DCF79 /* LocalPageEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalPageEditorModel.swift; sourceTree = "<group>"; };
 		80B7025A77DB33DB399EC12D /* FiestaBoard.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FiestaBoard.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		81E90191BA9A1E89316C89FC /* FigmaNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FigmaNode.swift; sourceTree = "<group>"; };
 		8624ABBD546279E8133D9396 /* FiestaBoardUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FiestaBoardUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		88D20A64E911A3536D1F434B /* FlexibleWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlexibleWorkspaceView.swift; sourceTree = "<group>"; };
 		88FC48CA3F91EB260F3FD8F8 /* CanvasAreaPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasAreaPicker.swift; sourceTree = "<group>"; };
@@ -407,6 +419,7 @@
 		AEEB8028464574196027DECB /* RenderHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderHarness.swift; sourceTree = "<group>"; };
 		AF9F10108415B0B82A438E3E /* CanvasEditorState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasEditorState.swift; sourceTree = "<group>"; };
 		B111FC6C6933C9409006391C /* PageManagement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageManagement.swift; sourceTree = "<group>"; };
+		B2512A0EBAC2A895F58C8C2B /* Snapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snapshot.swift; sourceTree = "<group>"; };
 		B269490EAA2BC1900A3319B2 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		B91E5864EFCBE5AEB441B033 /* DisplayBadges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayBadges.swift; sourceTree = "<group>"; };
 		B98F6E2DDC8EAE51732AB38A /* BoardFlipTransition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardFlipTransition.swift; sourceTree = "<group>"; };
@@ -414,6 +427,7 @@
 		BD6BE9A9CDCA742A1B397022 /* TemplateChipFactoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateChipFactoryTests.swift; sourceTree = "<group>"; };
 		BECB0B3DC31A74CE977E8FDF /* PolishUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolishUITests.swift; sourceTree = "<group>"; };
 		BF16DDCF129380FBA1D99C7A /* StrokeTransaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokeTransaction.swift; sourceTree = "<group>"; };
+		BF511ED96A45C3C1ACBC2D8E /* FigmaGeometryRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FigmaGeometryRegistry.swift; sourceTree = "<group>"; };
 		C035AA6946E7B9F0C3244872 /* LedMarkup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedMarkup.swift; sourceTree = "<group>"; };
 		C038325A589937ADD54B59BD /* DrawMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawMode.swift; sourceTree = "<group>"; };
 		C0FC096F7391F6BA08AD16BA /* FiestaBoardAppTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FiestaBoardAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -487,6 +501,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A980D6950E64B77287AAD0C9 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0A62ADE7350A1EF7D2D5A7E3 /* SnapshotTesting in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C52996D914B5CD3D38424781 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -521,6 +543,17 @@
 				8EA4080F422F75BB6EDCE14D /* PagesListView.swift */,
 			);
 			path = Library;
+			sourceTree = "<group>";
+		};
+		34D2411A1A30D3F13D55A5CA /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				289D38D82453F9F4D390146B /* GlassProbe.swift */,
+				46C67A1E415B837C2FFE203D /* ParityProbe.swift */,
+				B2512A0EBAC2A895F58C8C2B /* Snapshot.swift */,
+			);
+			name = Support;
+			path = Tests/Support;
 			sourceTree = "<group>";
 		};
 		37F8F08E3A4E421001D308AD /* Connection */ = {
@@ -675,6 +708,16 @@
 			path = Formula;
 			sourceTree = "<group>";
 		};
+		6FB8B3D725E330AB9B99F718 /* Parity */ = {
+			isa = PBXGroup;
+			children = (
+				BF511ED96A45C3C1ACBC2D8E /* FigmaGeometryRegistry.swift */,
+				81E90191BA9A1E89316C89FC /* FigmaNode.swift */,
+				77577AB0B30128910FEC564A /* ParityFixtureView.swift */,
+			);
+			path = Parity;
+			sourceTree = "<group>";
+		};
 		7887077F8937186303125DCA /* Document */ = {
 			isa = PBXGroup;
 			children = (
@@ -769,6 +812,7 @@
 				5214043506ED068863C92A82 /* FiestaBoardKit */,
 				5AC9B776BF626F348A2C6E5C /* FiestaBoardRender */,
 				D053550250ED46034E306AFD /* FiestaBoardRenderTests */,
+				34D2411A1A30D3F13D55A5CA /* Support */,
 				97DE572B09991EE50A31C8E6 /* ThirdPartyNotices */,
 				A8C381AA094EA08ED178D2A4 /* UITests */,
 				57B3A47A0B2A3035083F9772 /* Products */,
@@ -841,6 +885,7 @@
 				F4AB195B07FBE0B1390B13E5 /* PrivacyInfo.xcprivacy */,
 				36CC08CCC9CD15CEF0B9CCC6 /* Strings.swift */,
 				208D6B02BE6F3A98DF27385F /* Features */,
+				6FB8B3D725E330AB9B99F718 /* Parity */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -987,6 +1032,7 @@
 			buildPhases = (
 				585CA759E6E503340C7A4002 /* Sources */,
 				B89DC259A5D3DF7E6783F5ED /* Resources */,
+				A980D6950E64B77287AAD0C9 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -995,6 +1041,7 @@
 			);
 			name = FiestaBoardAppTests;
 			packageProductDependencies = (
+				3E5F4083B619A746D44CD59E /* SnapshotTesting */,
 			);
 			productName = FiestaBoardAppTests;
 			productReference = C0FC096F7391F6BA08AD16BA /* FiestaBoardAppTests.xctest */;
@@ -1094,6 +1141,9 @@
 			);
 			mainGroup = C58BB397D159B1A07CC3AFCA;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				B3B50E62DABE4899B5CA5666 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 57B3A47A0B2A3035083F9772 /* Products */;
 			projectDirPath = "";
@@ -1179,6 +1229,7 @@
 				2B60831683DA1544E9E5D5C4 /* EditorUITests.swift in Sources */,
 				3DF8E15C5CC8983509AE88F3 /* FixtureConnection.swift in Sources */,
 				82C97A471315A3DDFFC9C514 /* FormulaUITests.swift in Sources */,
+				F18D73674B88F338AC475D79 /* GlassProbe.swift in Sources */,
 				3130713C85FE68151D21B7FA /* IntegrationUITests.swift in Sources */,
 				9D2F7AA9FBDBD489177FE17F /* LaunchUITests.swift in Sources */,
 				D43899001FDA9127ACD55778 /* ParityFoundationUITests.swift in Sources */,
@@ -1193,10 +1244,13 @@
 			files = (
 				50258095D519E0441BC24C31 /* CharsetIssuesFormattingTests.swift in Sources */,
 				DBD4590104B773E8C67435CB /* DrawModeTests.swift in Sources */,
+				E196A0F1550B27C0AA0B9E10 /* GlassProbe.swift in Sources */,
 				0C02ABF56379AD707D1154EA /* GlassProbeTests.swift in Sources */,
 				9E1C9B10C44C9A876CA0ECE6 /* GoldenSeedTests.swift in Sources */,
 				11FC63D742F1680FD271E6D4 /* ParityFoundationTests.swift in Sources */,
+				E4E653C3C1172A9AF200939E /* ParityProbe.swift in Sources */,
 				D4E2223DF64508E4FAD15563 /* SessionVaultRuntimeTests.swift in Sources */,
+				EE460C80F84745804F7080C4 /* Snapshot.swift in Sources */,
 				1F4559915E486F9E2FB5C7CF /* TemplateChipFactoryTests.swift in Sources */,
 				F22480C129F5A9223D737196 /* TemplateUITextViewTests.swift in Sources */,
 				F218BBC6F20AA71BCE632754 /* TerminologyTests.swift in Sources */,
@@ -1318,6 +1372,8 @@
 				0F8A7F5A8B4859B2AFDA6ADF /* EditorRoot.swift in Sources */,
 				FD00D3B3DED293855C3156BE /* EditorToolbar.swift in Sources */,
 				7DBA4232691B74518CE13653 /* FiestaBoardApp.swift in Sources */,
+				3FCA15A2B96DF516B0239B99 /* FigmaGeometryRegistry.swift in Sources */,
+				E44ED4B01D237DB088168E47 /* FigmaNode.swift in Sources */,
 				2A84FF6991DFCC8759F254CF /* FlexibleWorkspaceView.swift in Sources */,
 				424BA90671D510ED1CBEC37C /* FormulaEditorSheet.swift in Sources */,
 				FA82E332EFDFB6E66A0712A6 /* HomeCards.swift in Sources */,
@@ -1331,6 +1387,7 @@
 				85C5542C66C0B9E38715A622 /* PageEditorLoader.swift in Sources */,
 				B2347B285DB6C5D3BE6CD28C /* PageEditorScreen.swift in Sources */,
 				336375226C2CCDEB20C2CB50 /* PagesListView.swift in Sources */,
+				1A0DE300737B05CF1684F2A5 /* ParityFixtureView.swift in Sources */,
 				9B786BFDEC21DEDBED9459A3 /* PreviewStage.swift in Sources */,
 				B6812D033D88859CC339B405 /* RowGutter.swift in Sources */,
 				8804386F24AF8BDB3CCB26DF /* SaveStatusChip.swift in Sources */,
@@ -2004,6 +2061,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		B3B50E62DABE4899B5CA5666 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing";
+			requirement = {
+				kind = exactVersion;
+				version = 1.19.7;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		3E5F4083B619A746D44CD59E /* SnapshotTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B3B50E62DABE4899B5CA5666 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */;
+			productName = SnapshotTesting;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = BCF1504AFC6505A8FEA4E64A /* Project object */;
 }

@@ -4,6 +4,10 @@ options:
   deploymentTarget:
     iOS: '26.0'
   xcodeVersion: '27.1'
+packages:
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    exactVersion: 1.19.7
 settings:
   base:
     SWIFT_VERSION: '6.0'
@@ -106,6 +110,7 @@ targets:
     type: bundle.ui-testing
     platform: iOS
     sources:
+      - path: Tests/Support/GlassProbe.swift
       - path: Tests/UITests
         excludes: ["*.py", "__pycache__"]
     settings:
@@ -119,6 +124,9 @@ targets:
     platform: iOS
     sources:
       - path: Tests/AppTests
+      - path: Tests/Support/Snapshot.swift
+      - path: Tests/Support/ParityProbe.swift
+      - path: Tests/Support/GlassProbe.swift
       - path: Tests/__Snapshots__/iOS27
         type: folder
         buildPhase: resources
@@ -130,6 +138,7 @@ targets:
         BUNDLE_LOADER: $(TEST_HOST)
     dependencies:
       - target: FiestaBoard
+      - package: SnapshotTesting
 schemes:
   FiestaBoard:
     build:

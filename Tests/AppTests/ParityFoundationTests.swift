@@ -16,9 +16,14 @@ import UIKit
         XCTAssertNil(ParityProbe.nodes(relativeTo: "root", in: registry))
     }
 
-    func testActualTierOneScreenSizeAndScale() {
+    func testActualTierOneScreenSizeAndScale() throws {
+        try ParityOutput.writeRuntime()
         let screen = UIScreen.main
         let size = screen.bounds.size
+        let data = try Data(contentsOf: ParityOutput.directory.appendingPathComponent("runtime.json"))
+        let runtime = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        XCTAssertEqual(try XCTUnwrap(runtime["pointWidth"] as? Double), Double(size.width))
+        XCTAssertEqual(try XCTUnwrap(runtime["pointHeight"] as? Double), Double(size.height))
         if UIDevice.current.userInterfaceIdiom == .pad {
             XCTAssertEqual(min(size.width, size.height), 820)
             XCTAssertEqual(max(size.width, size.height), 1180)
@@ -30,12 +35,35 @@ import UIKit
         }
     }
 
+    func testSnapshotInjectsClockAndReduceMotionIntoView() {
+        var observedDate: Date?
+        var observedReduceMotion: Bool?
+        _ = IOSSnapshot.image(SnapshotEnvironmentProbe { date, reduceMotion in
+            observedDate = date
+            observedReduceMotion = reduceMotion
+        })
+        XCTAssertEqual(observedDate, IOSSnapshot.frozenDate)
+        XCTAssertEqual(observedReduceMotion, true)
+    }
+
     func testFrozenClockIsSevenFortyOneLosAngeles() {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "America/Los_Angeles")!
         let parts = calendar.dateComponents([.hour, .minute], from: IOSSnapshot.frozenDate)
         XCTAssertEqual(parts.hour, 7)
         XCTAssertEqual(parts.minute, 41)
+    }
+
+    /// Framework regression fixture, deliberately not a Figma Connecting implementation.
+    func testSnapshotFoundationGoldens() {
+        for appearance in [ColorScheme.light, .dark] {
+            for dynamicType in [DynamicTypeSize.large, .accessibility3] {
+                let image = IOSSnapshot.image(Text("7:41").font(.title).padding(24),
+                                              appearance: appearance, dynamicType: dynamicType)
+                let name = (appearance == .dark ? "dark" : "light") + (dynamicType == .large ? "" : "-AX3")
+                IOSSnapshot.assertMatches(image, named: name)
+            }
+        }
     }
 
     func testLightDarkSnapshotsHaveExactPixelDimensions() throws {
@@ -46,5 +74,14 @@ import UIKit
                 XCTAssertEqual(image.cgImage?.height, Int(device.size.height * device.scale))
             }
         }
+    }
+}
+
+private struct SnapshotEnvironmentProbe: View {
+    @Environment(\.parityDate) private var date
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let report: (Date, Bool) -> Void
+    var body: some View {
+        Text("Clock probe").onAppear { report(date, reduceMotion) }
     }
 }
