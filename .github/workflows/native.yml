@@ -54,7 +54,7 @@ jobs:
         if: always()
         run: |
           mkdir -p build/parity
-          echo '{"slice":"I0b","goldens":"pending I2 parity foundation","osMajor":"iOS27","figmaComparison":"not run"}' > build/parity/foundation-status.json
+          echo '{"slice":"I0b","goldens":"I0b renderer seed; XCTest result is authoritative","osMajor":"iOS27","figmaComparison":"not run"}' > build/parity/foundation-status.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

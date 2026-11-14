@@ -120,7 +120,11 @@ targets:
   FiestaBoardAppTests:
     type: bundle.unit-test
     platform: iOS
-    sources: [Tests/AppTests]
+    sources:
+      - path: Tests/AppTests
+      - path: Tests/__Snapshots__/iOS27
+        type: folder
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft.apptests
