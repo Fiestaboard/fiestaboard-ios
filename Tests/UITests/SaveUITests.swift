@@ -190,7 +190,7 @@ import XCTest
     /// Pages → the page's screen → Edit Page. Save must be possible once there are changes.
     private func openEditor(_ app: XCUIApplication, page: String) -> XCUIElement {
         selectDestination("Pages", app)
-        let row = app.staticTexts[page].firstMatch
+        let row = pageCard(app, named: page)
         XCTAssertTrue(row.waitForExistence(timeout: 8), app.debugDescription)
         for _ in 0..<6 where !row.isHittable { app.swipeUp() }
         row.tap()

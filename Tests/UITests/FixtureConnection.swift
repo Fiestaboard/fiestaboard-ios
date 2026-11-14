@@ -8,6 +8,11 @@ extension XCTestCase {
         return app
     }
 
+    @MainActor func pageCard(_ app: XCUIApplication, named name: String) -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "pageCard_"))
+            .containing(.staticText, identifier: name).firstMatch
+    }
+
     /// Real app sign-in against the loopback HTTP fixture, never a shipping demo path.
     @MainActor func launchFixture(_ app: XCUIApplication, arguments: [String] = []) {
         app.launchArguments = arguments

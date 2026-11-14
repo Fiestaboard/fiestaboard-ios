@@ -260,7 +260,7 @@ import XCTest
         let app = isolatedApplication()
         try connectToFixture(app, scenario: "manual")
         openPages(app)
-        let row = app.staticTexts["Good Morning"].firstMatch
+        let row = pageCard(app, named: "Good Morning")
         XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
         app.buttons["editLocalDraft"].tap()
         let document = app.textViews["boardDocument"]
@@ -313,7 +313,7 @@ import XCTest
         let app = isolatedApplication()
         try connectToFixture(app, scenario: "manual")
         openPages(app)
-        let row = app.staticTexts["Desk Note"].firstMatch
+        let row = pageCard(app, named: "Desk Note")
         XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
         app.buttons["editLocalDraft"].tap()
         XCTAssertTrue(app.textViews["boardDocument"].waitForExistence(timeout: 8))
@@ -350,7 +350,7 @@ import XCTest
         XCTAssertTrue(app.buttons["boardControlsEntry"].exists)
         attach(app, "P1-4-home-changes-off-\(device())")
         openPages(app)
-        let row = app.staticTexts["Good Morning"].firstMatch
+        let row = pageCard(app, named: "Good Morning")
         XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
         XCTAssertTrue(app.buttons["editLocalDraft"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.buttons["editLocalDraft"].label, "Edit Page")
@@ -367,7 +367,7 @@ import XCTest
         let app = isolatedApplication()
         try connectToFixture(app, scenario: "manual")
         openPages(app)
-        let row = app.staticTexts["Lobby"].firstMatch
+        let row = pageCard(app, named: "Lobby")
         XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
         app.buttons["editLocalDraft"].tap()
         let document = app.textViews["boardDocument"]
@@ -506,7 +506,7 @@ import XCTest
         let app = isolatedApplication()
         try connectToFixture(app, scenario: "manual")
         openPages(app)
-        let row = app.staticTexts["Desk Note"].firstMatch
+        let row = pageCard(app, named: "Desk Note")
         XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
         app.buttons["editLocalDraft"].tap()
         let document = app.textViews["boardDocument"]
@@ -530,7 +530,7 @@ import XCTest
         let app = isolatedApplication()
         try connectToFixture(app, scenario: "manual")
         openPages(app)
-        let row = app.staticTexts["Lobby"].firstMatch
+        let row = pageCard(app, named: "Lobby")
         XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
         app.buttons["editLocalDraft"].tap()
         let document = app.textViews["boardDocument"]

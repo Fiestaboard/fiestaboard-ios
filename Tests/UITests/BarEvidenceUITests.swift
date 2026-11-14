@@ -136,7 +136,7 @@ import XCTest
             let back = app.navigationBars.buttons.element(boundBy: 0)
             if back.exists && back.isHittable { back.tap() }
         }
-        let row = app.staticTexts[page].firstMatch
+        let row = pageCard(app, named: page)
         XCTAssertTrue(row.waitForExistence(timeout: 8), app.debugDescription)
         for _ in 0..<6 where !row.isHittable { app.swipeUp() }
         row.tap()

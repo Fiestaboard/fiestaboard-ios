@@ -81,7 +81,7 @@ import XCTest
             if back.exists && back.isHittable { back.tap() }
         }
         XCTAssertTrue(pages.waitForExistence(timeout: 5)); pages.tap()
-        let row = app.staticTexts["Good Morning"].firstMatch
+        let row = pageCard(app, named: "Good Morning")
         XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
         let edit = app.buttons["editLocalDraft"]
         XCTAssertTrue(edit.waitForExistence(timeout: 5)); edit.tap()

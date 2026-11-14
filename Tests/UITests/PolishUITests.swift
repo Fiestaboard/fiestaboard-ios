@@ -60,7 +60,7 @@ import XCTest
         connect(app, path: "flexible-" + UUID().uuidString.prefix(8).lowercased())
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15))
         selectDestination("Pages", in: app)
-        let row = app.staticTexts["Flexible document"].firstMatch
+        let row = pageCard(app, named: "Flexible document")
         XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
         app.buttons["editLocalDraft"].tap()
         let advanced = app.buttons["Advanced"]
@@ -281,7 +281,7 @@ import XCTest
     }
     @discardableResult private func openEditor(_ app: XCUIApplication, page: String) -> XCUIElement {
         selectDestination("Pages", in: app)
-        let row = app.staticTexts[page].firstMatch
+        let row = pageCard(app, named: page)
         XCTAssertTrue(row.waitForExistence(timeout: 8), app.debugDescription)
         for _ in 0..<8 where !row.isHittable { app.swipeUp() }
         row.tap()

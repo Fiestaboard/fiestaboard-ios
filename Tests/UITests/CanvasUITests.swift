@@ -4,7 +4,7 @@ import XCTest
 /// on the Pixoo, one canvas "sun"), against the mock fixture
 /// (`FIXTURE_PORT=<port> python3 Tests/UITests/fixture_server.py`). No real server, no hardware.
 /// Screenshots are attachments named `F2-…-mockfixture`, also written to SHOT_DIR when set.
-final class CanvasUITests: XCTestCase {
+@MainActor final class CanvasUITests: XCTestCase {
     override func setUp() { continueAfterFailure = false }
 
     private var port: String { ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "18442" }
@@ -190,7 +190,7 @@ final class CanvasUITests: XCTestCase {
             let back = app.navigationBars.buttons["FiestaBoard"].firstMatch
             if back.exists && back.isHittable { back.tap() }
         }
-        let row = app.staticTexts["Pixel Clock"].firstMatch
+        let row = pageCard(app, named: "Pixel Clock")
         XCTAssertTrue(row.waitForExistence(timeout: 8))
         for _ in 0..<6 where !row.isHittable { app.swipeUp() }
         row.tap()
