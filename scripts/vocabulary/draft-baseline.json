@@ -1,0 +1,898 @@
+[
+  {
+    "file": "App/BoardOutputView.swift",
+    "text": "Server-reported output"
+  },
+  {
+    "file": "App/Features/Collections/CollectionEditorView.swift",
+    "text": "Changes are checkpointed on this device. Server saves acknowledge storage; they do not confirm display output or select a board."
+  },
+  {
+    "file": "App/Features/Collections/CollectionEditorView.swift",
+    "text": "Store this collection on the server?"
+  },
+  {
+    "file": "App/Features/Collections/CollectionEditorView.swift",
+    "text": "Save ‘\\(model.draft.name)’ on \\(model.deploymentID). This changes collection storage; it does not select content for a board."
+  },
+  {
+    "file": "App/Features/Collections/CollectionEditorView.swift",
+    "text": "Delete ‘\\(model.draft.name)’ on \\(model.deploymentID). The server will refuse deletion if the collection is still in use."
+  },
+  {
+    "file": "App/Features/Collections/CollectionEditorView.swift",
+    "text": "Adopt the compared server collection?"
+  },
+  {
+    "file": "App/Features/Collections/CollectionEditorView.swift",
+    "text": "Preserve draft and adopt server content"
+  },
+  {
+    "file": "App/Features/Collections/CollectionEditorView.swift",
+    "text": "Intervals range from 5 to 86400 seconds. Expressions are evaluated by the server."
+  },
+  {
+    "file": "App/Features/Collections/CollectionEditorView.swift",
+    "text": "Save collection on server…"
+  },
+  {
+    "file": "App/Features/Collections/CollectionEditorView.swift",
+    "text": "Compare server collection"
+  },
+  {
+    "file": "App/Features/Collections/CollectionEditorView.swift",
+    "text": "Preserving draft or contacting server…"
+  },
+  {
+    "file": "App/Features/Collections/CollectionEditorView.swift",
+    "text": "Compared server collection"
+  },
+  {
+    "file": "App/Features/Collections/CollectionEditorView.swift",
+    "text": "Adopt compared server content…"
+  },
+  {
+    "file": "App/Features/Collections/CollectionsView.swift",
+    "text": "Collections choose among member pages. Saving changes stored content; selecting content for a board is a separate action."
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "Connect your FiestaBoard"
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "Connect to your FiestaBoard server or explore with simulated displays."
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "Saved servers"
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "Manual server connection"
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "Server address"
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "Server name (optional)"
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "Server"
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "Each feature checks its own server support. Connecting does not enable changes."
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "The server is reachable. Its display service is not currently running."
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "Checking server…"
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "Check the server's current state before starting a new attempt. The previous request will not be repeated."
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "Check server state"
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "Choose another server"
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "Remove this server and forget its saved sign-in?"
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "Remove server & forget sign-in"
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "Remove the saved address and forget this window’s remembered sign-in. For a server not opened here, confirmation targets the sign-in currently stored. Other windows keep active sessions; sign-ins saved after confirmation are protected."
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "Rename server"
+  },
+  {
+    "file": "App/Features/Connection/ConnectionView.swift",
+    "text": "Server name"
+  },
+  {
+    "file": "App/Features/Connection/SetupView.swift",
+    "text": "This server requires its stored MCP token to prove you can finish setup. Find it in the server's configuration. It is cleared from this form for each attempt."
+  },
+  {
+    "file": "App/Features/Connection/SetupView.swift",
+    "text": "Choose whether this server requires an administrator sign-in. Its environment may control this setting."
+  },
+  {
+    "file": "App/Features/Control/BoardControlsView.swift",
+    "text": "Board controls"
+  },
+  {
+    "file": "App/Features/Control/BoardControlsView.swift",
+    "text": "Let other apps keep the board"
+  },
+  {
+    "file": "App/Features/Control/BoardControlsView.swift",
+    "text": "Select a board to read its current settings."
+  },
+  {
+    "file": "App/Features/Control/BoardControlsView.swift",
+    "text": "Confirm board change"
+  },
+  {
+    "file": "App/Features/Control/SchedulesView.swift",
+    "text": "Server schedule · read only"
+  },
+  {
+    "file": "App/Features/Control/SchedulesView.swift",
+    "text": "Server schedule state"
+  },
+  {
+    "file": "App/Features/Control/SchedulesView.swift",
+    "text": "Times, recurrence and dates use the server’s settings. This app does not convert them to your device’s time zone."
+  },
+  {
+    "file": "App/Features/Control/SchedulesView.swift",
+    "text": "Server time semantics"
+  },
+  {
+    "file": "App/Features/Control/SchedulesView.swift",
+    "text": "Read-only values from the server. Resolved times are the server’s calculation for today; no device time zone or recurrence conversion is applied."
+  },
+  {
+    "file": "App/Features/Control/SchedulesView.swift",
+    "text": "Board ID"
+  },
+  {
+    "file": "App/Features/Control/SchedulesView.swift",
+    "text": "Server default board"
+  },
+  {
+    "file": "App/Features/Displays/DisplaysView.swift",
+    "text": "Size and colour"
+  },
+  {
+    "file": "App/Features/Editor/Canvas/CanvasEditorState.swift",
+    "text": "Draw any pixel in any colour over an area of the board. Text under a canvas is hidden, or flows around it."
+  },
+  {
+    "file": "App/Features/Editor/Canvas/CanvasEditorState.swift",
+    "text": "Area (board character cells)"
+  },
+  {
+    "file": "App/Features/Editor/Canvas/CanvasEditorState.swift",
+    "text": "Colour"
+  },
+  {
+    "file": "App/Features/Editor/Canvas/CanvasEditorState.swift",
+    "text": "Hex colour"
+  },
+  {
+    "file": "App/Features/Editor/Canvas/CanvasEditorState.swift",
+    "text": "A canvas can use at most \\(max) colours."
+  },
+  {
+    "file": "App/Features/Editor/Canvas/CanvasEditorState.swift",
+    "text": "Draw edits pixels only. The board shows the canvas background and shapes too."
+  },
+  {
+    "file": "App/Features/Editor/Canvas/CanvasEditorState.swift",
+    "text": "This canvas uses a source. Drawing edits its fallback pixels; the board shows the source when available."
+  },
+  {
+    "file": "App/Features/Editor/Canvas/CanvasEditorState.swift",
+    "text": "Shown hatched: the board draws it, and its values are edited below."
+  },
+  {
+    "file": "App/Features/Editor/Canvas/CanvasEditorState.swift",
+    "text": "Centre X"
+  },
+  {
+    "file": "App/Features/Editor/Canvas/CanvasEditorState.swift",
+    "text": "Centre Y"
+  },
+  {
+    "file": "App/Features/Editor/Canvas/CanvasEditorState.swift",
+    "text": "Colour"
+  },
+  {
+    "file": "App/Features/Editor/Canvas/CanvasEditorState.swift",
+    "text": "From colour"
+  },
+  {
+    "file": "App/Features/Editor/Canvas/CanvasEditorState.swift",
+    "text": "To colour"
+  },
+  {
+    "file": "App/Features/Editor/Canvas/CanvasEditorState.swift",
+    "text": "Every field takes a number or colour, or an expression such as {{weather.temperature}}."
+  },
+  {
+    "file": "App/Features/Editor/Canvas/CanvasEditorState.swift",
+    "text": "This page has pixel canvases. This board can't draw them, so their areas stay blank. Preview the page on an LED pixel board to edit them."
+  },
+  {
+    "file": "App/Features/Editor/Catalog/EditorCatalogStore.swift",
+    "text": "Showing common variables: this server's list couldn't be loaded."
+  },
+  {
+    "file": "App/Features/Editor/Document/BoardDocumentView.swift",
+    "text": "Board document"
+  },
+  {
+    "file": "App/Features/Editor/Document/PreviewStage.swift",
+    "text": "Board size \\(rows) by \\(cols)"
+  },
+  {
+    "file": "App/Features/Editor/Document/PreviewStage.swift",
+    "text": "Server preview, \\(frame.width) by \\(frame.height) pixels"
+  },
+  {
+    "file": "App/Features/Editor/EditorRoot.swift",
+    "text": "Server"
+  },
+  {
+    "file": "App/Features/Editor/EditorRoot.swift",
+    "text": "Server page"
+  },
+  {
+    "file": "App/Features/Editor/EditorRoot.swift",
+    "text": "Fetch server page for comparison"
+  },
+  {
+    "file": "App/Features/Editor/EditorRoot.swift",
+    "text": "Server preview"
+  },
+  {
+    "file": "App/Features/Editor/FlexibleWorkspaceView.swift",
+    "text": "Allowed board IDs"
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "Server"
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "Save local draft keeps a recovery copy on this device. A confirmed server save updates stored page content. Evaluation uses the current document and selected display without updating stored content or sending to hardware."
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "Save page on server?"
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "Save page on server"
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "Save ‘\\(model.name)’ (page \\(model.identity.pageID)) on \\(model.identity.deploymentID). This updates the persisted page and may change content used by running displays. This action does not directly send a board command. A local snapshot is saved before the request."
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "Reload compared server page?"
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "Your current local work will be saved before replacing the editor. Undo history will be cleared so an old server revision cannot return."
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "Save page on server…"
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "Fetch server page for comparison"
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "Compared server document"
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "Your local work is still in the editor. Reloading preserves it in a local draft and adopts this server revision."
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "Preserving draft or contacting server…"
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "Board for evaluation"
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "Choose a board"
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "Server validation"
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "Server preview · requested board: \\(model.boards.first(where: { $0.id == model.selectedBoardID })?.name ?? "
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "This server uses an unsupported visual preview format."
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "Server preview"
+  },
+  {
+    "file": "App/Features/Editor/LocalPageEditorView.swift",
+    "text": "This server uses a visual preview format this app does not support."
+  },
+  {
+    "file": "App/Features/Editor/TemplateWorkspaceView.swift",
+    "text": "Keep the braces and any filters. The server evaluates the expression."
+  },
+  {
+    "file": "App/Features/Home/HomeCards.swift",
+    "text": "\\(store.board?.summary.id ?? "
+  },
+  {
+    "file": "App/Features/Home/HomeView.swift",
+    "text": "Changing this board from the app is turned off."
+  },
+  {
+    "file": "App/Features/Home/HomeView.swift",
+    "text": "This server version can't be changed from the app yet."
+  },
+  {
+    "file": "App/Features/Home/HomeView.swift",
+    "text": "Refresh to see the board before making another change."
+  },
+  {
+    "file": "App/Features/Home/HomeView.swift",
+    "text": "Wait for the board, then try again."
+  },
+  {
+    "file": "App/Features/Home/HomeView.swift",
+    "text": "Returns the board to its schedule"
+  },
+  {
+    "file": "App/Features/Home/HomeView.swift",
+    "text": "Waiting for the board…"
+  },
+  {
+    "file": "App/Features/Home/HomeView.swift",
+    "text": "This server version can't be changed from the app yet. Use the web app to change the board."
+  },
+  {
+    "file": "App/Features/Home/HomeView.swift",
+    "text": "Refresh to see the board before making another change."
+  },
+  {
+    "file": "App/Features/Home/HomeView.swift",
+    "text": "Board controls"
+  },
+  {
+    "file": "App/Features/Home/HomeView.swift",
+    "text": "Changing this board from the app is turned off"
+  },
+  {
+    "file": "App/Features/Home/OutOfSyncBanner.swift",
+    "text": "Couldn't save the board as a page. Try again."
+  },
+  {
+    "file": "App/Features/Library/LocalPageEditorLoader.swift",
+    "text": "Drafts from previous sign-ins and older app versions stay on this device. Inspect and export their original files here. Exported content can be recovered locally; no server changes are made."
+  },
+  {
+    "file": "App/Features/Library/LocalPageEditorLoader.swift",
+    "text": "Server"
+  },
+  {
+    "file": "App/Features/Library/LocalPageEditorLoader.swift",
+    "text": "The original export includes the saved content and its historical baseline for local recovery. It is never applied to the active server session."
+  },
+  {
+    "file": "App/Features/Library/LocalPageEditorLoader.swift",
+    "text": "Server"
+  },
+  {
+    "file": "App/Features/Library/LocalPageEditorLoader.swift",
+    "text": "Exports the original file, including its saved content and historical baseline. No server changes are made."
+  },
+  {
+    "file": "App/Features/Library/PagesListView.swift",
+    "text": "Create your first page to display on the board."
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "FiestaBoard/Servers"
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Review captures this exact text and the selected board. Sending uses the server’s layout rules."
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Server"
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Board ID"
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "The server may send this to the board. An acknowledgement does not verify physical output."
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Confirm board action"
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Integration management is not available in this native draft. Use the server web interface to configure plugins and integrations."
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Demo · page saves, previews and board actions are simulated"
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Waiting for server…"
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Board controls"
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Read current board state"
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Refresh the board state before another action. Refresh reads current state and never repeats the previous action."
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Refresh board state"
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Board controls"
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Remote sign-out is still pending. Sign out in the server web interface if needed."
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Demonstrate board outcomes without hardware. For page saves, Rejected simulates a revision conflict; Unknown and Partial simulate an uncertain save result."
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Server changes"
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Enable changes on this server"
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Allow this app to change the selected display and save supported pages and collections. Applying this setting reconnects to the server. Board controls are tested with FiestaBoard 10.0.0, 10.1.17 and 10.1.20; other features check their own server support. Changes require confirmation. This is a test draft."
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Server administration"
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "System settings and integration administration are not yet available here. Use the server web interface for those settings."
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Native draft: manual connection, page library, on-device drafts, supported page name and fixed template edits, explicit template validation and text preview, revision-checked server page saves, display selection, text and page actions, pause, schedule following, fallback page and restore controls. Refresh is manual; there is no background polling. Demo saves, evaluations and board actions are entirely simulated."
+  },
+  {
+    "file": "App/FiestaBoardApp.swift",
+    "text": "Save local draft keeps a recovery copy on this device. A separate confirmed server save updates supported stored page fields when the server advertises the known page protocol and this session opts in. Native discovery, sign-in and initial server setup are available as a testable draft. Collections support revision-checked editing where available. Schedule lists and details are read-only. Flexible text and Canvas editing, OAuth, schedule editing, plugins and administration remain planned. Use the web interface for those features and full visual previews."
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "Draw on board"
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "The server works out the value each time the board updates."
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "Board size"
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "Change board size?"
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "Content that doesn't fit the smaller board will be cut off."
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "{{red}}, {{blue}}… draw colour tiles"
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "Your changes have not been saved to the server. A recovery copy stays on this device."
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "server version"
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "this server doesn't accept page edits from the app."
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "this page isn't connected to a server."
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "changed on the server"
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "the page changed on the server. Compare first."
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "lowercase letters show as capitals on this board (\\(group.count))."
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "colored text shows without its color on this board (\\(group.count))."
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "\\(shown) can't be shown; the board draws \\(group.fallbacks.joined(separator: "
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "\\(count) / \\(limit) lines — exceeds the \\(limit)-line board limit"
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "Rows after row \\(limit) don't fit on this board and won't be shown."
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "The page changed on the server. Your work is kept on this device."
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "Reload the server page?"
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "Your current work is saved on this device first. Undo history is cleared so an old server revision cannot return."
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "Changing this board from the app is turned off. Turn it on in Settings."
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "Connect to your FiestaBoard first."
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "Wait for the board to finish."
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "Refresh to see the board before making another change."
+  },
+  {
+    "file": "App/Strings.swift",
+    "text": "This can't be done from the app with this server. Use the web app."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/CapabilityPolicy.swift",
+    "text": "Connect to a server to use this action."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/CapabilityPolicy.swift",
+    "text": "This server does not provide an operation or protocol supported by this app for this action. Use its web interface."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/Catalog.swift",
+    "text": "A colour tile by name."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/FiestaBoardError.swift",
+    "text": "This address does not identify a FiestaBoard deployment."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/FiestaBoardError.swift",
+    "text": "Select a concrete board on this deployment."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/FiestaBoardError.swift",
+    "text": "The server refused this action because of its current state."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/FiestaBoardError.swift",
+    "text": "The server is limiting requests. Wait before trying again."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/FiestaBoardError.swift",
+    "text": "Only part of the board accepted the write. Refresh its current output."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/FiestaBoardError.swift",
+    "text": "The server rejected the request (HTTP \\(status))."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/FiestaBoardError.swift",
+    "text": "The server response does not match this draft's contract."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/FiestaBoardError.swift",
+    "text": "This page changed on the server. Keep your local work and explicitly reload before saving again."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/FiestaBoardError.swift",
+    "text": "Template preview is unavailable for this server version or request shape."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/FiestaBoardError.swift",
+    "text": "This collection changed on the server. Keep your draft and compare before saving again."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/FiestaBoardError.swift",
+    "text": "Collection saving requires a supported document, its original revision, and explicit session opt-in. Creating requires the audited 10.1.7 server."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/FiestaBoardError.swift",
+    "text": "Compare the collection with the server before another write. After an uncertain creation, inspect the list and start a new draft."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/FiestaBoardError.swift",
+    "text": "Enable changes in Settings to use controls supported by this server version."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/FiestaBoardError.swift",
+    "text": "Authentication is controlled by the server environment. Refresh its authentication status."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/ServerCatalog.swift",
+    "text": "The saved server file could not be read. Restore or remove the damaged file before saving servers."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/ServerCatalog.swift",
+    "text": "Saved servers could not be accessed. Check available storage and file access, then try again."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/ServerCatalog.swift",
+    "text": "servers.json"
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/ServerDiscovery.swift",
+    "text": "Local discovery is unavailable. Check Wi-Fi and the app's Local Network setting, or enter the server address manually."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/ServerDiscovery.swift",
+    "text": "The advertised server did not respond in time. You can enter its address manually."
+  },
+  {
+    "file": "Packages/FiestaBoardKit/Sources/FiestaBoardKit/ServerDiscovery.swift",
+    "text": "The advertised server did not return a valid FiestaBoard identity."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/BoardStore.swift",
+    "text": "Server sign-out confirmed for \\(deployment.description)."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/BoardStore.swift",
+    "text": "Server sign-out could not be confirmed for \\(deployment.description). Sign out in its web interface if needed."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/BoardStore.swift",
+    "text": "Disconnected locally. Server sign-out confirmed for \\(server)."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/BoardStore.swift",
+    "text": "Disconnected locally. Server sign-out could not be confirmed for \\(server); the server session may still be active. Sign out in the server’s web interface if needed."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/BoardStore.swift",
+    "text": "Board settings updated. Physical output is not verified."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/BoardStore.swift",
+    "text": "server acknowledged a send. Physical output is not verified."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/BoardStore.swift",
+    "text": "held by the server; no send acknowledged."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/BoardStore.swift",
+    "text": "server did not send this message."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/BoardStore.swift",
+    "text": " Board is silenced."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/BoardStore.swift",
+    "text": " Server reported \\(result.warningCount) warning(s)."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/BoardStore.swift",
+    "text": "This server requires first-run setup. Complete setup in its web interface, then connect again."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/BoardStore.swift",
+    "text": "Page deleted. The server created a replacement page."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/BoardStore.swift",
+    "text": "The server acknowledged deletion, but current library or display state could not be read. Review current state before another change."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/BoardStore.swift",
+    "text": "Schedule reading is unavailable for this display or server. No schedule changes are supported here."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/ConnectionModel.swift",
+    "text": "No servers found. Check Wi-Fi or enter an address manually."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/ConnectionModel.swift",
+    "text": "This address identifies a different FiestaBoard installation. Remove the saved server and forget its sign-in before adding it again."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/ConnectionModel.swift",
+    "text": "Saved sign-in could not be removed. Try again before removing this server."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/ConnectionModel.swift",
+    "text": "The server could not complete this request. Check its address and connection, then check server state before trying again."
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/DisplayBadges.swift",
+    "text": "Single colour"
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/DisplayBadges.swift",
+    "text": "Full colour"
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/OutOfSync.swift",
+    "text": "Another app wrote to this board at \\(time)"
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/OutOfSync.swift",
+    "text": "Another app changed this board"
+  },
+  {
+    "file": "Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/OutOfSync.swift",
+    "text": "From board "
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/CollectionEditorModel.swift",
+    "text": "Collection storage requires the audited server version, supported revision protocol, and session write opt-in."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/CollectionEditorModel.swift",
+    "text": "The collection changed. Compare server content, then explicitly adopt it before another write."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/CollectionEditorModel.swift",
+    "text": "The result is unknown. Compare server content before another write."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/CollectionEditorModel.swift",
+    "text": "Collection storage acknowledged. Display output is not confirmed; board selection remains a separate action."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/CollectionEditorModel.swift",
+    "text": "Server content fetched for comparison. Your draft and original revision are unchanged."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/CollectionEditorModel.swift",
+    "text": "The server collection is missing. Your draft remains available to copy or keep locally."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/CollectionEditorModel.swift",
+    "text": "Adopted the compared server revision. Your prior local draft remains preserved."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/CollectionEditorModel.swift",
+    "text": "This collection is in use. Remove its references in schedules, carousels, or boards before deleting it. Your draft is preserved."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/LocalPageEditorModel.swift",
+    "text": "Recovered local draft. No changes were sent to the server."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/LocalPageEditorModel.swift",
+    "text": "Local draft saved. Newer edits are still unsaved. No changes were sent to the server."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/LocalPageEditorModel.swift",
+    "text": "Local draft saved on this device. No changes were sent to the server."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/LocalPageEditorModel.swift",
+    "text": "Server saving is unavailable for this local document."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/LocalPageEditorModel.swift",
+    "text": "Add at least one template line before saving to the server."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/LocalPageEditorModel.swift",
+    "text": "The page changed on the server. Fetch it for comparison before choosing a reload."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/LocalPageEditorModel.swift",
+    "text": "The save result is unknown. Fetch the server page and choose a reload before another save."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/LocalPageEditorModel.swift",
+    "text": "The server page changed. Your edited draft is saved on this device. Fetch the page for comparison; nothing will be retried automatically."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/LocalPageEditorModel.swift",
+    "text": "The save result is unknown. Your local draft is safe. Read back the server page before another save."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/LocalPageEditorModel.swift",
+    "text": "Server save failed. Your local draft is safe. \\(error.localizedDescription)"
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/LocalPageEditorModel.swift",
+    "text": "Fetched server content for comparison. Your editor and original revision are unchanged. Reload only when you choose."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/LocalPageEditorModel.swift",
+    "text": "Could not read the server page. Your local work is unchanged. \\(error.localizedDescription)"
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/LocalPageEditorModel.swift",
+    "text": "Reloaded the compared server page and cleared undo history. Your prior edited draft remains saved on this device until you explicitly save a new local draft."
+  },
+  {
+    "file": "Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/LocalPageEditorModel.swift",
+    "text": "The requested board is no longer available. Your draft is preserved. Choose a current board before previewing again."
+  }
+]
