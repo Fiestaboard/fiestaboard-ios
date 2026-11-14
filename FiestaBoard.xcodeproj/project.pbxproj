@@ -13,9 +13,11 @@
 		078026B7E4D421E7148C5185 /* CollectionContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4490F7035D0FAA8FEDE9402 /* CollectionContext.swift */; };
 		0913F75453BB18F0C0758E7C /* BoardGeometryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32BB9863B236F028ECD38024 /* BoardGeometryTests.swift */; };
 		091F3A1A80C5516291AF98BE /* LedRasterizerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C08D403E41B47F96C35871B /* LedRasterizerTests.swift */; };
+		0C02ABF56379AD707D1154EA /* GlassProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5846B98CDA945180CC7B8F3 /* GlassProbeTests.swift */; };
 		0C8F0910473C7DC09895B39F /* BoardStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = E77DDDA784DC2225F283D808 /* BoardStatus.swift */; };
 		0F8A7F5A8B4859B2AFDA6ADF /* EditorRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14DCA60302FF7F66D64DBC69 /* EditorRoot.swift */; };
 		115DFFF51DF1B46D1D1DC0FB /* PageDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5355EF228B18953DCB6086EA /* PageDocument.swift */; };
+		11FC63D742F1680FD271E6D4 /* ParityFoundationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EAF3EC9114378244809DC09 /* ParityFoundationTests.swift */; };
 		14943782D8BF8AC90A9F5255 /* Formula.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2662195EBC75B32C6C4D1F53 /* Formula.swift */; };
 		176381A71DE7EC4D6F1D2600 /* LosslessJSON.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFB2DF849651A564FCE1F486 /* LosslessJSON.swift */; };
 		1832C659D12996166FF88C1F /* PageManagement.swift in Sources */ = {isa = PBXBuildFile; fileRef = B111FC6C6933C9409006391C /* PageManagement.swift */; };
@@ -139,6 +141,7 @@
 		CFB504FE552730FAA589CF16 /* InsertPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 325C5B5CD67DA69702635A29 /* InsertPickerSheet.swift */; };
 		D04415239B53F363AD383EA2 /* FiestaBoardAppState.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 2E21A61E3064CBB07099A3E1 /* FiestaBoardAppState.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		D082E1D796CFA35851B0D46C /* CanvasRaster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0983A5BFD3803290BA5F0FC4 /* CanvasRaster.swift */; };
+		D43899001FDA9127ACD55778 /* ParityFoundationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3562AE76EFEB035CD14EEEF0 /* ParityFoundationUITests.swift */; };
 		D4E2223DF64508E4FAD15563 /* SessionVaultRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F8958AD1F9D24DE397C6D7 /* SessionVaultRuntimeTests.swift */; };
 		D88BBA90133E35DC15BBD1E3 /* FlapPhysics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08CD0DA7C751195DD5C9810F /* FlapPhysics.swift */; };
 		DBD4590104B773E8C67435CB /* DrawModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FEF31B8E11F52CFE1BCB7B8 /* DrawModeTests.swift */; };
@@ -331,6 +334,7 @@
 		32BB9863B236F028ECD38024 /* BoardGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardGeometryTests.swift; sourceTree = "<group>"; };
 		33C9936205557D822BCDBC68 /* ServerCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerCatalog.swift; sourceTree = "<group>"; };
 		34371FDA1872CA71EDAA3256 /* FlexibleEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlexibleEditing.swift; sourceTree = "<group>"; };
+		3562AE76EFEB035CD14EEEF0 /* ParityFoundationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParityFoundationUITests.swift; sourceTree = "<group>"; };
 		36CC08CCC9CD15CEF0B9CCC6 /* Strings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Strings.swift; sourceTree = "<group>"; };
 		3772403D0456CA285BF0FBC5 /* CapabilityPolicy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapabilityPolicy.swift; sourceTree = "<group>"; };
 		39295C71C5ED93F6ABEFB0B4 /* FiestaBoardError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiestaBoardError.swift; sourceTree = "<group>"; };
@@ -387,11 +391,13 @@
 		93B36F688F58E798D2EB8384 /* CanvasEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasEditing.swift; sourceTree = "<group>"; };
 		971BC95938B395BCAF17CC76 /* SchedulesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulesView.swift; sourceTree = "<group>"; };
 		9AB3A2DCDAFE040B20C380C9 /* BoardDocumentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardDocumentView.swift; sourceTree = "<group>"; };
+		9EAF3EC9114378244809DC09 /* ParityFoundationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParityFoundationTests.swift; sourceTree = "<group>"; };
 		9F65FAC9659A00AF389AC325 /* Service.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Service.swift; sourceTree = "<group>"; };
 		A0547B69CE895F2F4F57FCF6 /* BoardVisualsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardVisualsUITests.swift; sourceTree = "<group>"; };
 		A0B00B96E005DAE7C0B39B09 /* PageEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageEditing.swift; sourceTree = "<group>"; };
 		A0DB5C5F04702C68AFB68B28 /* SpecDriftTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpecDriftTests.swift; sourceTree = "<group>"; };
 		A3E7BE5F69B8B5D28D44AE0E /* EditorRemoteActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorRemoteActions.swift; sourceTree = "<group>"; };
+		A5846B98CDA945180CC7B8F3 /* GlassProbeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassProbeTests.swift; sourceTree = "<group>"; };
 		A770AE81F701112EE919E154 /* CollectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionsView.swift; sourceTree = "<group>"; };
 		AAB69A54A41CFEB488033456 /* VariablePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VariablePickerView.swift; sourceTree = "<group>"; };
 		AB40318E2937E815C0FA1A93 /* CanvasesPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasesPanel.swift; sourceTree = "<group>"; };
@@ -531,7 +537,9 @@
 			children = (
 				CBAA32A7BB31C756C4A9E5E4 /* CharsetIssuesFormattingTests.swift */,
 				1FEF31B8E11F52CFE1BCB7B8 /* DrawModeTests.swift */,
+				A5846B98CDA945180CC7B8F3 /* GlassProbeTests.swift */,
 				17AA72D990ED60C85912AA69 /* GoldenSeedTests.swift */,
+				9EAF3EC9114378244809DC09 /* ParityFoundationTests.swift */,
 				55F8958AD1F9D24DE397C6D7 /* SessionVaultRuntimeTests.swift */,
 				BD6BE9A9CDCA742A1B397022 /* TemplateChipFactoryTests.swift */,
 				11208C1A2EECBA9BE45CCA05 /* TemplateUITextViewTests.swift */,
@@ -730,6 +738,7 @@
 				6BBD25933907F3239D01D6CC /* FormulaUITests.swift */,
 				EFA6B31F1D4A49A278398FFE /* IntegrationUITests.swift */,
 				E0EBDE35CC98E3503AD48784 /* LaunchUITests.swift */,
+				3562AE76EFEB035CD14EEEF0 /* ParityFoundationUITests.swift */,
 				BECB0B3DC31A74CE977E8FDF /* PolishUITests.swift */,
 				7387870A8F4C81B3ED477AB0 /* SaveUITests.swift */,
 			);
@@ -1172,6 +1181,7 @@
 				82C97A471315A3DDFFC9C514 /* FormulaUITests.swift in Sources */,
 				3130713C85FE68151D21B7FA /* IntegrationUITests.swift in Sources */,
 				9D2F7AA9FBDBD489177FE17F /* LaunchUITests.swift in Sources */,
+				D43899001FDA9127ACD55778 /* ParityFoundationUITests.swift in Sources */,
 				EB8918048053710E0D7C7D0F /* PolishUITests.swift in Sources */,
 				50582601962AE7A4F44A1E9D /* SaveUITests.swift in Sources */,
 			);
@@ -1183,7 +1193,9 @@
 			files = (
 				50258095D519E0441BC24C31 /* CharsetIssuesFormattingTests.swift in Sources */,
 				DBD4590104B773E8C67435CB /* DrawModeTests.swift in Sources */,
+				0C02ABF56379AD707D1154EA /* GlassProbeTests.swift in Sources */,
 				9E1C9B10C44C9A876CA0ECE6 /* GoldenSeedTests.swift in Sources */,
+				11FC63D742F1680FD271E6D4 /* ParityFoundationTests.swift in Sources */,
 				D4E2223DF64508E4FAD15563 /* SessionVaultRuntimeTests.swift in Sources */,
 				1F4559915E486F9E2FB5C7CF /* TemplateChipFactoryTests.swift in Sources */,
 				F22480C129F5A9223D737196 /* TemplateUITextViewTests.swift in Sources */,
