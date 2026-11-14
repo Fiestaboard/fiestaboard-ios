@@ -30,7 +30,24 @@ extension XCTestCase {
         address.typeText("http://127.0.0.1:\(port)/board-manual-\(UUID().uuidString.lowercased())")
         let localHTTP = app.switches["connectionLocalHTTP"]
         reveal(localHTTP)
+        // At accessibility sizes a visible label makes the whole switch "hittable"
+        // even while its actual tap point is covered by the software keyboard.
+        func switchTapIsVisible() -> Bool {
+            guard localHTTP.exists, localHTTP.isHittable else { return false }
+            let keyboard = app.keyboards.firstMatch
+            let bottom = keyboard.exists ? keyboard.frame.minY : app.windows.firstMatch.frame.maxY
+            let top = app.navigationBars.firstMatch.frame.maxY
+            return localHTTP.frame.midY > top + 8 && localHTTP.frame.midY < bottom - 8
+        }
+        for _ in 0..<12 {
+            if switchTapIsVisible() { break }
+            if localHTTP.exists && localHTTP.frame.midY <= app.navigationBars.firstMatch.frame.maxY + 8 {
+                app.swipeDown()
+            } else { app.swipeUp() }
+        }
+        XCTAssertTrue(switchTapIsVisible(), "HTTP switch tap point must be above the keyboard")
         if localHTTP.value as? String != "1" { localHTTP.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap() }
+        XCTAssertEqual(localHTTP.value as? String, "1", "Explicitly allow the loopback HTTP fixture before connecting")
         let connect = app.buttons["connectionConnect"]
         reveal(connect); connect.tap()
         let username = app.textFields["Username"]
