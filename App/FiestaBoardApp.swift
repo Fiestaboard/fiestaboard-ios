@@ -4,14 +4,14 @@ import FiestaBoardAppState
 
 @main struct FiestaBoardApp: App {
     private let connectionPersistence = ConnectionPersistence(
-        directory: AppPersistence.directory.appendingPathComponent("Servers", isDirectory: true))
+        directory: AppPersistence.directory.appendingPathComponent("FiestaBoard/Servers", isDirectory: true))
     var body: some Scene { WindowGroup { DraftScene(persistence: connectionPersistence) } }
 }
 
 /// UI tests use real services with isolated storage. Release ignores the test environment.
 enum AppPersistence {
     static var directory: URL {
-        let root = URL.applicationSupportDirectory.appendingPathComponent("FiestaBoard", isDirectory: true)
+        let root = URL.applicationSupportDirectory
         #if DEBUG
         if let value = ProcessInfo.processInfo.environment["FIESTABOARD_TEST_NAMESPACE"], let id = UUID(uuidString: value) {
             return root.appendingPathComponent("UITests/" + id.uuidString, isDirectory: true)
