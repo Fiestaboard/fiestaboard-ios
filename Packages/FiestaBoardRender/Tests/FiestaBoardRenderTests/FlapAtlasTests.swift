@@ -73,3 +73,45 @@ final class PanelPreviewThumbnailTests: XCTestCase {
     }
 }
 #endif
+
+// Packing is pure geometry, so these controls also run on the macOS host.
+#if !canImport(UIKit)
+import XCTest
+@testable import FiestaBoardRender
+#endif
+
+final class FlapAtlasPackingTests: XCTestCase {
+    func testRetinaPackingBoundsEachRenderAndPreservesEveryCodeAndPhase() throws {
+        for height in [13.0, 80, 120] {
+            let packing = try XCTUnwrap(FlapAtlas.Packing(tileHeight: height, scale: 2))
+            XCTAssertGreaterThanOrEqual(packing.renderScale, 1)
+            XCTAssertLessThanOrEqual(packing.renderScale, 2)
+            XCTAssertGreaterThan(packing.renderScale, 1, "Retina height=\(height)")
+            XCTAssertLessThanOrEqual(packing.sheetWidth, 2048)
+            XCTAssertLessThanOrEqual(packing.sheetHeight, 2048)
+            XCTAssertLessThanOrEqual(packing.codesPerSheet, 12)
+            XCTAssertEqual(packing.sheetCount, 78)
+            XCTAssertLessThanOrEqual(packing.byteCount, 60 * 1024 * 1024)
+            XCTAssertEqual(packing.byteCount, packing.sheetCount * packing.sheetWidth * packing.sheetHeight * 4)
+            var positions: Set<Int> = []
+            for phase in 0...FlapAtlas.phases {
+                for code in 0..<72 {
+                    let position = packing.position(code: code, phase: phase)
+                    XCTAssertEqual(position.x % packing.cellWidth, 0)
+                    XCTAssertGreaterThanOrEqual(position.x, 0)
+                    XCTAssertLessThanOrEqual(position.x + packing.cellWidth, packing.sheetWidth)
+                    XCTAssertTrue(positions.insert(position.sheet * 12 + position.x / packing.cellWidth).inserted)
+                }
+            }
+            XCTAssertEqual(positions.count, 72 * 13)
+        }
+    }
+
+    func testPackingRejectsInvalidInputWithoutNanConversions() {
+        for height in [0.0, -1, 121, .nan, .infinity] {
+            XCTAssertNil(FlapAtlas.Packing(tileHeight: height, scale: 2))
+        }
+        XCTAssertNil(FlapAtlas.Packing(tileHeight: 80, scale: .nan))
+        XCTAssertNil(FlapAtlas.Packing(tileHeight: 80, scale: .infinity))
+    }
+}
