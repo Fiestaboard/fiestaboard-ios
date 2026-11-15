@@ -47,11 +47,13 @@ import UIKit
         native.configureWithTransparentBackground()
         native.backgroundColor = .cyan
         native.shadowColor = .magenta
+        native.largeTitleTextAttributes[.foregroundColor] = UIColor.orange
         let styled = NativeSeedChrome.navigationAppearance(native)
         XCTAssertEqual(styled.backgroundColor, native.backgroundColor)
         XCTAssertEqual(styled.backgroundEffect, native.backgroundEffect)
         XCTAssertEqual(styled.shadowColor, native.shadowColor)
-        XCTAssertNil(native.largeTitleTextAttributes[.foregroundColor], "The original appearance is not mutated")
+        XCTAssertEqual(native.largeTitleTextAttributes[.foregroundColor] as? UIColor, .orange,
+                       "The original appearance is not mutated")
     }
 
     func testNativeSeedTabAppearanceUsesTheReferenceSelectedFill() {
