@@ -119,3 +119,21 @@ struct RGBA {
         return (Int(data[o]), Int(data[o + 1]), Int(data[o + 2]))
     }
 }
+
+#if canImport(UIKit)
+import UIKit
+
+/// UIKit screenshots can encode landscape as portrait backing pixels plus
+/// orientation metadata. Draw with UIKit so screen-space probes address visible pixels.
+@MainActor enum ScreenCapture {
+    static func orientedPixels(_ image: UIImage) -> CGImage? {
+        if image.imageOrientation == .up { return image.cgImage }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = image.scale
+        format.preferredRange = .standard
+        return UIGraphicsImageRenderer(size: image.size, format: format).image { _ in
+            image.draw(in: CGRect(origin: .zero, size: image.size))
+        }.cgImage
+    }
+}
+#endif

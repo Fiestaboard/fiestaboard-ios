@@ -4,6 +4,57 @@ import UIKit
 @testable import FiestaBoard
 
 @MainActor final class ParityFoundationTests: XCTestCase {
+    func testScreenshotNormalizationHonorsEveryOrientationAndPreservesPixels() throws {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 2
+        let portrait = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 6), format: format).image { context in
+            for (rect, color) in [
+                (CGRect(x: 0, y: 0, width: 2, height: 3), UIColor.red),
+                (CGRect(x: 2, y: 0, width: 2, height: 3), UIColor.green),
+                (CGRect(x: 0, y: 3, width: 2, height: 3), UIColor.blue),
+                (CGRect(x: 2, y: 3, width: 2, height: 3), UIColor.yellow)
+            ] { color.setFill(); context.fill(rect) }
+        }
+        let cases: [(UIImage.Orientation, [Int])] = [
+            (.up, [0, 1, 2, 3]), (.upMirrored, [1, 0, 3, 2]),
+            (.down, [3, 2, 1, 0]), (.downMirrored, [2, 3, 0, 1]),
+            (.left, [1, 3, 0, 2]), (.right, [2, 0, 3, 1]),
+            (.leftMirrored, [0, 2, 1, 3]), (.rightMirrored, [3, 1, 2, 0])
+        ]
+        let source = try XCTUnwrap(portrait.cgImage)
+        let sourcePixels = try XCTUnwrap(RGBA(source))
+        let colors = [sourcePixels.at(1, 1)!, sourcePixels.at(6, 1)!, sourcePixels.at(1, 10)!, sourcePixels.at(6, 10)!]
+        for (orientation, expectedColors) in cases {
+            let image = UIImage(cgImage: source, scale: 2, orientation: orientation)
+            let normalized = try XCTUnwrap(ScreenCapture.orientedPixels(image))
+            let swapsAxes = [.left, .right, .leftMirrored, .rightMirrored].contains(orientation)
+            XCTAssertEqual(normalized.width, swapsAxes ? 12 : 8)
+            XCTAssertEqual(normalized.height, swapsAxes ? 8 : 12)
+            let pixels = try XCTUnwrap(RGBA(normalized))
+            let corners = [(1, 1), (normalized.width - 2, 1), (1, normalized.height - 2), (normalized.width - 2, normalized.height - 2)]
+            for (corner, expectedIndex) in zip(corners, expectedColors) {
+                let actual = try XCTUnwrap(pixels.at(corner.0, corner.1))
+                let expected = colors[expectedIndex]
+                XCTAssertEqual(actual.0, expected.0, accuracy: 1, "\(orientation)")
+                XCTAssertEqual(actual.1, expected.1, accuracy: 1, "\(orientation)")
+                XCTAssertEqual(actual.2, expected.2, accuracy: 1, "\(orientation)")
+            }
+        }
+    }
+
+    func testNativeSeedTabAppearanceUsesTheReferenceSelectedFill() {
+        let appearance = NativeSeedChrome.tabAppearance()
+        XCTAssertEqual(appearance.selectionIndicatorTintColor, UIColor(red: 252/255, green: 237/255, blue: 213/255, alpha: 1))
+        XCTAssertEqual(appearance.stackedLayoutAppearance.normal.iconColor, NativeSeedChrome.foreground)
+    }
+
+    func testConnectingLoaderUsesTheBundledOriginalAnimation() throws {
+        let animation = try XCTUnwrap(TacoAnimation.shared)
+        XCTAssertEqual(animation.images.count, 45)
+        XCTAssertEqual(animation.duration, 1.92, accuracy: 0.001)
+        XCTAssertEqual(animation.timedImages.count, 48)
+    }
+
     /// I2 seed: real SwiftUI layout, exported independently from the reference metadata.
     func testConnectingSeedCaptureAndSkeletonGeometry() throws {
         guard UIDevice.current.userInterfaceIdiom == .phone else { return }
