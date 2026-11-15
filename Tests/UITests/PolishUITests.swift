@@ -269,7 +269,7 @@ import XCTest
         let semaphore = DispatchSemaphore(value: 0); var ready = false
         URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
         semaphore.wait()
-        try XCTSkipUnless(ready, "Start the fixture: FIXTURE_PORT=\(fixturePort) python3 Tests/UITests/fixture_server.py")
+        try requireReadyFixture(ready, port: String(fixturePort))
         let app = isolatedApplication()
         app.launchArguments = []; app.launch()
         connect(app, path: "board-\(scenario)-" + UUID().uuidString.prefix(8).lowercased())
