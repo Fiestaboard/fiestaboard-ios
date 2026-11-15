@@ -109,6 +109,53 @@ import UIKit
         XCTAssertNil(navigation.scrollEdgeAppearance?.backgroundEffect)
     }
 
+    func testNativeSymbolCopiesMatchByContentAndRejectWrongPalette() throws {
+        let root = UIView()
+        let tab = UITabBar()
+        tab.items = (0..<5).map { UITabBarItem(title: "Item \($0)", image: nil, tag: $0) }
+        root.addSubview(tab)
+        NativeSeedChrome.apply(in: root)
+        let image = try XCTUnwrap(NativeSeedChrome.symbolImage("display", color: NativeSeedChrome.foreground))
+        XCTAssertFalse(image.isSymbolImage, "UIKit must receive frozen native artwork, not a reconfigurable symbol")
+        XCTAssertEqual(image.size, CGSize(width: 24, height: 24))
+        let copy = UIImage(cgImage: try XCTUnwrap(image.cgImage), scale: image.scale, orientation: .up)
+            .withRenderingMode(.alwaysOriginal)
+        XCTAssertFalse(copy === image)
+        tab.items?[3].image = copy
+        XCTAssertEqual(NativeSeedChrome.audit(in: root).configuredSymbols, 5)
+        tab.items?[3].image = NativeSeedChrome.symbolImage("display", color: .red)
+        XCTAssertEqual(NativeSeedChrome.audit(in: root).configuredSymbols, 4)
+        NativeSeedChrome.apply(in: root)
+        XCTAssertEqual(NativeSeedChrome.audit(in: root).configuredSymbols, 5)
+    }
+
+    func testNativeSymbolRasterKeepsBrandAndForegroundInsteadOfSystemMulticolor() throws {
+        for (name, color) in [("house", NativeSeedChrome.brand), ("calendar", NativeSeedChrome.foreground)] {
+            let symbol = try XCTUnwrap(NativeSeedChrome.symbolImage(name, color: color))
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 3
+            let image = UIGraphicsImageRenderer(size: symbol.size, format: format).image { context in
+                UIColor.white.setFill()
+                context.fill(CGRect(origin: .zero, size: symbol.size))
+                symbol.draw(at: .zero)
+            }
+            let pixels = try XCTUnwrap(RGBA(try XCTUnwrap(image.cgImage)))
+            var brandPixels = 0
+            var invalidPalettePixels = 0
+            for y in 0..<pixels.height {
+                for x in 0..<pixels.width {
+                    let p = try XCTUnwrap(pixels.at(x, y))
+                    if p.0 + 2 < p.1 || p.1 + 2 < p.2 || (name == "calendar" && abs(p.0 - p.2) > 6) {
+                        invalidPalettePixels += 1
+                    }
+                    if p.0 - p.1 > 20 && p.1 - p.2 > 20 { brandPixels += 1 }
+                }
+            }
+            XCTAssertEqual(invalidPalettePixels, 0, "Native \(name) must retain the requested palette")
+            if name == "house" { XCTAssertGreaterThan(brandPixels, 0) }
+        }
+    }
+
     func testNativeDisplaySymbolHasASeeThroughInterior() throws {
         let symbol = try XCTUnwrap(NativeSeedChrome.symbolImage("display", color: .black))
         let format = UIGraphicsImageRendererFormat()
