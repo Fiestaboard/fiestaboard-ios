@@ -28,6 +28,39 @@ final class FixtureHTTPServer: @unchecked Sendable {
             listener.cancel(); throw NSError(domain: "FixtureHTTPServer", code: 1)
         }
     }
+    enum ReadinessError: Error { case timeout, transport, badStatus, identityMismatch }
+
+    static func validateReadyResponse(status: Int, body: Data) throws {
+        guard status == 200 else { throw ReadinessError.badStatus }
+        guard let object = try? JSONSerialization.jsonObject(with: body) as? [String: Any],
+              object["fixture"] as? String == "native-onboarding" else { throw ReadinessError.identityMismatch }
+    }
+
+    /// A broken in-process test dependency is a failure, never a skipped journey.
+    func requireReady() throws {
+        var request = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/ready")!)
+        request.timeoutInterval = 3
+        let result = ReadinessResult()
+        let semaphore = DispatchSemaphore(value: 0)
+        let task = URLSession.shared.dataTask(with: request) { data, response, error in
+            result.set(error == nil ? .success(((response as? HTTPURLResponse)?.statusCode ?? -1, data ?? Data())) : .failure(ReadinessError.transport))
+            semaphore.signal()
+        }
+        task.resume()
+        guard semaphore.wait(timeout: .now() + 5) == .success else { task.cancel(); throw ReadinessError.timeout }
+        let (status, body) = try result.get()
+        try Self.validateReadyResponse(status: status, body: body)
+    }
+
+    private final class ReadinessResult: @unchecked Sendable {
+        private let lock = NSLock()
+        private var value: Result<(Int, Data), Error>?
+        func set(_ value: Result<(Int, Data), Error>) { lock.withLock { self.value = value } }
+        func get() throws -> (Int, Data) {
+            try lock.withLock { try value?.get() ?? { throw ReadinessError.transport }() }
+        }
+    }
+
     deinit { listener.cancel(); for connection in connections.values { connection.cancel() } }
     /// Drop subsequent requests like an unplugged hub, without returning fabricated HTTP errors.
     func setDropped(_ value: Bool) { queue.sync { dropped = value } }

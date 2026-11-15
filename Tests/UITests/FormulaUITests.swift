@@ -44,11 +44,7 @@ import XCTest
 
     /// Sign in to the fixture's board prefix and open "Good Morning" in the document editor.
     private func openGoodMorning(scenario: String = "manual") throws -> (XCUIApplication, XCUIElement) {
-        var request = URLRequest(url: URL(string: "http://127.0.0.1:\(fixturePort)/ready")!); request.timeoutInterval = 3
-        let semaphore = DispatchSemaphore(value: 0); var ready = false
-        URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
-        semaphore.wait()
-        try XCTSkipUnless(ready, "Native in-process fixture must be reachable")
+        try FixtureHTTPServer.shared.requireReady()
         let app = isolatedApplication()
         app.launchArguments = []; app.launch()
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
