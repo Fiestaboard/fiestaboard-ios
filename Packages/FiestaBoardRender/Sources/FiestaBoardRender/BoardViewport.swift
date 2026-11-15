@@ -33,6 +33,27 @@ public struct BoardViewportGeometry: Equatable, Sendable {
     public func label(page: Int) -> String { "Note \(min(noteCount, max(1, page + 1))) of \(noteCount)" }
 }
 
+/// Hints describe offscreen content, including fractional offsets and bounce.
+public struct BoardViewportEdges: Equatable, Sendable {
+    public let leading: Bool
+    public let trailing: Bool
+    public init(leading: Bool = false, trailing: Bool = false) {
+        self.leading = leading; self.trailing = trailing
+    }
+    public init(offset: Double, contentWidth: Double, viewportWidth: Double) {
+        let end = max(0, contentWidth - viewportWidth)
+        let position = min(end, max(0, offset))
+        leading = position > 1
+        trailing = position < end - 1
+    }
+    public var accessibilityValue: String {
+        if leading && trailing { return "More columns on both sides" }
+        if leading { return "End of board" }
+        if trailing { return "Start of board" }
+        return "Entire board visible"
+    }
+}
+
 /// A fixed hardware surround containing readable, horizontally scrolling content.
 /// A Note array pages by complete Notes, in row-major order. Thumbnails keep
 /// using `BoardThumbnail`; the owner's thumbnail exemption does not apply here.
@@ -41,6 +62,7 @@ public struct BoardViewport: View {
     private let model: DisplayModel
     private let tileHeight: Double
     @State private var page: Int? = 0
+    @State private var edges = BoardViewportEdges()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(frame: BoardFrame, model: DisplayModel, tileHeight: Double = 13) {
@@ -76,44 +98,68 @@ public struct BoardViewport: View {
             let geometry = BoardViewportGeometry(rows: model.rows, cols: model.cols,
                 viewportWidth: proxy.size.width - 16, tileHeight: tileHeight, notes: model.seams != nil)
             VStack(spacing: 8) {
-                ScrollView(.horizontal) {
-                    LazyHStack(spacing: 16) {
-                        ForEach(0..<geometry.noteCount, id: \.self) { index in
-                            let cells = pageCells(index, geometry: geometry)
-                            let bounds = geometry.bounds(page: index)
-                            BoardCanvas(layout: BoardLayout.make(rows: bounds.rows.count,
-                                cols: bounds.cols.count, cells: cells, tileHeight: geometry.tileHeight),
-                                palette: model.flapPalette, animated: false, code62: model.code62)
-                                .frame(minWidth: geometry.viewportWidth, alignment: .center)
-                                .id(index)
+                Group {
+                    if geometry.notes {
+                        ScrollView(.horizontal) {
+                            pages(geometry).scrollTargetLayout()
                         }
+                        .scrollTargetBehavior(.viewAligned(limitBehavior: .always))
+                        .scrollPosition(id: $page, anchor: .leading)
+                    } else {
+                        // A wide merged board is freely pannable; only Notes snap.
+                        ScrollView(.horizontal) { pages(geometry) }
                     }
-                    .scrollTargetLayout()
                 }
+                .onScrollGeometryChange(for: BoardViewportEdges.self) { scroll in
+                    BoardViewportEdges(offset: scroll.contentOffset.x + scroll.contentInsets.leading,
+                        contentWidth: scroll.contentSize.width + scroll.contentInsets.leading + scroll.contentInsets.trailing,
+                        viewportWidth: scroll.containerSize.width)
+                } action: { _, value in edges = value }
                 .scrollIndicators(.hidden)
-                .scrollTargetBehavior(.viewAligned(limitBehavior: .always))
-                .scrollPosition(id: $page, anchor: .leading)
                 .onChange(of: geometry.noteCount) { _, count in page = min(count - 1, max(0, page ?? 0)) }
                 .padding(8)
                 .background(Color.black, in: RoundedRectangle(cornerRadius: 10))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(alignment: .trailing) {
-                    if geometry.scrolls {
-                        LinearGradient(colors: [.clear, .black.opacity(0.8)], startPoint: .leading, endPoint: .trailing)
-                            .frame(width: 12).padding(.vertical, 8).allowsHitTesting(false)
-                            .accessibilityHidden(true)
+                .overlay(alignment: .leading) { fade(visible: edges.leading, leading: true) }
+                .overlay(alignment: .trailing) { fade(visible: edges.trailing, leading: false) }
+                .accessibilityElement(children: .ignore)
+                .accessibilityIdentifier("board-viewport")
+                .accessibilityLabel(BoardSpeech.spoken(frame, model: model))
+                .accessibilityValue(geometry.notes ? geometry.label(page: page ?? 0) : edges.accessibilityValue)
+                .accessibilityActions {
+                    if geometry.notes {
+                        Button("Next note") { move(to: geometry.next(after: page ?? 0)) }
+                        Button("Previous note") { move(to: geometry.previous(before: page ?? 0)) }
                     }
                 }
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(BoardSpeech.spoken(frame, model: model))
-                .accessibilityValue(geometry.notes ? geometry.label(page: page ?? 0) : "Board")
-                .accessibilityAction(named: "Next note") { move(to: geometry.next(after: page ?? 0)) }
-                .accessibilityAction(named: "Previous note") { move(to: geometry.previous(before: page ?? 0)) }
                 if geometry.notes { Text(geometry.label(page: page ?? 0)).font(.caption).accessibilityHidden(true) }
             }
         }
         .frame(height: BoardLayout.size(rows: model.seams == nil ? model.rows : min(3, model.rows), cols: 1,
             tileHeight: tileHeight.isFinite ? min(200, max(13, tileHeight)) : 13).height + (model.seams == nil ? 16 : 40))
+    }
+
+    private func pages(_ geometry: BoardViewportGeometry) -> some View {
+        LazyHStack(spacing: 16) {
+            ForEach(0..<geometry.noteCount, id: \.self) { index in
+                let cells = pageCells(index, geometry: geometry)
+                let bounds = geometry.bounds(page: index)
+                BoardCanvas(layout: BoardLayout.make(rows: bounds.rows.count,
+                    cols: bounds.cols.count, cells: cells, tileHeight: geometry.tileHeight),
+                    palette: model.flapPalette, animated: false, code62: model.code62)
+                    .frame(minWidth: geometry.viewportWidth, alignment: .center)
+                    .id(index)
+            }
+        }
+    }
+
+    @ViewBuilder private func fade(visible: Bool, leading: Bool) -> some View {
+        if visible {
+            LinearGradient(colors: leading ? [.black.opacity(0.8), .clear] : [.clear, .black.opacity(0.8)],
+                startPoint: .leading, endPoint: .trailing)
+                .frame(width: 12).padding(.vertical, 8).allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
     }
 
     private func move(to value: Int) {

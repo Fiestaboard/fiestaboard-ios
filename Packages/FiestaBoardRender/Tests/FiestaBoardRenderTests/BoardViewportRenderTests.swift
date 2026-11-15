@@ -6,9 +6,9 @@ import XCTest
 
 @MainActor
 final class BoardViewportRenderTests: XCTestCase {
-    func testBothTechnologiesAndPartialNotesRenderAtPhoneAndTabletWidths() throws {
+    func testBothTechnologiesAndWholeNotesRenderAtPhoneAndTabletWidths() throws {
         let models = [DisplayModel.flap(rows: 6, cols: 22),
-            DisplayModel(summary: BoardSummaryFields(deviceType: "note_array", rows: 4, cols: 34), stored: nil),
+            DisplayModel(summary: BoardSummaryFields(deviceType: "note_array", rows: 3, cols: 45), stored: nil),
             LedRasterizerTests.model(width: 64, height: 32)]
         for model in models {
             for width in [370.0, 1116.0] {
@@ -18,6 +18,23 @@ final class BoardViewportRenderTests: XCTestCase {
                 XCTAssertEqual(image.cgImage?.height, 300)
             }
         }
+    }
+
+    func testExplicitPartialNoteModelRetainsItsLastRowAndColumns() throws {
+        // The wire decoder intentionally normalizes Note arrays. Construct the
+        // lower-level render model explicitly so this is a real partial-grid test.
+        var partial = DisplayModel.flap(rows: 6, cols: 45, deviceType: "note_array")
+        partial.rows = 4
+        partial.cols = 34
+        let geometry = BoardViewportGeometry(rows: partial.rows, cols: partial.cols, viewportWidth: 200, notes: true)
+        let bounds = geometry.bounds(page: 5)
+        XCTAssertEqual(bounds.rows, 3..<4)
+        XCTAssertEqual(bounds.cols, 30..<34)
+        let layout = BoardLayout.make(rows: bounds.rows.count, cols: bounds.cols.count,
+            cells: [[.character("L"), .character("A"), .character("S"), .character("T")]], tileHeight: 13, noteArray: true)
+        XCTAssertEqual(layout.tiles.count, 4)
+        let image = RenderHarness.image(BoardCanvas(layout: layout), size: CGSize(width: 200, height: 100))
+        XCTAssertNotNil(image.cgImage)
     }
 
     /// Draw cost is a frame budget check, not a physical display refresh measurement.

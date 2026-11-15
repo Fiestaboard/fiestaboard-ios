@@ -1,10 +1,11 @@
 #if DEBUG
 import SwiftUI
+import FiestaBoardRender
 
-/// Test-only, no model, discovery, persisted connection or network.
+/// Test-only, no discovery, persisted connection or network.
 struct ParityFixtureView: View {
     enum Kind: String {
-        case glass, connecting
+        case glass, connecting, viewport
         static func fromLaunchArguments(_ defaults: UserDefaults = .standard) -> Self? {
             defaults.string(forKey: "fiestaboard.parityFixture").flatMap(Self.init(rawValue:))
         }
@@ -14,6 +15,11 @@ struct ParityFixtureView: View {
     @ViewBuilder var body: some View {
         if kind == .connecting {
             ConnectingSeedView()
+        } else if kind == .viewport {
+            BoardViewport(frame: BoardFrame(rows: 6, cols: 29, message: "A WIDE READABLE BOARD"),
+                model: .flap(rows: 6, cols: 29), tileHeight: 32)
+                .frame(width: 180)
+                .padding(16)
         } else {
             glassFixture
         }
