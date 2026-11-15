@@ -33,7 +33,8 @@ import XCTest
         let before = layers(app)
 
         // Add a rectangle (it lands selected, in the middle of the 32 × 30 content).
-        app.buttons["canvasAddShape"].tap()
+        let addShape = app.buttons["canvasAddShape"]
+        reveal(addShape, app); addShape.tap()
         let rectangle = app.buttons["Rectangle"].firstMatch
         XCTAssertTrue(rectangle.waitForExistence(timeout: 3)); rectangle.tap()
         let overlay = element(app, "canvasShapeOverlay_2")
@@ -140,22 +141,41 @@ import XCTest
         repeat { if condition() { return true }; Thread.sleep(forTimeInterval: 0.2) } while Date() < deadline
         return false
     }
-    /// Scrolls the canvases panel (or the connection form) until `element` is fully on screen.
+    /// Reveal controls inside the panel viewport, using its rail without editing the canvas.
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
         let window = app.windows.firstMatch.frame
-        // The panel scrolls under the Text | Canvases control: that is the visible top.
         let toggle = app.segmentedControls["editingSurface"]
-        func top() -> CGFloat { toggle.exists ? toggle.frame.maxY + 8 : window.minY + 80 }
-        func visible() -> Bool { element.exists && element.isHittable && element.frame.maxY < window.maxY - 20 && element.frame.minY > top() }
+        let rail = self.element(app, "canvasesPanelHandle")
+        func bounds() -> (top: CGFloat, bottom: CGFloat) {
+            if toggle.exists, rail.exists {
+                let viewport = rail.frame
+                return (max(viewport.minY, toggle.frame.maxY) + 8, viewport.maxY - 8)
+            }
+            return (window.minY + 80, window.maxY - 20)
+        }
+        func visible() -> Bool {
+            guard element.exists, element.isHittable else { return false }
+            let frame = element.frame, viewport = bounds()
+            // Large drawing surfaces cannot fit entirely; expose their interaction centre.
+            if frame.height > viewport.bottom - viewport.top {
+                return frame.midY > viewport.top && frame.midY < viewport.bottom
+            }
+            return frame.minY > viewport.top && frame.maxY < viewport.bottom
+        }
         for _ in 0..<12 {
             if visible() { break }
-            // The dedicated rail scrolls without editing the area/pixel/shape surfaces.
-            let rail = self.element(app, "canvasesPanelHandle")
+            let viewport = bounds()
+            let up: Bool
+            if element.exists {
+                let frame = element.frame
+                let bottom = frame.height > viewport.bottom - viewport.top ? frame.midY : frame.maxY
+                up = bottom >= viewport.bottom
+            } else { up = true }
             let from = rail.exists ? rail.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
                 : app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-            let up = !element.exists || element.frame.maxY >= window.maxY - 20
             from.press(forDuration: 0.05, thenDragTo: from.withOffset(CGVector(dx: 0, dy: up ? -160 : 160)), withVelocity: 600, thenHoldForDuration: 0.1)
         }
+        XCTAssertTrue(visible(), "The interaction target must be exposed inside its scroll viewport")
     }
     private func shot(_ app: XCUIApplication, _ name: String) {
         Thread.sleep(forTimeInterval: 1.5)
