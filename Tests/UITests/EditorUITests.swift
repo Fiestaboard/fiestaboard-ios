@@ -247,7 +247,7 @@ import XCTest
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
         let address = app.textFields["connectionAddress"]
         XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 8))
-        reveal(address, app); address.tap(); address.typeText("http://127.0.0.1:\(fixturePort)/" + alias)
+        reveal(address, app); typeConnectionAddress("http://127.0.0.1:\(fixturePort)/" + alias, into: address, in: app)
         let name = app.textFields["Server name (optional)"]
         reveal(name, app); name.tap(); name.typeText(alias + "\n")
         let localHTTP = app.switches["connectionLocalHTTP"]
@@ -284,7 +284,7 @@ import XCTest
         XCTAssertTrue(gutter.waitForExistence(timeout: 3))
         let chip = document.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 9 + 2 * charWidth, dy: gutter.frame.midY - document.frame.minY))
         chip.tap()
-        let callout = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "weather.temperature | pad:3")).firstMatch
+        let callout = app.menuItems.matching(NSPredicate(format: "label == %@", "weather.temperature | pad:3")).firstMatch
         XCTAssertTrue(callout.waitForExistence(timeout: 4), "The callout names the variable and its filter")
         attach(app, "P1-1-chip-callout-\(device())")
         // The caret sits after the chip: the detail line under the document names it in full.

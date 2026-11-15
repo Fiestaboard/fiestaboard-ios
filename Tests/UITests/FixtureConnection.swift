@@ -13,6 +13,19 @@ extension XCTestCase {
             .containing(.staticText, identifier: name).firstMatch
     }
 
+    /// Cold simulator keyboard startup may accept a caret without becoming ready for typing.
+    @MainActor func typeConnectionAddress(_ text: String, into address: XCUIElement, in app: XCUIApplication,
+                                         file: StaticString = #filePath, line: UInt = #line) {
+        for _ in 0..<2 {
+            address.tap()
+            if app.keyboards.firstMatch.waitForExistence(timeout: 8) {
+                address.typeText(text)
+                return
+            }
+        }
+        XCTFail("The connection address keyboard must be ready before typing", file: file, line: line)
+    }
+
     /// Real app sign-in against the loopback HTTP fixture, never a shipping demo path.
     @MainActor func launchFixture(_ app: XCUIApplication, arguments: [String] = []) {
         app.launchArguments = arguments
@@ -25,9 +38,8 @@ extension XCTestCase {
         // At accessibility sizes the form may not instantiate this off-screen row yet.
         reveal(address)
         XCTAssertTrue(address.waitForExistence(timeout: 10))
-        address.tap()
         let port = ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "18442"
-        address.typeText("http://127.0.0.1:\(port)/board-manual-\(UUID().uuidString.lowercased())")
+        // Enable explicit HTTP consent before opening the keyboard at large text sizes.
         let localHTTP = app.switches["connectionLocalHTTP"]
         reveal(localHTTP)
         // At accessibility sizes a visible label makes the whole switch "hittable"
@@ -39,15 +51,27 @@ extension XCTestCase {
             let top = app.navigationBars.firstMatch.frame.maxY
             return localHTTP.frame.midY > top + 8 && localHTTP.frame.midY < bottom - 8
         }
-        for _ in 0..<12 {
-            if switchTapIsVisible() { break }
-            if localHTTP.exists && localHTTP.frame.midY <= app.navigationBars.firstMatch.frame.maxY + 8 {
-                app.swipeDown()
-            } else { app.swipeUp() }
+        // Require the observed state transition, as the other fixture helpers do.
+        // A cold tap can be delivered inside the visible switch without activating it.
+        for _ in 0..<3 {
+            if localHTTP.value as? String == "1" { break }
+            for _ in 0..<12 {
+                if switchTapIsVisible() { break }
+                if localHTTP.exists && localHTTP.frame.midY <= app.navigationBars.firstMatch.frame.maxY + 8 {
+                    app.swipeDown()
+                } else { app.swipeUp() }
+            }
+            guard switchTapIsVisible() else {
+                XCTFail("HTTP switch tap point must be above the keyboard")
+                return
+            }
+            localHTTP.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+            _ = XCTWaiter.wait(for: [XCTNSPredicateExpectation(
+                predicate: NSPredicate(format: "value == '1'"), object: localHTTP)], timeout: 2)
         }
-        XCTAssertTrue(switchTapIsVisible(), "HTTP switch tap point must be above the keyboard")
-        if localHTTP.value as? String != "1" { localHTTP.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap() }
         XCTAssertEqual(localHTTP.value as? String, "1", "Explicitly allow the loopback HTTP fixture before connecting")
+        reveal(address)
+        typeConnectionAddress("http://127.0.0.1:\(port)/board-manual-\(UUID().uuidString.lowercased())", into: address, in: app)
         let connect = app.buttons["connectionConnect"]
         reveal(connect); connect.tap()
         let username = app.textFields["Username"]

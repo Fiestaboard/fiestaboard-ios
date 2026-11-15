@@ -15,7 +15,8 @@ SHARDS = {
     'ui-a': ['BoardVisualsUITests', 'LaunchUITests', 'ParityFoundationUITests'],
     'ui-b': ['EditorUITests'],
     'ui-c': ['BarEvidenceUITests', 'CanvasUITests', 'IntegrationUITests', 'SaveUITests'],
-    'ui-d': ['FormulaUITests', 'PolishUITests'],
+    'ui-d': ['FormulaUITests'],
+    'ui-e': ['PolishUITests'],
 }
 MODELS = {'iPhone 17': 'phone-id', 'iPad Air 11-inch (M4)': 'pad-id'}
 

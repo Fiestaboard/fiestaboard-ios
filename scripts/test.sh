@@ -19,7 +19,7 @@ case "${1:-all}" in
 esac
 # CI selects one exact device and a bounded suite; local defaults retain the full run.
 ios_test_shard="${IOS_TEST_SHARD:-all}"
-case "$ios_test_shard" in all|units|ui-a|ui-b|ui-c|ui-d) ;; *) echo 'Invalid IOS_TEST_SHARD' >&2; exit 2 ;; esac
+case "$ios_test_shard" in all|units|ui-a|ui-b|ui-c|ui-d|ui-e) ;; *) echo 'Invalid IOS_TEST_SHARD' >&2; exit 2 ;; esac
 models=('iPhone 17' 'iPad Air 11-inch (M4)')
 if [[ -n "${IOS_TEST_MODEL:-}" ]]; then
   case "$IOS_TEST_MODEL" in

@@ -104,7 +104,7 @@ import XCTest
         let alias = "board-\(scenario)-" + UUID().uuidString.prefix(8).lowercased()
         let address = app.textFields["connectionAddress"]
         XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 10))
-        reveal(address, app); address.tap(); address.typeText("http://127.0.0.1:\(fixturePort)/" + alias)
+        reveal(address, app); typeConnectionAddress("http://127.0.0.1:\(fixturePort)/" + alias, into: address, in: app)
         let name = app.textFields["Server name (optional)"]
         reveal(name, app); name.tap(); name.typeText(alias + "\n")
         let localHTTP = app.switches["connectionLocalHTTP"]
