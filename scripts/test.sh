@@ -34,13 +34,7 @@ if [[ "$ios_test_shard" == ui-* ]]; then
   done < <(python3 -c 'import json,sys; print("\n".join(json.load(open("scripts/ios-ui-shards.json"))[sys.argv[1]]))' "$ios_test_shard")
   [[ ${#ui_filters[@]} -gt 0 ]] || { echo 'Empty UI shard' >&2; exit 2; }
 fi
-# Own a loopback fixture process; never reuse or terminate another session's server.
-fixture_port=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()')
-FIXTURE_PORT="$fixture_port" python3 Tests/UITests/fixture_server.py > "$ios_build_root/results/$ios_slice/fixture.log" 2>&1 &
-fixture_pid=$!
-trap 'kill "$fixture_pid" 2>/dev/null || true' EXIT
-export TEST_RUNNER_FIXTURE_PORT="$fixture_port"
-curl --fail --retry 10 --retry-connrefused --retry-delay 1 "http://127.0.0.1:$fixture_port/ready"
+# UI test runners own their native loopback fixture listener and isolated namespaces.
 simulator_failed=0
 for model in "${models[@]}"; do
   udid=$(xcrun simctl list devices available --json | python3 scripts/select-ios-simulator.py "$model")

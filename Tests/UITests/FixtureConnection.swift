@@ -63,7 +63,7 @@ extension XCTestCase {
         // At accessibility sizes the form may not instantiate this off-screen row yet.
         reveal(address)
         XCTAssertTrue(address.waitForExistence(timeout: 10))
-        let port = ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "18442"
+        let port = String(FixtureHTTPServer.shared.port)
         // Enable explicit HTTP consent before opening the keyboard at large text sizes.
         let localHTTP = app.switches["connectionLocalHTTP"]
         reveal(localHTTP)

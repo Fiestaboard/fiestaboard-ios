@@ -2,13 +2,13 @@ import XCTest
 
 /// iOS-F1 (PLAN B21, B22, B23, B32): the formula editor, the Variables / Colors / Formatting
 /// pickers and Draw on board, against the mock fixture's `/board-<scenario>-<n>/` prefix
-/// (`fixture_catalog.py`, `fixture_render.py`): no real server, no hardware. Screenshots are
+/// (`FixtureRouter.swift`, `FixtureRenderRoutes.swift`): no real server, no hardware. Screenshots are
 /// attached and, with `SHOT_DIR` (`TEST_RUNNER_SHOT_DIR`), written as `F1-*-<device>-mockfixture.png`.
 @MainActor final class FormulaUITests: XCTestCase {
     override func setUp() { super.setUp(); continueAfterFailure = false }
 
     private var device: String { UIDevice.current.userInterfaceIdiom == .pad ? "ipadair11m4" : "iphone17promax" }
-    private var fixturePort: Int { Int(ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "") ?? 18442 }
+    private var fixturePort: Int { Int(FixtureHTTPServer.shared.port) }
 
     // MARK: Helpers
 
@@ -48,7 +48,7 @@ import XCTest
         let semaphore = DispatchSemaphore(value: 0); var ready = false
         URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
         semaphore.wait()
-        try XCTSkipUnless(ready, "Start the fixture: FIXTURE_PORT=\(fixturePort) python3 Tests/UITests/fixture_server.py")
+        try XCTSkipUnless(ready, "Native in-process fixture must be reachable")
         let app = isolatedApplication()
         app.launchArguments = []; app.launch()
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()

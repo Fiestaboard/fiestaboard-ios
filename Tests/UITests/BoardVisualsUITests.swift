@@ -2,13 +2,12 @@ import XCTest
 
 /// Home "now showing" + the shared renderer, against the loopback fixture's
 /// `/board-<scenario>-<n>/` prefix family (mock content, never a real server).
-/// Start with: FIXTURE_PORT=<port> python3 Tests/UITests/fixture_server.py and
-/// pass the same port as TEST_RUNNER_FIXTURE_PORT (default 18442). Screenshots go
+/// Uses the native in-process loopback fixture. Screenshots go
 /// to TEST_RUNNER_SHOT_DIR when set (always as attachments too).
 final class BoardVisualsUITests: XCTestCase {
     override func setUp() { super.setUp(); continueAfterFailure = false }
 
-    private var port: String { ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "18442" }
+    private var port: String { String(FixtureHTTPServer.shared.port) }
     private var device: String { UIDevice.current.userInterfaceIdiom == .pad ? "ipadair11m4" : "iphone17promax" }
 
     /// B8 (+B33 hierarchy): the status row for every delivered scenario.

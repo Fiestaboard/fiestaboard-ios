@@ -7,7 +7,7 @@ import XCTest
     override func setUp() { super.setUp(); continueAfterFailure = false }
 
     private var device: String { UIDevice.current.userInterfaceIdiom == .pad ? "ipadair11m4" : "iphone17promax" }
-    private var fixturePort: Int { Int(ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "") ?? 18442 }
+    private var fixturePort: Int { Int(FixtureHTTPServer.shared.port) }
 
     /// B16 (P5): charset issues grouped per row and per reason, at most three lines collapsed,
     /// "Show all" for the rest; the board stays the largest element either way.
@@ -269,7 +269,7 @@ import XCTest
         let semaphore = DispatchSemaphore(value: 0); var ready = false
         URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
         semaphore.wait()
-        try XCTSkipUnless(ready, "Start the fixture: FIXTURE_PORT=\(fixturePort) python3 Tests/UITests/fixture_server.py")
+        try XCTSkipUnless(ready, "Native in-process fixture must be reachable")
         let app = isolatedApplication()
         app.launchArguments = []; app.launch()
         connect(app, path: "board-\(scenario)-" + UUID().uuidString.prefix(8).lowercased())

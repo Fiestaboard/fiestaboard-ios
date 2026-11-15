@@ -1,7 +1,7 @@
 import XCTest
 
 /// W4 (PLAN B25/B28, end to end): Save against the mock fixture's legacy page write path
-/// (`PUT /v1/pages/{id}` in `fixture_boards.py`), then close and reopen. Each test proves the change
+/// (`PUT /v1/pages/{id}` in `FixtureBoardRoutes.swift`), then close and reopen. Each test proves the change
 /// twice: in the fixture's storage (`GET /fixture-state/<alias>/pages/<id>`, a loopback, test-only,
 /// read-only route) and in the reopened editor. No real server, no hardware. Screenshots are
 /// attached and, with `SHOT_DIR` (`TEST_RUNNER_SHOT_DIR`), written as `W4-save-*-<device>-mockfixture.png`.
@@ -9,7 +9,7 @@ import XCTest
     override func setUp() { super.setUp(); continueAfterFailure = false }
 
     private var device: String { UIDevice.current.userInterfaceIdiom == .pad ? "ipadair11m4" : "iphone17promax" }
-    private var fixturePort: Int { Int(ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "") ?? 18442 }
+    private var fixturePort: Int { Int(FixtureHTTPServer.shared.port) }
     private var alias = ""
 
     // MARK: The four edits
@@ -151,7 +151,7 @@ import XCTest
         let semaphore = DispatchSemaphore(value: 0); var ready = false
         URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
         semaphore.wait()
-        try XCTSkipUnless(ready, "Start the fixture: FIXTURE_PORT=\(fixturePort) python3 Tests/UITests/fixture_server.py")
+        try XCTSkipUnless(ready, "Native in-process fixture must be reachable")
         let app = isolatedApplication()
         app.launchArguments = []; app.launch()
         alias = "board-manual-" + UUID().uuidString.prefix(8).lowercased()
