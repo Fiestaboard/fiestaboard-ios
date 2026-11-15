@@ -6,7 +6,7 @@
       "source": "Sources/Render/LedDot.swift",
       "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/LedDot.swift",
       "sourceSHA256": "29a275fad7697a6cc8ff48f7102d70aa748753c482125c9f6fc1e0d1aac7cbe7",
-      "adapted": false,
+      "adapted": true,
       "sha256": "636b024cf77f4af6ceb331df22e28e3c585fdf5e968956f05dfff37608a43d2f"
     },
     {
@@ -41,14 +41,14 @@
       "source": "Sources/Render/TacoMark.swift",
       "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/TacoMark.swift",
       "sourceSHA256": "adbbf5ddd014dbe7ddf2a38d6485cdcf99f3e8ffa3f1eeb66e55c65a29edabc8",
-      "adapted": false,
+      "adapted": true,
       "sha256": "7b8ad2a8ae491632cafb9cd523e34252216327649477a3e18be4fe857e7ca318"
     },
     {
       "source": "Sources/Render/TacoMarkView.swift",
       "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/TacoMarkView.swift",
       "sourceSHA256": "44563692ad1d4fab4e0767bdb1c5153163358871857e8d127f490e405aee383f",
-      "adapted": false,
+      "adapted": true,
       "sha256": "ed27050fbdeba6a0f0cedbd2508f26361b1206d3e4439267cf0ad0c5b94eb933"
     },
     {
@@ -69,14 +69,14 @@
       "source": "Sources/Core/BoardGeometry.swift",
       "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/BoardGeometry.swift",
       "sourceSHA256": "320ccece6347fb8fb018be8c1aca0dacdc7c6a1bcf68dfb3ba727ec8cdf1b80d",
-      "adapted": false,
+      "adapted": true,
       "sha256": "e1ec45cad91e6b5334883db0993a7c76f213ef67baafb516ba1ef5485ecf1bbc"
     },
     {
       "source": "Sources/Core/BoardSpec.swift",
       "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/BoardSpec.swift",
       "sourceSHA256": "e4d5369c469094d69b860fdc891b40727a37b1628242526a45cb34eb3ba9e53e",
-      "adapted": false,
+      "adapted": true,
       "sha256": "1047ac04c2af2a8eeeb1ca2e8933a13cff0b1832ad5b9ea9db3d06b63e49ca61"
     },
     {
@@ -182,6 +182,10 @@
     "MatrixDisplay.swift": "BoardFrame.maxDimension replaces TV PanelFrame.",
     "MatrixCanvas.swift": "UIKit animation guarded for macOS host compilation; pixel bytes converted once per paint.",
     "MatrixMarqueeLayers.swift": "UIKit-only, same canonical algorithm.",
-    "MatrixTransitionSurface.swift": "UIKit-only, same canonical algorithm."
+    "MatrixTransitionSurface.swift": "UIKit-only, same canonical algorithm.",
+    "LedDot.swift": "Added provenance/license source header only; canonical implementation unchanged.",
+    "MatrixPixelFrames.swift": "Added provenance/license source header only; canonical implementation unchanged.",
+    "TacoMark.swift": "Added provenance/license source header only; canonical implementation unchanged.",
+    "TacoMarkView.swift": "Added provenance/license source header only; canonical implementation unchanged."
   }
 }
