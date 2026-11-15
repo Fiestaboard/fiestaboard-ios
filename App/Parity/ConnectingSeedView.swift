@@ -33,9 +33,9 @@ struct ConnectingSeedView: View {
                     .navigationTitle("Home").navigationBarTitleDisplayMode(.large)
                 }
             }
-            Tab("Pages", systemImage: "doc.on.doc") { Color.clear }
-            Tab("Compose", systemImage: "plus.circle") { Color.clear }.disabled(true)
+            Tab("Pages", systemImage: "square.grid.2x2") { Color.clear }
             Tab("Schedule", systemImage: "calendar") { Color.clear }
+            Tab("Displays", systemImage: "display") { Color.clear }
             Tab("More", systemImage: "ellipsis") { Color.clear }
         }
         .preferredColorScheme(.light)
