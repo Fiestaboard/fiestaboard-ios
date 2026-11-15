@@ -4,6 +4,45 @@ import UIKit
 @testable import FiestaBoard
 
 @MainActor final class ParityFoundationTests: XCTestCase {
+    /// I2 seed: real SwiftUI layout, exported independently from the reference metadata.
+    func testConnectingSeedCaptureAndSkeletonGeometry() throws {
+        guard UIDevice.current.userInterfaceIdiom == .phone else { return }
+        FigmaGeometryRegistry.shared.reset()
+        let image = IOSSnapshot.image(ConnectingSeedView(), device: .phone, appearance: .light)
+        XCTAssertEqual(image.cgImage?.width, 1206)
+        XCTAssertEqual(image.cgImage?.height, 2622)
+        let nodes = try XCTUnwrap(ParityProbe.nodes(relativeTo: "362:20090"))
+        let row = try XCTUnwrap(nodes.first { $0.figma == "seed:connecting" })
+        let board = try XCTUnwrap(nodes.first { $0.figma == "seed:board" })
+        XCTAssertEqual(board.rect.minX, 16, accuracy: 1)
+        XCTAssertEqual(board.rect.width, 370, accuracy: 1)
+        XCTAssertEqual(board.rect.height, 150, accuracy: 1)
+        XCTAssertEqual(board.rect.minY - row.rect.minY, 36, accuracy: 1)
+        for (id, width, height, offset) in [
+            ("seed:line-1", 220.0, 18.0, 166.0),
+            ("seed:line-2", 300.0, 18.0, 200.0),
+            ("seed:action", 160.0, 44.0, 234.0),
+            ("seed:row-1", 370.0, 56.0, 294.0),
+            ("seed:row-2", 370.0, 56.0, 366.0),
+            ("seed:row-3", 370.0, 56.0, 438.0)
+        ] {
+            let frame = try XCTUnwrap(nodes.first { $0.figma == id }).rect
+            XCTAssertEqual(frame.minX, 16, accuracy: 1)
+            XCTAssertEqual(frame.width, width, accuracy: 1)
+            XCTAssertEqual(frame.height, height, accuracy: 1)
+            XCTAssertEqual(frame.minY - board.rect.minY, offset, accuracy: 1)
+        }
+        try FileManager.default.createDirectory(at: ParityOutput.directory, withIntermediateDirectories: true)
+        try XCTUnwrap(image.pngData()).write(to: ParityOutput.directory.appendingPathComponent("ios-connecting.png"))
+        let probes = ParityProbe.json(ref: "ios-connecting", root: "362:20090", scale: 3)
+        try JSONSerialization.data(withJSONObject: probes, options: [.prettyPrinted, .sortedKeys])
+            .write(to: ParityOutput.directory.appendingPathComponent("ios-connecting.probes.json"))
+        let attachment = XCTAttachment(image: image)
+        attachment.name = "ios-connecting-light"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+
     func testRegistrySortsNodesAndUsesRootRelativeCoordinates() throws {
         let registry = FigmaGeometryRegistry()
         registry.record("root", label: nil, frame: CGRect(x: 10, y: 20, width: 402, height: 874))
