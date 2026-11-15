@@ -132,6 +132,16 @@ public struct BoardCanvas: View {
     static func paint(_ layout: BoardLayout, palette: FlapPalette,
                       transition: BoardFlipTransition?, at date: Date,
                       in context: inout GraphicsContext) {
+        if transition == nil {
+            paintStatic(layout, palette: palette, in: &context)
+            return
+        }
+        paintUnbatched(layout, palette: palette, transition: transition, at: date, in: &context)
+    }
+
+    private static func paintUnbatched(_ layout: BoardLayout, palette: FlapPalette,
+                                      transition: BoardFlipTransition?, at date: Date,
+                                      in context: inout GraphicsContext) {
         let font = BoardFont.glyph(size: layout.fontSize)
         var resolved: [Character: GraphicsContext.ResolvedText] = [:]
         let seam = FlapTilePainter.seam(forTileHeight: layout.tileHeight)
@@ -143,6 +153,60 @@ public struct BoardCanvas: View {
             }
             FlapTilePainter.drawSeam(tile: tile, seam: seam, palette: palette, in: &context)
         }
+    }
+
+    /// Canonical row-major grids have disjoint surfaces and a full-point
+    /// gutter. Preserve legacy compositing for overlapping/custom/tiny layouts.
+    static func canBatchStatic(_ layout: BoardLayout) -> Bool {
+        guard layout.notes.isEmpty, layout.tileHeight.isFinite, layout.fontSize.isFinite else { return false }
+        var rowY: Double?
+        var rowBottom = -Double.infinity
+        var lastRight = -Double.infinity
+        for tile in layout.tiles {
+            guard tile.x.isFinite, tile.y.isFinite, tile.width.isFinite, tile.height.isFinite,
+                  tile.width > 0, tile.height >= 5,
+                  tile.x == tile.x.rounded(), tile.y == tile.y.rounded(),
+                  tile.width == tile.width.rounded(), tile.height == tile.height.rounded() else { return false }
+            if tile.y == rowY {
+                guard tile.x >= lastRight + 1 else { return false }
+            } else {
+                guard tile.y >= rowBottom + 1 else { return false }
+                rowY = tile.y
+            }
+            lastRight = tile.x + tile.width
+            rowBottom = max(rowBottom, tile.y + tile.height)
+        }
+        return true
+    }
+
+    /// Group same-style surfaces and batch two seam fills instead of interleaving
+    /// surface/glyph/seams for every cell. Retain native rounded-rect primitives.
+    /// Content retains its exact painter and resolved-glyph cache. No cell moves,
+    /// colour changes, temporal sampling or frame-budget relaxation.
+    static func paintStatic(_ layout: BoardLayout, palette: FlapPalette, in context: inout GraphicsContext) {
+        guard canBatchStatic(layout) else {
+            // Fractional Note geometry can change edge antialiasing when grouped;
+            // keep its exact existing composition, as well as custom/tiny layouts.
+            paintUnbatched(layout, palette: palette, transition: nil, at: .distantPast, in: &context)
+            return
+        }
+        var gaps = Path()
+        var highlights = Path()
+        let seam = FlapTilePainter.seam(forTileHeight: layout.tileHeight)
+        for tile in layout.tiles {
+            context.fill(Path(roundedRect: CGRect(x: tile.x, y: tile.y, width: tile.width, height: tile.height), cornerRadius: tile.radius),
+                         with: .color(Color(rgb: palette.surface)))
+            let top = (tile.y + tile.height / 2).rounded()
+            gaps.addRect(CGRect(x: tile.x, y: top, width: tile.width, height: seam.thickness))
+            highlights.addRect(CGRect(x: tile.x, y: top + seam.thickness, width: tile.width, height: seam.thickness))
+        }
+        let font = BoardFont.glyph(size: layout.fontSize)
+        var resolved: [Character: GraphicsContext.ResolvedText] = [:]
+        for tile in layout.tiles {
+            FlapTilePainter.drawContent(tile: tile, cell: tile.cell, palette: palette, font: font, in: &context, resolved: &resolved)
+        }
+        context.fill(gaps, with: .color(Color.black.opacity((palette.whiteHardware ? 0.12 : 0.55) * seam.ink)))
+        context.fill(highlights, with: .color(Color.white.opacity((palette.whiteHardware ? 0.55 : 0.10) * seam.ink)))
     }
 
     static func paintLoading(_ layout: BoardLayout, palette: FlapPalette, code62: Code62Glyph, step: TimeInterval,
