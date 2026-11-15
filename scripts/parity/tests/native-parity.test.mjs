@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 
 import { PNG } from "pngjs";
 
-import { PINNED, buildDom, downscale, loadNativeManifest } from "../native-parity.mjs";
+import { PINNED, buildDom, downscale, loadNativeManifest, compareWithArtifactMasks } from "../native-parity.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const cli = path.join(here, "..", "native-parity.mjs");
@@ -295,4 +295,47 @@ test("CLI: fractional downscaled dimensions are unavailable rather than cropped 
   const report = JSON.parse(readFileSync(path.join(f.out, "report.json")));
   assert.equal(report.entries[0].status, "unsupported-dimensions");
   assert.equal(report.entries[0].wouldPass, null);
+});
+
+
+test("artifact masks exclude only declared pixels, preserve inputs and count the visible denominator", () => {
+  const ref = png(12, 12, () => [255, 255, 255]);
+  const shot = png(12, 12, (x, y) => (x < 3 || (x >= 6 && x < 9 && y >= 6 && y < 9)) ? [0, 0, 0] : [255, 255, 255]);
+  const original = Buffer.from(shot.data);
+  const adjusted = compareWithArtifactMasks(ref, shot, [{ id: 'status', reason: 'uncaptured system chrome', rect: {x: 0, y: 0, width: 1, height: 4} }], 3);
+  assert.equal(adjusted.excludedPixels, 36);
+  assert.equal(adjusted.comparedPixels, 108);
+  assert.ok(adjusted.diffPixels > 0, 'genuine unmasked content differences survive');
+  assert.equal(adjusted.ratio, adjusted.diffPixels / 108);
+  assert.deepEqual(shot.data, original, 'raw evidence is immutable');
+  assert.throws(() => compareWithArtifactMasks(ref, shot, [{id:'bad', rect:{x:0,y:0,width:1,height:1}}], 3), /reason/);
+  assert.throws(() => compareWithArtifactMasks(ref, shot, [{id:'bad',reason:'bad',rect:{x:0,y:0,width:99,height:99}}], 3), /bounds/);
+});
+
+test('CLI keeps raw failures and reports artifact-adjusted pixels separately without changing limits', () => {
+  const f = fixture({shotFill: (x) => x < 4 ? [0,255,0] : [0,0,255]});
+  const manifest = JSON.parse(readFileSync(f.manifest));
+  manifest.entries[0].artifactMasks = [{id:'left',reason:'synthetic status fixture',rect:{x:0,y:0,width:4,height:4}}];
+  writeFileSync(f.manifest, JSON.stringify(manifest));
+  const r = run(['--refs',f.refs,'--shots',f.shots,'--manifest',f.manifest,'--out',f.out]);
+  assert.equal(r.status,0,r.stderr);
+  const entry = JSON.parse(readFileSync(path.join(f.out,'report.json'))).entries[0];
+  assert.ok(entry.checks.pixel.diffPixels > 0);
+  assert.equal(entry.artifactAdjustedPixel.diffPixels,0);
+  assert.equal(entry.artifactAdjustedPixel.comparedPixels,16);
+  assert.equal(entry.artifactAdjustedPixel.limit,entry.checks.pixel.limit);
+  assert.equal(entry.wouldPass,false,'raw finding stays failed');
+  assert.match(readFileSync(path.join(f.out,'report.md'),'utf8'), /Raw pixel result above is unchanged/);
+});
+
+test('overlapping masks count their union and rounded corners leave central content visible', () => {
+  const ref = png(12,12,()=>[255,255,255]);
+  const shot = png(12,12,(x,y)=>x===6&&y===6 ? [0,0,0] : [255,255,255]);
+  const rect = {id:'top',reason:'status',rect:{x:0,y:0,width:4,height:1}};
+  const once = compareWithArtifactMasks(ref,shot,[rect],3);
+  const twice = compareWithArtifactMasks(ref,shot,[rect,rect],3);
+  assert.equal(once.excludedPixels,twice.excludedPixels);
+  const rounded = compareWithArtifactMasks(ref,shot,[{id:'bezel',reason:'outside screen only',kind:'rounded-screen-exterior',radius:1}],3);
+  assert.ok(rounded.excludedPixels>0);
+  assert.ok(rounded.diffPixels>0,'central content remains compared');
 });
