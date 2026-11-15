@@ -179,7 +179,7 @@ import XCTest
         return app
     }
     private func selectDestination(_ name: String, _ app: XCUIApplication) {
-        let destination = element(app, "destination-" + name)
+        let destination = app.buttons.matching(identifier: "destination-" + name).firstMatch
         for _ in 0..<5 {
             if destination.exists && destination.isHittable { destination.tap(); return }
             let sidebar = app.buttons["Show Sidebar"].firstMatch
