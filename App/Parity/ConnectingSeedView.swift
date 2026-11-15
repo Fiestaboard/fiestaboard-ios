@@ -34,8 +34,8 @@ struct ConnectingSeedView: View {
                 }
             }
             Tab("Pages", systemImage: "doc.on.doc") { Color.clear }
-            Tab("Compose", systemImage: "plus.circle") { Color.clear }.disabled(true)
             Tab("Schedule", systemImage: "calendar") { Color.clear }
+            Tab("Displays", systemImage: "display") { Color.clear }
             Tab("More", systemImage: "ellipsis") { Color.clear }
         }
         .preferredColorScheme(.light)
