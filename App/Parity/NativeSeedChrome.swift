@@ -12,12 +12,50 @@ import UIKit
     private static let normalImages = symbols.compactMap { symbolImage($0, color: foreground) }
     private static let selectedImages = symbols.compactMap { symbolImage($0, color: brand) }
 
-    /// Transparent secondary layers retain outlines (not the display symbol's
-    /// default gray screen), while alwaysOriginal preserves that native palette.
+    /// UIKit reconfigures live SF images when assigning them to tab items.
+    /// Freeze each configured native glyph once at the measured24pt icon size;
+    /// keep the native bars/glass, without reference pixels or custom artwork.
     static func symbolImage(_ name: String, color: UIColor) -> UIImage? {
         let configuration = UIImage.SymbolConfiguration(pointSize: 24, weight: .regular)
             .applying(UIImage.SymbolConfiguration(paletteColors: [color, .clear]))
-        return UIImage(systemName: name, withConfiguration: configuration)?.withRenderingMode(.alwaysOriginal)
+            .applying(UIImage.SymbolConfiguration(colorRenderingMode: .flat))
+        guard let symbol = UIImage(systemName: name, withConfiguration: configuration),
+              symbol.size.width > 0, symbol.size.height > 0 else { return nil }
+        let size = CGSize(width: 24, height: 24)
+        let ratio = min(size.width / symbol.size.width, size.height / symbol.size.height)
+        let bounds = CGRect(x: (size.width - symbol.size.width * ratio) / 2,
+                            y: (size.height - symbol.size.height * ratio) / 2,
+                            width: symbol.size.width * ratio, height: symbol.size.height * ratio)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = UIScreen.main.scale
+        format.opaque = false
+        format.preferredRange = .standard
+        return UIGraphicsImageRenderer(size: size, format: format).image { _ in
+            symbol.draw(in: bounds)
+        }.withRenderingMode(.alwaysOriginal)
+    }
+
+    /// Compare visible bitmap content, not UIImage identity or PNG metadata.
+    /// UITabBarItem is allowed to wrap/copy an image. Normalize both into sRGB.
+    private static func imageBytes(_ image: UIImage) -> Data? {
+        guard let cg = image.cgImage, let space = CGColorSpace(name: CGColorSpace.sRGB) else { return nil }
+        var bytes = [UInt8](repeating: 0, count: cg.width * cg.height * 4)
+        let rendered = bytes.withUnsafeMutableBytes { raw -> Bool in
+            guard let context = CGContext(data: raw.baseAddress, width: cg.width, height: cg.height,
+                bitsPerComponent: 8, bytesPerRow: cg.width * 4, space: space,
+                bitmapInfo: CGBitmapInfo.byteOrder32Big.rawValue | CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            context.draw(cg, in: CGRect(x: 0, y: 0, width: cg.width, height: cg.height))
+            return true
+        }
+        return rendered ? Data(bytes) : nil
+    }
+
+    private static func imagesMatch(_ actual: UIImage?, _ expected: UIImage) -> Bool {
+        guard let actual, !actual.isSymbolImage, actual.size == expected.size, actual.scale == expected.scale,
+              actual.imageOrientation == expected.imageOrientation,
+              actual.renderingMode == .alwaysOriginal,
+              let bytes = imageBytes(actual), let expectedBytes = imageBytes(expected) else { return false }
+        return bytes == expectedBytes
     }
 
     static func tabAppearance(_ native: UITabBarAppearance = UITabBarAppearance()) -> UITabBarAppearance {
@@ -80,8 +118,8 @@ import UIKit
                 if let items = tab.items, items.count == symbols.count,
                    normalImages.count == items.count, selectedImages.count == items.count {
                     for (index, item) in items.enumerated() {
-                        if item.image !== normalImages[index] { item.image = normalImages[index] }
-                        if item.selectedImage !== selectedImages[index] { item.selectedImage = selectedImages[index] }
+                        if !imagesMatch(item.image, normalImages[index]) { item.image = normalImages[index] }
+                        if !imagesMatch(item.selectedImage, selectedImages[index]) { item.selectedImage = selectedImages[index] }
                     }
                 }
             }
@@ -106,7 +144,7 @@ import UIKit
                     audit.styledTabBars += 1
                 }
                 for (index, item) in (tab.items ?? []).enumerated() where index < normalImages.count && index < selectedImages.count {
-                    if item.image === normalImages[index] && item.selectedImage === selectedImages[index] { audit.configuredSymbols += 1 }
+                    if imagesMatch(item.image, normalImages[index]) && imagesMatch(item.selectedImage, selectedImages[index]) { audit.configuredSymbols += 1 }
                 }
             }
             if let bar = view as? UINavigationBar {
