@@ -63,8 +63,8 @@ jobs:
         if: always()
         run: |
           mkdir -p build/parity
-          echo '{"slice":"I2","goldens":"XCTest result is authoritative; missing golden fails","osMajor":"iOS27","figmaComparison":"reference unavailable; Connecting implementation deferred"}' > build/parity/foundation-status.json
-          node scripts/parity/native-parity.mjs --shots build/parity --out build/parity/report
+          echo '{"slice":"I2","goldens":"XCTest result is authoritative; missing golden fails","osMajor":"iOS27","figmaComparison":"Light seed reference available; Dark has no reference"}' > build/parity/foundation-status.json
+          node scripts/parity/native-parity.mjs --refs scripts/parity/figma --shots build/parity --out build/parity/report
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -101,6 +101,14 @@ jobs:
         run: |
           xcodebuild -version
           scripts/test.sh simulators
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Seed parity report (report-only)
+        if: always()
+        run: |
+          npm ci --prefix scripts/parity
+          node scripts/parity/native-parity.mjs --refs scripts/parity/figma --shots build/parity --out build/parity/report
       - uses: actions/upload-artifact@v4
         if: always()
         with:

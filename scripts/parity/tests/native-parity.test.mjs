@@ -203,7 +203,7 @@ test("CLI: missing references are machine-readable unavailable findings", () => 
   const r = run(["--shots", f.shots, "--out", f.out]);
   assert.equal(r.status, 0, r.stderr);
   const report = JSON.parse(readFileSync(path.join(f.out, "report.json")));
-  assert.deepEqual(report.missingRefs, ["ios-connecting"]);
+  assert.deepEqual(report.missingRefs, ["ios-connecting", "ios-connecting-dark"]);
   assert.equal(report.entries[0].figmaNode, "362:20090");
   assert.equal(report.entries[0].status, "missing-reference");
   assert.equal(report.entries[0].wouldPass, null);

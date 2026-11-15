@@ -173,6 +173,7 @@
 		F22480C129F5A9223D737196 /* TemplateUITextViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11208C1A2EECBA9BE45CCA05 /* TemplateUITextViewTests.swift */; };
 		F631808CB73FF331EBEBE437 /* BoardCanvasTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48001C341291CD87E52A402 /* BoardCanvasTests.swift */; };
 		F66DFB38BD206FA969D31AF3 /* FiestaBoardRender.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FBC75D21814880B62B94594 /* FiestaBoardRender.framework */; };
+		F848C039BD1C062E2F58429F /* ConnectingSeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56B7BAC4377D0D37819D561E /* ConnectingSeedView.swift */; };
 		F8BF5AA50FF2360BC2C4333D /* ConnectionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40AB705E1DB7F29BE21009EE /* ConnectionModel.swift */; };
 		FA3550627351EAF33AA6B6B8 /* FiestaBoardDocuments.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 49BC2ED373F21B24BB1720FB /* FiestaBoardDocuments.framework */; };
 		FA82E332EFDFB6E66A0712A6 /* HomeCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10565CA2D32497EFEDA162A /* HomeCards.swift */; };
@@ -371,6 +372,7 @@
 		53A1896783BB5D32A4807559 /* LocalPageEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalPageEditorModel.swift; sourceTree = "<group>"; };
 		5417092099F25D7A2F04F3C6 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		55F8958AD1F9D24DE397C6D7 /* SessionVaultRuntimeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionVaultRuntimeTests.swift; sourceTree = "<group>"; };
+		56B7BAC4377D0D37819D561E /* ConnectingSeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectingSeedView.swift; sourceTree = "<group>"; };
 		57E78CF28F4D305B7575EA9B /* CanvasShapesTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasShapesTab.swift; sourceTree = "<group>"; };
 		581F221F9A5F1033AD2FC07A /* BoardSpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardSpec.swift; sourceTree = "<group>"; };
 		5893703E08C61625858B3AD5 /* iOS27 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = iOS27; path = Tests/__Snapshots__/iOS27; sourceTree = SOURCE_ROOT; };
@@ -719,6 +721,7 @@
 		6FB8B3D725E330AB9B99F718 /* Parity */ = {
 			isa = PBXGroup;
 			children = (
+				56B7BAC4377D0D37819D561E /* ConnectingSeedView.swift */,
 				BF511ED96A45C3C1ACBC2D8E /* FigmaGeometryRegistry.swift */,
 				81E90191BA9A1E89316C89FC /* FigmaNode.swift */,
 				77577AB0B30128910FEC564A /* ParityFixtureView.swift */,
@@ -1384,6 +1387,7 @@
 				5DC4613DF5EF268CADB860ED /* CanvasesPanel.swift in Sources */,
 				587319BB9B867A70BF524DC5 /* CollectionEditorView.swift in Sources */,
 				6F7EE5175EA21722C7C5DEBB /* CollectionsView.swift in Sources */,
+				F848C039BD1C062E2F58429F /* ConnectingSeedView.swift in Sources */,
 				18EB9C22DE4A28BA68F2AD14 /* ConnectionView.swift in Sources */,
 				B82369937127BBB2BF333909 /* DisplaysView.swift in Sources */,
 				A70E31D28B677D7806B4D473 /* DrawMode.swift in Sources */,
