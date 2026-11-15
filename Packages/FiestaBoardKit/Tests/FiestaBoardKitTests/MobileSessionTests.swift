@@ -176,3 +176,85 @@ extension MobileSessionTests {
         }
     }
 }
+
+extension MobileSessionTests {
+    func testRetainedSetupAPIExchangesPasswordForMobileTokenAfterAcknowledgement() async throws {
+        let log = RequestLog()
+        FixtureURLProtocol.handler = { request in
+            log.append(request)
+            if request.url!.lastPathComponent == "setup" {
+                return (201, ["Set-Cookie":"fiestaboard_session=ignored; Path=/; Secure"], Data(#"{"status":"ok"}"#.utf8))
+            }
+            if request.url!.lastPathComponent == "login" { return (200, [:], MobileFixture.reply("setup-mobile")) }
+            let authenticated = request.value(forHTTPHeaderField: "Authorization") == "Bearer fb_mob_setup-mobile"
+            return (200, [:], try BootstrapTests.body(authenticated ? "auth_authenticated" : "auth_enabled"))
+        }
+        let service = LiveFiestaBoardService(deployment: a, transport: URLSessionTransport(deployment: a, protocolClasses: [FixtureURLProtocol.self]))
+        let status = try await service.setupAdministrator(username: "contract_admin", password: "fixture-password")
+        XCTAssertEqual(status.bootstrapPhase, .ready)
+        XCTAssertEqual(log.requests.map { $0.url!.lastPathComponent }, ["setup", "login", "status"])
+        XCTAssertTrue(log.requests.allSatisfy { $0.value(forHTTPHeaderField: "Cookie") == nil })
+    }
+}
+
+private actor BudgetHold {
+    private var held: CheckedContinuation<Void, Never>?
+    private var ready: CheckedContinuation<Void, Never>?
+    func hold() async { await withCheckedContinuation { held = $0; ready?.resume(); ready = nil } }
+    func wait() async { if held == nil { await withCheckedContinuation { ready = $0 } } }
+    func release() { held?.resume(); held = nil }
+}
+
+extension MobileSessionTests {
+    func testLogoutRetiresQueuedMutationsBeforeSendingSelfRevocation() async throws {
+        let log = RequestLog()
+        FixtureURLProtocol.handler = { request in
+            log.append(request)
+            return (200, [:], request.url!.lastPathComponent == "login" ? MobileFixture.reply("logout") : Data(#"{"status":"ok"}"#.utf8))
+        }
+        let budget = HubRequestBudget(limit: 1)
+        let transport = URLSessionTransport(deployment: a, protocolClasses: [FixtureURLProtocol.self], requestBudget: budget)
+        _ = try await transport.send(APIRequest(.post, path: ["auth", "device", "login"]))
+        let service = LiveFiestaBoardService(deployment: a, transport: transport)
+        let hold = BudgetHold()
+        let occupying = Task { try await budget.run { await hold.hold(); return true } }
+        await hold.wait()
+        let mutation = Task { try await transport.send(APIRequest(.post, path: ["pages"])) }
+        while await budget.waitingCount < 1 { await Task.yield() }
+        let logout = Task { try await service.logout() }
+        while await budget.waitingCount < 2 { await Task.yield() }
+        await hold.release()
+        _ = try await occupying.value
+        do { _ = try await mutation.value; XCTFail("Queued mutation must retire before logout dispatch") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+        try await logout.value
+        XCTAssertEqual(log.requests.map { $0.url!.lastPathComponent }, ["login", "session"])
+        XCTAssertEqual(log.requests.last?.httpMethod, "DELETE")
+        XCTAssertEqual(log.requests.last?.value(forHTTPHeaderField: "Authorization"), "Bearer fb_mob_logout")
+    }
+}
+
+extension MobileSessionTests {
+    func test401RetiresQueuedMutationBeforeItCanReachTheWire() async throws {
+        let log = RequestLog()
+        FixtureURLProtocol.handler = { request in
+            log.append(request)
+            return request.url!.lastPathComponent == "login" ? (200, [:], MobileFixture.reply("expired")) : (401, [:], Data(#"{"error":"unauthorized"}"#.utf8))
+        }
+        let budget = HubRequestBudget(limit: 1)
+        let transport = URLSessionTransport(deployment: a, protocolClasses: [FixtureURLProtocol.self], requestBudget: budget)
+        _ = try await transport.send(APIRequest(.post, path: ["auth", "device", "login"]))
+        let hold = BudgetHold()
+        let occupying = Task { try await budget.run { await hold.hold(); return true } }
+        await hold.wait()
+        let read = Task { try await transport.send(APIRequest(path: ["boards"])) }
+        while await budget.waitingCount < 1 { await Task.yield() }
+        let mutation = Task { try await transport.send(APIRequest(.post, path: ["pages"])) }
+        while await budget.waitingCount < 2 { await Task.yield() }
+        await hold.release()
+        _ = try await occupying.value
+        do { _ = try await read.value; XCTFail("Expected signed out") } catch { XCTAssertEqual(error as? FiestaBoardError, .unauthenticated) }
+        do { _ = try await mutation.value; XCTFail("Queued mutation must retire on401") } catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+        XCTAssertEqual(log.requests.map { $0.url!.lastPathComponent }, ["login", "boards"])
+    }
+}

@@ -74,7 +74,8 @@ public protocol FiestaBoardService: Sendable {
     func selectPage(id: String, on target: BoardTarget) async throws -> MutationResult
 }
 
-/// A bounded v10 candidate adapter. No released server pairing is claimed supported.
+/// Native phone authentication/read foundation with retained version-gated editor
+/// adapters. I5 does not widen historical mutation audits or claim a released pairing.
 public actor LiveFiestaBoardService: FiestaBoardService {
     public nonisolated let deployment: DeploymentURL
     public nonisolated let isDemo = false
@@ -183,10 +184,11 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         try await onboardingAcknowledgement(APIRequest(.post, path: ["auth", "setup"],
             body: JSONEncoder().encode(Body(username: username, password: password)), context: setupToken.map(APIRequestContext.onboardingToken) ?? .standard, cachePolicy: .noStore), expectedStatus: 201)
         guard token == generation else { throw FiestaBoardError.staleSession }
-        let status = try await verifiedAuthReadback()
-        guard status.enabled, status.bootstrapPhase == .ready, status.authenticated, status.username == username else { throw FiestaBoardError.unknownMutationOutcome }
-        try await publishVerifiedScope(token: token)
-        return status
+        // Setup's browser cookie is deliberately ignored. Finish the retained
+        // API via the same native password exchange as normal phone sign-in.
+        do { return try await login(username: username, password: password, rememberMe: false) }
+        catch FiestaBoardError.staleSession { throw FiestaBoardError.staleSession }
+        catch { throw FiestaBoardError.unknownMutationOutcome }
     }
 
     private func onboardingAcknowledgement(_ request: APIRequest, expectedStatus: Int) async throws {
@@ -336,6 +338,8 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         pageWritesOptedIn = false; previewAudited = false; knownPages = [:]; knownPageDocuments = [:]
         knownBoards = [:]
         persistenceWarning = nil
+        await transport.beginSessionRevocation()
+        guard generation == token else { throw FiestaBoardError.staleSession }
         await transport.forgetRememberedSession()
         guard generation == token else { throw FiestaBoardError.staleSession }
         do {

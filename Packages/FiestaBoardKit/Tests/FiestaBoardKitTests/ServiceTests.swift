@@ -193,6 +193,7 @@ extension ServiceTests {
         let log = RequestLog()
         FixtureURLProtocol.handler = { request in
             log.append(request)
+            if request.url!.lastPathComponent == "login" { return (200, [:], MobileFixture.reply()) }
             if request.httpMethod == "POST" {
                 return (request.url!.lastPathComponent == "setup" ? 201 : 200, [:], Data(#"{"status":"ok","username":"contract_admin"}"#.utf8))
             }
@@ -204,7 +205,7 @@ extension ServiceTests {
         XCTAssertEqual(chosen.bootstrapPhase, .setupAdministrator)
         let setup = try await service.setupAdministrator(username: "contract_admin", password: "fixture-password", setupToken: "fixture-proof")
         XCTAssertEqual(setup.bootstrapPhase, .ready)
-        XCTAssertEqual(log.requests.map { $0.url!.lastPathComponent }, ["preference", "status", "setup", "status"])
+        XCTAssertEqual(log.requests.map { $0.url!.lastPathComponent }, ["preference", "status", "setup", "login", "status"])
         let preference = try JSONSerialization.jsonObject(with: XCTUnwrap(log.requests[0].httpBody)) as! [String: Bool]
         XCTAssertEqual(preference, ["enabled": true])
         let body = try JSONSerialization.jsonObject(with: XCTUnwrap(log.requests[2].httpBody)) as! [String: String]
@@ -231,13 +232,14 @@ extension ServiceTests {
         let log = RequestLog()
         FixtureURLProtocol.handler = { request in
             log.append(request)
+            if request.url!.lastPathComponent == "login" { return (200, [:], MobileFixture.reply()) }
             if request.httpMethod == "POST" { return (201, [:], Data(#"{"status":"ok"}"#.utf8)) }
             throw URLError(.networkConnectionLost)
         }
         let service = LiveFiestaBoardService(deployment: deployment, transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self]))
         do { _ = try await service.setupAdministrator(username: "contract_admin", password: "fixture-password"); XCTFail("Expected unverified readback") }
         catch { XCTAssertEqual(error as? FiestaBoardError, .unknownMutationOutcome) }
-        XCTAssertEqual(log.requests.map { $0.httpMethod }, ["POST", "GET"])
+        XCTAssertEqual(log.requests.map { $0.httpMethod }, ["POST", "POST", "GET"])
     }
     func testMalformedMutationAcknowledgementDiffersFromMalformedRead() async throws {
         FixtureURLProtocol.handler = { _ in (200, [:], Data("{}".utf8)) }

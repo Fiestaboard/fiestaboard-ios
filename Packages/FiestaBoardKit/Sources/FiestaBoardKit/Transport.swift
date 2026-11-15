@@ -35,6 +35,7 @@ public struct APIResponse: Sendable {
 public protocol APITransport: Sendable {
     func send(_ request: APIRequest) async throws -> APIResponse
     func resetSession() async
+    func beginSessionRevocation() async
     func configureSessionPersistence(rememberMe: Bool, installationID: String?) async
     func restoreRememberedSession(observedInstallationID: String) async -> Bool
     func forgetRememberedSession() async
@@ -44,6 +45,8 @@ public protocol APITransport: Sendable {
     func ownsConnectionID(_ id: UUID) async -> Bool
 }
 public extension APITransport {
+    /// Custom transports without queued work need no retirement action.
+    func beginSessionRevocation() async {}
     func provisionalConnectionID() async -> UUID? { nil }
     func verifyConnectionID(_ proposed: UUID, installationID: String) async -> UUID? { proposed }
     func ownsConnectionID(_ id: UUID) async -> Bool { true }
@@ -59,6 +62,7 @@ public actor URLSessionTransport: APITransport {
     private let session: URLSession
     private var mobileSession: MobileSession?
     public private(set) var lastServerDate: Date?
+    private var revoking = false
     private var generation: UInt64 = 0
     private let vault: (any SessionVault)?
     private let coordinator: any SessionVaultCoordinating
@@ -100,10 +104,18 @@ public actor URLSessionTransport: APITransport {
     deinit { session.invalidateAndCancel() }
 
     public func resetSession() {
+        revoking = false
         generation &+= 1
         mobileSession = nil
         connectionID = nil
         persistence.restored = false
+    }
+
+    /// Retire already queued work before self-revoke waits for a budget slot.
+    /// Keep the bearer available exclusively for DELETE /auth/device/session.
+    public func beginSessionRevocation() {
+        generation &+= 1
+        revoking = true
     }
 
     /// Consent is a new ownership transition; even a memory-only replacement clears old material.
@@ -269,7 +281,7 @@ public actor URLSessionTransport: APITransport {
     }
 
     private func performSend(_ request: APIRequest, expectedGeneration: UInt64) async throws -> APIResponse {
-        guard expectedGeneration == generation else { throw FiestaBoardError.staleSession }
+        guard expectedGeneration == generation, !revoking || (request.method == .delete && request.path == ["auth", "device", "session"]) else { throw FiestaBoardError.staleSession }
         try Task.checkCancellation()
         let headers = try request.boundedHeaders()
         let currentGeneration = generation
@@ -322,7 +334,11 @@ public actor URLSessionTransport: APITransport {
         }
         if http.statusCode == 401 && mobileSession != nil {
             mobileSession = nil
+            generation &+= 1
+            let signedOutGeneration = generation
             await forgetRememberedSession()
+            guard signedOutGeneration == generation else { throw FiestaBoardError.staleSession }
+            throw FiestaBoardError.unauthenticated
         }
         guard currentGeneration == generation else { throw FiestaBoardError.staleSession }
         let canBeGateway = (200..<300).contains(http.statusCode) || (500..<600).contains(http.statusCode)
