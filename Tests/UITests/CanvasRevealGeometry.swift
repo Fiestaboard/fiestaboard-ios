@@ -2,6 +2,11 @@ import CoreGraphics
 
 /// Vertical positioning shared by the real canvas rail gesture and host regression controls.
 enum CanvasRevealGeometry {
+    static func panelBounds(viewport: CGRect, coveringTop: CGFloat) -> (top: CGFloat, bottom: CGFloat) {
+        // Scroll limits can leave a native header just inside the actual clip edge.
+        (max(viewport.minY, coveringTop), viewport.maxY)
+    }
+
     static func isExposed(_ target: CGRect, top: CGFloat, bottom: CGFloat) -> Bool {
         guard valid(target, top: top, bottom: bottom) else { return false }
         if target.height > bottom - top {

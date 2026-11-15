@@ -19,7 +19,12 @@ class CanvasRevealGeometryTests(unittest.TestCase):
 import CoreGraphics
 let values = CommandLine.arguments.dropFirst().map { CGFloat(Double($0)!) }
 var target = CGRect(x: 0, y: values[0], width: 20, height: values[1])
-let top = values[2], bottom = values[3]
+let bounds = values.count > 4
+    ? CanvasRevealGeometry.panelBounds(
+        viewport: CGRect(x: 0, y: values[2], width: 1, height: values[3] - values[2]),
+        coveringTop: values[4])
+    : (top: values[2], bottom: values[3])
+let top = bounds.top, bottom = bounds.bottom
 let initial = CanvasRevealGeometry.isExposed(target, top: top, bottom: bottom)
 var steps: [Double] = []
 while !CanvasRevealGeometry.isExposed(target, top: top, bottom: bottom) && steps.count < 12 {
@@ -45,9 +50,12 @@ print(String(data: try JSONSerialization.data(withJSONObject: result), encoding:
         if compiled.returncode:
             raise RuntimeError(compiled.stderr)
 
-    def reveal(self, y, height, top, bottom):
+    def reveal(self, y, height, top, bottom, covering_top=None):
+        values = (y, height, top, bottom)
+        if covering_top is not None:
+            values += (covering_top,)
         result = subprocess.run(
-            [str(self.binary), *map(str, (y, height, top, bottom))],
+            [str(self.binary), *map(str, values)],
             check=True, capture_output=True, text=True, timeout=5)
         return json.loads(result.stdout)
 
@@ -74,11 +82,26 @@ print(String(data: try JSONSerialization.data(withJSONObject: result), encoding:
         self.assertLessEqual(result['maxY'], 824)
 
     def test_exact_ipad_clipped_add_shape_becomes_fully_exposed(self):
-        # Actual AX frame and rail bounds, with the UI helper's 8pt safe margin.
-        result = self.reveal(1141.5, 20.5, 561.5, 1144)
+        # Actual AX frame and rail bounds from the original clipped-control failure.
+        result = self.reveal(1141.5, 20.5, 553.5, 1152)
         self.assertFalse(result['initial'])
         self.assert_reached(result, 2)
         self.assertLess(result['steps'][0], 0)
+
+    def test_native_header_at_scroll_limit_is_already_exposed(self):
+        # Exact failed-session AX: Undo is fully visible at the clamped content top.
+        result = self.reveal(467.3, 18.3, 463.3, 832, covering_top=453.3)
+        self.assertTrue(result['initial'])
+        self.assertEqual(result['steps'], [])
+
+    def test_panel_bounds_still_reject_clipped_control_and_covering_toggle(self):
+        for values in [(1141.5, 20.5, 553.5, 1152, 544.5), (420, 20, 400, 800, 450)]:
+            with self.subTest(values=values):
+                result = self.reveal(*values)
+                self.assertFalse(result['initial'])
+                self.assert_reached(result)
+                self.assertGreaterEqual(result['minY'], max(values[2], values[4]))
+                self.assertLessEqual(result['maxY'], values[3])
 
     def test_already_exposed_target_does_not_scroll(self):
         result = self.reveal(600, 20, 472, 824)

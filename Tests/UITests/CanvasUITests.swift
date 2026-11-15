@@ -148,8 +148,7 @@ import XCTest
         let rail = self.element(app, "canvasesPanelHandle")
         func bounds() -> (top: CGFloat, bottom: CGFloat) {
             if toggle.exists, rail.exists {
-                let viewport = rail.frame
-                return (max(viewport.minY, toggle.frame.maxY) + 8, viewport.maxY - 8)
+                return CanvasRevealGeometry.panelBounds(viewport: rail.frame, coveringTop: toggle.frame.maxY)
             }
             return (window.minY + 80, window.maxY - 20)
         }
