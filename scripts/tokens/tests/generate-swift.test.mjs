@@ -81,3 +81,25 @@ test("drift check: --check fails on an edited copy", () => {
   assert.equal(r.status, 1);
   assert.match(r.stderr, /out of date/);
 });
+
+test("every input colour and dimension retains its exact numeric value", () => {
+  const swift = generate(root);
+  const visit = (node) => {
+    for (const [name, token] of Object.entries(node)) {
+      if (name.startsWith("$")) continue;
+      if (token.$type === "color") {
+        const v = token.$value;
+        const [r, g, b] = v.components;
+        assert.ok(swift.includes(`static let ${swiftName(name)} = TokenColor(hex: "${v.hex.toLowerCase()}", red: ${r}, green: ${g}, blue: ${b}, alpha: ${v.alpha ?? 1})`), name);
+      } else if (token.$type === "dimension") {
+        assert.ok(swift.includes(`static let ${swiftName(name)}: Double = ${token.$value.value}`), name);
+      } else if (token.$type === "duration") {
+        assert.ok(swift.includes(`static let ${swiftName(name)}: Double = ${token.$value.value / 1000}`), name);
+      } else if (!token.$type && typeof token === "object") visit(token);
+    }
+  };
+  const tokens = JSON.parse(readFileSync(path.join(root, INPUTS.tokens.path)));
+  for (const group of [tokens.color, tokens.board, tokens.radius, tokens.motion.duration]) visit(group);
+  const ios = JSON.parse(readFileSync(path.join(root, INPUTS.platformIOS.path)));
+  visit(ios.glass); visit(ios.touch);
+});

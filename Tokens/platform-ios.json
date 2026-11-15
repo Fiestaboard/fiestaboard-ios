@@ -1,0 +1,1384 @@
+{
+  "$description": "Figma 'Platform · Glass' variables (VariableCollectionId:7:2) plus the iOS touch metrics, file ZQ8RMELCO6qEOFZUnQu36e. Exported read-only on 2026-11-14 with the Figma plugin API (getVariableCollectionByIdAsync; two modes, 'Light' (default) and 'Dark'; 20 COLOR variables, no aliases). Touch metrics are read from 09a component sets 'Mobile / Button' (392:72582) and 'Mobile / Icon Button' (395:153837), Platform=iOS variants, cross-checked against 'Platform · Metrics' touch/min-ios (VariableID:7:26). Units are iOS points. Colour components are sRGB 0–1 rounded to 4 dp; exact Figma floats are in glass.*.$extensions. Do not edit by hand; re-export and re-run scripts/tokens/generate-swift.mjs. Plan §9 MG4.",
+  "$extensions": {
+    "app.fiestaboard": {
+      "fileKey": "ZQ8RMELCO6qEOFZUnQu36e",
+      "collection": "VariableCollectionId:7:2",
+      "collectionName": "Platform · Glass",
+      "collectionKey": "fb221dedb085726fa42ad5eee02902f0d463692b",
+      "modes": [
+        {
+          "name": "Light",
+          "modeId": "7:0",
+          "default": true
+        },
+        {
+          "name": "Dark",
+          "modeId": "7:1",
+          "default": false
+        }
+      ],
+      "exportedAt": "2026-11-14",
+      "figmaVersion": null,
+      "aliases": "none: every Platform · Glass value is a raw COLOR in both modes (no VARIABLE_ALIAS found)"
+    }
+  },
+  "source": {
+    "fileKey": "ZQ8RMELCO6qEOFZUnQu36e",
+    "collectionId": "VariableCollectionId:7:2",
+    "collectionName": "Platform · Glass",
+    "nodeIds": {
+      "mobileButton": "392:72582",
+      "mobileButtonIOSVariants": [
+        "392:72522",
+        "392:72527",
+        "392:72532",
+        "392:72537",
+        "392:72542",
+        "392:72547",
+        "395:153749"
+      ],
+      "mobileIconButton": "395:153837",
+      "mobileIconButtonIOSVariants": [
+        "395:153765",
+        "395:153772",
+        "395:153779",
+        "395:153786",
+        "395:153793",
+        "395:153800"
+      ],
+      "touchMinIOSVariable": "VariableID:7:26",
+      "metricsCollection": "VariableCollectionId:7:11"
+    },
+    "page": "09a · Mobile · Account, More & global states",
+    "exportDate": "2026-11-14",
+    "method": "Figma MCP use_figma (read-only Plugin API); no file mutation"
+  },
+  "glass": {
+    "light": {
+      "glass-fill": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 0.4,
+          "hex": "#ffffff"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/fill",
+            "figmaVariable": "VariableID:7:3",
+            "mode": "Light",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              1,
+              1,
+              1,
+              0.4000000059604645
+            ]
+          }
+        },
+        "$description": "Liquid Glass regular tint. 20–40% per spec; sits on BACKGROUND_BLUR from Glass/Regular."
+      },
+      "glass-fill-thick": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 0.72,
+          "hex": "#ffffff"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/fill-thick",
+            "figmaVariable": "VariableID:7:4",
+            "mode": "Light",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              1,
+              1,
+              1,
+              0.7200000286102295
+            ]
+          }
+        },
+        "$description": "Glass for sheets at large detent and text-heavy panels (legibility)."
+      },
+      "glass-fill-clear": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 0.18,
+          "hex": "#ffffff"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/fill-clear",
+            "figmaVariable": "VariableID:7:5",
+            "mode": "Light",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              1,
+              1,
+              1,
+              0.18000000715255737
+            ]
+          }
+        },
+        "$description": "Clear glass over media (board hero). Needs dimming layer for legibility."
+      },
+      "glass-edge-top": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 0.85,
+          "hex": "#ffffff"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/edge-top",
+            "figmaVariable": "VariableID:7:6",
+            "mode": "Light",
+            "scopes": [
+              "STROKE_COLOR"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              1,
+              1,
+              1,
+              0.8500000238418579
+            ]
+          }
+        },
+        "$description": "1px rim highlight, top stop of the edge gradient."
+      },
+      "glass-edge-bottom": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 0.18,
+          "hex": "#ffffff"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/edge-bottom",
+            "figmaVariable": "VariableID:7:7",
+            "mode": "Light",
+            "scopes": [
+              "STROKE_COLOR"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              1,
+              1,
+              1,
+              0.18000000715255737
+            ]
+          }
+        },
+        "$description": "1px rim highlight, bottom stop of the edge gradient."
+      },
+      "glass-specular": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 0.95,
+          "hex": "#ffffff"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/specular",
+            "figmaVariable": "VariableID:7:8",
+            "mode": "Light",
+            "scopes": [
+              "EFFECT_COLOR"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              1,
+              1,
+              1,
+              0.949999988079071
+            ]
+          }
+        },
+        "$description": "Specular top edge (inner shadow, y=1)."
+      },
+      "glass-shadow": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.06,
+            0.05,
+            0.03
+          ],
+          "alpha": 0.16,
+          "hex": "#0f0d08"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/shadow",
+            "figmaVariable": "VariableID:7:9",
+            "mode": "Light",
+            "scopes": [
+              "EFFECT_COLOR"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.05999999865889549,
+              0.05000000074505806,
+              0.029999999329447746,
+              0.1599999964237213
+            ]
+          }
+        },
+        "$description": "Soft ambient shadow under floating glass."
+      },
+      "glass-press": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.06,
+            0.05,
+            0.03
+          ],
+          "alpha": 0.08,
+          "hex": "#0f0d08"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/press",
+            "figmaVariable": "VariableID:7:10",
+            "mode": "Light",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.05999999865889549,
+              0.05000000074505806,
+              0.029999999329447746,
+              0.07999999821186066
+            ]
+          }
+        },
+        "$description": "Pressed/highlighted overlay inside glass controls."
+      },
+      "glass-scroll-edge": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.945,
+            0.925,
+            0.902
+          ],
+          "alpha": 0.94,
+          "hex": "#f1ece6"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/scroll-edge",
+            "figmaVariable": "VariableID:17:4960",
+            "mode": "Light",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.9449999928474426,
+              0.925000011920929,
+              0.9020000100135803,
+              0.9399999976158142
+            ]
+          }
+        },
+        "$description": "Scroll edge effect (top) — base/background at 94%."
+      },
+      "glass-scroll-edge-clear": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.945,
+            0.925,
+            0.902
+          ],
+          "alpha": 0.0,
+          "hex": "#f1ece6"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/scroll-edge-clear",
+            "figmaVariable": "VariableID:17:4961",
+            "mode": "Light",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.9449999928474426,
+              0.925000011920929,
+              0.9020000100135803,
+              0
+            ]
+          }
+        },
+        "$description": "Scroll edge effect fade-out stop — base/background at 0%."
+      },
+      "tint-selected": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.99,
+            0.931,
+            0.836
+          ],
+          "alpha": 1.0,
+          "hex": "#fcedd5"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "tint/selected",
+            "figmaVariable": "VariableID:23:11730",
+            "mode": "Light",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.9900000095367432,
+              0.9309999942779541,
+              0.8360000252723694,
+              1
+            ]
+          }
+        },
+        "$description": "FiestaUI primary/default pre-blended over card at 16% (Light) / 22% (Dark). Opaque on purpose: selected tab / sidebar / top-tab lens."
+      },
+      "tint-info": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.857,
+            0.901,
+            0.933
+          ],
+          "alpha": 1.0,
+          "hex": "#dbe6ee"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "tint/info",
+            "figmaVariable": "VariableID:23:11731",
+            "mode": "Light",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.8569999933242798,
+              0.9010000228881836,
+              0.9330000281333923,
+              1
+            ]
+          }
+        },
+        "$description": "FiestaUI hue/blue pre-blended over card at 14% / 18%. Silenced banner tile."
+      },
+      "tint-destructive": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.951,
+            0.874,
+            0.855
+          ],
+          "alpha": 1.0,
+          "hex": "#f3dfda"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "tint/destructive",
+            "figmaVariable": "VariableID:23:11732",
+            "mode": "Light",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.9509999752044678,
+              0.8740000128746033,
+              0.8550000190734863,
+              1
+            ]
+          }
+        },
+        "$description": "FiestaUI destructive pre-blended over card at 14% / 18%. Offline banner tile."
+      },
+      "tint-warning": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.928,
+            0.911,
+            0.814
+          ],
+          "alpha": 1.0,
+          "hex": "#ede8d0"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "tint/warning",
+            "figmaVariable": "VariableID:23:11733",
+            "mode": "Light",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.9279999732971191,
+              0.9110000133514404,
+              0.8140000104904175,
+              1
+            ]
+          }
+        },
+        "$description": "FiestaUI status/warning pre-blended over card at 16% / 18%. Out of sync banner tile."
+      },
+      "tint-safe-area": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.675,
+            0.196,
+            0.153
+          ],
+          "alpha": 0.14,
+          "hex": "#ac3227"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "tint/safe-area",
+            "figmaVariable": "VariableID:23:11734",
+            "mode": "Light",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.675000011920929,
+              0.19599999487400055,
+              0.15299999713897705,
+              0.14000000059604645
+            ]
+          }
+        },
+        "$description": "Spec overlay: safe-area insets."
+      },
+      "tint-margin": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.0,
+            0.392,
+            0.71
+          ],
+          "alpha": 0.1,
+          "hex": "#0064b5"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "tint/margin",
+            "figmaVariable": "VariableID:23:11735",
+            "mode": "Light",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0,
+              0.3919999897480011,
+              0.7099999785423279,
+              0.10000000149011612
+            ]
+          }
+        },
+        "$description": "Spec overlay: layout margins."
+      },
+      "tint-handle": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.66,
+            0.65,
+            0.64
+          ],
+          "alpha": 1.0,
+          "hex": "#a8a6a3"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "tint/handle",
+            "figmaVariable": "VariableID:23:11736",
+            "mode": "Light",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.6600000262260437,
+              0.6499999761581421,
+              0.6399999856948853,
+              1
+            ]
+          }
+        },
+        "$description": "muted/foreground pre-blended at 45%: grabber / drag handle."
+      },
+      "board-edge-fade": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.02,
+            0.02,
+            0.02
+          ],
+          "alpha": 1.0,
+          "hex": "#050505"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "board/edge-fade",
+            "figmaVariable": "VariableID:36:32549",
+            "mode": "Light",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.019999999552965164,
+              0.019999999552965164,
+              0.019999999552965164,
+              1
+            ]
+          }
+        },
+        "$description": "Board scroll viewport edge fade — bezel colour (board/hardware/bezel-dark) at 100%."
+      },
+      "board-edge-fade-clear": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.02,
+            0.02,
+            0.02
+          ],
+          "alpha": 0.0,
+          "hex": "#050505"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "board/edge-fade-clear",
+            "figmaVariable": "VariableID:36:32550",
+            "mode": "Light",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.019999999552965164,
+              0.019999999552965164,
+              0.019999999552965164,
+              0
+            ]
+          }
+        },
+        "$description": "Board scroll viewport edge fade — bezel colour at 0%."
+      },
+      "ios-switch-thumb": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 1.0,
+          "hex": "#ffffff"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "ios/switch-thumb",
+            "figmaVariable": "VariableID:211:28546",
+            "mode": "Light",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              1,
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        "$description": "iOS switch thumb — always white (system)."
+      }
+    },
+    "dark": {
+      "glass-fill": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.13,
+            0.125,
+            0.115
+          ],
+          "alpha": 0.46,
+          "hex": "#21201d"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/fill",
+            "figmaVariable": "VariableID:7:3",
+            "mode": "Dark",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.12999999523162842,
+              0.125,
+              0.11500000208616257,
+              0.46000000834465027
+            ]
+          }
+        },
+        "$description": "Liquid Glass regular tint. 20–40% per spec; sits on BACKGROUND_BLUR from Glass/Regular."
+      },
+      "glass-fill-thick": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.12,
+            0.115,
+            0.11
+          ],
+          "alpha": 0.8,
+          "hex": "#1f1d1c"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/fill-thick",
+            "figmaVariable": "VariableID:7:4",
+            "mode": "Dark",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.11999999731779099,
+              0.11500000208616257,
+              0.10999999940395355,
+              0.800000011920929
+            ]
+          }
+        },
+        "$description": "Glass for sheets at large detent and text-heavy panels (legibility)."
+      },
+      "glass-fill-clear": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 0.08,
+          "hex": "#ffffff"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/fill-clear",
+            "figmaVariable": "VariableID:7:5",
+            "mode": "Dark",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              1,
+              1,
+              1,
+              0.07999999821186066
+            ]
+          }
+        },
+        "$description": "Clear glass over media (board hero). Needs dimming layer for legibility."
+      },
+      "glass-edge-top": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 0.4,
+          "hex": "#ffffff"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/edge-top",
+            "figmaVariable": "VariableID:7:6",
+            "mode": "Dark",
+            "scopes": [
+              "STROKE_COLOR"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              1,
+              1,
+              1,
+              0.4000000059604645
+            ]
+          }
+        },
+        "$description": "1px rim highlight, top stop of the edge gradient."
+      },
+      "glass-edge-bottom": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 0.06,
+          "hex": "#ffffff"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/edge-bottom",
+            "figmaVariable": "VariableID:7:7",
+            "mode": "Dark",
+            "scopes": [
+              "STROKE_COLOR"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              1,
+              1,
+              1,
+              0.05999999865889549
+            ]
+          }
+        },
+        "$description": "1px rim highlight, bottom stop of the edge gradient."
+      },
+      "glass-specular": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 0.3,
+          "hex": "#ffffff"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/specular",
+            "figmaVariable": "VariableID:7:8",
+            "mode": "Dark",
+            "scopes": [
+              "EFFECT_COLOR"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              1,
+              1,
+              1,
+              0.30000001192092896
+            ]
+          }
+        },
+        "$description": "Specular top edge (inner shadow, y=1)."
+      },
+      "glass-shadow": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "alpha": 0.5,
+          "hex": "#000000"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/shadow",
+            "figmaVariable": "VariableID:7:9",
+            "mode": "Dark",
+            "scopes": [
+              "EFFECT_COLOR"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0,
+              0,
+              0,
+              0.5
+            ]
+          }
+        },
+        "$description": "Soft ambient shadow under floating glass."
+      },
+      "glass-press": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 0.1,
+          "hex": "#ffffff"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/press",
+            "figmaVariable": "VariableID:7:10",
+            "mode": "Dark",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              1,
+              1,
+              1,
+              0.10000000149011612
+            ]
+          }
+        },
+        "$description": "Pressed/highlighted overlay inside glass controls."
+      },
+      "glass-scroll-edge": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.043,
+            0.039,
+            0.031
+          ],
+          "alpha": 0.94,
+          "hex": "#0b0a08"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/scroll-edge",
+            "figmaVariable": "VariableID:17:4960",
+            "mode": "Dark",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.0430000014603138,
+              0.039000000804662704,
+              0.03099999949336052,
+              0.9399999976158142
+            ]
+          }
+        },
+        "$description": "Scroll edge effect (top) — base/background at 94%."
+      },
+      "glass-scroll-edge-clear": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.043,
+            0.039,
+            0.031
+          ],
+          "alpha": 0.0,
+          "hex": "#0b0a08"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "glass/scroll-edge-clear",
+            "figmaVariable": "VariableID:17:4961",
+            "mode": "Dark",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.0430000014603138,
+              0.039000000804662704,
+              0.03099999949336052,
+              0
+            ]
+          }
+        },
+        "$description": "Scroll edge effect fade-out stop — base/background at 0%."
+      },
+      "tint-selected": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.279,
+            0.207,
+            0.089
+          ],
+          "alpha": 1.0,
+          "hex": "#473517"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "tint/selected",
+            "figmaVariable": "VariableID:23:11730",
+            "mode": "Dark",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.27900001406669617,
+              0.2070000022649765,
+              0.08900000154972076,
+              1
+            ]
+          }
+        },
+        "$description": "FiestaUI primary/default pre-blended over card at 16% (Light) / 22% (Dark). Opaque on purpose: selected tab / sidebar / top-tab lens."
+      },
+      "tint-info": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.159,
+            0.2,
+            0.242
+          ],
+          "alpha": 1.0,
+          "hex": "#29333e"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "tint/info",
+            "figmaVariable": "VariableID:23:11731",
+            "mode": "Dark",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.1589999943971634,
+              0.20000000298023224,
+              0.24199999868869781,
+              1
+            ]
+          }
+        },
+        "$description": "FiestaUI hue/blue pre-blended over card at 14% / 18%. Silenced banner tile."
+      },
+      "tint-destructive": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.244,
+            0.145,
+            0.128
+          ],
+          "alpha": 1.0,
+          "hex": "#3e2521"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "tint/destructive",
+            "figmaVariable": "VariableID:23:11732",
+            "mode": "Dark",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.24400000274181366,
+              0.14499999582767487,
+              0.12800000607967377,
+              1
+            ]
+          }
+        },
+        "$description": "FiestaUI destructive pre-blended over card at 14% / 18%. Offline banner tile."
+      },
+      "tint-warning": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.231,
+            0.218,
+            0.095
+          ],
+          "alpha": 1.0,
+          "hex": "#3b3818"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "tint/warning",
+            "figmaVariable": "VariableID:23:11733",
+            "mode": "Dark",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.23100000619888306,
+              0.21799999475479126,
+              0.0949999988079071,
+              1
+            ]
+          }
+        },
+        "$description": "FiestaUI status/warning pre-blended over card at 16% / 18%. Out of sync banner tile."
+      },
+      "tint-safe-area": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.965,
+            0.431,
+            0.369
+          ],
+          "alpha": 0.18,
+          "hex": "#f66e5e"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "tint/safe-area",
+            "figmaVariable": "VariableID:23:11734",
+            "mode": "Dark",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.9649999737739563,
+              0.4309999942779541,
+              0.36899998784065247,
+              0.18000000715255737
+            ]
+          }
+        },
+        "$description": "Spec overlay: safe-area insets."
+      },
+      "tint-margin": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.494,
+            0.737,
+            1.0
+          ],
+          "alpha": 0.12,
+          "hex": "#7ebcff"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "tint/margin",
+            "figmaVariable": "VariableID:23:11735",
+            "mode": "Dark",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.49399998784065247,
+              0.7369999885559082,
+              1,
+              0.11999999731779099
+            ]
+          }
+        },
+        "$description": "Spec overlay: layout margins."
+      },
+      "tint-handle": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.4,
+            0.39,
+            0.38
+          ],
+          "alpha": 1.0,
+          "hex": "#666361"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "tint/handle",
+            "figmaVariable": "VariableID:23:11736",
+            "mode": "Dark",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.4000000059604645,
+              0.38999998569488525,
+              0.3799999952316284,
+              1
+            ]
+          }
+        },
+        "$description": "muted/foreground pre-blended at 45%: grabber / drag handle."
+      },
+      "board-edge-fade": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.02,
+            0.02,
+            0.02
+          ],
+          "alpha": 1.0,
+          "hex": "#050505"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "board/edge-fade",
+            "figmaVariable": "VariableID:36:32549",
+            "mode": "Dark",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.019999999552965164,
+              0.019999999552965164,
+              0.019999999552965164,
+              1
+            ]
+          }
+        },
+        "$description": "Board scroll viewport edge fade — bezel colour (board/hardware/bezel-dark) at 100%."
+      },
+      "board-edge-fade-clear": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            0.02,
+            0.02,
+            0.02
+          ],
+          "alpha": 0.0,
+          "hex": "#050505"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "board/edge-fade-clear",
+            "figmaVariable": "VariableID:36:32550",
+            "mode": "Dark",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              0.019999999552965164,
+              0.019999999552965164,
+              0.019999999552965164,
+              0
+            ]
+          }
+        },
+        "$description": "Board scroll viewport edge fade — bezel colour at 0%."
+      },
+      "ios-switch-thumb": {
+        "$type": "color",
+        "$value": {
+          "colorSpace": "srgb",
+          "components": [
+            1.0,
+            1.0,
+            1.0
+          ],
+          "alpha": 1.0,
+          "hex": "#ffffff"
+        },
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaName": "ios/switch-thumb",
+            "figmaVariable": "VariableID:211:28546",
+            "mode": "Dark",
+            "scopes": [
+              "FRAME_FILL",
+              "SHAPE_FILL"
+            ],
+            "alias": null,
+            "figmaRGBA": [
+              1,
+              1,
+              1,
+              1
+            ]
+          }
+        },
+        "$description": "iOS switch thumb — always white (system)."
+      }
+    }
+  },
+  "touch": {
+    "ios": {
+      "button-height": {
+        "$type": "dimension",
+        "$value": {
+          "value": 44,
+          "unit": "pt"
+        },
+        "$description": "Mobile / Button, Platform=iOS: fixed height 44 pt (all 7 iOS variants; width hugs label). Maps to FiestaUI size=\"touch\" (#385). Never resize the height.",
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaNode": "392:72582",
+            "measured": "layoutSizingVertical=FIXED, h=44 on every Platform=iOS variant; not variable-bound",
+            "nestedComponent": "FiestaUI Button / Size=lg (library), radius/md = 8"
+          }
+        }
+      },
+      "icon-button-size": {
+        "$type": "dimension",
+        "$value": {
+          "value": 44,
+          "unit": "pt"
+        },
+        "$description": "Mobile / Icon Button, Platform=iOS: fixed 44×44 pt (all 6 iOS variants). Never resize.",
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaNode": "395:153837",
+            "measured": "w=44,h=44 FIXED on every Platform=iOS variant; not variable-bound",
+            "nestedComponent": "FiestaUI Icon Button / Size=icon-lg (library), radius/md = 8"
+          }
+        }
+      },
+      "min-target": {
+        "$type": "dimension",
+        "$value": {
+          "value": 44,
+          "unit": "pt"
+        },
+        "$description": "Minimum iOS hit target (Platform · Metrics touch/min-ios).",
+        "$extensions": {
+          "app.fiestaboard": {
+            "figmaVariable": "VariableID:7:26",
+            "figmaName": "touch/min-ios",
+            "collection": "VariableCollectionId:7:11 Platform · Metrics"
+          }
+        }
+      }
+    }
+  }
+}
