@@ -12,7 +12,46 @@ final class FlapAtlas: @unchecked Sendable {
         let scale: Double
     }
     static let phases = 12
+
+    /// Keep the expensive SwiftUI image-provider work bounded as well as the
+    /// texture dimensions. One phase of twelve faces per render preserves the
+    /// 72-code drum while avoiding a lazy 312-face image-provider request.
+    struct Packing {
+        static let budget = 60 * 1024 * 1024
+        let codesPerSheet = 12
+        let renderScale: Double
+        let padding: Double
+        let cellWidth: Int
+        let cellHeight: Int
+        var sheetWidth: Int { cellWidth * codesPerSheet }
+        var sheetHeight: Int { cellHeight }
+        var sheetCount: Int { (72 / codesPerSheet) * (FlapAtlas.phases + 1) }
+        var byteCount: Int { sheetCount * sheetWidth * sheetHeight * 4 }
+        var stride: Double { Double(cellWidth) / renderScale }
+        var height: Double { Double(cellHeight) / renderScale }
+
+        init?(tileHeight: Double, scale: Double) {
+            guard tileHeight.isFinite, tileHeight > 0, tileHeight <= 120,
+                  scale.isFinite else { return nil }
+            padding = ceil(tileHeight * BoardGeometry.tileWidthRatio * 0.1) + 1
+            let requestedWidth = ceil(tileHeight * BoardGeometry.tileWidthRatio + padding * 2)
+            let requestedHeight = ceil(tileHeight) + 4
+            let points = requestedWidth * requestedHeight * 72 * Double(FlapAtlas.phases + 1)
+            var chosen = min(2, max(1, scale), sqrt(Double(Self.budget) / (points * 4)))
+            // Enforce the budget after each axis is rounded to pixels.
+            while Int(ceil(requestedWidth * chosen)) * Int(ceil(requestedHeight * chosen)) * 72 * (FlapAtlas.phases + 1) * 4 > Self.budget {
+                chosen -= 0.001
+            }
+            renderScale = chosen
+            cellWidth = Int(ceil(requestedWidth * chosen))
+            cellHeight = Int(ceil(requestedHeight * chosen))
+        }
+        func position(code: Int, phase: Int) -> (sheet: Int, x: Int) {
+            (phase * (72 / codesPerSheet) + code / codesPerSheet, (code % codesPerSheet) * cellWidth)
+        }
+    }
     let key: Key
+    let packing: Packing
     let verticalPadding = 2.0
     let padding: Double
     let stride: Double
@@ -23,37 +62,24 @@ final class FlapAtlas: @unchecked Sendable {
 
     @MainActor
     init?(tileHeight: Double, palette: FlapPalette, code62: Code62Glyph, scale: Double) {
-        guard tileHeight.isFinite, tileHeight > 0, tileHeight <= 120 else { return nil }
+        guard let plan = Packing(tileHeight: tileHeight, scale: scale) else { return nil }
+        packing = plan
         key = Key(tileHeight: tileHeight, palette: palette, code62: code62, scale: scale)
-        padding = ceil(tileHeight * BoardGeometry.tileWidthRatio * 0.1) + 1
-        let requestedStride = ceil(tileHeight * BoardGeometry.tileWidthRatio + padding * 2)
-        let requestedHeight = ceil(tileHeight) + verticalPadding * 2
-        let width = requestedStride * 72
-        let totalHeight = requestedHeight * Double(Self.phases + 1)
-        // Include transparent padding and round each cell to integral pixels.
-        let requestedScale = min(2, max(1, scale))
-        let renderScale = min(requestedScale, sqrt(Double(60 * 1024 * 1024) / (width * totalHeight * 4)))
-        let cellWidth = ceil(requestedStride * renderScale)
-        let cellHeight = ceil(requestedHeight * renderScale)
-        let actualStride = cellWidth / renderScale
-        let actualHeight = cellHeight / renderScale
-        stride = actualStride
-        height = actualHeight
-        let pad = padding
+        padding = plan.padding
+        stride = plan.stride
+        height = plan.height
+        let pad = plan.padding
         let topPad = verticalPadding
-        // Keep every backing texture small. One 72-code sheet can exceed
-        // the renderer's usable width at Retina scale and produce blank faces.
-        // Three sheets retain the same resolution and total memory budget.
         var faces = Array<CGImage?>(repeating: nil, count: 72 * (Self.phases + 1))
         var bytes = 0
         var maximumDimension = 0
-        for group in 0..<3 {
-            let content = Canvas { context, _ in
-                for phase in 0...Self.phases {
-                    for column in 0..<24 {
-                        let code = group * 24 + column
+        for phase in 0...Self.phases {
+            for group in 0..<(72 / plan.codesPerSheet) {
+                let content = Canvas(opaque: false, rendersAsynchronously: false) { context, _ in
+                    for column in 0..<plan.codesPerSheet {
+                        let code = group * plan.codesPerSheet + column
                         let tile = TileRect(row: phase, col: code,
-                            x: Double(column) * actualStride + pad, y: Double(phase) * actualHeight + topPad,
+                            x: Double(column) * plan.stride + pad, y: topPad,
                             width: tileHeight * BoardGeometry.tileWidthRatio, height: tileHeight,
                             radius: tileHeight * BoardGeometry.tileRadiusRatio,
                             cell: BoardTables.cell(forCode: code, code62: code62))
@@ -61,21 +87,35 @@ final class FlapAtlas: @unchecked Sendable {
                             progress: phase == Self.phases ? nil : Double(phase) / Double(Self.phases),
                             palette: palette, code62: code62, in: &context)
                     }
+                }.frame(width: plan.stride * Double(plan.codesPerSheet), height: plan.height)
+                let materialized = autoreleasepool { () -> CGImage? in
+                    let renderer = ImageRenderer(content: content)
+                    renderer.scale = plan.renderScale
+                    guard let pending = renderer.cgImage,
+                          pending.width == plan.sheetWidth, pending.height == plan.sheetHeight,
+                          let bitmap = CGContext(data: nil, width: plan.sheetWidth, height: plan.sheetHeight,
+                            bitsPerComponent: 8, bytesPerRow: plan.sheetWidth * 4,
+                            space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+                    // Resolve the small provider immediately into an owned RGBA
+                    // bitmap. Crops must not defer a large provider job until a
+                    // later animation frame or a test reads the final drum face.
+                    bitmap.draw(pending, in: CGRect(x: 0, y: 0, width: plan.sheetWidth, height: plan.sheetHeight))
+                    return bitmap.makeImage()
                 }
-            }.frame(width: actualStride * 24, height: actualHeight * Double(Self.phases + 1))
-            let renderer = ImageRenderer(content: content)
-            renderer.scale = renderScale
-            guard let sheet = renderer.cgImage else { return nil }
-            bytes += sheet.bytesPerRow * sheet.height
-            maximumDimension = max(maximumDimension, sheet.width, sheet.height)
-            for phase in 0...Self.phases {
-                for column in 0..<24 {
-                    guard let face = sheet.cropping(to: CGRect(x: Double(column) * cellWidth,
-                        y: Double(phase) * cellHeight, width: cellWidth, height: cellHeight)) else { return nil }
-                    faces[phase * 72 + group * 24 + column] = face
+                guard let sheet = materialized else { return nil }
+                bytes += sheet.bytesPerRow * sheet.height
+                maximumDimension = max(maximumDimension, sheet.width, sheet.height)
+                for column in 0..<plan.codesPerSheet {
+                    let code = group * plan.codesPerSheet + column
+                    let position = plan.position(code: code, phase: phase)
+                    guard let face = sheet.cropping(to: CGRect(x: position.x, y: 0,
+                        width: plan.cellWidth, height: plan.cellHeight)) else { return nil }
+                    faces[phase * 72 + code] = face
                 }
             }
         }
+        guard faces.allSatisfy({ $0 != nil }), bytes <= 64 * 1024 * 1024 else { return nil }
         byteCount = bytes
         maximumTextureDimension = maximumDimension
         images = faces.compactMap { $0 }
