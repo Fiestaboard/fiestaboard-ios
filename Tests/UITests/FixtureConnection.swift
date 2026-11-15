@@ -90,8 +90,11 @@ extension XCTestCase {
         reveal(username); username.tap(); username.typeText("fixture_admin")
         let password = app.secureTextFields["connectionPassword"]
         reveal(password); password.tap(); password.typeText("fixture-password")
-        let signIn = app.buttons["connectionSignIn"]
-        reveal(signIn); signIn.tap()
+        // SecureField's native Go action invokes the same sign-in handler and clears focus.
+        // At accessibility sizes the form button can remain below the keyboard.
+        let go = app.keyboards.buttons["Go"]
+        XCTAssertTrue(go.waitForExistence(timeout: 8), "The password keyboard must expose its Go action")
+        go.tap()
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15))
     }
 }
