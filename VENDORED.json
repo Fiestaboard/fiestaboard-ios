@@ -112,14 +112,14 @@
       "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/BoardCanvas.swift",
       "sourceSHA256": "fea54b7d35be441092fe8d4dbc389d6ac895d5180b4b04e6d870402f106211cd",
       "adapted": true,
-      "sha256": "d686ef4ac075dda57125e4c3303c3b2a74cbf1fc3c4c429fdb4b575cb73f9da1"
+      "sha256": "e56a66ca5df827c4bda0f91845c53d99ba6e66c81682bb4467cb3fe1337f4696"
     },
     {
       "source": "Sources/Render/FlapAtlas.swift",
       "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/FlapAtlas.swift",
       "sourceSHA256": "638d41e562df2b5ede1c15afd867ba1fd71dec0a3709563b98748d63c1d941b1",
       "adapted": true,
-      "sha256": "9cb497bd96f5041fda67da3f9fe2fd68dc9bff984c893006dd55216557f93e14"
+      "sha256": "0a6d6311842a6072404e0a46db8a3adb6914fa51cf49d931a1f202ad103a0792"
     },
     {
       "source": "Sources/Render/FlapPhysics.swift",
@@ -169,8 +169,8 @@
     "RenderAssets/"
   ],
   "adaptations": {
-    "BoardCanvas.swift": "Retains kept-editor FlapPalette/loading/step APIs and FlapTilePainter; canonical separate Note bezels ported.",
-    "FlapAtlas.swift": "Canonical phase atlas, phone palette and Swift6 Sendable adapter retained.",
+    "BoardCanvas.swift": "Retains kept-editor FlapPalette/loading/step APIs and FlapTilePainter; canonical separate Note bezels ported. Disjoint whole-point static grids batch seams; exact pixel oracle and legacy fallback retain fractional Note/custom geometry.",
+    "FlapAtlas.swift": "Canonical phase atlas, phone palette and Swift6 Sendable adapter retained. Provider work bounded to twelve faces per sheet; eager owned RGBA snapshots and integer-packed 60 MiB budget prevent lazy-provider timeout.",
     "FlapPhysics.swift": "Byte-equivalent algorithm; provenance header only.",
     "BoardFont.swift": "Framework/SwiftPM resource loader and idempotent registration; canonical semibold glyph weight.",
     "BoardFlipTransition.swift": "Canonical drum algorithm; phone step parameter/loading and Sendable retained.",
