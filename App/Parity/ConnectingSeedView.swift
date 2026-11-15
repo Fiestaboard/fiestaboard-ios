@@ -8,7 +8,7 @@ import SwiftUI
 struct ConnectingSeedView: View {
     var body: some View {
         TabView {
-            Tab("Home", systemImage: "house.fill") {
+            Tab("Home", systemImage: "house") {
                 NavigationStack {
                     VStack(alignment: .leading, spacing: 16) {
                         HStack(spacing: 10) {

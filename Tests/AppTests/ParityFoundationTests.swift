@@ -56,6 +56,75 @@ import UIKit
                        "The original appearance is not mutated")
     }
 
+    func testNativeSeedPaletteCanStyleATabBarWithoutANavigationController() {
+        let root = UIView()
+        let tab = UITabBar()
+        tab.items = (0..<5).map { UITabBarItem(title: "Item \($0)", image: nil, tag: $0) }
+        root.addSubview(tab)
+        NativeSeedChrome.apply(in: root)
+        let audit = NativeSeedChrome.audit(in: root)
+        XCTAssertEqual(audit.styledTabBars, 1)
+        XCTAssertEqual(audit.configuredSymbols, 5)
+        XCTAssertEqual(audit.navigationBars, 0)
+    }
+
+    func testNativeSeedAuditDetectsPartialPaletteAndScrollEdgeDrift() {
+        let root = UIView()
+        let tab = UITabBar()
+        tab.items = (0..<5).map { UITabBarItem(title: "Item \($0)", image: nil, tag: $0) }
+        let navigation = UINavigationBar()
+        root.addSubview(tab)
+        root.addSubview(navigation)
+        NativeSeedChrome.apply(in: root)
+        XCTAssertTrue(NativeSeedChrome.audit(in: root).paletteApplied)
+
+        let partialTab = NativeSeedChrome.tabAppearance(tab.standardAppearance)
+        partialTab.stackedLayoutAppearance.normal.titleTextAttributes[.foregroundColor] = UIColor.purple
+        tab.standardAppearance = partialTab
+        XCTAssertFalse(NativeSeedChrome.audit(in: root).paletteApplied)
+        NativeSeedChrome.apply(in: root)
+        XCTAssertTrue(NativeSeedChrome.audit(in: root).paletteApplied)
+
+        let tabEdge = NativeSeedChrome.tabAppearance(tab.standardAppearance)
+        tabEdge.inlineLayoutAppearance.normal.iconColor = .purple
+        tab.scrollEdgeAppearance = tabEdge
+        XCTAssertFalse(NativeSeedChrome.audit(in: root).paletteApplied)
+        NativeSeedChrome.apply(in: root)
+        XCTAssertTrue(NativeSeedChrome.audit(in: root).paletteApplied)
+
+        let partialNavigation = NativeSeedChrome.navigationAppearance(navigation.standardAppearance)
+        partialNavigation.titleTextAttributes[.foregroundColor] = UIColor.purple
+        navigation.standardAppearance = partialNavigation
+        XCTAssertFalse(NativeSeedChrome.audit(in: root).paletteApplied)
+        NativeSeedChrome.apply(in: root)
+        XCTAssertTrue(NativeSeedChrome.audit(in: root).paletteApplied)
+
+        let navigationEdge = UINavigationBarAppearance()
+        navigationEdge.configureWithTransparentBackground()
+        navigationEdge.largeTitleTextAttributes[.foregroundColor] = UIColor.purple
+        navigation.scrollEdgeAppearance = navigationEdge
+        XCTAssertFalse(NativeSeedChrome.audit(in: root).paletteApplied)
+        NativeSeedChrome.apply(in: root)
+        XCTAssertTrue(NativeSeedChrome.audit(in: root).paletteApplied)
+        XCTAssertNil(navigation.scrollEdgeAppearance?.backgroundEffect)
+    }
+
+    func testNativeDisplaySymbolHasASeeThroughInterior() throws {
+        let symbol = try XCTUnwrap(NativeSeedChrome.symbolImage("display", color: .black))
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 3
+        let image = UIGraphicsImageRenderer(size: symbol.size, format: format).image { context in
+            UIColor.red.setFill()
+            context.fill(CGRect(origin: .zero, size: symbol.size))
+            symbol.draw(at: .zero)
+        }
+        let pixels = try XCTUnwrap(RGBA(try XCTUnwrap(image.cgImage)))
+        let center = try XCTUnwrap(pixels.at(pixels.width / 2, pixels.height / 2))
+        XCTAssertGreaterThan(center.0, 240)
+        XCTAssertLessThan(center.1, 10)
+        XCTAssertLessThan(center.2, 10)
+    }
+
     func testNativeSeedTabAppearanceUsesTheReferenceSelectedFill() {
         let appearance = NativeSeedChrome.tabAppearance()
         XCTAssertEqual(appearance.selectionIndicatorTintColor, UIColor(red: 252/255, green: 237/255, blue: 213/255, alpha: 1))
@@ -73,7 +142,14 @@ import UIKit
     func testConnectingSeedCaptureAndSkeletonGeometry() throws {
         guard UIDevice.current.userInterfaceIdiom == .phone else { return }
         FigmaGeometryRegistry.shared.reset()
-        let image = IOSSnapshot.image(ConnectingSeedView(), device: .phone, appearance: .light)
+        var chrome: NativeSeedChrome.Audit?
+        let image = IOSSnapshot.image(ConnectingSeedView(), device: .phone, appearance: .light) { window in
+            chrome = NativeSeedChrome.audit(in: window)
+        }
+        let audit = try XCTUnwrap(chrome)
+        XCTAssertGreaterThan(audit.tabBars, 0, "The actual native tab bar must be present")
+        XCTAssertGreaterThan(audit.navigationBars, 0, "The actual native navigation bar must be present")
+        XCTAssertTrue(audit.paletteApplied, "\(audit)")
         XCTAssertEqual(image.cgImage?.width, 1206)
         XCTAssertEqual(image.cgImage?.height, 2622)
         let nodes = try XCTUnwrap(ParityProbe.nodes(relativeTo: "362:20090"))
@@ -99,6 +175,7 @@ import UIKit
         }
         try FileManager.default.createDirectory(at: ParityOutput.directory, withIntermediateDirectories: true)
         try XCTUnwrap(image.pngData()).write(to: ParityOutput.directory.appendingPathComponent("ios-connecting.png"))
+        try JSONEncoder().encode(audit).write(to: ParityOutput.directory.appendingPathComponent("ios-connecting.chrome.json"))
         let probes = ParityProbe.json(ref: "ios-connecting", root: "362:20090", scale: 3)
         try JSONSerialization.data(withJSONObject: probes, options: [.prettyPrinted, .sortedKeys])
             .write(to: ParityOutput.directory.appendingPathComponent("ios-connecting.probes.json"))
