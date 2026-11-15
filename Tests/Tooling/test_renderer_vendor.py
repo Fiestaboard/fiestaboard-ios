@@ -25,5 +25,5 @@ class RendererVendorTests(unittest.TestCase):
     def test_taco_art_is_never_mit(self):
         notice = (ROOT / 'ThirdPartyNotices/FiestaBoardTV-MIT.txt').read_text()
         self.assertIn('Taco artwork © FiestaBoard. All rights reserved. Used in this app with permission.', notice)
-        self.assertIn('The Taco artwork is excluded from the MIT license above.', notice)
+        self.assertIn('The Taco artwork is not licensed under the MIT License above.', notice)
         self.assertNotIn('Taco artwork is MIT', notice)

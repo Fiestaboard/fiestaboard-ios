@@ -12,12 +12,13 @@ struct ConnectingSeedView: View {
                 NavigationStack {
                     VStack(alignment: .leading, spacing: 16) {
                         HStack(spacing: 10) {
-                            ProgressView().controlSize(.mini).frame(width: 14, height: 14)
-                            Text("Connecting to Maya's FiestaPi…")
+                            TacoLoader(size: .inline, isAnimating: false)
+                                .accessibilityHidden(true)
+                            Text("Connecting to Maya’s FiestaPi…")
                                 .font(.system(size: 15)).foregroundStyle(Color(red: 74/255, green: 71/255, blue: 68/255))
                         }
                         .padding(.leading, 4).frame(height: 20)
-                        .figmaNode("seed:connecting", label: "Connecting to Maya's FiestaPi…")
+                        .figmaNode("seed:connecting", label: "Connecting to Maya’s FiestaPi…")
                         skeleton("seed:board", width: 370, height: 150)
                         skeleton("seed:line-1", width: 220, height: 18)
                         skeleton("seed:line-2", width: 300, height: 18)
@@ -30,6 +31,8 @@ struct ConnectingSeedView: View {
                     .padding(.horizontal, 16).padding(.top, 8)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .background(Color(red: 241/255, green: 236/255, blue: 230/255))
+                    .toolbarColorScheme(.light, for: .navigationBar)
+                    .background(NativeSeedChrome().frame(width: 0, height: 0))
                     .navigationTitle("Home").navigationBarTitleDisplayMode(.large)
                 }
             }
@@ -38,6 +41,7 @@ struct ConnectingSeedView: View {
             Tab("Displays", systemImage: "display") { Color.clear }
             Tab("More", systemImage: "ellipsis") { Color.clear }
         }
+        .environment(\.symbolVariants, .none)
         .preferredColorScheme(.light)
         .tint(Color(red: 137/255, green: 87/255, blue: 0))
         .figmaNode("362:20090", coversSafeArea: true)

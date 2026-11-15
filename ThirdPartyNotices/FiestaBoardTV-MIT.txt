@@ -21,4 +21,4 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 Taco artwork © FiestaBoard. All rights reserved. Used in this app with permission.
-The Taco artwork is excluded from the MIT license above.
+The Taco artwork is not licensed under the MIT License above.

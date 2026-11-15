@@ -60,9 +60,35 @@ import UIKit
             XCTAssertEqual(actual.height, node.frame.height, accuracy: 1)
             XCTAssertEqual(element.label, node.label)
         }
-        Thread.sleep(forTimeInterval: 0.5)
-        let screenshot = XCUIScreen.main.screenshot()
-        let image = try XCTUnwrap(screenshot.image.cgImage)
+        // AX layout can settle before the compositor leaves its portrait launch
+        // snapshot. Wait for visible fixture stripes, not for the glass pass result.
+        var captured: XCUIScreenshot?
+        var pixels: CGImage?
+        let visibleFixture = NSPredicate { _, _ in
+            let shot = XCUIScreen.main.screenshot()
+            captured = shot
+            pixels = ScreenCapture.orientedPixels(shot.image)
+            guard let image = pixels,
+                  image.width == Int(expected.width * scale),
+                  image.height == Int(expected.height * scale) else { return false }
+            return GlassProbe.measure(image, scale: scale, panel: panel.frame) != nil
+        }
+        let captureResult = XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: visibleFixture, object: nil)], timeout: 10)
+        // Attach before hard assertions: XCTest's failure unwind need not run defer.
+        if let captured {
+            let attachment = XCTAttachment(screenshot: captured)
+            attachment.name = "i2-glass-visible-\(pad ? "ipad" : "iphone")"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+        if let data = try? Data(contentsOf: probeURL) {
+            let attachment = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
+            attachment.name = "i2-settled-registry"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+        }
+        XCTAssertEqual(captureResult, .completed, "Visible screen must match settled landscape AX geometry")
+        let image = try XCTUnwrap(pixels)
         XCTAssertEqual(app.frame.width, expected.width, accuracy: 1)
         XCTAssertEqual(app.frame.height, expected.height, accuracy: 1)
         XCTAssertEqual(image.width, Int(expected.width * scale))
