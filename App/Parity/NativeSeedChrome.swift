@@ -18,6 +18,13 @@ struct NativeSeedChrome: UIViewControllerRepresentable {
         return appearance
     }
 
+    static func navigationAppearance(_ native: UINavigationBarAppearance) -> UINavigationBarAppearance {
+        let appearance = UINavigationBarAppearance(barAppearance: native)
+        appearance.titleTextAttributes[.foregroundColor] = foreground
+        appearance.largeTitleTextAttributes[.foregroundColor] = foreground
+        return appearance
+    }
+
     func makeUIViewController(context: Context) -> Controller { Controller() }
     func updateUIViewController(_ uiViewController: Controller, context: Context) { uiViewController.applyPalette() }
 
@@ -31,12 +38,13 @@ struct NativeSeedChrome: UIViewControllerRepresentable {
             guard let tabs = tabBarController, let navigation = navigationController else { return }
             tabs.tabBar.standardAppearance = NativeSeedChrome.tabAppearance()
             tabs.tabBar.scrollEdgeAppearance = NativeSeedChrome.tabAppearance()
-            let appearance = UINavigationBarAppearance()
-            appearance.configureWithDefaultBackground()
-            appearance.titleTextAttributes = [.foregroundColor: NativeSeedChrome.foreground]
-            appearance.largeTitleTextAttributes = [.foregroundColor: NativeSeedChrome.foreground]
-            navigation.navigationBar.standardAppearance = appearance
-            navigation.navigationBar.scrollEdgeAppearance = appearance
+            let bar = navigation.navigationBar
+            bar.standardAppearance = NativeSeedChrome.navigationAppearance(bar.standardAppearance)
+            // nil means UIKit derives its transparent scroll edge. Preserve that
+            // behavior rather than substituting the standard blurred background.
+            if let native = bar.scrollEdgeAppearance {
+                bar.scrollEdgeAppearance = NativeSeedChrome.navigationAppearance(native)
+            }
         }
     }
 }

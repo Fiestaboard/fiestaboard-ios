@@ -42,6 +42,18 @@ import UIKit
         }
     }
 
+    func testNativeSeedPalettePreservesSystemBackgroundAndScrollEdgeBehavior() {
+        let native = UINavigationBarAppearance()
+        native.configureWithTransparentBackground()
+        native.backgroundColor = .cyan
+        native.shadowColor = .magenta
+        let styled = NativeSeedChrome.navigationAppearance(native)
+        XCTAssertEqual(styled.backgroundColor, native.backgroundColor)
+        XCTAssertEqual(styled.backgroundEffect, native.backgroundEffect)
+        XCTAssertEqual(styled.shadowColor, native.shadowColor)
+        XCTAssertNil(native.largeTitleTextAttributes[.foregroundColor], "The original appearance is not mutated")
+    }
+
     func testNativeSeedTabAppearanceUsesTheReferenceSelectedFill() {
         let appearance = NativeSeedChrome.tabAppearance()
         XCTAssertEqual(appearance.selectionIndicatorTintColor, UIColor(red: 252/255, green: 237/255, blue: 213/255, alpha: 1))
