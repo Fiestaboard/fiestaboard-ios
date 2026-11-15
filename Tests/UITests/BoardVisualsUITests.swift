@@ -340,7 +340,7 @@ final class BoardVisualsUITests: XCTestCase {
     }
 
     @MainActor private func selectDestination(_ name: String, in app: XCUIApplication) {
-        let destination = app.descendants(matching: .any).matching(identifier: "destination-" + name).firstMatch
+        let destination = app.buttons.matching(identifier: "destination-" + name).firstMatch
         for _ in 0..<5 {
             if destination.exists && destination.isHittable { destination.tap(); return }
             let sidebar = app.buttons["Show Sidebar"].firstMatch

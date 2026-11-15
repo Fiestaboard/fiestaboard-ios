@@ -87,7 +87,10 @@ targets:
     platform: iOS
     sources:
       - path: App
-        excludes: [PackageResources.swift]
+        excludes: [PackageResources.swift, Resources]
+      - path: App/Resources/TacoLoader
+        type: folder
+        buildPhase: resources
       - path: ThirdPartyNotices/FiestaBoardTV-MIT.txt
         buildPhase: resources
       - path: ThirdPartyNotices/SplineSansMono-OFL.txt

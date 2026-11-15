@@ -29,7 +29,7 @@ import { fileURLToPath } from "node:url";
 
 import { PNG } from "pngjs";
 
-import { evaluateEntry, loadRefs, renderMarkdown, resolveRefsDir } from "./parity.mjs";
+import { evaluateEntry, loadRefs, renderMarkdown, resolveRefsDir, pixelDiff } from "./parity.mjs";
 
 /**
  * FiestaUI scripts/vrt/parity.mjs on `alpha` at the #378 merge. The file is
@@ -107,6 +107,52 @@ export function buildDom(ref, entry, probes) {
     tokens: [],
     board: null,
   };
+}
+
+/** Explicit reference artifacts only. Never mutate the original images or relax thresholds.
+ * Rectangles are points; rounded-screen-exterior excludes only pixels outside the
+ * documented device clip. Reasons and the visible denominator travel with results.
+ */
+export function compareWithArtifactMasks(refPng, shotPng, masks, scale) {
+  if (refPng.width !== shotPng.width || refPng.height !== shotPng.height)
+    throw new Error('artifact masks require equal image dimensions');
+  const a = PNG.sync.read(PNG.sync.write(refPng));
+  const b = PNG.sync.read(PNG.sync.write(shotPng));
+  const width = a.width / scale, height = a.height / scale;
+  for (const mask of masks) {
+    if (!mask.id || !mask.reason) throw new Error('artifact mask needs id and reason');
+    if (mask.kind === 'rounded-screen-exterior') {
+      if (!(mask.radius > 0 && mask.radius <= Math.min(width, height) / 2)) throw new Error('invalid corner radius');
+    } else {
+      const r = mask.rect;
+      if (!r || ![r.x, r.y, r.width, r.height].every(Number.isFinite) || r.x < 0 || r.y < 0 || r.width <= 0 || r.height <= 0 || r.x + r.width > width || r.y + r.height > height)
+        throw new Error('artifact mask outside image bounds');
+    }
+  }
+  let excludedPixels = 0;
+  for (let y = 0; y < a.height; y++) for (let x = 0; x < a.width; x++) {
+    const px = (x + 0.5) / scale, py = (y + 0.5) / scale;
+    const excluded = masks.some(mask => {
+      if (mask.kind === 'rounded-screen-exterior') {
+        const r = mask.radius;
+        const dx = px - Math.max(r, Math.min(width - r, px));
+        const dy = py - Math.max(r, Math.min(height - r, py));
+        return dx * dx + dy * dy > r * r;
+      }
+      const r = mask.rect;
+      return px >= r.x && px < r.x + r.width && py >= r.y && py < r.y + r.height;
+    });
+    if (excluded) {
+      excludedPixels++;
+      const offset = (y * a.width + x) * 4;
+      a.data.set([255, 255, 255, 255], offset);
+      b.data.set([255, 255, 255, 255], offset);
+    }
+  }
+  const result = pixelDiff(a, b, { scale });
+  const comparedPixels = a.width * a.height - excludedPixels;
+  if (!comparedPixels) throw new Error('artifact masks exclude the entire image');
+  return { ...result, ratio: result.diffPixels / comparedPixels, excludedPixels, comparedPixels, masks };
 }
 
 function parseArgs(argv) {
@@ -224,6 +270,14 @@ function main(argv) {
     writeFileSync(path.join(args.out, `${entry.id}.ref.png`), PNG.sync.write(refPng));
     const result = evaluateEntry({ ref, entry, refPng, shotPng, dom: buildDom(ref, entry, probes) });
     writeFileSync(path.join(args.out, `${entry.id}.diff.png`), PNG.sync.write(result.diffPng));
+    if (entry.artifactMasks?.length && result.checks.pixel.sizeMatch) {
+      const adjusted = compareWithArtifactMasks(refPng, shotPng, entry.artifactMasks, ref.scale);
+      writeFileSync(path.join(args.out, `${entry.id}.artifact-adjusted.diff.png`), PNG.sync.write(adjusted.diffPng));
+      delete adjusted.diffPng;
+      const limit = result.checks.pixel.limit;
+      result.artifactAdjustedPixel = { ...adjusted, limit,
+        pass: adjusted.ratio <= limit && adjusted.flaggedBlobs.length === 0 };
+    }
     delete result.diffPng;
     result.shotScale = shotScale;
     result.comparedAtScale = ref.scale;
@@ -234,8 +288,12 @@ function main(argv) {
     /\*\*Report-only \(slice 1\.0b\)\.\*\*[^\n]*/,
     `**Report-only (iOS).** Nothing here fails CI; pixel and Figma geometry comparisons are report-only (PHASE-5-IOS-PLAN §2.1).\n\n${runtimeLine(runtime)}`,
   ).replaceAll("would fail: ", "unavailable: ");
+  const maskNotes = report.entries.filter(e => e.artifactAdjustedPixel).map(e => {
+    const p = e.artifactAdjustedPixel;
+    return `\n### Explicit artifact comparison: ${e.id}\n\nRaw pixel result above is unchanged. Artifact-adjusted: ${(p.ratio * 100).toFixed(3)}%, ${p.diffPixels}/${p.comparedPixels} visible pixels; ${p.excludedPixels} excluded. Pixel limit and blob rule unchanged. Adjusted pixel pass: ${p.pass}.\n\n${p.masks.map(m => `- ${m.id}: ${m.reason} (${JSON.stringify(m.rect ?? {radius:m.radius})})`).join('\n')}\n`;
+  }).join('');
   writeFileSync(path.join(args.out, "report.json"), JSON.stringify(report, null, 2));
-  writeFileSync(path.join(args.out, "report.md"), md);
+  writeFileSync(path.join(args.out, "report.md"), md + maskNotes);
   process.stdout.write(md);
   return 0;
 }

@@ -1,32 +1,6 @@
 import Foundation
 import SwiftUI
 
-/// An LED frame: RGB888, row-major, origin top-left, with a lit mask (a pixel
-/// is lit when any channel is non-zero, FiestaUI `frameToBits`).
-public struct MatrixRaster: Sendable, Equatable {
-    public let width: Int
-    public let height: Int
-    public var rgb: [UInt8]
-    public var lit: [Bool]
-    public init(width: Int, height: Int) {
-        self.width = max(0, width); self.height = max(0, height)
-        rgb = Array(repeating: 0, count: self.width * self.height * 3)
-        lit = Array(repeating: false, count: self.width * self.height)
-    }
-    public func pixel(x: Int, y: Int) -> UInt32? {
-        guard x >= 0, y >= 0, x < width, y < height, lit[y * width + x] else { return nil }
-        let i = (y * width + x) * 3
-        return UInt32(rgb[i]) << 16 | UInt32(rgb[i + 1]) << 8 | UInt32(rgb[i + 2])
-    }
-    /// Paint one pixel (clipped). Painting black turns the pixel off.
-    mutating func set(x: Int, y: Int, _ color: UInt32) {
-        guard x >= 0, y >= 0, x < width, y < height else { return }
-        let i = (y * width + x) * 3
-        rgb[i] = UInt8((color >> 16) & 0xff); rgb[i + 1] = UInt8((color >> 8) & 0xff); rgb[i + 2] = UInt8(color & 0xff)
-        lit[y * width + x] = color & 0xffffff != 0
-    }
-}
-
 /// The LED path: a port of FiestaUI `led-matrix.ts` (`ledGridLayout`,
 /// `layoutLedMessage` / `layoutLedCellGrid`, `drawLedGlyph`, `cellField`,
 /// `ledGutterPixels`, `rasterizeLedLayout`) plus the bitmap-layer rules of
@@ -401,6 +375,7 @@ public enum LedRasterizer {
 /// `led-matrix-display.js:61-72`, without the glow pass).
 public struct MatrixDotsView: View {
     let raster: MatrixRaster
+    @Environment(\.displayScale) private var displayScale
     let appearance: LedAppearance
     public init(raster: MatrixRaster, appearance: LedAppearance) { self.raster = raster; self.appearance = appearance }
     public var body: some View {
@@ -415,7 +390,7 @@ public struct MatrixDotsView: View {
             for y in 0..<raster.height {
                 for x in 0..<raster.width {
                     let rect = CGRect(x: Double(x) * pitch + inset, y: Double(y) * pitch + inset, width: dot, height: dot)
-                    let shape = appearance.pixelShape == .round ? Path(ellipseIn: rect) : Path(roundedRect: rect, cornerRadius: dot * 0.15)
+                    let shape = LedDot.path(rect, round: appearance.pixelShape == .round, corner: LedDot.cornerRadius(dot: dot, scale: displayScale))
                     if let color = raster.pixel(x: x, y: y) { lit[color, default: Path()].addPath(shape) } else { off.addPath(shape) }
                 }
             }

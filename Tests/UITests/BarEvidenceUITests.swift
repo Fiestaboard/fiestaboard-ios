@@ -33,7 +33,7 @@ import XCTest
         let app = isolatedApplication()
         launchFixture(app, arguments: ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"])
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15))
-        let destination = element(app, "destination-Pages")
+        let destination = app.buttons.matching(identifier: "destination-Pages").firstMatch
         for _ in 0..<5 where !(destination.exists && destination.isHittable) {
             let sidebar = app.buttons["Show Sidebar"].firstMatch
             if sidebar.exists && sidebar.isHittable { sidebar.tap(); continue }
@@ -129,7 +129,7 @@ import XCTest
         selectFixtureDisplay(display, in: app)
     }
     private func openEditor(_ app: XCUIApplication, page: String) -> XCUIElement {
-        let destination = element(app, "destination-Pages")
+        let destination = app.buttons.matching(identifier: "destination-Pages").firstMatch
         for _ in 0..<5 {
             if destination.exists && destination.isHittable { destination.tap(); break }
             let sidebar = app.buttons["Show Sidebar"].firstMatch

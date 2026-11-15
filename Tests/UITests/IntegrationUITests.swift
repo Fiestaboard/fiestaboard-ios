@@ -138,7 +138,7 @@ import XCTest
     }
 
     private func sidebarItem(_ app: XCUIApplication) -> XCUIElement {
-        app.descendants(matching: .any).matching(identifier: "destination-Pages").firstMatch
+        app.buttons.matching(identifier: "destination-Pages").firstMatch
     }
     private func waitForSidebar(_ app: XCUIApplication, visible: Bool, timeout: TimeInterval = 5) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)

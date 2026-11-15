@@ -12,7 +12,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 SHARDS = {
-    'ui-a': ['BoardVisualsUITests', 'LaunchUITests', 'ParityFoundationUITests'],
+    'ui-a': ['BoardVisualsUITests', 'LaunchUITests', 'ParityFoundationUITests', 'BoardViewportUITests'],
     'ui-b': ['EditorUITests'],
     'ui-c': ['BarEvidenceUITests', 'CanvasUITests', 'IntegrationUITests', 'SaveUITests'],
     'ui-d': ['FormulaUITests'],

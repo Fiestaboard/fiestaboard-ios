@@ -29,7 +29,7 @@ import XCTest
         return document
     }
     private func openPages(_ app: XCUIApplication) {
-        let destination = app.descendants(matching: .any).matching(identifier: "destination-Pages").firstMatch
+        let destination = app.buttons.matching(identifier: "destination-Pages").firstMatch
         for _ in 0..<5 {
             if destination.exists && destination.isHittable { destination.tap(); return }
             let sidebar = app.buttons["Show Sidebar"].firstMatch

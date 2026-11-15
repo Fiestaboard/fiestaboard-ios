@@ -65,3 +65,18 @@ arguments, malformed JSON and invalid input exit 2. `--gate` is unsupported.
 `native-parity.mjs` additionally pins the original FiestaUI comparator commit;
 `parity.mjs` is byte-identical and its SHA-256 is checked by the suite. The iOS
 adapter adds measured scale, explicit unavailable results and runtime reporting.
+
+## Explicit reference artifacts (I2)
+
+The static UIHosting capture contains app views, so it cannot draw the system
+status bar, Dynamic Island or home indicator. The saved Figma screen also
+includes black outside the 55pt device corner clip. `artifactMasks` in the
+manifest lists exactly those regions, in points, with reasons from the saved
+measurement document. No title, connecting content, skeleton or tab region is
+masked. SF Pro vs Inter and native tab-glass noise remain plan waivers, not masks.
+
+The original `checks.pixel`, `wouldPass`, PNG and diff are unchanged. A separate
+`artifactAdjustedPixel` reports the excluded union, visible-pixel denominator,
+remaining ratio and blobs; its diff has an `artifact-adjusted` suffix. It uses
+the same 2.5% screen limit and large-blob rule. A low ratio can still fail the
+blob rule. Neither result replaces visual review or proves system glass.

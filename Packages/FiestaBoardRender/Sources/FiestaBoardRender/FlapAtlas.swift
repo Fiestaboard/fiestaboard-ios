@@ -1,4 +1,4 @@
-// Vendored from fiestaboard-appletv@a3df9c9 Sources/Render/FlapAtlas.swift. MIT: ThirdPartyNotices/FiestaBoardTV-MIT.txt.
+// Vendored from fiestaboard-tvos@f1fc67d Sources/Render/FlapAtlas.swift. MIT: ThirdPartyNotices/FiestaBoardTV-MIT.txt.
 import SwiftUI
 
 /// Pre-render the drum's moving faces once per geometry/appearance. Playback

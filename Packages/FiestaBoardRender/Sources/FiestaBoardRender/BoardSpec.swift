@@ -1,4 +1,4 @@
-// Vendored from fiestaboard-appletv@a3df9c9 Sources/Core/BoardSpec.swift. MIT: ThirdPartyNotices/FiestaBoardTV-MIT.txt.
+// Vendored from fiestaboard-tvos@f1fc67d Sources/Core/BoardSpec.swift. MIT; see ThirdPartyNotices.
 import Foundation
 
 /// The cross-language rendering contract, decoded from Spec/board-spec.json.

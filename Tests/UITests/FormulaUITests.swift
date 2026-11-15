@@ -73,7 +73,7 @@ import XCTest
         let signIn = app.buttons["connectionSignIn"]
         reveal(signIn, app); signIn.tap()
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15), app.debugDescription)
-        let pages = element(app, "destination-Pages")
+        let pages = app.buttons.matching(identifier: "destination-Pages").firstMatch
         for _ in 0..<5 where !(pages.exists && pages.isHittable) {
             let sidebar = app.buttons["Show Sidebar"].firstMatch
             if sidebar.exists && sidebar.isHittable { sidebar.tap(); continue }

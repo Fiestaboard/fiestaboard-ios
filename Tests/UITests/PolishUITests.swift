@@ -295,7 +295,7 @@ import XCTest
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15), app.debugDescription)
     }
     private func selectDestination(_ name: String, in app: XCUIApplication) {
-        let destination = element(app, "destination-" + name)
+        let destination = app.buttons.matching(identifier: "destination-" + name).firstMatch
         for _ in 0..<5 {
             if destination.exists && destination.isHittable { destination.tap(); return }
             let sidebar = app.buttons["Show Sidebar"].firstMatch

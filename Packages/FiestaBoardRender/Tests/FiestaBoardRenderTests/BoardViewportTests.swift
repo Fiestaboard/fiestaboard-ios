@@ -2,6 +2,15 @@ import XCTest
 @testable import FiestaBoardRender
 
 final class BoardViewportTests: XCTestCase {
+    func testEdgeHintsTrackStartMiddleAndEndAndIgnoreBounce() {
+        XCTAssertEqual(BoardViewportEdges(offset: 0, contentWidth: 600, viewportWidth: 200), .init(leading: false, trailing: true))
+        XCTAssertEqual(BoardViewportEdges(offset: 200, contentWidth: 600, viewportWidth: 200), .init(leading: true, trailing: true))
+        XCTAssertEqual(BoardViewportEdges(offset: 400, contentWidth: 600, viewportWidth: 200), .init(leading: true, trailing: false))
+        XCTAssertEqual(BoardViewportEdges(offset: -25, contentWidth: 600, viewportWidth: 200), .init(leading: false, trailing: true))
+        XCTAssertEqual(BoardViewportEdges(offset: 425, contentWidth: 600, viewportWidth: 200), .init(leading: true, trailing: false))
+        XCTAssertEqual(BoardViewportEdges(offset: 0, contentWidth: 180, viewportWidth: 200), .init(leading: false, trailing: false))
+    }
+
     func testReadableTilesNeverShrinkBelowThirteenPoints() {
         let geometry = BoardViewportGeometry(rows: 12, cols: 29, viewportWidth: 180, tileHeight: 13)
         XCTAssertEqual(geometry.tileHeight, 13)
@@ -19,6 +28,14 @@ final class BoardViewportTests: XCTestCase {
         XCTAssertEqual(geometry.previous(before: 0), 0)
         XCTAssertEqual(geometry.previous(before: 2), 1)
         XCTAssertEqual(geometry.label(page: 1), "Note 2 of 3")
+    }
+
+    func testPartialNotesDoNotInventCells() {
+        let geometry = BoardViewportGeometry(rows: 4, cols: 34, viewportWidth: 200, notes: true)
+        XCTAssertEqual(geometry.noteCount, 6)
+        XCTAssertEqual(geometry.bounds(page: 5).rows, 3..<4)
+        XCTAssertEqual(geometry.bounds(page: 5).cols, 30..<34)
+        XCTAssertEqual(geometry.bounds(page: 99).cols, 30..<34)
     }
 
     func testInvalidInputsRemainFiniteAndBounded() {
