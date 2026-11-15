@@ -141,15 +141,17 @@ import UIKit
             }
             let pixels = try XCTUnwrap(RGBA(try XCTUnwrap(image.cgImage)))
             var brandPixels = 0
+            var invalidPalettePixels = 0
             for y in 0..<pixels.height {
                 for x in 0..<pixels.width {
                     let p = try XCTUnwrap(pixels.at(x, y))
-                    XCTAssertGreaterThanOrEqual(p.0 + 2, p.1, "No cyan system layer")
-                    XCTAssertGreaterThanOrEqual(p.1 + 2, p.2, "No blue system layer")
-                    if name == "calendar" { XCTAssertLessThanOrEqual(abs(p.0 - p.2), 6, "No red system layer") }
+                    if p.0 + 2 < p.1 || p.1 + 2 < p.2 || (name == "calendar" && abs(p.0 - p.2) > 6) {
+                        invalidPalettePixels += 1
+                    }
                     if p.0 - p.1 > 20 && p.1 - p.2 > 20 { brandPixels += 1 }
                 }
             }
+            XCTAssertEqual(invalidPalettePixels, 0, "Native \(name) must retain the requested palette")
             if name == "house" { XCTAssertGreaterThan(brandPixels, 0) }
         }
     }
