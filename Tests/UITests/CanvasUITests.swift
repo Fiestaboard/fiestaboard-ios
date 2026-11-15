@@ -175,7 +175,7 @@ import XCTest
 
     private func openPixelClock(_ app: XCUIApplication) throws {
         try connectToFixture(app, scenario: "manual")
-        let destination = element(app, "destination-Pages")
+        let destination = app.buttons.matching(identifier: "destination-Pages").firstMatch
         for _ in 0..<5 {
             if destination.exists && destination.isHittable { destination.tap(); break }
             let sidebar = app.buttons["Show Sidebar"].firstMatch
