@@ -156,24 +156,19 @@ import XCTest
         func visible() -> Bool {
             guard element.exists, element.isHittable else { return false }
             let frame = element.frame, viewport = bounds()
-            // Large drawing surfaces cannot fit entirely; expose their interaction centre.
-            if frame.height > viewport.bottom - viewport.top {
-                return frame.midY > viewport.top && frame.midY < viewport.bottom
-            }
-            return frame.minY > viewport.top && frame.maxY < viewport.bottom
+            return CanvasRevealGeometry.isExposed(frame, top: viewport.top, bottom: viewport.bottom)
         }
         for _ in 0..<12 {
             if visible() { break }
             let viewport = bounds()
-            let up: Bool
+            let distance: CGFloat
             if element.exists {
-                let frame = element.frame
-                let bottom = frame.height > viewport.bottom - viewport.top ? frame.midY : frame.maxY
-                up = bottom >= viewport.bottom
-            } else { up = true }
+                distance = CanvasRevealGeometry.scrollDistance(element.frame, top: viewport.top, bottom: viewport.bottom)
+            } else { distance = -min(160, (viewport.bottom - viewport.top) / 2) }
+            if distance == 0 { break }
             let from = rail.exists ? rail.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
                 : app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-            from.press(forDuration: 0.05, thenDragTo: from.withOffset(CGVector(dx: 0, dy: up ? -160 : 160)), withVelocity: 600, thenHoldForDuration: 0.1)
+            from.press(forDuration: 0.05, thenDragTo: from.withOffset(CGVector(dx: 0, dy: distance)), withVelocity: 600, thenHoldForDuration: 0.1)
         }
         XCTAssertTrue(visible(), "The interaction target must be exposed inside its scroll viewport")
     }
