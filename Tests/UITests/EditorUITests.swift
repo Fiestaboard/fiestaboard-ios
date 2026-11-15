@@ -284,7 +284,7 @@ import XCTest
         XCTAssertTrue(gutter.waitForExistence(timeout: 3))
         let chip = document.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 9 + 2 * charWidth, dy: gutter.frame.midY - document.frame.minY))
         chip.tap()
-        let callout = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "weather.temperature | pad:3")).firstMatch
+        let callout = app.menuItems.matching(NSPredicate(format: "label == %@", "weather.temperature | pad:3")).firstMatch
         XCTAssertTrue(callout.waitForExistence(timeout: 4), "The callout names the variable and its filter")
         attach(app, "P1-1-chip-callout-\(device())")
         // The caret sits after the chip: the detail line under the document names it in full.
