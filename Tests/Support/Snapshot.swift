@@ -20,7 +20,8 @@ import XCTest
 
     static func image<V: View>(_ view: V, device: Device = .current,
                               appearance: ColorScheme = .light,
-                              dynamicType: DynamicTypeSize = .large) -> UIImage {
+                              dynamicType: DynamicTypeSize = .large,
+                              inspect: ((UIWindow) -> Void)? = nil) -> UIImage {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "America/Los_Angeles")!
         let host = UIHostingController(rootView: view
@@ -42,6 +43,7 @@ import XCTest
         host.view.layoutIfNeeded()
         RunLoop.current.run(until: Date().addingTimeInterval(0.1))
         host.view.layoutIfNeeded()
+        inspect?(window)
         let format = UIGraphicsImageRendererFormat()
         format.scale = device.scale
         format.opaque = true
