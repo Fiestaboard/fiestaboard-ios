@@ -39,7 +39,7 @@ extension XCTestCase {
         reveal(address)
         XCTAssertTrue(address.waitForExistence(timeout: 10))
         let port = ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "18442"
-        typeConnectionAddress("http://127.0.0.1:\(port)/board-manual-\(UUID().uuidString.lowercased())", into: address, in: app)
+        // Enable explicit HTTP consent before opening the keyboard at large text sizes.
         let localHTTP = app.switches["connectionLocalHTTP"]
         reveal(localHTTP)
         // At accessibility sizes a visible label makes the whole switch "hittable"
@@ -70,6 +70,8 @@ extension XCTestCase {
                 predicate: NSPredicate(format: "value == '1'"), object: localHTTP)], timeout: 2)
         }
         XCTAssertEqual(localHTTP.value as? String, "1", "Explicitly allow the loopback HTTP fixture before connecting")
+        reveal(address)
+        typeConnectionAddress("http://127.0.0.1:\(port)/board-manual-\(UUID().uuidString.lowercased())", into: address, in: app)
         let connect = app.buttons["connectionConnect"]
         reveal(connect); connect.tap()
         let username = app.textFields["Username"]
