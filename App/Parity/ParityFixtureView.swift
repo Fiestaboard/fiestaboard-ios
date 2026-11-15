@@ -16,7 +16,7 @@ struct ParityFixtureView: View {
         if kind == .connecting {
             ConnectingSeedView()
         } else if kind == .viewport {
-            BoardViewport(frame: BoardFrame(rows: 6, cols: 29, message: "A WIDE READABLE BOARD"),
+            BoardViewport(frame: BoardFrame(rows: 6, cols: 29, message: "HORIZONTAL SCROLL"),
                 model: .flap(rows: 6, cols: 29), tileHeight: 32)
                 .frame(width: 180)
                 .padding(16)
