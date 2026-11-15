@@ -1,4 +1,4 @@
-// Vendored from fiestaboard-appletv@a3df9c9 Sources/Render/BoardFont.swift. MIT: ThirdPartyNotices/FiestaBoardTV-MIT.txt.
+// Vendored from fiestaboard-tvos@f1fc67d Sources/Render/BoardFont.swift. MIT: ThirdPartyNotices/FiestaBoardTV-MIT.txt.
 // Mobile change: the face is loaded from this module's bundle, not Bundle.main.
 import CoreText
 import Foundation
@@ -32,9 +32,9 @@ public enum BoardFont {
 
     public static func glyph(size: Double) -> Font {
         if registerIfNeeded() {
-            return .custom(familyName, fixedSize: size).weight(.bold)
+            return .custom(familyName, fixedSize: size).weight(.semibold)
         }
-        return .system(size: size, weight: .bold, design: .monospaced)
+        return .system(size: size, weight: .semibold, design: .monospaced)
     }
 }
 

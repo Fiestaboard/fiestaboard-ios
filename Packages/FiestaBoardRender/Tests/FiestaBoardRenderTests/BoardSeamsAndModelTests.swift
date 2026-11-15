@@ -23,7 +23,7 @@ extension BoardLayoutTests {
         XCTAssertEqual(tile(0, 16).x - (tile(0, 15).x + tile(0, 15).width), normalGap, accuracy: 1e-9)
         let size = BoardLayout.size(rows: 6, cols: 30, tileHeight: 100, seams: model.seams)
         XCTAssertEqual(size.width, layout.width); XCTAssertEqual(size.height, layout.height)
-        XCTAssertEqual(layout.width, tile(5, 29).x + tile(5, 29).width, accuracy: 1e-9)
+        XCTAssertEqual(layout.width, tile(5, 29).x + tile(5, 29).width + NoteArray.paddingRatio * 100, accuracy: 1e-9)
         // A single Note and a Flagship have no seams.
         XCTAssertNil(DisplayModel.flap(rows: 3, cols: 15, deviceType: "note").seams)
         XCTAssertNil(DisplayModel.flap(rows: 6, cols: 22).seams)

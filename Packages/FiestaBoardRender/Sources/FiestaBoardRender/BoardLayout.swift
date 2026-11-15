@@ -1,4 +1,4 @@
-// Vendored from fiestaboard-appletv@a3df9c9 Sources/Core/BoardLayout.swift. MIT: ThirdPartyNotices/FiestaBoardTV-MIT.txt.
+// Vendored from fiestaboard-tvos@f1fc67d Sources/Core/BoardLayout.swift. Phone API adapters below.
 import CoreGraphics
 import Foundation
 
@@ -34,23 +34,30 @@ public struct BoardLayout: Sendable {
     public let width: Double
     public let height: Double
     public let tileHeight: Double
-    /// Vertical stretch (W4): tiles, gutters and seams are this much taller than the width-bound
-    /// board's; widths are unchanged. 1 = the hardware's aspect. Hosts that give a board more
-    /// height than its width needs (the editor's stage) use it instead of a `scaleEffect`, so the
-    /// letters are drawn, not smeared.
     public private(set) var stretch: Double = 1
-
-    /// Glyph font size as a fraction of tile height. FiestaUI uses 0.38–0.40
-    /// (`board-metrics.ts`), which leaves letters a third of the flap tall and
-    /// unreadable at phone sizes. A real split-flap letter fills well over half
-    /// the flap: at 0.72 Spline Sans Mono's cap height (0.727 em) is 0.52 of the
-    /// tile height and its advance (0.60 em) is 0.62 of the tile width
-    /// (`BoardGeometry.tileWidthRatio` 0.70). iOS-R2, wave 2.
-    public static let fontSizeRatio = 0.72
-
-    /// Letters grow a little with a stretch (never past `maxGlyphStretch`), keeping their shape.
-    public var fontSize: Double { tileHeight * Self.fontSizeRatio * min(stretch, Self.maxGlyphStretch) }
     public static let maxGlyphStretch = 1.15
+    /// A10: one bezel per Note for a note array, row by row; empty for a
+    /// merged grid.
+    public let notes: [NoteBezel]
+    public let bezelBorder: Double
+    public let bezelRadius: Double
+
+    public init(tiles: [TileRect], width: Double, height: Double, tileHeight: Double,
+                notes: [NoteBezel] = [], bezelBorder: Double = 0, bezelRadius: Double = 0) {
+        self.tiles = tiles
+        self.width = width
+        self.height = height
+        self.tileHeight = tileHeight
+        self.notes = notes
+        self.bezelBorder = bezelBorder
+        self.bezelRadius = bezelRadius
+    }
+
+    /// Glyph size as a fraction of tile height, matching FiestaUI's board
+    /// steps (28px tile → 16px text at the lg breakpoint).
+    public static let fontSizeRatio = 0.40
+
+    public var fontSize: Double { tileHeight * Self.fontSizeRatio * min(stretch, Self.maxGlyphStretch) }
 
     /// The size `make` would produce, without building its tiles.
     ///
@@ -58,39 +65,34 @@ public struct BoardLayout: Sendable {
     /// the tiles; so is asking whether a grid suits a screen. An 85" panel
     /// is 810 tiles, so measuring through `make` allocated a whole board to
     /// read two numbers off it.
-    public static func size(rows: Int, cols: Int,
-                            tileHeight: Double, seams: NoteSeams? = nil, stretch: Double = 1) -> (width: Double, height: Double) {
+    public static func size(rows: Int, cols: Int, tileHeight: Double,
+                            noteArray: Bool = false) -> (width: Double, height: Double) {
         guard rows > 0, cols > 0, tileHeight > 0 else { return (0, 0) }
-        let s = stretch.isFinite ? max(stretch, 0.01) : 1
-        let gutter = tileHeight * BoardGeometry.tileGutterRatio
-        let colPitch = tileHeight * BoardGeometry.tileWidthRatio + gutter
+        if noteArray {
+            return (NoteArray.extent(count: cols, per: NoteArray.cols, tile: BoardGeometry.tileWidthRatio) * tileHeight,
+                    NoteArray.extent(count: rows, per: NoteArray.rows, tile: 1) * tileHeight)
+        }
+        let (tileWidth, gutter) = metrics(tileHeight: tileHeight)
+        let colPitch = tileWidth + gutter
         let rowPitch = tileHeight + gutter
-        let extra = tileHeight * NoteSeams.extraRatio
-        let colSeams = seams.map { Double((cols - 1) / $0.everyCols) } ?? 0
-        let rowSeams = seams.map { Double((rows - 1) / $0.everyRows) } ?? 0
         // Borderless: the trailing gutter is not part of the board.
-        return (Double(cols) * colPitch - gutter + colSeams * extra,
-                (Double(rows) * rowPitch - gutter + rowSeams * extra) * s)
+        return (Double(cols) * colPitch - gutter, Double(rows) * rowPitch - gutter)
     }
 
-    /// Note-array seams (mobile addition; neither TV app has them): a wider
-    /// gutter after every 15th column and every 3rd row so the individual
-    /// Notes read as separate boards (FiestaUI `board-display.js:202-226`).
-    public struct NoteSeams: Equatable, Sendable {
-        public let everyCols: Int
-        public let everyRows: Int
-        /// Extra gutter at a seam as a fraction of tile height (web: 8px seam
-        /// against a 5px gap on a 34px md tile → about 0.15·h more).
-        public static let extraRatio = 0.16
-        public static let notes = NoteSeams(everyCols: BoardGeometry.noteCols, everyRows: BoardGeometry.noteRows)
-        public init(everyCols: Int, everyRows: Int) {
-            self.everyCols = max(1, everyCols); self.everyRows = max(1, everyRows)
-        }
+    /// A tile's width and the gutter, from its height, as FiestaUI
+    /// `board-metrics.ts` derives them: each rounded to a whole point
+    /// (`width = round(h × 0.70)`, `gutter = round(h × 0.145)`), so the
+    /// web, Figma and the TV agree at integer pixels. At 07b's 46 pt tile
+    /// that is 32 / 7, and a 29 × 12 board of 1124 × 629 (`149:182628`);
+    /// unrounded, it drifted 3.4 pt over 29 columns. The radius is
+    /// paint-only and stays exact, as in FiestaUI. (Note arrays, A10, keep
+    /// their own seam geometry.)
+    public static func metrics(tileHeight h: Double) -> (width: Double, gutter: Double) {
+        ((h * BoardGeometry.tileWidthRatio).rounded(), (h * BoardGeometry.tileGutterRatio).rounded())
     }
 
     public static func make(rows: Int, cols: Int, cells: [[BoardCell]], tileHeight: Double,
-                            seams: NoteSeams? = nil, stretch: Double = 1) -> BoardLayout {
-        let s = stretch.isFinite ? max(stretch, 0.01) : 1
+                            noteArray: Bool = false) -> BoardLayout {
         // The dimension ceiling is a second belt behind `PanelFrame`'s decode
         // clamp: `rows * cols` below is an unchecked Int multiply feeding
         // `reserveCapacity`, and a grid assembled in code rather than decoded
@@ -101,13 +103,13 @@ public struct BoardLayout: Sendable {
             return BoardLayout(tiles: [], width: 0, height: 0, tileHeight: max(tileHeight, 0))
         }
 
+        if noteArray { return makeNotes(rows: rows, cols: cols, cells: cells, tileHeight: tileHeight) }
+
         let h = tileHeight
-        let tileWidth = h * BoardGeometry.tileWidthRatio
-        let gutter = h * BoardGeometry.tileGutterRatio
+        let (tileWidth, gutter) = metrics(tileHeight: h)
         let radius = h * BoardGeometry.tileRadiusRatio
         let colPitch = tileWidth + gutter
         let rowPitch = h + gutter
-        let extra = h * NoteSeams.extraRatio
 
         var tiles: [TileRect] = []
         tiles.reserveCapacity(rows * cols)
@@ -117,18 +119,69 @@ public struct BoardLayout: Sendable {
                 // is a normal transient state, not a crash.
                 let cell: BoardCell = (row < cells.count && col < cells[row].count)
                     ? cells[row][col] : .blank
-                let colSeams = seams.map { Double(col / $0.everyCols) } ?? 0
-                let rowSeams = seams.map { Double(row / $0.everyRows) } ?? 0
                 tiles.append(TileRect(row: row, col: col,
-                                      x: Double(col) * colPitch + colSeams * extra,
-                                      y: (Double(row) * rowPitch + rowSeams * extra) * s,
-                                      width: tileWidth, height: h * s, radius: radius,
+                                      x: Double(col) * colPitch,
+                                      y: Double(row) * rowPitch,
+                                      width: tileWidth, height: h, radius: radius,
                                       cell: cell))
             }
         }
 
-        let total = size(rows: rows, cols: cols, tileHeight: h, seams: seams, stretch: s)
-        return BoardLayout(tiles: tiles, width: total.width, height: total.height, tileHeight: h, stretch: s)
+        // Borderless: the trailing gutter is not part of the board.
+        return BoardLayout(tiles: tiles,
+                           width: Double(cols) * colPitch - gutter,
+                           height: Double(rows) * rowPitch - gutter,
+                           tileHeight: h)
+    }
+
+    /// A10 (DD5): a note array as separate Notes. Every cell is drawn; seams
+    /// fall every 15 columns and 3 rows; each Note gets its own bezel, and
+    /// a trailing partial Note's is cut open on its free side.
+    private static func makeNotes(rows: Int, cols: Int, cells: [[BoardCell]], tileHeight h: Double) -> BoardLayout {
+        let tileWidth = h * BoardGeometry.tileWidthRatio
+        let radius = h * BoardGeometry.tileRadiusRatio
+        let xs = (0..<cols).map { NoteArray.offset($0, per: NoteArray.cols, tile: BoardGeometry.tileWidthRatio) * h }
+        let ys = (0..<rows).map { NoteArray.offset($0, per: NoteArray.rows, tile: 1) * h }
+
+        var tiles: [TileRect] = []
+        tiles.reserveCapacity(rows * cols)
+        for row in 0..<rows {
+            for col in 0..<cols {
+                let cell: BoardCell = (row < cells.count && col < cells[row].count)
+                    ? cells[row][col] : .blank
+                tiles.append(TileRect(row: row, col: col, x: xs[col], y: ys[row],
+                                      width: tileWidth, height: h, radius: radius, cell: cell))
+            }
+        }
+
+        let across = NoteArray.edges(count: cols, per: NoteArray.cols, tile: BoardGeometry.tileWidthRatio)
+        let down = NoteArray.edges(count: rows, per: NoteArray.rows, tile: 1)
+        let notes = down.flatMap { y in
+            across.map { x in
+                NoteBezel(rect: CGRect(x: x.start * h, y: y.start * h,
+                                       width: (x.end - x.start) * h, height: (y.end - y.start) * h),
+                          openRight: x.open, openBottom: y.open)
+            }
+        }
+        return BoardLayout(tiles: tiles,
+                           width: (across.last?.end ?? 0) * h,
+                           height: (down.last?.end ?? 0) * h,
+                           tileHeight: h, notes: notes,
+                           bezelBorder: NoteArray.borderRatio * h,
+                           bezelRadius: NoteArray.radiusRatio * h)
+    }
+
+    /// Whether a `rows` × `cols` grid, drawn, is close enough to `screen`'s
+    /// shape that offering to re-fit it would be noise: within 25 % of its
+    /// aspect. Size is what fit absorbs; shape is what it can't. The
+    /// viewer's resize offer and Panels' "fits this TV" both ask this, so
+    /// they can never disagree.
+    public static func gridSuits(rows: Int, cols: Int, noteArray: Bool, screen: CGSize) -> Bool {
+        guard rows > 0, cols > 0, screen.width > 0, screen.height > 0 else { return false }
+        let base = size(rows: rows, cols: cols, tileHeight: 100, noteArray: noteArray)
+        guard base.height > 0 else { return false }
+        let screenAspect = Double(screen.width / screen.height)
+        return abs(base.width / base.height - screenAspect) / screenAspect < 0.25
     }
 
     /// Lay the board out at whatever tile height makes it meet the screen
@@ -136,8 +189,7 @@ public struct BoardLayout: Sendable {
     public static func fitting(rows: Int, cols: Int, cells: [[BoardCell]],
                                in screen: CGSize, mode: BoardSizing,
                                diagonalInches: Double = 0, calibration: Double = 1,
-                               colPitchIn: Double = BoardGeometry.colPitchIn,
-                               seams: NoteSeams? = nil) throws -> BoardLayout {
+                               colPitchIn: Double = BoardGeometry.colPitchIn, noteArray: Bool = false) throws -> BoardLayout {
         guard screen.width > 0, screen.height > 0 else {
             throw BoardGeometry.Error.nonPositive("screen \(screen.width)×\(screen.height)")
         }
@@ -149,7 +201,7 @@ public struct BoardLayout: Sendable {
         // same two-pass shape the web viewer uses (render, measure the grid,
         // apply a transform) without needing a real measurement.
         let reference = 100.0
-        let base = size(rows: rows, cols: cols, tileHeight: reference, seams: seams)
+        let base = size(rows: rows, cols: cols, tileHeight: reference, noteArray: noteArray)
 
         let scale: Double
         switch mode {
@@ -167,6 +219,51 @@ public struct BoardLayout: Sendable {
                                   calibration: calibration, colPitchIn: colPitchIn))
         }
 
-        return make(rows: rows, cols: cols, cells: cells, tileHeight: reference * scale, seams: seams)
+        // Whole-point widths and gutters can round a fitted board a few
+        // points past the screen. Step the tile height down until it fits.
+        // True scale keeps its physical size: calibration may overflow.
+        var tileHeight = reference * scale
+        while mode == .fit, tileHeight > 0.1 {
+            let fitted = size(rows: rows, cols: cols, tileHeight: tileHeight, noteArray: noteArray)
+            if fitted.width <= Double(screen.width) + 1e-9, fitted.height <= Double(screen.height) + 1e-9 { break }
+            tileHeight -= 0.05
+        }
+        return make(rows: rows, cols: cols, cells: cells, tileHeight: tileHeight, noteArray: noteArray)
+    }
+
+    // Phone API adapter: the kept editor supplies seams and vertical stretch.
+    public struct NoteSeams: Equatable, Sendable {
+        public let everyCols: Int
+        public let everyRows: Int
+        /// Extra gutter at a seam as a fraction of tile height (web: 8px seam
+        /// against a 5px gap on a 34px md tile → about 0.15·h more).
+        public static let extraRatio = 0.16
+        public static let notes = NoteSeams(everyCols: BoardGeometry.noteCols, everyRows: BoardGeometry.noteRows)
+        public init(everyCols: Int, everyRows: Int) {
+            self.everyCols = max(1, everyCols); self.everyRows = max(1, everyRows)
+        }
+    }
+
+
+    public static func size(rows: Int, cols: Int, tileHeight: Double, seams: NoteSeams?, stretch: Double = 1) -> (width: Double, height: Double) {
+        let base = size(rows: rows, cols: cols, tileHeight: tileHeight, noteArray: seams != nil)
+        return (base.width, base.height * (stretch.isFinite ? max(0.01, stretch) : 1))
+    }
+    public static func make(rows: Int, cols: Int, cells: [[BoardCell]], tileHeight: Double, seams: NoteSeams? = nil, stretch: Double) -> BoardLayout {
+        scaled(make(rows: rows, cols: cols, cells: cells, tileHeight: tileHeight, noteArray: seams != nil), stretch: stretch)
+    }
+    public static func make(rows: Int, cols: Int, cells: [[BoardCell]], tileHeight: Double, seams: NoteSeams?) -> BoardLayout {
+        make(rows: rows, cols: cols, cells: cells, tileHeight: tileHeight, noteArray: seams != nil)
+    }
+    private static func scaled(_ base: BoardLayout, stretch: Double) -> BoardLayout {
+        let s = stretch.isFinite ? max(0.01, stretch) : 1
+        var result = BoardLayout(tiles: base.tiles.map { TileRect(row: $0.row, col: $0.col, x: $0.x, y: $0.y * s,
+            width: $0.width, height: $0.height * s, radius: $0.radius, cell: $0.cell) },
+            width: base.width, height: base.height * s, tileHeight: base.tileHeight,
+            notes: base.notes.map { NoteBezel(rect: CGRect(x: $0.rect.minX, y: $0.rect.minY * s,
+                width: $0.rect.width, height: $0.rect.height * s), openRight: $0.openRight, openBottom: $0.openBottom) },
+            bezelBorder: base.bezelBorder, bezelRadius: base.bezelRadius)
+        result.stretch = s
+        return result
     }
 }

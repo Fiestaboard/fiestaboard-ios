@@ -1,4 +1,4 @@
-// Vendored from fiestaboard-appletv@a3df9c9 Sources/Render/FlapPhysics.swift. MIT: ThirdPartyNotices/FiestaBoardTV-MIT.txt.
+// Vendored from fiestaboard-tvos@f1fc67d Sources/Render/FlapPhysics.swift. MIT: ThirdPartyNotices/FiestaBoardTV-MIT.txt.
 import Foundation
 
 /// One leaf of a split-flap, from the moment the drum lets it go to the

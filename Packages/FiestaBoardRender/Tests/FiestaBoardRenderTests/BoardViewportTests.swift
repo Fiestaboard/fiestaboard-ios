@@ -21,6 +21,14 @@ final class BoardViewportTests: XCTestCase {
         XCTAssertEqual(geometry.label(page: 1), "Note 2 of 3")
     }
 
+    func testPartialNotesDoNotInventCells() {
+        let geometry = BoardViewportGeometry(rows: 4, cols: 34, viewportWidth: 200, notes: true)
+        XCTAssertEqual(geometry.noteCount, 6)
+        XCTAssertEqual(geometry.bounds(page: 5).rows, 3..<4)
+        XCTAssertEqual(geometry.bounds(page: 5).cols, 30..<34)
+        XCTAssertEqual(geometry.bounds(page: 99).cols, 30..<34)
+    }
+
     func testInvalidInputsRemainFiniteAndBounded() {
         let geometry = BoardViewportGeometry(rows: Int.max, cols: Int.max, viewportWidth: .nan, tileHeight: .infinity)
         XCTAssertEqual(geometry.rows, BoardFrame.maxDimension)

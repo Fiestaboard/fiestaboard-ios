@@ -1,4 +1,4 @@
-// Vendored from fiestaboard-appletv@a3df9c9 Sources/Render/BoardCanvas.swift. MIT: ThirdPartyNotices/FiestaBoardTV-MIT.txt.
+// Vendored from fiestaboard-tvos@f1fc67d Sources/Render/BoardCanvas.swift. MIT: ThirdPartyNotices/FiestaBoardTV-MIT.txt.
 // Mobile changes: FiestaUI face tokens via `FlapPalette` (surface #0d0d0d,
 // inset pigment chips, red heart), a parameterised flap step, and the loading
 // drum. The debug pacing probe stays in the TV app.
@@ -52,6 +52,7 @@ public struct BoardCanvas: View {
         TimelineView(.animation(minimumInterval: 1.0 / 60.0,
                                 paused: !spinning && (transition == nil || !animated || reduceMotion))) { timeline in
             Canvas(opaque: false, rendersAsynchronously: false) { context, _ in
+                Self.paintNoteBezels(layout, palette: palette, in: &context)
                 if spinning {
                     Self.paintLoading(layout, palette: palette, code62: code62, step: step, at: timeline.date, in: &context)
                     return
@@ -86,6 +87,29 @@ public struct BoardCanvas: View {
             try? await Task.sleep(nanoseconds: UInt64((transition?.duration ?? 0) * 1_000_000_000))
             guard !Task.isCancelled, transition?.startedAt == startedAt else { return }
             transition = nil
+        }
+    }
+
+    static func paintNoteBezels(_ layout: BoardLayout, palette: FlapPalette,
+                                in context: inout GraphicsContext) {
+        guard !layout.notes.isEmpty else { return }
+        let white = palette.whiteHardware
+        let fill = Color(boardHex: (white ? FiestaTokenValues.Board.bezelLight : FiestaTokenValues.Board.bezelDark).hex)
+        let edge = Color(boardHex: (white ? FiestaTokenValues.Board.bezelBorderLight
+                                     : FiestaTokenValues.Board.bezelBorderDark).hex)
+        let border = layout.bezelBorder
+        let radius = layout.bezelRadius
+        let past = radius + border
+        for note in layout.notes {
+            var bezel = context
+            bezel.clip(to: Path(note.rect))
+            var face = note.rect
+            if note.openRight { face.size.width += past }
+            if note.openBottom { face.size.height += past }
+            bezel.fill(Path(roundedRect: face, cornerRadius: radius, style: .circular), with: .color(fill))
+            bezel.stroke(Path(roundedRect: face.insetBy(dx: border / 2, dy: border / 2),
+                              cornerRadius: max(0, radius - border / 2), style: .circular),
+                         with: .color(edge), lineWidth: border)
         }
     }
 
