@@ -3,3 +3,7 @@
 Tokens/platform-ios.json:generic-api-key:5
 Tokens/platform-ios.json:generic-api-key:8
 Tokens/platform-ios.json:generic-api-key:27
+# I5 byte-exact login recording from the isolated synthetic contract_admin hub.
+# Recorder revokes this token before exit; SOURCE.json and the revoked HTTP
+# response preserve provenance. Never suppress production mobile credentials.
+Tests/Fixtures/device-login.json:generic-api-key:1
