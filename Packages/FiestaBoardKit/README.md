@@ -12,16 +12,17 @@ Mutation results distinguish accepted, held, not sent, and selection stored with
 
 `DemoFiestaBoardService()` throws if its bundled fixtures are invalid. It never creates a network session. Its status uses `isDemo == true` and `access == .simulated`; all controls must be labelled simulated. `setSimulation(_:)` selects accepted, held, partial, rejected or unknown results. It contains two representative boards and pages, including a pixel board whose renderer is unsupported. Text layout is a simple deterministic demonstration, not server word-wrap parity. Demo changes disappear when the service is recreated.
 
-Sessions use isolated ephemeral URLSession contexts and an explicit in-memory cookie jar scoped to the entire deployment identity, including port and prefix. Only `fiestaboard_session` is retained; passwords are never persisted. Cookies honor host-only/domain, path boundaries, Secure and expiry/deletion. Explicit Domain cookies must equal the issuing host; parent-domain cookies are deliberately refused. Redirects and HTTP authentication challenges are refused. System TLS trust validation remains in place. URLs with credentials, queries, fragments, traversal, percent escapes or unsafe API path segments are rejected. Local HTTP needs explicit opt-in and a loopback/private/link-local/.local address.
+Native sessions use ephemeral URLSession contexts and `fb_mob_` bearer tokens with `control` scope. Login posts phone metadata to `/auth/device/login`; pairing claim accepts I10's single-use code. Browser cookies are ignored and never restored. Tokens persist only with consent in a per-deployment, device-only Keychain envelope bound to the observed installation and connection generation. A 401 clears that hub's active and remembered token. A stale queued request cannot acquire a replacement login's credential.
 
-Keychain session persistence, Bonjour discovery, first-run account setup, Home Assistant ingress authentication, OAuth, administration, exhaustive device rendering and physical-device verification are not implemented. No supported-version/release claim follows from these fixture tests.
+`SavedHubsStore` keeps nonsecret hub metadata and exactly one active deployment; each immutable service and Keychain item remains scoped to the full validated deployment URL. Passwords and pairing codes are request-only. The tvOS request-budget policy is ported with a shared four-request FIFO budget per deployment, cancellation checks before dispatch, HTTP-date and integer `Retry-After`, and retained server `Date`. Requests are never retried automatically. Redirect refusal, system TLS trust and explicit local-HTTP consent remain enforced.
+
+The I5 auth fixtures in `Tests/Fixtures` are recorded unchanged from the pinned real hub in Docker. `scripts/contract-live.sh` records fresh temporary responses and runs the Kit decoder contract against those actual bytes. Legacy editor capability gates remain scoped to their audited feature contracts; I5 does not grant new display/editor mutations merely from a version string.
+
 
 Run from the repository root:
 
 ```sh
-env CLANG_MODULE_CACHE_PATH="$PWD/.build/clang" \
-    SWIFTPM_MODULECACHE_OVERRIDE="$PWD/.build/module" \
-    swift test --package-path Packages/FiestaBoardKit --disable-sandbox --scratch-path .build/draft-core
+IOS_SLICE=i5 scripts/test.sh packages --disable-sandbox --scratch-path .build/draft-core
 ```
 
 Fixtures are synthetic, hand-authored from the pinned v10 contracts and source, not recordings from physical hardware. The adapter is grounded in archived FiestaBoard commit `2ced809c8fe20d4ac6e5dc6603d691c8cb4e475a`, the [pinned public schema](../../Contracts/public-openapi.json), and the [pinned internal schema](../../Contracts/mobile-internal-openapi.json). `/api` is the proxy prefix added after the deployment prefix; the paths below are schema paths.

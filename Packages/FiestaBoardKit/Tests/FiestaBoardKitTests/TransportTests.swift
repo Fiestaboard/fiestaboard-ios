@@ -80,52 +80,46 @@ final class TransportTests: XCTestCase {
         let response = try await transport().send(APIRequest(.post, path: ["v1", "boards", "b2", "message"]))
         XCTAssertEqual(response.status, 202)
     }
-    func testSessionCookieDoesNotCrossDeploymentPrefixPortOrFreshContext() async throws {
+    func testMobileTokenDoesNotCrossDeploymentPrefixPortOrFreshContext() async throws {
         let log = RequestLog()
         FixtureURLProtocol.handler = { r in
             log.append(r)
-            return (200, r.url!.path.hasSuffix("login") ? ["Set-Cookie": "fiestaboard_session=private; Path=/; Secure; HttpOnly"] : [:], Data("{}".utf8))
+            return (200, [:], r.url!.path.hasSuffix("login") ? MobileFixture.reply("private") : Data("{}".utf8))
         }
         let a = try transport()
-        _ = try await a.send(APIRequest(.post, path: ["auth", "login"]))
+        _ = try await a.send(APIRequest(.post, path: ["auth", "device", "login"]))
         _ = try await a.send(APIRequest(path: ["auth", "status"]))
         _ = try await transport("https://board.test/other").send(APIRequest(path: ["auth", "status"]))
         _ = try await transport("https://board.test:8443/prefix").send(APIRequest(path: ["auth", "status"]))
         _ = try await transport().send(APIRequest(path: ["auth", "status"]))
         await a.resetSession()
         _ = try await a.send(APIRequest(path: ["auth", "status"]))
-        XCTAssertEqual(log.requests[1].value(forHTTPHeaderField: "Cookie"), "fiestaboard_session=private")
-        for index in [0, 2, 3, 4, 5] { XCTAssertNil(log.requests[index].value(forHTTPHeaderField: "Cookie")) }
-        XCTAssertEqual(log.requests[0].url!.path, "/prefix/api/auth/login")
+        XCTAssertEqual(log.requests[1].value(forHTTPHeaderField: "Authorization"), "Bearer fb_mob_private")
+        for index in [0, 2, 3, 4, 5] { XCTAssertNil(log.requests[index].value(forHTTPHeaderField: "Authorization")) }
+        XCTAssertEqual(log.requests[0].url!.path, "/prefix/api/auth/device/login")
     }
-    func testCookieHostDomainPathSecureExpiryAndDeletion() throws {
-        var jar = SessionCookieJar()
-        let source = URL(string: "https://board.test/api/auth/login")!
-        jar.receive("fiestaboard_session=host; Path=/api; Secure; HttpOnly", from: source)
-        XCTAssertEqual(jar.header(for: URL(string: "https://board.test/api/auth/status")!), "fiestaboard_session=host")
-        for url in ["https://child.board.test/api/x", "https://board.test/apix", "http://board.test/api/x", "https://evil.test/api/x"] {
-            XCTAssertNil(jar.header(for: URL(string: url)!))
+    func testBrowserCookieHeadersAreAlwaysIgnored() async throws {
+        let log = RequestLog()
+        FixtureURLProtocol.handler = { request in
+            log.append(request)
+            return (200, ["Set-Cookie":"fiestaboard_session=browser; Path=/; Secure"], Data("{}".utf8))
         }
-        jar.receive("fiestaboard_session=domain; Domain=board.test; Path=/api; Max-Age=60", from: source)
-        XCTAssertEqual(jar.header(for: URL(string: "https://child.board.test/api/x")!), "fiestaboard_session=domain")
-        XCTAssertNil(jar.header(for: source, now: Date().addingTimeInterval(120)))
-        jar.receive("fiestaboard_session=bad; Domain=evil.test; Path=/", from: source)
-        XCTAssertNil(jar.header(for: URL(string: "https://evil.test/")!))
-        jar.receive("fiestaboard_session=deleted; Path=/api; Max-Age=0", from: source)
-        XCTAssertNil(jar.header(for: source))
-        jar.receive("irrelevant_cookie=secret; Path=/", from: source)
-        XCTAssertNil(jar.header(for: source))
+        let t = try transport()
+        _ = try await t.send(APIRequest(path: ["auth", "status"]))
+        _ = try await t.send(APIRequest(path: ["boards"]))
+        XCTAssertTrue(log.requests.allSatisfy { $0.value(forHTTPHeaderField: "Cookie") == nil && $0.value(forHTTPHeaderField: "Authorization") == nil })
     }
+
 }
 
-final class DeferredCookieResponse: @unchecked Sendable {
+final class DeferredTransportResponse: @unchecked Sendable {
     private let lock = NSLock()
-    private var pending: DeferredCookieURLProtocol?
-    private var capturedCookies: [String?] = []
-    var cookies: [String?] { lock.withLock { capturedCookies } }
+    private var pending: DeferredTransportURLProtocol?
+    private var capturedAuthorizations: [String?] = []
+    var authorizations: [String?] { lock.withLock { capturedAuthorizations } }
     private var waiter: CheckedContinuation<Void, Never>?
-    func capture(_ value: DeferredCookieURLProtocol) {
-        let waiting = lock.withLock { capturedCookies.append(value.request.value(forHTTPHeaderField: "Cookie")); pending = value; let w = waiter; waiter = nil; return w }
+    func capture(_ value: DeferredTransportURLProtocol) {
+        let waiting = lock.withLock { capturedAuthorizations.append(value.request.value(forHTTPHeaderField: "Authorization")); pending = value; let w = waiter; waiter = nil; return w }
         waiting?.resume()
     }
     func waitUntilPending() async {
@@ -139,8 +133,8 @@ final class DeferredCookieResponse: @unchecked Sendable {
         request?.respond(headers: ["Set-Cookie":"fiestaboard_session=stale; Path=/; Secure"])
     }
 }
-final class DeferredCookieURLProtocol: URLProtocol, @unchecked Sendable {
-    nonisolated(unsafe) static var coordinator: DeferredCookieResponse!
+final class DeferredTransportURLProtocol: URLProtocol, @unchecked Sendable {
+    nonisolated(unsafe) static var coordinator: DeferredTransportResponse!
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func startLoading() { Self.coordinator.capture(self) }
@@ -153,11 +147,11 @@ final class DeferredCookieURLProtocol: URLProtocol, @unchecked Sendable {
     }
 }
 extension TransportTests {
-    func testSessionResetRejectsLateResponseBeforeInstallingItsCookie() async throws {
-        let coordinator = DeferredCookieResponse()
-        DeferredCookieURLProtocol.coordinator = coordinator
-        let transport = URLSessionTransport(deployment: try DeploymentURL("https://board.test/prefix"), protocolClasses: [DeferredCookieURLProtocol.self])
-        let oldLogin = Task { try await transport.send(APIRequest(.post, path: ["auth", "login"])) }
+    func testSessionResetRejectsLateResponseBeforeInstallingItsCredential() async throws {
+        let coordinator = DeferredTransportResponse()
+        DeferredTransportURLProtocol.coordinator = coordinator
+        let transport = URLSessionTransport(deployment: try DeploymentURL("https://board.test/prefix"), protocolClasses: [DeferredTransportURLProtocol.self])
+        let oldLogin = Task { try await transport.send(APIRequest(.post, path: ["auth", "device", "login"])) }
         await coordinator.waitUntilPending()
         await transport.resetSession()
         coordinator.release()
@@ -165,7 +159,7 @@ extension TransportTests {
         catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
         let status = Task { try await transport.send(APIRequest(path: ["auth", "status"])) }
         await coordinator.waitUntilPending()
-        XCTAssertNil(coordinator.cookies.last ?? nil)
+        XCTAssertNil(coordinator.authorizations.last ?? nil)
         coordinator.release()
         _ = try await status.value
     }
@@ -213,7 +207,7 @@ extension TransportTests {
     }
     func testOnboardingAndSafeValidationErrorsAreTypedWithoutRawSecrets() async throws {
         let cases: [(Int, [String], String, FiestaBoardError)] = [
-            (401, ["auth", "login"], #"{"detail":"Invalid username or password"}"#, .invalidCredentials),
+            (401, ["auth", "device", "login"], #"{"detail":"Invalid username or password"}"#, .invalidCredentials),
             (409, ["v1", "boards"], #"{"detail":"Setup required","setup_required":true,"first_run":true}"#, .setupRequired(firstRun: true)),
             (409, ["auth", "setup"], #"{"detail":"Already set up"}"#, .onboardingConflict(.alreadySetUp)),
             (409, ["auth", "preference"], #"{"detail":"Auth mode is pinned by FIESTABOARD_AUTH_ENABLED."}"#, .onboardingConflict(.modePinned)),
@@ -256,25 +250,25 @@ extension TransportTests {
     }
 }
 
-/// Only the logout reply is suspended; setup/status still exercise the real transport cookie jar.
-private final class OnboardingCookieCoordinator: @unchecked Sendable {
+/// Only the logout reply is suspended; login/status still exercise the real bearer transport.
+private final class NativeAuthenticationCoordinator: @unchecked Sendable {
     private let lock = NSLock()
-    private var pending: OnboardingCookieURLProtocol?
+    private var pending: NativeAuthenticationURLProtocol?
     private var waiter: CheckedContinuation<Void, Never>?
     private var recorded: [URLRequest] = []
     var requests: [URLRequest] { lock.withLock { recorded } }
-    func receive(_ value: OnboardingCookieURLProtocol) {
+    func receive(_ value: NativeAuthenticationURLProtocol) {
         let request = value.request
         let waiting = lock.withLock { () -> CheckedContinuation<Void, Never>? in
             recorded.append(request)
-            if request.url!.lastPathComponent == "logout" {
+            if request.url!.lastPathComponent == "session" {
                 pending = value; let result = waiter; waiter = nil; return result
             }
             return nil
         }
-        if request.url!.lastPathComponent == "logout" { waiting?.resume(); return }
-        if request.url!.lastPathComponent == "setup" {
-            value.respond(status: 201, headers: ["Set-Cookie": "fiestaboard_session=replacement; Path=/; Secure"], data: Data(#"{"status":"ok"}"#.utf8))
+        if request.url!.lastPathComponent == "session" { waiting?.resume(); return }
+        if request.url!.lastPathComponent == "login" {
+            value.respond(status: 200, headers: [:], data: MobileFixture.reply("replacement"))
         } else {
             value.respond(status: 200, headers: [:], data: fixture("auth"))
         }
@@ -290,8 +284,8 @@ private final class OnboardingCookieCoordinator: @unchecked Sendable {
         value?.respond(status: 200, headers: ["Set-Cookie": "fiestaboard_session=; Path=/; Max-Age=0"], data: Data(#"{"status":"ok"}"#.utf8))
     }
 }
-private final class OnboardingCookieURLProtocol: URLProtocol, @unchecked Sendable {
-    nonisolated(unsafe) static var coordinator: OnboardingCookieCoordinator!
+private final class NativeAuthenticationURLProtocol: URLProtocol, @unchecked Sendable {
+    nonisolated(unsafe) static var coordinator: NativeAuthenticationCoordinator!
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func startLoading() { Self.coordinator.receive(self) }
@@ -304,21 +298,21 @@ private final class OnboardingCookieURLProtocol: URLProtocol, @unchecked Sendabl
     }
 }
 extension TransportTests {
-    func testOldLogoutCannotDeleteReplacementSetupCookie() async throws {
-        let coordinator = OnboardingCookieCoordinator()
-        OnboardingCookieURLProtocol.coordinator = coordinator
+    func testOldLogoutCannotDeleteReplacementMobileCredential() async throws {
+        let coordinator = NativeAuthenticationCoordinator()
+        NativeAuthenticationURLProtocol.coordinator = coordinator
         let deployment = try DeploymentURL("https://board.test/prefix")
-        let service = LiveFiestaBoardService(deployment: deployment, transport: URLSessionTransport(deployment: deployment, protocolClasses: [OnboardingCookieURLProtocol.self]))
+        let service = LiveFiestaBoardService(deployment: deployment, transport: URLSessionTransport(deployment: deployment, protocolClasses: [NativeAuthenticationURLProtocol.self]))
         let oldLogout = Task { try await service.logout() }
         await coordinator.waitForLogout()
-        let status = try await service.setupAdministrator(username: "demo", password: "fixture-password")
+        let status = try await service.login(username: "demo", password: "fixture-password")
         XCTAssertEqual(status.bootstrapPhase, .ready)
-        XCTAssertEqual(coordinator.requests.last?.value(forHTTPHeaderField: "Cookie"), "fiestaboard_session=replacement")
+        XCTAssertEqual(coordinator.requests.last?.value(forHTTPHeaderField: "Authorization"), "Bearer fb_mob_replacement")
         coordinator.releaseLogout()
         do { try await oldLogout.value; XCTFail("Expected obsolete logout") }
         catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
         _ = try await service.authStatus()
-        XCTAssertEqual(coordinator.requests.last?.value(forHTTPHeaderField: "Cookie"), "fiestaboard_session=replacement")
-        XCTAssertEqual(coordinator.requests.filter { $0.url!.lastPathComponent == "setup" }.count, 1)
+        XCTAssertEqual(coordinator.requests.last?.value(forHTTPHeaderField: "Authorization"), "Bearer fb_mob_replacement")
+        XCTAssertEqual(coordinator.requests.filter { $0.url!.lastPathComponent == "login" }.count, 1)
     }
 }

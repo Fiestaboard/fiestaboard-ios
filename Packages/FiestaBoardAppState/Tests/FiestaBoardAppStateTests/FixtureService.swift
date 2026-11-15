@@ -106,7 +106,7 @@ private actor FixtureTransport: APITransport {
         if path == ["auth", "status"] {
             return reply(#"{"enabled":false,"setup_required":false,"authenticated":false,"username":null,"mode":"disabled","first_run":false}"#)
         }
-        if path == ["auth", "logout"] { return reply(#"{"status":"ok"}"#) }
+        if path == ["auth", "device", "session"] { return reply(#"{"status":"ok"}"#) }
         if path.starts(with: ["v1", "collections"]) { return try collectionResponse(request) }
         if path == ["v1", "schedules"], request.method == .get {
             guard let boardID = request.queryItems.first(where: { $0.name == "board_id" })?.value,

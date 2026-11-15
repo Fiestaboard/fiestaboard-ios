@@ -14,7 +14,7 @@ public extension SessionVault {
 }
 
 public enum SessionPersistenceWarning: String, Sendable, Equatable {
-    case unavailable, invalidStoredSession, noPersistentCookie, identityRequired, remoteRevocationPending
+    case unavailable, invalidStoredSession, noCredential, identityRequired, remoteRevocationPending
 }
 public struct SessionPersistenceState: Sendable, Equatable {
     public var rememberMe: Bool
@@ -45,7 +45,7 @@ public actor KeychainSessionVault: SessionVault {
     public nonisolated let coordinationID: String
     private let service: String
     private let security: SessionSecurity
-    public init(service: String = "com.fiestaboard.native.remembered-session.v1") {
+    public init(service: String = "com.fiestaboard.native.mobile-session.v3") {
         self.service = service; security = .system; coordinationID = "keychain:" + service
     }
     init(service: String, security: SessionSecurity) {

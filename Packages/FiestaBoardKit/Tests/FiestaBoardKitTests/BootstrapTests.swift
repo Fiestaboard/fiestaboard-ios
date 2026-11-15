@@ -111,7 +111,7 @@ private actor BootstrapPauseTransport: APITransport {
                 health = continuation; waiter?.resume(); waiter = nil
             }
         }
-        if request.path == ["auth", "logout"] { return APIResponse(status: 200, data: Data(#"{"status":"ok"}"#.utf8)) }
+        if request.path == ["auth", "device", "session"] { return APIResponse(status: 200, data: Data(#"{"status":"ok"}"#.utf8)) }
         throw FiestaBoardError.invalidPath
     }
     func waitForHealth() async {
