@@ -229,9 +229,9 @@ import XCTest
         XCTAssertTrue(pageCard(app, named: "Typing test").waitForExistence(timeout: 5))
     }
 
-    // MARK: Against the fixture server (`FIXTURE_PORT=18442 python3 Tests/UITests/fixture_server.py`)
+    // MARK: Against the fixture server (native in-process loopback)
 
-    private var fixturePort: Int { Int(ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "") ?? 18442 }
+    private var fixturePort: Int { Int(FixtureHTTPServer.shared.port) }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
         for _ in 0..<8 { if element.exists && element.isHittable { break }; app.swipeUp() }
         for _ in 0..<8 { if element.exists && element.isHittable { break }; app.swipeDown() }
@@ -242,7 +242,7 @@ import XCTest
         let semaphore = DispatchSemaphore(value: 0); var ready = false
         URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
         semaphore.wait()
-        try XCTSkipUnless(ready, "Start the fixture: FIXTURE_PORT=\(fixturePort) python3 Tests/UITests/fixture_server.py")
+        try XCTSkipUnless(ready, "Native in-process fixture must be reachable")
         app.launchArguments = []; app.launch()
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
         let address = app.textFields["connectionAddress"]

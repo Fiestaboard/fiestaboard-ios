@@ -36,6 +36,7 @@
 		1F4559915E486F9E2FB5C7CF /* TemplateChipFactoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD6BE9A9CDCA742A1B397022 /* TemplateChipFactoryTests.swift */; };
 		204DDA96797CF06C1153ED61 /* BoardControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F8903FDA40B3CA977BB2F9 /* BoardControls.swift */; };
 		216E17622D37BAC98E2FC3E7 /* PageEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0B00B96E005DAE7C0B39B09 /* PageEditing.swift */; };
+		22B9443A49503B0D0E88F817 /* FixtureBoardRoutes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17C9F199741FDCC7AED7601C /* FixtureBoardRoutes.swift */; };
 		237CA8C9E997BD6399A1F7CA /* StrokeTransaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF16DDCF129380FBA1D99C7A /* StrokeTransaction.swift */; };
 		26BDA27FD0C340D492E2AE57 /* LedRasterizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E27F4FC5A09E5E215D1C351A /* LedRasterizer.swift */; };
 		2962C6835DC311B89804BF0E /* Transport.swift in Sources */ = {isa = PBXBuildFile; fileRef = E86A00533E2B630F562A1AC0 /* Transport.swift */; };
@@ -47,6 +48,7 @@
 		3130713C85FE68151D21B7FA /* IntegrationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFA6B31F1D4A49A278398FFE /* IntegrationUITests.swift */; };
 		317946284228F8D8B3A61149 /* EditorCatalogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A023CCB7F747A5D0CA52BA1 /* EditorCatalogStore.swift */; };
 		336375226C2CCDEB20C2CB50 /* PagesListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EA4080F422F75BB6EDCE14D /* PagesListView.swift */; };
+		35AB716CE6F27D9AF8E1BAED /* FixtureRenderRoutes.swift in Sources */ = {isa = PBXBuildFile; fileRef = E560F163CC7CD3785EECA9FF /* FixtureRenderRoutes.swift */; };
 		3894FAE45E2E74C777A940B4 /* TemplateWorkspaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15369EFA8AC57EF5D1976CBE /* TemplateWorkspaceView.swift */; };
 		3925C07AC2DE62611C5593B2 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 303AB3F8B1E5C7F725129E4B /* HomeView.swift */; };
 		397493F0F9A1451945FB4B43 /* Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36CC08CCC9CD15CEF0B9CCC6 /* Strings.swift */; };
@@ -68,6 +70,7 @@
 		50582601962AE7A4F44A1E9D /* SaveUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7387870A8F4C81B3ED477AB0 /* SaveUITests.swift */; };
 		50A9E43CEBC612C1C294E5D8 /* LedGoldenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAA57B032E8ABCB03F5F6FBA /* LedGoldenTests.swift */; };
 		528936A2CB49D90959535576 /* PageThumbnails.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52A87D40ACEF372F34A5DF44 /* PageThumbnails.swift */; };
+		53065753429631D70E1525BF /* FixtureResources in Resources */ = {isa = PBXBuildFile; fileRef = A7730E51D2984234EB854C68 /* FixtureResources */; };
 		547863ABF74A03F815E67ED7 /* InsertMenus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E9C4AE6308D1C7CD19D6872 /* InsertMenus.swift */; };
 		55937AA084B682534045C4A4 /* BoardDocumentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AB3A2DCDAFE040B20C380C9 /* BoardDocumentView.swift */; };
 		58706BFF2DDC3D2BFC6FBC3D /* FiestaBoardRender.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FBC75D21814880B62B94594 /* FiestaBoardRender.framework */; };
@@ -95,6 +98,7 @@
 		80B8E42E3EAFE0CD8F5BC5D3 /* FiestaBoardEditorState.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0CE51B6E8E630F1CA0FAFFB0 /* FiestaBoardEditorState.framework */; };
 		82536B6015C825E11468AE5B /* FiestaBoardKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */; };
 		82C97A471315A3DDFFC9C514 /* FormulaUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BBD25933907F3239D01D6CC /* FormulaUITests.swift */; };
+		8388109738D8C3FA4CCA123A /* MobileSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C53D8997F3544E68E18B8EF /* MobileSession.swift */; };
 		85C5542C66C0B9E38715A622 /* PageEditorLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E01E3327C65040C61DF652 /* PageEditorLoader.swift */; };
 		8731E7E9E82A7BE2C0F2AF0B /* BoardControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39882C2621927BF6BC8C856A /* BoardControlsView.swift */; };
 		8804386F24AF8BDB3CCB26DF /* SaveStatusChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = E75805E7CEFAF72C972DF8E9 /* SaveStatusChip.swift */; };
@@ -103,6 +107,7 @@
 		8BDEEFEE71FB88D45F504691 /* FiestaBoardRender.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8FBC75D21814880B62B94594 /* FiestaBoardRender.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		8CFC43B3AA777E3F0EE5DD3F /* ServerDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADD3E20169D98490321CE3F4 /* ServerDiscovery.swift */; };
 		8D3AD7946A5C657AAF013D03 /* TemplateSyntax.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10B4ECDC3AC96A79FEB3E9B8 /* TemplateSyntax.swift */; };
+		8DDE1FB231FCF7FE53B5FE92 /* BoardViewportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA267F50587A6D860EAB1C52 /* BoardViewportTests.swift */; };
 		8F4B85AC5A6D9B9B1D6092F7 /* RenderHarness.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEEB8028464574196027DECB /* RenderHarness.swift */; };
 		91032EEB1FE52AA2048D9682 /* TemplateChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C43C07B845D0FE960E2F90F /* TemplateChip.swift */; };
 		92535869889AB4DC8D9FF326 /* ServerCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33C9936205557D822BCDBC68 /* ServerCatalog.swift */; };
@@ -148,6 +153,7 @@
 		D40E06040470AFB8F828F7EB /* TokenBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0933149398C08BD5210E486 /* TokenBridgeTests.swift */; };
 		D43899001FDA9127ACD55778 /* ParityFoundationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3562AE76EFEB035CD14EEEF0 /* ParityFoundationUITests.swift */; };
 		D4E2223DF64508E4FAD15563 /* SessionVaultRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F8958AD1F9D24DE397C6D7 /* SessionVaultRuntimeTests.swift */; };
+		D7199A803BF30581101F78E7 /* SavedHubsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A281EA3BF233973EA6278BB /* SavedHubsStore.swift */; };
 		D88BBA90133E35DC15BBD1E3 /* FlapPhysics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08CD0DA7C751195DD5C9810F /* FlapPhysics.swift */; };
 		DBD4590104B773E8C67435CB /* DrawModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FEF31B8E11F52CFE1BCB7B8 /* DrawModeTests.swift */; };
 		DE6EFCA3FA6FFDF71FDC8AB3 /* BoardFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = E749EBB3341BF783F8887540 /* BoardFrame.swift */; };
@@ -161,7 +167,9 @@
 		E6BBBAB3BD99634882D9AAE5 /* Service.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F65FAC9659A00AF389AC325 /* Service.swift */; };
 		E72FF6F47E7D31900577B8CA /* BoardSpeech.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8E18FB72C4DF8369002FD5E /* BoardSpeech.swift */; };
 		E7E8ED86AAF5F1C711BE4712 /* FiestaTokens+Generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3651DAA2826C691CFBAD9F7 /* FiestaTokens+Generated.swift */; };
+		E878502D300A56DBAA91044F /* Fixtures in Resources */ = {isa = PBXBuildFile; fileRef = 30E4C281A2D552E333616B91 /* Fixtures */; };
 		E8F1676D2E7396FD25987850 /* StatusReaderRegistry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F18CFA2EA2DBEE5C93C28AA /* StatusReaderRegistry.swift */; };
+		E91F4C81FF4093CC43277CF9 /* FixtureRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F4F5E3CCE58628FA5AB3938 /* FixtureRouter.swift */; };
 		EA8C26DACBAA907A2F8B24C8 /* CapabilityPolicy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3772403D0456CA285BF0FBC5 /* CapabilityPolicy.swift */; };
 		EB8918048053710E0D7C7D0F /* PolishUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BECB0B3DC31A74CE977E8FDF /* PolishUITests.swift */; };
 		ECCD8C8DE3D983B4431AFAAE /* DeploymentURL.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DD4D3175C0AE6D2D868EC75 /* DeploymentURL.swift */; };
@@ -171,6 +179,7 @@
 		F18D73674B88F338AC475D79 /* GlassProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 289D38D82453F9F4D390146B /* GlassProbe.swift */; };
 		F218BBC6F20AA71BCE632754 /* TerminologyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 161D8A798461B87445FF0872 /* TerminologyTests.swift */; };
 		F22480C129F5A9223D737196 /* TemplateUITextViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11208C1A2EECBA9BE45CCA05 /* TemplateUITextViewTests.swift */; };
+		F3AEBF196B58C50C6D5C48DE /* FixtureHTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B624F5195610C4DE164C4734 /* FixtureHTTPServer.swift */; };
 		F631808CB73FF331EBEBE437 /* BoardCanvasTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48001C341291CD87E52A402 /* BoardCanvasTests.swift */; };
 		F66DFB38BD206FA969D31AF3 /* FiestaBoardRender.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FBC75D21814880B62B94594 /* FiestaBoardRender.framework */; };
 		F848C039BD1C062E2F58429F /* ConnectingSeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56B7BAC4377D0D37819D561E /* ConnectingSeedView.swift */; };
@@ -326,9 +335,11 @@
 		15C46416764E0F39777AFD87 /* RowGutter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RowGutter.swift; sourceTree = "<group>"; };
 		161D8A798461B87445FF0872 /* TerminologyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminologyTests.swift; sourceTree = "<group>"; };
 		17AA72D990ED60C85912AA69 /* GoldenSeedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoldenSeedTests.swift; sourceTree = "<group>"; };
+		17C9F199741FDCC7AED7601C /* FixtureBoardRoutes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureBoardRoutes.swift; sourceTree = "<group>"; };
 		1AF0741C9C94B7EE04EE2C6C /* OutOfSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutOfSync.swift; sourceTree = "<group>"; };
 		1F18CFA2EA2DBEE5C93C28AA /* StatusReaderRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusReaderRegistry.swift; sourceTree = "<group>"; };
 		1F4D28A6F5B7C2A79C4C5E93 /* BoardGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardGeometry.swift; sourceTree = "<group>"; };
+		1F4F5E3CCE58628FA5AB3938 /* FixtureRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureRouter.swift; sourceTree = "<group>"; };
 		1F837BF5BDC91E5D045AD66E /* EditorToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorToolbar.swift; sourceTree = "<group>"; };
 		1FEF31B8E11F52CFE1BCB7B8 /* DrawModeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawModeTests.swift; sourceTree = "<group>"; };
 		233BD4E3B5E7ACACB5CEF599 /* OutOfSyncBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutOfSyncBanner.swift; sourceTree = "<group>"; };
@@ -342,6 +353,7 @@
 		2E21A61E3064CBB07099A3E1 /* FiestaBoardAppState.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FiestaBoardAppState.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2E9C4AE6308D1C7CD19D6872 /* InsertMenus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsertMenus.swift; sourceTree = "<group>"; };
 		303AB3F8B1E5C7F725129E4B /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		30E4C281A2D552E333616B91 /* Fixtures */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fixtures; path = Tests/Fixtures; sourceTree = SOURCE_ROOT; };
 		325C5B5CD67DA69702635A29 /* InsertPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsertPickerSheet.swift; sourceTree = "<group>"; };
 		329CB2667B0AF52C92B8C25F /* CanvasUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasUITests.swift; sourceTree = "<group>"; };
 		32BB9863B236F028ECD38024 /* BoardGeometryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardGeometryTests.swift; sourceTree = "<group>"; };
@@ -377,6 +389,7 @@
 		581F221F9A5F1033AD2FC07A /* BoardSpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardSpec.swift; sourceTree = "<group>"; };
 		5893703E08C61625858B3AD5 /* iOS27 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = iOS27; path = Tests/__Snapshots__/iOS27; sourceTree = SOURCE_ROOT; };
 		5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FiestaBoardKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		5A281EA3BF233973EA6278BB /* SavedHubsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedHubsStore.swift; sourceTree = "<group>"; };
 		5DC63171EF43451C07069156 /* DocumentEditingSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentEditingSession.swift; sourceTree = "<group>"; };
 		5DD2B3159501C8F2330E6630 /* BoardSeamsAndModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardSeamsAndModelTests.swift; sourceTree = "<group>"; };
 		60CD69EE0A48BCB225F494E6 /* PageDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageDetailView.swift; sourceTree = "<group>"; };
@@ -390,6 +403,7 @@
 		78BA57525989C1533ACFDBD0 /* HomeSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSummary.swift; sourceTree = "<group>"; };
 		7AD9A30C4F8E872D7431FC6E /* FlapTilePainter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlapTilePainter.swift; sourceTree = "<group>"; };
 		7C08D403E41B47F96C35871B /* LedRasterizerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedRasterizerTests.swift; sourceTree = "<group>"; };
+		7C53D8997F3544E68E18B8EF /* MobileSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileSession.swift; sourceTree = "<group>"; };
 		8086EA8450423EC1F62DCF79 /* LocalPageEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalPageEditorModel.swift; sourceTree = "<group>"; };
 		80B7025A77DB33DB399EC12D /* FiestaBoard.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FiestaBoard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		81E90191BA9A1E89316C89FC /* FigmaNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FigmaNode.swift; sourceTree = "<group>"; };
@@ -416,6 +430,7 @@
 		A3E7BE5F69B8B5D28D44AE0E /* EditorRemoteActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorRemoteActions.swift; sourceTree = "<group>"; };
 		A5846B98CDA945180CC7B8F3 /* GlassProbeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassProbeTests.swift; sourceTree = "<group>"; };
 		A770AE81F701112EE919E154 /* CollectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionsView.swift; sourceTree = "<group>"; };
+		A7730E51D2984234EB854C68 /* FixtureResources */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FixtureResources; path = Tests/UITests/FixtureResources; sourceTree = SOURCE_ROOT; };
 		AAB69A54A41CFEB488033456 /* VariablePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VariablePickerView.swift; sourceTree = "<group>"; };
 		AB40318E2937E815C0FA1A93 /* CanvasesPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasesPanel.swift; sourceTree = "<group>"; };
 		AC2DA00E01FB82B30F9EA303 /* CanvasShapes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasShapes.swift; sourceTree = "<group>"; };
@@ -427,6 +442,7 @@
 		B111FC6C6933C9409006391C /* PageManagement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageManagement.swift; sourceTree = "<group>"; };
 		B2512A0EBAC2A895F58C8C2B /* Snapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snapshot.swift; sourceTree = "<group>"; };
 		B269490EAA2BC1900A3319B2 /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		B624F5195610C4DE164C4734 /* FixtureHTTPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureHTTPServer.swift; sourceTree = "<group>"; };
 		B91E5864EFCBE5AEB441B033 /* DisplayBadges.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayBadges.swift; sourceTree = "<group>"; };
 		B98F6E2DDC8EAE51732AB38A /* BoardFlipTransition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardFlipTransition.swift; sourceTree = "<group>"; };
 		BA413B675A8CABCA5E05C047 /* Schedules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Schedules.swift; sourceTree = "<group>"; };
@@ -448,9 +464,11 @@
 		D917890812D1A23DDD0D8CA1 /* TokenSentinelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenSentinelTests.swift; sourceTree = "<group>"; };
 		D933B63826F1D92E72A16357 /* CollectionDraft.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionDraft.swift; sourceTree = "<group>"; };
 		D965FB7742D6DBED1F929EE8 /* FiestaBoardRenderTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FiestaBoardRenderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		DA267F50587A6D860EAB1C52 /* BoardViewportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardViewportTests.swift; sourceTree = "<group>"; };
 		DAA57B032E8ABCB03F5F6FBA /* LedGoldenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedGoldenTests.swift; sourceTree = "<group>"; };
 		E0EBDE35CC98E3503AD48784 /* LaunchUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchUITests.swift; sourceTree = "<group>"; };
 		E27F4FC5A09E5E215D1C351A /* LedRasterizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedRasterizer.swift; sourceTree = "<group>"; };
+		E560F163CC7CD3785EECA9FF /* FixtureRenderRoutes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureRenderRoutes.swift; sourceTree = "<group>"; };
 		E5F8903FDA40B3CA977BB2F9 /* BoardControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardControls.swift; sourceTree = "<group>"; };
 		E749EBB3341BF783F8887540 /* BoardFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardFrame.swift; sourceTree = "<group>"; };
 		E75805E7CEFAF72C972DF8E9 /* SaveStatusChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveStatusChip.swift; sourceTree = "<group>"; };
@@ -614,10 +632,12 @@
 				3DD4D3175C0AE6D2D868EC75 /* DeploymentURL.swift */,
 				39295C71C5ED93F6ABEFB0B4 /* FiestaBoardError.swift */,
 				2662195EBC75B32C6C4D1F53 /* Formula.swift */,
+				7C53D8997F3544E68E18B8EF /* MobileSession.swift */,
 				B269490EAA2BC1900A3319B2 /* Models.swift */,
 				F72D5E21E5D6A566C8AF4873 /* Models+Status.swift */,
 				A0B00B96E005DAE7C0B39B09 /* PageEditing.swift */,
 				B111FC6C6933C9409006391C /* PageManagement.swift */,
+				5A281EA3BF233973EA6278BB /* SavedHubsStore.swift */,
 				BA413B675A8CABCA5E05C047 /* Schedules.swift */,
 				EABDE686F7FEDAE342474766 /* ServerAddress.swift */,
 				33C9936205557D822BCDBC68 /* ServerCatalog.swift */,
@@ -788,7 +808,11 @@
 				A0547B69CE895F2F4F57FCF6 /* BoardVisualsUITests.swift */,
 				329CB2667B0AF52C92B8C25F /* CanvasUITests.swift */,
 				6C3F1838186E744DA302ABA0 /* EditorUITests.swift */,
+				17C9F199741FDCC7AED7601C /* FixtureBoardRoutes.swift */,
 				2CBC4260FBD8BBA41BFBF327 /* FixtureConnection.swift */,
+				B624F5195610C4DE164C4734 /* FixtureHTTPServer.swift */,
+				E560F163CC7CD3785EECA9FF /* FixtureRenderRoutes.swift */,
+				1F4F5E3CCE58628FA5AB3938 /* FixtureRouter.swift */,
 				6BBD25933907F3239D01D6CC /* FormulaUITests.swift */,
 				EFA6B31F1D4A49A278398FFE /* IntegrationUITests.swift */,
 				E0EBDE35CC98E3503AD48784 /* LaunchUITests.swift */,
@@ -813,6 +837,8 @@
 		C58BB397D159B1A07CC3AFCA = {
 			isa = PBXGroup;
 			children = (
+				A7730E51D2984234EB854C68 /* FixtureResources */,
+				30E4C281A2D552E333616B91 /* Fixtures */,
 				5893703E08C61625858B3AD5 /* iOS27 */,
 				393B993DA75AE7F6FBE2F623 /* RenderAssets */,
 				ECE34FF7EFE478C4DB307AF6 /* App */,
@@ -855,6 +881,7 @@
 				243B601AF6228C1D6B5AC497 /* BoardLayoutTests.swift */,
 				5DD2B3159501C8F2330E6630 /* BoardSeamsAndModelTests.swift */,
 				AC609C72CB7F40E61999B7DD /* BoardTablesTests.swift */,
+				DA267F50587A6D860EAB1C52 /* BoardViewportTests.swift */,
 				3A04568998109174FE6CF424 /* FlapAtlasTests.swift */,
 				DAA57B032E8ABCB03F5F6FBA /* LedGoldenTests.swift */,
 				7C08D403E41B47F96C35871B /* LedRasterizerTests.swift */,
@@ -1013,6 +1040,7 @@
 			buildConfigurationList = 082DD1B02FF9C66C12318438 /* Build configuration list for PBXNativeTarget "FiestaBoardUITests" */;
 			buildPhases = (
 				5705BC10A7A247D58B03914C /* Sources */,
+				D401ED4DB17F005C7A4614D1 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -1209,6 +1237,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D401ED4DB17F005C7A4614D1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				53065753429631D70E1525BF /* FixtureResources in Resources */,
+				E878502D300A56DBAA91044F /* Fixtures in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -1247,7 +1284,11 @@
 				93667E6F6860BA1EC032359F /* BoardVisualsUITests.swift in Sources */,
 				E1C6F0A591B4B27B2DF568B9 /* CanvasUITests.swift in Sources */,
 				2B60831683DA1544E9E5D5C4 /* EditorUITests.swift in Sources */,
+				22B9443A49503B0D0E88F817 /* FixtureBoardRoutes.swift in Sources */,
 				3DF8E15C5CC8983509AE88F3 /* FixtureConnection.swift in Sources */,
+				F3AEBF196B58C50C6D5C48DE /* FixtureHTTPServer.swift in Sources */,
+				35AB716CE6F27D9AF8E1BAED /* FixtureRenderRoutes.swift in Sources */,
+				E91F4C81FF4093CC43277CF9 /* FixtureRouter.swift in Sources */,
 				82C97A471315A3DDFFC9C514 /* FormulaUITests.swift in Sources */,
 				F18D73674B88F338AC475D79 /* GlassProbe.swift in Sources */,
 				3130713C85FE68151D21B7FA /* IntegrationUITests.swift in Sources */,
@@ -1291,11 +1332,13 @@
 				ECCD8C8DE3D983B4431AFAAE /* DeploymentURL.swift in Sources */,
 				B87FD124C751FC4DA14916E3 /* FiestaBoardError.swift in Sources */,
 				14943782D8BF8AC90A9F5255 /* Formula.swift in Sources */,
+				8388109738D8C3FA4CCA123A /* MobileSession.swift in Sources */,
 				2D955A909400BB75C265B044 /* Models+Status.swift in Sources */,
 				1F17B659C5A4800BBD4066C0 /* Models.swift in Sources */,
 				1EDB6D6A37593CDC64B9C86B /* PackageResources.swift in Sources */,
 				216E17622D37BAC98E2FC3E7 /* PageEditing.swift in Sources */,
 				1832C659D12996166FF88C1F /* PageManagement.swift in Sources */,
+				D7199A803BF30581101F78E7 /* SavedHubsStore.swift in Sources */,
 				9BBDCF7617F8E4E9029C1AEE /* Schedules.swift in Sources */,
 				3A7D569AE67E9EF1DB06CE68 /* ServerAddress.swift in Sources */,
 				92535869889AB4DC8D9FF326 /* ServerCatalog.swift in Sources */,
@@ -1318,6 +1361,7 @@
 				F0E438AE948797DB1BBE1634 /* BoardLayoutTests.swift in Sources */,
 				CBB1D95B44199F7EFB45BD39 /* BoardSeamsAndModelTests.swift in Sources */,
 				A5E1DD38233D7DB7E30F085D /* BoardTablesTests.swift in Sources */,
+				8DDE1FB231FCF7FE53B5FE92 /* BoardViewportTests.swift in Sources */,
 				AF24CF32AF3C33C9B63055CF /* FlapAtlasTests.swift in Sources */,
 				50A9E43CEBC612C1C294E5D8 /* LedGoldenTests.swift in Sources */,
 				091F3A1A80C5516291AF98BE /* LedRasterizerTests.swift in Sources */,

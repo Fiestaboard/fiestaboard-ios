@@ -2,12 +2,12 @@ import XCTest
 
 /// PLAN B24 (iOS-F2): the pixel-canvas editor on a legacy LED page ("Pixel Clock", a 10 × 16 panel
 /// on the Pixoo, one canvas "sun"), against the mock fixture
-/// (`FIXTURE_PORT=<port> python3 Tests/UITests/fixture_server.py`). No real server, no hardware.
+/// (the native in-process loopback fixture). No real server, no hardware.
 /// Screenshots are attachments named `F2-…-mockfixture`, also written to SHOT_DIR when set.
 @MainActor final class CanvasUITests: XCTestCase {
     override func setUp() { continueAfterFailure = false }
 
-    private var port: String { ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "18442" }
+    private var port: String { String(FixtureHTTPServer.shared.port) }
     private var device: String { UIDevice.current.userInterfaceIdiom == .pad ? "ipadair11m4" : "iphone17promax" }
 
     /// First visible result: add a rectangle, drag it on the pixel grid, see the stage's layer move;
@@ -197,7 +197,7 @@ import XCTest
         let semaphore = DispatchSemaphore(value: 0); var ready = false
         URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
         semaphore.wait()
-        try XCTSkipUnless(ready, "Start the fixture: FIXTURE_PORT=\(port) python3 Tests/UITests/fixture_server.py")
+        try XCTSkipUnless(ready, "Native in-process fixture must be reachable")
         app.launchArguments = []; app.launch()
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
         func revealForm(_ element: XCUIElement) {

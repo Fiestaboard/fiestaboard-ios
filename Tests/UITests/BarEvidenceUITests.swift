@@ -10,7 +10,7 @@ import XCTest
     override func setUp() { super.setUp(); continueAfterFailure = false }
 
     private var device: String { UIDevice.current.userInterfaceIdiom == .pad ? "ipadair11m4" : "iphone17promax" }
-    private var fixturePort: Int { Int(ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "") ?? 18442 }
+    private var fixturePort: Int { Int(FixtureHTTPServer.shared.port) }
     private var suffix: String { ProcessInfo.processInfo.environment["SHOT_SUFFIX"].map { "-" + $0 } ?? "" }
 
     /// B4 (Pixoo, LED dots, `Hi {red}!`), B7 (its `layers` composited) and B5 (the monochrome
@@ -98,7 +98,7 @@ import XCTest
         let semaphore = DispatchSemaphore(value: 0); var ready = false
         URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
         semaphore.wait()
-        try XCTSkipUnless(ready, "Start the fixture: FIXTURE_PORT=\(fixturePort) python3 Tests/UITests/fixture_server.py")
+        try XCTSkipUnless(ready, "Native in-process fixture must be reachable")
         let app = isolatedApplication()
         app.launchArguments = arguments; app.launch()
         let alias = "board-\(scenario)-" + UUID().uuidString.prefix(8).lowercased()
