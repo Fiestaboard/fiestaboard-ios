@@ -305,12 +305,7 @@ final class BoardVisualsUITests: XCTestCase {
     }
 
     @MainActor private func choose(_ display: String, in app: XCUIApplication) {
-        let picker = app.descendants(matching: .any)["homeDisplayPicker"]
-        XCTAssertTrue(picker.waitForExistence(timeout: 5))
-        picker.tap()
-        let item = app.buttons[display].firstMatch
-        XCTAssertTrue(item.waitForExistence(timeout: 5), app.debugDescription)
-        item.tap()
+        selectFixtureDisplay(display, in: app)
     }
 
     @MainActor private func enableChanges(_ app: XCUIApplication) {

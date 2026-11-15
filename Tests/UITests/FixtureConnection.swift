@@ -13,6 +13,31 @@ extension XCTestCase {
             .containing(.staticText, identifier: name).firstMatch
     }
 
+    /// A delivered menu tap is not evidence that the requested display became selected.
+    @MainActor func selectFixtureDisplay(_ display: String, in app: XCUIApplication,
+                                         file: StaticString = #filePath, line: UInt = #line) {
+        let picker = app.buttons["homeDisplayPicker"]
+        guard picker.waitForExistence(timeout: 5) else {
+            XCTFail("Display picker must exist", file: file, line: line)
+            return
+        }
+        if picker.label.contains(display) { return }
+        picker.tap()
+        let item = app.buttons[display].firstMatch
+        for _ in 0..<3 {
+            if picker.label.contains(display) { return }
+            guard item.waitForExistence(timeout: 5), item.isHittable else {
+                XCTFail("Display menu row must be visible: \(display)", file: file, line: line)
+                return
+            }
+            item.tap()
+            let selected = XCTNSPredicateExpectation(
+                predicate: NSPredicate(format: "label CONTAINS %@", display), object: picker)
+            if XCTWaiter.wait(for: [selected], timeout: 3) == .completed { return }
+        }
+        XCTFail("Display menu must select \(display); selected label: \(picker.label)", file: file, line: line)
+    }
+
     /// Cold simulator keyboard startup may accept a caret without becoming ready for typing.
     @MainActor func typeConnectionAddress(_ text: String, into address: XCUIElement, in app: XCUIApplication,
                                          file: StaticString = #filePath, line: UInt = #line) {

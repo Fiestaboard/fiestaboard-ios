@@ -126,12 +126,7 @@ import XCTest
         return app
     }
     private func choose(_ display: String, _ app: XCUIApplication) {
-        let picker = element(app, "homeDisplayPicker")
-        XCTAssertTrue(picker.waitForExistence(timeout: 5))
-        picker.tap()
-        let item = app.buttons[display].firstMatch
-        XCTAssertTrue(item.waitForExistence(timeout: 5), app.debugDescription)
-        item.tap()
+        selectFixtureDisplay(display, in: app)
     }
     private func openEditor(_ app: XCUIApplication, page: String) -> XCUIElement {
         let destination = element(app, "destination-Pages")
