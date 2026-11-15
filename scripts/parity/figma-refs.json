@@ -3,11 +3,35 @@
     {
       "id": "ios-connecting",
       "figmaNode": "362:20090",
+      "mode": "Light",
       "kind": "screen",
+      "tolerance": {
+        "geometryPx": 1
+      },
       "probes": {
         "geometry": [
-          "362:20090"
+          "362:20090",
+          "seed:connecting",
+          "seed:board",
+          "seed:line-1",
+          "seed:line-2",
+          "seed:action",
+          "seed:row-1",
+          "seed:row-2",
+          "seed:row-3"
         ],
+        "text": []
+      }
+    },
+    {
+      "id": "ios-connecting-dark",
+      "figmaNode": "362:20090",
+      "mode": "Dark",
+      "kind": "screen",
+      "referenceStatus": "no-reference",
+      "referenceNote": "Design-agent exported Light only; no Dark Figma reference exists.",
+      "probes": {
+        "geometry": [],
         "text": []
       }
     }

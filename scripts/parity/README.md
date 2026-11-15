@@ -12,15 +12,31 @@ node scripts/parity/native-parity.mjs --shots build/parity --out build/parity/re
 node scripts/parity/native-parity.mjs --refs /local/saved-figma-exports --shots build/parity
 ```
 
-Without `--refs`, every manifest entry has `status: "missing-reference"` and
-`wouldPass: null`. Missing reference entries or PNGs are also unavailable.
-No screenshot is generated or substituted for a reference. The Connecting seed
-(`ios-connecting`, Figma `362:20090`) implementation is intentionally deferred
-until a standalone reference exists; its manifest entry still emits an
-unavailable report. The 791×1400 section composite at
-`/Volumes/ExtHD/fiestaboard-universal-design/shots/mobile-09a/01-launch.png`
-is qualitative context only, not a pixel reference or a source for cropping a
-replacement. Synthetic red/blue PNGs in unit tests exercise the comparer only.
+The exact Light Connecting screen and its Still connecting sibling are vendored
+under `figma/`, byte-for-byte from the design-agent exports. Run the seed report
+with:
+
+```sh
+node scripts/parity/native-parity.mjs --refs scripts/parity/figma --shots build/parity --out build/parity/report
+```
+
+`ios-connecting` maps the specification column `362:20090` to its screen instance
+`362:19966` (402×874 pt, scale 3). The screenshot includes Figma's bezel corner
+pixels; it is never stretched, cropped further or recoloured by this reporter.
+The sibling `362:20111` PNG is retained as reference evidence for the 5 s state;
+it is not claimed as an implemented or captured state in I2.
+
+Dark has **no reference**: `ios-connecting-dark` emits `status: "no-reference"`
+and `wouldPass: null`. A Light PNG is never substituted. Without `--refs`, the
+CLI still reports reference unavailability. A missing native capture produces
+`missing-shot`; none of these results constitutes Figma MATCH.
+
+Reference rectangles are transcribed from `figma/figma-connecting-362-20090.md`.
+`seed:*` IDs are explicitly local measurement keys, not claimed Figma node IDs:
+the export does not provide inner-node IDs. The root uses the real spec-column
+ID. The native registry must measure each tagged view; tests must not copy these
+reference coordinates into an alleged capture. Synthetic red/blue PNGs in unit
+tests exercise only the comparer.
 
 Inputs:
 

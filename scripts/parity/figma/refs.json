@@ -1,0 +1,97 @@
+{
+  "refs": [
+    {
+      "id": "ios-connecting",
+      "figmaNode": "362:20090",
+      "screenNode": "362:19966",
+      "mode": "Light",
+      "slotWidth": 402,
+      "slotHeight": 874,
+      "scale": 3,
+      "file": "figma-connecting-screen-362-19966@3x.png",
+      "nodes": [
+        {
+          "id": "362:20090",
+          "name": "Connecting screen",
+          "type": "FRAME",
+          "x": 0,
+          "y": 0,
+          "width": 402,
+          "height": 874
+        },
+        {
+          "id": "seed:connecting",
+          "name": "Connecting row",
+          "type": "FRAME",
+          "x": 16,
+          "y": 175,
+          "width": 246,
+          "height": 20
+        },
+        {
+          "id": "seed:board",
+          "name": "Skeleton board",
+          "type": "FRAME",
+          "x": 16,
+          "y": 211,
+          "width": 370,
+          "height": 150
+        },
+        {
+          "id": "seed:line-1",
+          "name": "Skeleton line 1",
+          "type": "FRAME",
+          "x": 16,
+          "y": 377,
+          "width": 220,
+          "height": 18
+        },
+        {
+          "id": "seed:line-2",
+          "name": "Skeleton line 2",
+          "type": "FRAME",
+          "x": 16,
+          "y": 411,
+          "width": 300,
+          "height": 18
+        },
+        {
+          "id": "seed:action",
+          "name": "Skeleton action",
+          "type": "FRAME",
+          "x": 16,
+          "y": 445,
+          "width": 160,
+          "height": 44
+        },
+        {
+          "id": "seed:row-1",
+          "name": "Skeleton row 1",
+          "type": "FRAME",
+          "x": 16,
+          "y": 505,
+          "width": 370,
+          "height": 56
+        },
+        {
+          "id": "seed:row-2",
+          "name": "Skeleton row 2",
+          "type": "FRAME",
+          "x": 16,
+          "y": 577,
+          "width": 370,
+          "height": 56
+        },
+        {
+          "id": "seed:row-3",
+          "name": "Skeleton row 3",
+          "type": "FRAME",
+          "x": 16,
+          "y": 649,
+          "width": 370,
+          "height": 56
+        }
+      ]
+    }
+  ]
+}

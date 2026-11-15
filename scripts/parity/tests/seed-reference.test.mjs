@@ -49,3 +49,21 @@ test('I2 measured skeleton geometry detects an edited copy beyond one point', ()
   assert.equal(manifest.tolerance.geometryPx, 1);
   assert.ok(manifest.probes.geometry.includes('seed:board'));
 });
+
+test('I2 report uses actual Light reference but honestly reports absent native capture and Dark reference', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const { mkdtempSync, rmSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const dir = mkdtempSync(path.join(tmpdir(), 'cx-i2-ref-report-'));
+  try {
+    const result = spawnSync(process.execPath, [path.join(root, 'native-parity.mjs'), '--refs', refsDir,
+      '--shots', path.join(dir, 'missing-shots'), '--out', path.join(dir, 'report')], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    const report = JSON.parse(readFileSync(path.join(dir, 'report/report.json')));
+    assert.equal(report.entries.find(e => e.id === 'ios-connecting').status, 'missing-shot');
+    const dark = report.entries.find(e => e.id === 'ios-connecting-dark');
+    assert.equal(dark.status, 'no-reference');
+    assert.equal(dark.wouldPass, null);
+    assert.match(dark.error, /Light only/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});

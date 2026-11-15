@@ -162,8 +162,8 @@ function main(argv) {
       const shot = path.join(args.shots, `${entry.id}.png`);
       const probes = path.join(args.shots, `${entry.id}.probes.json`);
       lines.push(`- \`${entry.id}\`: shot ${existsSync(shot) ? "yes" : "no"}, probes ${existsSync(probes) ? "yes" : "no"}`);
-      report.entries.push({ id: entry.id, figmaNode: entry.figmaNode, status: "missing-reference",
-        wouldPass: null, error: "no refs", shotAvailable: existsSync(shot), probesAvailable: existsSync(probes) });
+      report.entries.push({ id: entry.id, figmaNode: entry.figmaNode, status: entry.referenceStatus === "no-reference" ? "no-reference" : "missing-reference",
+        wouldPass: null, error: entry.referenceNote ?? "no refs", shotAvailable: existsSync(shot), probesAvailable: existsSync(probes) });
     }
     writeFileSync(path.join(args.out, "report.json"), JSON.stringify(report, null, 2));
     writeFileSync(path.join(args.out, "report.md"), `${lines.join("\n")}\n`);
@@ -177,6 +177,11 @@ function main(argv) {
   report.unmanifested = refs.filter((r) => !manifest.entries.some((e) => e.id === r.id)).map((r) => r.id);
 
   for (const entry of manifest.entries) {
+    if (entry.referenceStatus === "no-reference") {
+      report.entries.push({ id: entry.id, figmaNode: entry.figmaNode, mode: entry.mode,
+        status: "no-reference", wouldPass: null, error: entry.referenceNote ?? "no reference exported for this appearance" });
+      continue;
+    }
     const ref = refs.find((r) => r.id === entry.id);
     if (!ref || !existsSync(ref.pngPath)) {
       if (!report.missingRefs.includes(entry.id)) report.missingRefs.push(entry.id);

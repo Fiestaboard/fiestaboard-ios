@@ -4,14 +4,22 @@ import SwiftUI
 /// Test-only, no model, discovery, persisted connection or network.
 struct ParityFixtureView: View {
     enum Kind: String {
-        case glass
+        case glass, connecting
         static func fromLaunchArguments(_ defaults: UserDefaults = .standard) -> Self? {
             defaults.string(forKey: "fiestaboard.parityFixture").flatMap(Self.init(rawValue:))
         }
     }
     let kind: Kind
 
-    var body: some View {
+    @ViewBuilder var body: some View {
+        if kind == .connecting {
+            ConnectingSeedView()
+        } else {
+            glassFixture
+        }
+    }
+
+    private var glassFixture: some View {
         GeometryReader { geometry in
             let size = geometry.size
             ZStack(alignment: .topLeading) {
