@@ -51,8 +51,8 @@ extension AuthStatus {
         if mode == "undecided" || firstRun == true { return .chooseAuthentication }
         if !enabled { return .ready }
         if setupRequired { return .setupAdministrator }
-        // Old browser-cookie servers omit auth_kind; TV and unknown future kinds do not grant admin readiness.
-        if authenticated && (authKind == nil || authKind == "browser" || authKind == "session") { return .ready }
+        // Native mobile control sessions are read-ready; TV and unknown future kinds remain excluded.
+        if authenticated && (authKind == nil || authKind == "browser" || authKind == "session" || authKind == "mobile") { return .ready }
         return .signIn
     }
 }

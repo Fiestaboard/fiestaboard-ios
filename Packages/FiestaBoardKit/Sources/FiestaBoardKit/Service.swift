@@ -31,6 +31,7 @@ public protocol FiestaBoardService: Sendable {
     func setAuthenticationPreference(enabled: Bool, setupToken: String?) async throws -> AuthStatus
     func setupAdministrator(username: String, password: String, setupToken: String?) async throws -> AuthStatus
     func login(username: String, password: String, rememberMe: Bool) async throws -> AuthStatus
+    func claimPairing(code: String, rememberMe: Bool) async throws -> AuthStatus
     func authStatus() async throws -> AuthStatus
     func login(username: String, password: String) async throws -> AuthStatus
     func configureSessionPersistence(rememberMe: Bool, installationID: String?) async
@@ -110,10 +111,12 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     private var creationContexts: [UUID: PageCreationContext] = [:]
     private var deletionContexts: [UUID: PageDeletionContext] = [:]
     private var creatingPage = false
+    private let clientMetadata: MobileClientMetadata
     private var knownBoards: [String: BoardSummary] = [:]
 
-    public init(deployment: DeploymentURL, transport: (any APITransport)? = nil, vault: (any SessionVault)? = nil) {
+    public init(deployment: DeploymentURL, transport: (any APITransport)? = nil, vault: (any SessionVault)? = nil, clientMetadata: MobileClientMetadata = .init()) {
         self.deployment = deployment
+        self.clientMetadata = clientMetadata
         self.transport = transport ?? URLSessionTransport(deployment: deployment, vault: vault)
         allowsSimulatedCollectionWrites = false
     }
@@ -121,6 +124,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     /// The Demo wrapper supplies an in-memory transport; this never changes board-control gates.
     init(demoDeployment: DeploymentURL, transport: any APITransport) {
         deployment = demoDeployment
+        clientMetadata = .init()
         self.transport = transport
         allowsSimulatedCollectionWrites = true
         activeScope = VerifiedConnectionScope(deployment: demoDeployment, installationID: "demo-local-v1", connectionID: UUID(uuidString: "00000000-0000-4000-8000-000000000001")!, isDemo: true)
@@ -207,7 +211,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         try await login(username: username, password: password, rememberMe: false)
     }
 
-    /// Retire old reads/mutations before dispatch and clear their cookie generation before accepting a replacement session.
+    /// Retire old reads/mutations before dispatch and clear their credential generation before accepting a replacement session.
     private func beginAuthenticationTransition() async throws -> UInt64 {
         generation &+= 1
         activeScope = nil; replacementConnectionID = nil
@@ -228,14 +232,40 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         let token = try await beginAuthenticationTransition()
         await transport.configureSessionPersistence(rememberMe: rememberMe, installationID: observedInstallationID)
         guard token == generation else { throw FiestaBoardError.staleSession }
-        struct Login: Encodable { let username: String; let password: String; let remember_me: Bool }
-        struct Reply: Decodable { let status: String }
-        let reply: Reply = try await fetch(APIRequest(.post, path: ["auth", "login"],
-                              body: JSONEncoder().encode(Login(username: username, password: password, remember_me: rememberMe)), cachePolicy: .noStore))
-        guard reply.status == "ok" else { throw FiestaBoardError.unknownMutationOutcome }
+        struct Login: Encodable {
+            let username: String; let password: String
+            let client_id = "fiestaboard-ios"
+            let device_name: String; let app_version: String
+        }
+        let metadata = clientMetadata
+        let reply: MobileTokenReply = try await fetch(APIRequest(.post, path: ["auth", "device", "login"],
+            body: JSONEncoder().encode(Login(username: username, password: password, device_name: metadata.deviceName, app_version: metadata.appVersion)), cachePolicy: .noStore))
+        guard reply.isValid else { throw FiestaBoardError.unknownMutationOutcome }
         guard token == generation else { throw FiestaBoardError.staleSession }
         let status = try await verifiedAuthReadback()
         guard status.authenticated, status.bootstrapPhase == .ready, status.username == username else { throw FiestaBoardError.unknownMutationOutcome }
+        try await publishVerifiedScope(token: token)
+        return status
+    }
+
+    /// I10 supplies the scanned code. It is single-use proof, never stored.
+    public func claimPairing(code: String, rememberMe: Bool = true) async throws -> AuthStatus {
+        guard !code.isEmpty, code.utf8.count <= 128, !code.unicodeScalars.contains(where: { $0.value < 32 || $0.value == 127 }) else {
+            throw FiestaBoardError.invalidRequestContext
+        }
+        let token = try await beginAuthenticationTransition()
+        await transport.configureSessionPersistence(rememberMe: rememberMe, installationID: observedInstallationID)
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        struct Claim: Encodable {
+            let pairing_code: String
+            let client_id = "fiestaboard-ios"
+            let device_name: String; let app_version: String
+        }
+        let reply: MobileTokenReply = try await fetch(APIRequest(.post, path: ["auth", "pairing", "claim"],
+            body: JSONEncoder().encode(Claim(pairing_code: code, device_name: clientMetadata.deviceName, app_version: clientMetadata.appVersion)), cachePolicy: .noStore))
+        guard token == generation, reply.isValid else { throw FiestaBoardError.staleSession }
+        let status = try await verifiedAuthReadback()
+        guard token == generation, status.authenticated, status.bootstrapPhase == .ready else { throw FiestaBoardError.unknownMutationOutcome }
         try await publishVerifiedScope(token: token)
         return status
     }
@@ -288,7 +318,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
 
     public func forgetRememberedSession() async { await transport.forgetRememberedSession() }
 
-    /// Local disconnect clears active cookies and capability/document generations.
+    /// Local disconnect clears active credentials and capability/document generations.
     /// Explicit remembered material remains available for a future revalidated restore.
     public func disconnect() async {
         _ = try? await beginAuthenticationTransition()
@@ -310,7 +340,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard generation == token else { throw FiestaBoardError.staleSession }
         do {
             struct Reply: Decodable { let status: String }
-            let _: Reply = try await fetch(APIRequest(.post, path: ["auth", "logout"]))
+            let _: Reply = try await fetch(APIRequest(.delete, path: ["auth", "device", "session"]))
             if generation == token { await transport.resetSession() }
         } catch {
             if generation == token {
@@ -907,4 +937,8 @@ extension LiveFiestaBoardService {
         catch FiestaBoardError.partialWrite where request.isMutation { throw FiestaBoardError.unknownMutationOutcome }
         catch FiestaBoardError.rejected(let status) where request.isMutation && ![400, 403, 404, 409, 412, 422].contains(status) { throw FiestaBoardError.unknownMutationOutcome }
     }
+}
+
+public extension FiestaBoardService {
+    func claimPairing(code: String, rememberMe: Bool = true) async throws -> AuthStatus { throw FiestaBoardError.unsupportedOperation }
 }

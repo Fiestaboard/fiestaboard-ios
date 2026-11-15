@@ -1,0 +1,58 @@
+{
+  "requests": [
+    {
+      "id": "auth-status-signed-out",
+      "method": "GET",
+      "path": "/auth/status",
+      "status": 200
+    },
+    {
+      "id": "device-login-invalid",
+      "method": "POST",
+      "path": "/auth/device/login",
+      "status": 401
+    },
+    {
+      "id": "device-login",
+      "method": "POST",
+      "path": "/auth/device/login",
+      "status": 200
+    },
+    {
+      "id": "auth-status-mobile",
+      "method": "GET",
+      "path": "/auth/status",
+      "status": 200
+    },
+    {
+      "id": "pairing-invalid",
+      "method": "POST",
+      "path": "/auth/pairing/claim",
+      "status": 400
+    },
+    {
+      "id": "device-session-expired",
+      "method": "GET",
+      "path": "/boards",
+      "status": 401
+    },
+    {
+      "id": "device-session-revoke",
+      "method": "DELETE",
+      "path": "/auth/device/session",
+      "status": 200
+    },
+    {
+      "id": "device-session-revoked",
+      "method": "GET",
+      "path": "/boards",
+      "status": 401
+    },
+    {
+      "id": "device-login-locked",
+      "method": "POST",
+      "path": "/auth/device/login",
+      "status": 429
+    }
+  ]
+}

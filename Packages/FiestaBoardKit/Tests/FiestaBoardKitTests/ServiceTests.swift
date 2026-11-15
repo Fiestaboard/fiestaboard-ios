@@ -108,13 +108,13 @@ actor SuspendedTransport: APITransport {
     private var pending: CheckedContinuation<APIResponse, Never>?
     private var waiter: CheckedContinuation<Void, Never>?
     func send(_ request: APIRequest) async throws -> APIResponse {
-        if request.path == ["auth", "logout"] {
+        if request.path == ["auth", "device", "session"] {
             return await withCheckedContinuation { continuation in
                 pending = continuation; waiter?.resume(); waiter = nil
             }
         }
         let data: Data
-        if request.path == ["auth", "login"] { data = Data(#"{"status":"ok","username":"demo"}"#.utf8) }
+        if request.path == ["auth", "device", "login"] { data = MobileFixture.reply("memory") }
         else { data = fixture("auth") }
         return APIResponse(status: 200, data: data)
     }
@@ -140,14 +140,14 @@ extension ServiceTests {
         XCTAssertEqual(resets, 1, "Old logout must not reset the replacement session")
     }
 
-    func testLoginPayloadDisablesPersistenceAndLogoutClearsCookies() async throws {
+    func testLoginPayloadOmitsBrowserPersistenceAndLogoutClearsBearer() async throws {
         let log = RequestLog()
         FixtureURLProtocol.handler = { request in
             log.append(request)
             if request.url!.path.hasSuffix("login") {
-                return (200, ["Set-Cookie":"fiestaboard_session=memory; Path=/; Secure"], Data(#"{"status":"ok","username":"demo"}"#.utf8))
+                return (200, [:], MobileFixture.reply("memory"))
             }
-            if request.url!.path.hasSuffix("logout") {
+            if request.url!.path.hasSuffix("session") {
                 return (200, ["Set-Cookie":"fiestaboard_session=; Path=/; Max-Age=0"], Data(#"{"status":"ok"}"#.utf8))
             }
             return (200, [:], fixture("auth"))
@@ -156,13 +156,13 @@ extension ServiceTests {
         let auth = try await service.login(username: "demo", password: "secret")
         XCTAssertTrue(auth.authenticated)
         let body = try JSONSerialization.jsonObject(with: XCTUnwrap(log.requests.first?.httpBody)) as! [String: Any]
-        XCTAssertEqual(body["remember_me"] as? Bool, false)
+        XCTAssertNil(body["remember_me"])
         XCTAssertEqual(body["username"] as? String, "demo")
         XCTAssertEqual(body["password"] as? String, "secret")
-        XCTAssertEqual(log.requests[1].value(forHTTPHeaderField: "Cookie"), "fiestaboard_session=memory")
+        XCTAssertEqual(log.requests[1].value(forHTTPHeaderField: "Authorization"), "Bearer fb_mob_memory")
         try await service.logout()
         _ = try await service.authStatus()
-        XCTAssertNil(log.requests.last!.value(forHTTPHeaderField: "Cookie"))
+        XCTAssertNil(log.requests.last!.value(forHTTPHeaderField: "Authorization"))
     }
 }
 
@@ -217,14 +217,14 @@ extension ServiceTests {
         let log = RequestLog()
         FixtureURLProtocol.handler = { request in
             log.append(request)
-            if request.httpMethod == "POST" { return (200, [:], Data(#"{"status":"ok"}"#.utf8)) }
+            if request.httpMethod == "POST" { return (200, [:], MobileFixture.reply()) }
             return (200, [:], try BootstrapTests.body("auth_authenticated"))
         }
         let service = LiveFiestaBoardService(deployment: deployment, transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self]))
         let status = try await service.login(username: "contract_admin", password: "fixture-password", rememberMe: true)
         XCTAssertEqual(status.bootstrapPhase, .ready)
         let body = try JSONSerialization.jsonObject(with: XCTUnwrap(log.requests[0].httpBody)) as! [String: Any]
-        XCTAssertEqual(body["remember_me"] as? Bool, true)
+        XCTAssertNil(body["remember_me"])
         XCTAssertEqual(log.requests.map { $0.url!.lastPathComponent }, ["login", "status"])
     }
     func testAcknowledgedSetupWithFailedReadbackIsUnknownAndNeverReplayed() async throws {

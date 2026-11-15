@@ -196,7 +196,7 @@ private actor CollectionTransport: APITransport {
         requests.append(request)
         if request.path == ["version"] { return APIResponse(status: 200, data: try JSONSerialization.data(withJSONObject: ["package_version": version, "build_version": version, "running_version": version, "is_dev": dev])) }
         if request.path == ["v1", "boards"] { return APIResponse(status: 200, data: Data(#"{"boards":[],"total":0}"#.utf8)) }
-        if request.path == ["auth", "logout"] { return APIResponse(status: 200, data: Data(#"{"status":"ok"}"#.utf8)) }
+        if request.path == ["auth", "device", "session"] { return APIResponse(status: 200, data: Data(#"{"status":"ok"}"#.utf8)) }
         if request.path == ["auth", "status"] { return APIResponse(status: 200, data: Data((authLost ? #"{"enabled":true,"setup_required":false,"authenticated":false}"# : #"{"enabled":false,"setup_required":false,"authenticated":false}"#).utf8)) }
         var record: [String: Any] = ["id": "collection:c", "name": "Test 🛰️", "page_ids": ["p"], "selection_mode": mode, "time": ["interval_seconds": 30], "variable": NSNull(), "random": NSNull()]
         record["revision"] = revision; record["edit_protocol"] = proto

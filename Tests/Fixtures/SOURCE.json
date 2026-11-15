@@ -1,0 +1,108 @@
+{
+  "hubRepository": "Fiestaboard/FiestaBoard",
+  "hubCommit": "f47da6e4e764fc2826f396210f013e45dc1a7fd8",
+  "requestManifestSHA256": "2f22bfa3f56713429d8853d4b4751126d7a2c256b435e3fd3cbfb8c89166d35b",
+  "recorder": "scripts/record-mobile-fixtures.py",
+  "method": "Docker built from immutable git archive; real FastAPI HTTP boundary",
+  "credentialSafety": "Synthetic account only; recorded mobile token revoked before container exit",
+  "responses": [
+    {
+      "file": "auth-status-signed-out.json",
+      "method": "GET",
+      "path": "/auth/status",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "35e193af477f37eec30de4be9b5f7c5dea0e7874efd20e4b6bfbad9ec45ad036"
+    },
+    {
+      "file": "device-login-invalid.json",
+      "method": "POST",
+      "path": "/auth/device/login",
+      "status": 401,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "b2c802aea19a4a2f056c10962bf9ca2b4a1d1e5cc26870701d8045b538fb9146"
+    },
+    {
+      "file": "device-login.json",
+      "method": "POST",
+      "path": "/auth/device/login",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "8e04f080377ba1c0c3c6130297b39e6272950215b12a0cc0df6c8758b650439a"
+    },
+    {
+      "file": "auth-status-mobile.json",
+      "method": "GET",
+      "path": "/auth/status",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "1e9a0b3e447eaa7047d93fe1f0c61e46c35855c291317d5599a922dac81e2f63"
+    },
+    {
+      "file": "pairing-invalid.json",
+      "method": "POST",
+      "path": "/auth/pairing/claim",
+      "status": 400,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "dba1fdf5d6c3a5acd950472b5ad19753ec2681d380c0da75a59ac040016fe0ce"
+    },
+    {
+      "file": "device-session-expired.json",
+      "method": "GET",
+      "path": "/boards",
+      "status": 401,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "14a25323d0ee8b6e657b5925dfdc36e39f31f339732750b544a06255f281f6ea"
+    },
+    {
+      "file": "device-session-revoke.json",
+      "method": "DELETE",
+      "path": "/auth/device/session",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "a29ee2b15c494311c52521766e44af56a3ad2248e7a8ab465e5206463c13d288"
+    },
+    {
+      "file": "device-session-revoked.json",
+      "method": "GET",
+      "path": "/boards",
+      "status": 401,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "14a25323d0ee8b6e657b5925dfdc36e39f31f339732750b544a06255f281f6ea"
+    },
+    {
+      "file": "device-login-locked.json",
+      "method": "POST",
+      "path": "/auth/device/login",
+      "status": 429,
+      "headers": {
+        "retry-after": "60",
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "2935c62e93b4d5d4a6de3d756d498f41a6d02ea6bdbaab53ccb265785719db03"
+    }
+  ]
+}
