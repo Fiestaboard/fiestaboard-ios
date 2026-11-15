@@ -1,0 +1,33 @@
+{
+  "about": "PLAN B27: user-facing terms shared by the web, iOS and Android, from reports/web-terminology-glossary.md. Each platform's TerminologyTests checks its string table against this file. Writer: iOS-E2 (wave 2).",
+  "terms": [
+    {"id": "home", "text": "Home", "scope": "app"},
+    {"id": "nowShowing", "text": "Now showing", "scope": "app"},
+    {"id": "signOut", "text": "Sign out", "scope": "app"},
+    {"id": "newPage", "text": "New Page", "scope": "app"},
+    {"id": "editPage", "text": "Edit Page", "scope": "editor"},
+    {"id": "save", "text": "Save", "scope": "editor"},
+    {"id": "unsavedChanges", "text": "Unsaved changes", "scope": "editor"},
+    {"id": "discardTitle", "text": "Discard unsaved changes?", "scope": "editor"},
+    {"id": "keepEditing", "text": "Keep editing", "scope": "editor"},
+    {"id": "discardAndLeave", "text": "Discard and leave", "scope": "editor"},
+    {"id": "rich", "text": "Rich", "scope": "editor"},
+    {"id": "plain", "text": "Plain", "scope": "editor"},
+    {"id": "variables", "text": "Variables", "scope": "editor"},
+    {"id": "colors", "text": "Colors", "scope": "editor"},
+    {"id": "formatting", "text": "Formatting", "scope": "editor"},
+    {"id": "insertFormula", "text": "Insert formula", "scope": "editor"},
+    {"id": "wrap", "text": "Wrap", "scope": "editor"},
+    {"id": "drawOnBoard", "text": "Draw on board", "scope": "editor"},
+    {"id": "displayPreview", "text": "Display preview", "scope": "editor"},
+    {"id": "flagship", "text": "Flagship", "scope": "editor"},
+    {"id": "note", "text": "Note", "scope": "editor"},
+    {"id": "noteArray", "text": "Note Array", "scope": "editor"},
+    {"id": "panel", "text": "Panel", "scope": "editor"},
+    {"id": "addText", "text": "Add text", "scope": "editor"},
+    {"id": "addCanvas", "text": "Add canvas", "scope": "editor"},
+    {"id": "addSpacer", "text": "Add spacer", "scope": "editor"},
+    {"id": "showWhen", "text": "Show when", "scope": "editor"},
+    {"id": "displayRestrictions", "text": "Display restrictions", "scope": "editor"}
+  ]
+}

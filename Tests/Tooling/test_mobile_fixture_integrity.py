@@ -25,3 +25,11 @@ class MobileFixtureIntegrity(unittest.TestCase):
         self.assertEqual(login['scope'],'control')
         self.assertEqual(login['token_type'],'Bearer')
         self.assertIn('revoked',source['credentialSafety'])
+
+    def test_historical_contracts_are_archived_and_excluded_from_native_runtime(self):
+        for path in ['Contracts','Fixtures/contracts','scripts/bootstrap-contracts.py','scripts/contract-backend.py','scripts/export-openapi.py','scripts/check-contracts.py']:
+            self.assertFalse((ROOT/path).exists(),path)
+            self.assertTrue((ROOT/'Tests/LegacyContracts'/path).exists(),path)
+        self.assertNotIn('LegacyContracts', (ROOT/'project.yml').read_text())
+        for path in [*ROOT.glob('App/**/*.swift'), *ROOT.glob('Packages/*/Sources/**/*.swift'), *ROOT.glob('Tests/UITests/*.swift')]:
+            self.assertNotIn('LegacyContracts',path.read_text(),str(path))
