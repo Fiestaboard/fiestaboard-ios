@@ -34,6 +34,8 @@ public final class PreviewPipeline: ObservableObject {
         #if DEBUG
         /// Monotonic last-input → current preview adoption, excluding test-process AX latency.
         public var inputToPreviewSeconds: TimeInterval?
+        /// Latest relative monotonic phase marks for the same accepted input generation.
+        public var inputToPreviewPhases: [String: TimeInterval] = [:]
         #endif
     }
     public typealias Sleeper = @MainActor @Sendable (Duration) async throws -> Void
@@ -51,6 +53,12 @@ public final class PreviewPipeline: ObservableObject {
     #if DEBUG
     var diagnosticNow: () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
     private var lastInputAt: TimeInterval?
+    private var inputPhases: [String: TimeInterval] = [:]
+
+    private func markInputPhase(_ phase: String, generation: UInt64) {
+        guard generation == inputGeneration, let lastInputAt else { return }
+        inputPhases[phase] = diagnosticNow() - lastInputAt
+    }
     #endif
     /// Advances when the target/geometry changes or the pipeline is cancelled; results requested
     /// under an older target are discarded.
@@ -68,6 +76,8 @@ public final class PreviewPipeline: ObservableObject {
         #if DEBUG
         lastInputAt = diagnosticNow()
         state.inputToPreviewSeconds = nil
+        inputPhases = [:]
+        state.inputToPreviewPhases = [:]
         #endif
         inputGeneration &+= 1
         state.isStale = true
@@ -91,6 +101,8 @@ public final class PreviewPipeline: ObservableObject {
         #if DEBUG
         lastInputAt = nil
         state.inputToPreviewSeconds = nil
+        inputPhases = [:]
+        state.inputToPreviewPhases = [:]
         #endif
         targetGeneration &+= 1
         inputGeneration &+= 1
@@ -116,7 +128,14 @@ public final class PreviewPipeline: ObservableObject {
 
     private func fire() {
         debounceTask = nil
+        #if DEBUG
+        let firingInput = inputGeneration
+        markInputPhase("fireEntered", generation: firingInput)
+        #endif
         commit()
+        #if DEBUG
+        markInputPhase("commitReturned", generation: firingInput)
+        #endif
         requestRender()
     }
 
@@ -127,8 +146,14 @@ public final class PreviewPipeline: ObservableObject {
         state.isUpdating = true
         renderTask = Task { [weak self] in
             guard let self else { return }
+            #if DEBUG
+            self.markInputPhase("renderStarted", generation: startedInput)
+            #endif
             let outcome: Result<PreviewRender, any Error>
             do { outcome = .success(try await self.render()) } catch { outcome = .failure(error) }
+            #if DEBUG
+            self.markInputPhase("renderReturned", generation: startedInput)
+            #endif
             self.finish(outcome, startedInput: startedInput, startedTarget: startedTarget)
         }
     }
@@ -154,6 +179,7 @@ public final class PreviewPipeline: ObservableObject {
             #if DEBUG
             if case .success = outcome, !state.isStale, let lastInputAt {
                 state.inputToPreviewSeconds = diagnosticNow() - lastInputAt
+                state.inputToPreviewPhases = inputPhases
                 self.lastInputAt = nil
             }
             #endif

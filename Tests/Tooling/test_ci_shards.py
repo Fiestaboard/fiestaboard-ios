@@ -13,7 +13,16 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 SHARDS = {
     'ui-a': ['BoardVisualsUITests', 'LaunchUITests'],
-    'ui-b': ['EditorUITests'],
+    'ui-b': [f'EditorUITests/{method}' for method in [
+        'testAlignAndWrapFollowCaretRow', 'testBoardStaysBigAndAllRowsShow',
+        'testCompactChipCalloutShowsTheFullName', 'testDisabledSaveSaysWhy',
+        'testGeometryChangeAndShrinkConfirmation', 'testHomeControlActionsAndPlainPageScreen',
+        'testInsertChipsFromTheKeyboardAccessory']],
+    'ui-f': [f'EditorUITests/{method}' for method in [
+        'testNewPageIsBoardShaped', 'testNotePageOpensOnAFittingDisplay',
+        'testPlainModeShowsPrefixes', 'testReturnMovesToTheNextEmptyRow',
+        'testShortMetadataNoteOpensInTheDocumentEditor', 'testTypingReachesTheBoard',
+        'testTypingReachesTheBoardThroughFixtureRender']],
     'ui-c': ['BarEvidenceUITests', 'CanvasUITests', 'IntegrationUITests', 'SaveUITests'],
     'ui-d': ['FormulaUITests'],
     'ui-e': ['PolishUITests'],
@@ -157,14 +166,22 @@ if name == 'xcodebuild':
                                  CX_SHUTDOWN_EXIT='149', CX_XCODE_EXIT='65')
         self.assertEqual(result.returncode, 1, result.stderr)
 
-    def test_manifest_covers_every_ui_test_class_exactly_once(self):
+    def test_manifest_covers_every_ui_test_method_exactly_once(self):
         manifest = json.loads((ROOT / 'scripts/ios-ui-shards.json').read_text())
         self.assertEqual(manifest, SHARDS)
-        classes = []
+        methods = {}
         for path in (ROOT / 'Tests/UITests').glob('*.swift'):
-            classes += re.findall(r'\bclass\s+(\w+)\s*:\s*XCTestCase\b', path.read_text())
-        assigned = [name for group in manifest.values() for name in group]
-        self.assertCountEqual(assigned, classes)
+            source = path.read_text()
+            classes = re.findall(r'\bclass\s+(\w+)\s*:\s*XCTestCase\b', source)
+            if classes:
+                self.assertEqual(len(classes), 1)
+                methods[classes[0]] = [f'{classes[0]}/{name}' for name in
+                                      re.findall(r'\bfunc\s+(test\w+)\s*\(', source)]
+        assigned = []
+        for group in manifest.values():
+            for selector in group:
+                assigned.extend([selector] if '/' in selector else methods[selector])
+        self.assertCountEqual(assigned, [name for group in methods.values() for name in group])
         self.assertEqual(len(assigned), len(set(assigned)))
 
 

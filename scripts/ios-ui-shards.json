@@ -4,7 +4,13 @@
     "LaunchUITests"
   ],
   "ui-b": [
-    "EditorUITests"
+    "EditorUITests/testAlignAndWrapFollowCaretRow",
+    "EditorUITests/testBoardStaysBigAndAllRowsShow",
+    "EditorUITests/testCompactChipCalloutShowsTheFullName",
+    "EditorUITests/testDisabledSaveSaysWhy",
+    "EditorUITests/testGeometryChangeAndShrinkConfirmation",
+    "EditorUITests/testHomeControlActionsAndPlainPageScreen",
+    "EditorUITests/testInsertChipsFromTheKeyboardAccessory"
   ],
   "ui-c": [
     "BarEvidenceUITests",
@@ -17,5 +23,14 @@
   ],
   "ui-e": [
     "PolishUITests"
+  ],
+  "ui-f": [
+    "EditorUITests/testNewPageIsBoardShaped",
+    "EditorUITests/testNotePageOpensOnAFittingDisplay",
+    "EditorUITests/testPlainModeShowsPrefixes",
+    "EditorUITests/testReturnMovesToTheNextEmptyRow",
+    "EditorUITests/testShortMetadataNoteOpensInTheDocumentEditor",
+    "EditorUITests/testTypingReachesTheBoard",
+    "EditorUITests/testTypingReachesTheBoardThroughFixtureRender"
   ]
 }

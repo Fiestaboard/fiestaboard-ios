@@ -315,7 +315,8 @@ struct EditorRoot: View {
             .overlay(alignment: .topTrailing) {
                 Color.clear.frame(width: 1, height: 1)
                     .accessibilityElement()
-                    .accessibilityLabel("Preview input latency")
+                    .accessibilityLabel("Preview input latency; " + pipeline.state.inputToPreviewPhases
+                        .sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" }.joined(separator: ", "))
                     .accessibilityIdentifier("previewInputLatency")
                     .accessibilityValue(pipeline.state.inputToPreviewSeconds.map { String($0) } ?? "pending")
             }
