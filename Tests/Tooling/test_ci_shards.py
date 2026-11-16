@@ -47,10 +47,18 @@ name = pathlib.Path(sys.argv[0]).name
 with open(os.environ['CX_COMMAND_LOG'], 'a') as log:
     log.write(json.dumps([name] + sys.argv[1:]) + '\\n')
 if name == 'xcrun' and sys.argv[1:3] == ['simctl', 'list']:
+    cleanup = any(entry[1:3] == ['simctl', 'shutdown']
+                  for entry in map(json.loads, pathlib.Path(os.environ['CX_COMMAND_LOG']).read_text().splitlines()))
+    if cleanup:
+        status_exit = int(os.environ.get('CX_STATUS_LIST_EXIT', '0'))
+        if status_exit: sys.exit(status_exit)
+    state = os.environ.get('CX_FINAL_STATE', 'Shutdown')
     print(json.dumps({'devices': {'com.apple.CoreSimulator.SimRuntime.iOS-27-2': [
-        {'name': 'iPhone 17', 'udid': 'phone-id', 'isAvailable': True},
-        {'name': 'iPad Air 11-inch (M4)', 'udid': 'pad-id', 'isAvailable': True}
+        {'name': 'iPhone 17', 'udid': 'phone-id', 'isAvailable': True, 'state': state},
+        {'name': 'iPad Air 11-inch (M4)', 'udid': 'pad-id', 'isAvailable': True, 'state': 'Shutdown'}
     ]}}))
+if name == 'xcrun' and sys.argv[1:3] == ['simctl', 'shutdown']:
+    sys.exit(int(os.environ.get('CX_SHUTDOWN_EXIT', '0')))
 if name == 'xcodebuild':
     sys.exit(int(os.environ.get('CX_XCODE_EXIT', '0')))
 '''
@@ -130,6 +138,24 @@ if name == 'xcodebuild':
                 result = self.run_runner(**overrides)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(self.commands, [])
+
+    def test_already_shutdown_cleanup_preserves_success_and_continues(self):
+        result = self.run_runner(IOS_TEST_SHARD='ui-a', CX_SHUTDOWN_EXIT='149')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len(self.builds()), 2)
+
+    def test_shutdown_failure_requires_the_selected_device_to_be_shutdown(self):
+        for overrides in [{'CX_FINAL_STATE': 'Booted'}, {'CX_STATUS_LIST_EXIT': '7'}]:
+            with self.subTest(overrides=overrides):
+                self.log.unlink(missing_ok=True)
+                result = self.run_runner(IOS_TEST_SHARD='ui-a', IOS_TEST_MODEL='iPhone 17',
+                                         CX_SHUTDOWN_EXIT='149', **overrides)
+                self.assertEqual(result.returncode, 149, result.stderr)
+
+    def test_already_shutdown_cleanup_cannot_mask_test_failure(self):
+        result = self.run_runner(IOS_TEST_SHARD='ui-a', IOS_TEST_MODEL='iPhone 17',
+                                 CX_SHUTDOWN_EXIT='149', CX_XCODE_EXIT='65')
+        self.assertEqual(result.returncode, 1, result.stderr)
 
     def test_manifest_covers_every_ui_test_class_exactly_once(self):
         manifest = json.loads((ROOT / 'scripts/ios-ui-shards.json').read_text())

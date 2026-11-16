@@ -66,6 +66,22 @@ for model in "${models[@]}"; do
     simulator_failed=1
   fi
   # Release this job's selected simulator before starting the next device/archive.
-  xcrun simctl shutdown "$udid"
+  if xcrun simctl shutdown "$udid"; then
+    :
+  else
+    shutdown_status=$?
+    # The device may already be shut down. Accept only a fresh, exact-device
+    # confirmation; a failed query or any other state retains the cleanup error.
+    if xcrun simctl list devices --json | python3 -c '
+import json, sys
+devices = [device for group in json.load(sys.stdin)["devices"].values() for device in group
+           if device.get("udid") == sys.argv[1]]
+sys.exit(0 if len(devices) == 1 and devices[0].get("state") == "Shutdown" else 1)
+' "$udid"; then
+      echo "Selected simulator $udid is already shut down."
+    else
+      exit "$shutdown_status"
+    fi
+  fi
 done
 exit "$simulator_failed"
