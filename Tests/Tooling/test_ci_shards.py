@@ -25,7 +25,12 @@ SHARDS = {
         'testTypingReachesTheBoardThroughFixtureRender']],
     'ui-c': ['BarEvidenceUITests', 'CanvasUITests', 'IntegrationUITests', 'SaveUITests'],
     'ui-d': ['FormulaUITests'],
-    'ui-e': ['PolishUITests'],
+    'ui-e': [f'PolishUITests/{method}' for method in [
+        'testCharsetIssuesAreGroupedWithShowAll', 'testDocumentFillsTheHeightOnIPad',
+        'testOverrideBadgeCancel', 'testRecordKillAndReopen',
+        'testShowWhenAndPriorityAreAdvanced', 'testVoiceOverLabelDump']],
+    'ui-g': ['PolishUITests/testRecordCaretOverChips'],
+    'ui-h': ['PolishUITests/testRecordTypingUndoRedo'],
 }
 MODELS = {'iPhone 17': 'phone-id', 'iPad Air 11-inch (M4)': 'pad-id'}
 

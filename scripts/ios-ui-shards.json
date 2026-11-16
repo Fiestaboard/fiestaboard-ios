@@ -22,7 +22,12 @@
     "FormulaUITests"
   ],
   "ui-e": [
-    "PolishUITests"
+    "PolishUITests/testCharsetIssuesAreGroupedWithShowAll",
+    "PolishUITests/testDocumentFillsTheHeightOnIPad",
+    "PolishUITests/testOverrideBadgeCancel",
+    "PolishUITests/testRecordKillAndReopen",
+    "PolishUITests/testShowWhenAndPriorityAreAdvanced",
+    "PolishUITests/testVoiceOverLabelDump"
   ],
   "ui-f": [
     "EditorUITests/testNewPageIsBoardShaped",
@@ -32,5 +37,11 @@
     "EditorUITests/testShortMetadataNoteOpensInTheDocumentEditor",
     "EditorUITests/testTypingReachesTheBoard",
     "EditorUITests/testTypingReachesTheBoardThroughFixtureRender"
+  ],
+  "ui-g": [
+    "PolishUITests/testRecordCaretOverChips"
+  ],
+  "ui-h": [
+    "PolishUITests/testRecordTypingUndoRedo"
   ]
 }
