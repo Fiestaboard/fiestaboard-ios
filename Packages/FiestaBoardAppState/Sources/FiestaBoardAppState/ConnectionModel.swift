@@ -73,8 +73,9 @@ public enum WebSetupReturn: Sendable, Equatable {
     /// The root keeps user enrollment mounted while its own bootstrap runs.
     /// A cold saved-hub restore has no presentation owner and retains the shell.
     public var shouldPresentOnboarding: Bool {
-        guard store.status == nil, phase != .connected else { return false }
-        return onboardingPresentationID != nil || (phase != .checking && phase != .unreachable)
+        guard phase != .connected else { return false }
+        if onboardingPresentationID != nil { return true }
+        return store.status == nil && phase != .checking && phase != .unreachable
     }
     /// Reattach the current host without replacing its intent or clearing its hub.
     @discardableResult public func attachOnboardingPresentation() -> UUID {

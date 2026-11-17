@@ -47,6 +47,7 @@ final class FixtureRouter {
     let homeMutationGate = FixtureHomeMutationGate()
     // Synthetic scheduling control for the real root enrollment journey only.
     let onboardingBootstrapGate = FixtureHomeMutationGate()
+    let onboardingHandoffPagesGate = FixtureHomeMutationGate()
     let seed: [String: Any]
     var recorded: [String: (method: String, path: String, response: Response)] = [:]
     var states: [String: State] = [:]
@@ -123,6 +124,9 @@ final class FixtureRouter {
             guard authenticated else { return reply(401, cases["protected_unauthenticated"]!) }; state.token = nil; return reply(200, ["status": "ok"])
         }
         if state.mode != "disabled", !authenticated { return reply(401, cases["protected_unauthenticated"]!) }
+        if method == "GET", route == "v1/pages", prefix.hasPrefix("/signin-i9-root-"), !onboardingHandoffPagesGate.waitForRelease() {
+            return reply(503, ["detail": "Required onboarding post-status pages hold timed out"])
+        }
         if prefix.hasPrefix("/board-i8-compose-") { return composeRoute(method, route, body, boardID, state) }
         if prefix.hasPrefix("/board-"), let result = boardRoute(method, route, body, boardID, state,
             undoRequested: query.first { $0.name == "undo" }?.value == "true") { return result }

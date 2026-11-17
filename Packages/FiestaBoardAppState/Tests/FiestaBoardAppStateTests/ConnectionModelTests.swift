@@ -583,6 +583,7 @@ private actor EmptyRememberedConnectionVault: SessionVault {
 }
 
 private final class AuthDisabledConnectionURLProtocol: URLProtocol, @unchecked Sendable {
+    nonisolated(unsafe) static var heldPages: ConnectionHandoffPagesGate?
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func stopLoading() {}
@@ -601,6 +602,12 @@ private final class AuthDisabledConnectionURLProtocol: URLProtocol, @unchecked S
         default:
             client?.urlProtocol(self, didFailWithError: URLError(.badURL)); return
         }
+        if request.url!.host == "post-status.test", request.url!.lastPathComponent == "pages", let gate = Self.heldPages {
+            gate.hold(self, body: body); return
+        }
+        respond(body)
+    }
+    func respond(_ body: String) {
         let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: [:])!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: Data(body.utf8))
@@ -884,5 +891,90 @@ extension ConnectionModelTests {
         XCTAssertFalse(enrollmentVisible, "A completed phone enrollment must not change a later shell hub switch into enrollment")
         XCTAssertEqual(phaseAfterStaleCallback, .checking, "A completed presentation callback cannot cancel the shell's switch")
         XCTAssertEqual(model.phase, .connected); XCTAssertNotNil(model.snapshot)
+    }
+}
+
+
+/// Only the HTTP boundary is held; Live service, transport, Store and Connection model are real.
+private final class ConnectionHandoffPagesGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var pending: (AuthDisabledConnectionURLProtocol, String)?
+    private var observers: [CheckedContinuation<Void, Never>] = []
+    func hold(_ channel: AuthDisabledConnectionURLProtocol, body: String) {
+        let waiting = lock.withLock { pending = (channel, body); let result = observers; observers = []; return result }
+        waiting.forEach { $0.resume() }
+    }
+    func waitForPages() async {
+        await withCheckedContinuation { continuation in
+            let ready = lock.withLock { if pending != nil { return true }; observers.append(continuation); return false }
+            if ready { continuation.resume() }
+        }
+    }
+    func release() {
+        let reply = lock.withLock { let result = pending; pending = nil; return result }
+        if let (channel, body) = reply { channel.respond(body) }
+    }
+}
+
+extension ConnectionModelTests {
+    private func heldLiveHandoff(_ gate: ConnectionHandoffPagesGate) throws -> (ConnectionModel, BoardStore, URL) {
+        AuthDisabledConnectionURLProtocol.heldPages = gate
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let deployment = try DeploymentURL("https://post-status.test")
+        let transport = URLSessionTransport(deployment: deployment, protocolClasses: [AuthDisabledConnectionURLProtocol.self])
+        let service = LiveFiestaBoardService(deployment: deployment, transport: transport)
+        let store = BoardStore()
+        let model = ConnectionModel(store: store, catalog: ServerCatalog(directory: directory), discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, serviceFactory: { _ in service })
+        model.address = deployment.description
+        return (model, store, directory)
+    }
+
+    func testActiveRootSurvivesRealServiceStatusUntilHeldPagesFinish() async throws {
+        let gate = ConnectionHandoffPagesGate(), (model, store, directory) = try heldLiveHandoff(gate)
+        defer { gate.release(); AuthDisabledConnectionURLProtocol.heldPages = nil; try? FileManager.default.removeItem(at: directory) }
+        let owner = model.attachOnboardingPresentation()
+        let connecting = model.connectAddress(); await gate.waitForPages()
+        XCTAssertNotNil(store.status, "The real Store publishes status before its pages HTTP request finishes")
+        XCTAssertEqual(model.phase, .checking); XCTAssertTrue(model.busy); XCTAssertTrue(store.connecting)
+        let visibleBeforeConnected = model.shouldPresentOnboarding
+        XCTAssertEqual(model.attachOnboardingPresentation(), owner)
+        gate.release(); await connecting.value
+        XCTAssertTrue(visibleBeforeConnected, "Store status cannot unmount a presenter that still owns cancellation")
+        XCTAssertEqual(model.phase, .connected); XCTAssertFalse(model.shouldPresentOnboarding)
+        XCTAssertNotNil(store.status); XCTAssertFalse(store.connecting)
+        model.dismissOnboardingPresentation(owner)
+        XCTAssertEqual(model.phase, .connected); XCTAssertNotNil(store.status)
+    }
+
+    func testDismissAfterRealServiceStatusRejectsHeldPagesCompletionAndClearsSecrets() async throws {
+        let gate = ConnectionHandoffPagesGate(), (model, store, directory) = try heldLiveHandoff(gate)
+        defer { gate.release(); AuthDisabledConnectionURLProtocol.heldPages = nil; try? FileManager.default.removeItem(at: directory) }
+        let owner = model.attachOnboardingPresentation()
+        let connecting = model.connectAddress(); await gate.waitForPages()
+        XCTAssertNotNil(store.status); XCTAssertEqual(model.phase, .checking)
+        let visibleBeforeDismissal = model.shouldPresentOnboarding
+        model.password = "unsubmitted-password"; model.setupToken = "unsubmitted-proof"
+        model.resetCode = "unsubmitted-code"; model.resetNewPassword = "unsubmitted-new-password"; model.resetConfirmation = "unsubmitted-confirmation"
+        model.dismissOnboardingPresentation(owner)
+        XCTAssertEqual(model.phase, .picker); XCTAssertNil(model.snapshot); XCTAssertNil(store.status)
+        XCTAssertEqual(model.password, ""); XCTAssertEqual(model.setupToken, "")
+        XCTAssertEqual(model.resetCode, ""); XCTAssertEqual(model.resetNewPassword, ""); XCTAssertEqual(model.resetConfirmation, "")
+        gate.release(); await connecting.value
+        XCTAssertTrue(visibleBeforeDismissal)
+        XCTAssertEqual(model.phase, .picker); XCTAssertNil(model.snapshot); XCTAssertNil(store.status)
+        XCTAssertFalse(model.busy); XCTAssertFalse(store.connecting)
+    }
+
+    func testColdSavedHubKeepsShellAfterRealServiceStatusWhilePagesAreHeld() async throws {
+        let gate = ConnectionHandoffPagesGate(), (model, store, directory) = try heldLiveHandoff(gate)
+        defer { gate.release(); AuthDisabledConnectionURLProtocol.heldPages = nil; try? FileManager.default.removeItem(at: directory) }
+        let hub = SavedServer(deployment: try DeploymentURL(model.address), alias: "Restoring hub", installationID: "native-installation")
+        let connecting = model.selectSaved(hub); await gate.waitForPages()
+        XCTAssertNotNil(store.status); XCTAssertEqual(model.phase, .checking)
+        let visibleBeforeConnected = model.shouldPresentOnboarding
+        gate.release(); await connecting.value
+        XCTAssertFalse(visibleBeforeConnected, "Unowned cold restoration must retain the shell")
+        XCTAssertEqual(model.phase, .connected); XCTAssertFalse(model.shouldPresentOnboarding)
+        XCTAssertNotNil(store.status)
     }
 }

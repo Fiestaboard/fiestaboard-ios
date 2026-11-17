@@ -132,7 +132,15 @@ import XCTest
         reveal(username, in: app); username.tap(); username.typeText("fixture_admin")
         let password = app.secureTextFields["connectionPassword"]
         reveal(password, in: app); password.tap(); password.typeText("fixture-password")
+        server.holdOnboardingHandoffPages(true)
+        defer { server.holdOnboardingHandoffPages(false) }
         app.keyboards.buttons["Go"].tap()
+        let handoff = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in server.onboardingHandoffPagesWaiting }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [handoff], timeout: 4), .completed, "The real Store must reach pages after publishing its status")
+        XCTAssertFalse(username.waitForNonExistence(timeout: 1), "The presenter owns cancellation until the model finishes its connection handoff")
+        XCTAssertFalse(app.navigationBars["Home"].exists, "Store status alone cannot remove the active presenter")
+        let pending = XCTAttachment(screenshot: app.screenshot()); pending.name = "i9-root-post-status-owned-presenter"; add(pending)
+        server.holdOnboardingHandoffPages(false)
         XCTAssertTrue(app.navigationBars["Home"].firstMatch.waitForExistence(timeout: 10))
         XCTAssertFalse(app.textFields["Username"].exists, "Connected handoff must retire the form while keeping the live session")
         let connected = XCTAttachment(screenshot: app.screenshot()); connected.name = "i9-root-connected-handoff"; add(connected)

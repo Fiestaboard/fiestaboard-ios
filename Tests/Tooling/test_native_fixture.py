@@ -31,6 +31,9 @@ if CommandLine.arguments.count > 3 {
         } else if command == "hold-onboarding" { server.holdOnboardingBootstrap(true); print("ok")
         } else if command == "release-onboarding" { server.holdOnboardingBootstrap(false); print("ok")
         } else if command == "onboarding-waiting" { print(server.onboardingBootstrapWaiting ? "waiting" : "idle")
+        } else if command == "hold-handoff-pages" { server.holdOnboardingHandoffPages(true); print("ok")
+        } else if command == "release-handoff-pages" { server.holdOnboardingHandoffPages(false); print("ok")
+        } else if command == "handoff-pages-waiting" { print(server.onboardingHandoffPagesWaiting ? "waiting" : "idle")
         } else { server.setDropped(command == "drop"); print("ok") }
         fflush(nil)
     }
@@ -282,6 +285,36 @@ while let line = readLine() {
                 self.assertEqual(json.load(response),expected)
         finally:
             process.stdin.write('release-onboarding\n');process.stdin.flush()
+            process.stdin.close();process.wait(timeout=5);process.stdout.close();process.stderr.close()
+
+    def test_post_status_pages_hold_preserves_real_authenticated_http_response(self):
+        process=subprocess.Popen([str(self.binary),str(ROOT/'Tests/UITests/FixtureResources/retained-ui.json'),str(ROOT/'Tests/Fixtures'),'listen'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        def command(value):
+            process.stdin.write(value+'\n');process.stdin.flush()
+            self.assertTrue(select.select([process.stdout],[],[],3)[0], 'Fixture control must respond')
+            return process.stdout.readline().strip()
+        try:
+            self.assertTrue(select.select([process.stdout],[],[],8)[0], 'Native listener must become ready')
+            port=int(process.stdout.readline()); base=f'http://127.0.0.1:{port}/signin-i9-root-pages-control/api/'
+            login=urllib.request.Request(base+'auth/device/login',data=json.dumps({'username':'fixture_admin','password':'fixture-password'}).encode(),headers={'Content-Type':'application/json'})
+            token=json.load(urllib.request.urlopen(login,timeout=3))['access_token']
+            request=urllib.request.Request(base+'v1/pages',headers={'Authorization':'Bearer '+token})
+            expected=json.load(urllib.request.urlopen(request,timeout=3))
+            self.assertEqual(command('hold-handoff-pages'),'ok')
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as worker:
+                pending=worker.submit(urllib.request.urlopen,request,timeout=6)
+                try:
+                    deadline=time.monotonic()+3
+                    while command('handoff-pages-waiting') != 'waiting':
+                        self.assertLess(time.monotonic(),deadline,'Authenticated pages HTTP request must reach hold')
+                        time.sleep(0.01)
+                    self.assertFalse(pending.done(),'Held pages must not finish before explicit release')
+                finally:
+                    self.assertEqual(command('release-handoff-pages'),'ok')
+                response=pending.result(timeout=3)
+                self.assertEqual(response.status,200);self.assertEqual(json.load(response),expected)
+        finally:
+            process.stdin.write('release-handoff-pages\n');process.stdin.flush()
             process.stdin.close();process.wait(timeout=5);process.stdout.close();process.stderr.close()
 
     def test_socket_fragmented_body_and_connection_drop(self):
