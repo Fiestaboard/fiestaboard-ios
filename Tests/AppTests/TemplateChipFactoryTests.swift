@@ -5,25 +5,22 @@ import FiestaBoardRender
 import FiestaBoardDocuments
 @testable import FiestaBoard
 
-/// Runs before the other app test classes so the candidate does not inherit a prior tile render.
-/// This is a diagnostic of one fresh ImageRenderer, not a production fallback or retry.
+/// Runs before the other app test classes and exercises the first production tile directly.
+/// No diagnostic renderer may warm this path before the original-pixel assertion.
 @MainActor final class ATemplateTileColdCaptureTests: XCTestCase {
-    func testFirstCGImageCopyPreservesOriginalTilePixels() throws {
+    func testFirstProductionTilePreservesOriginalPixels() throws {
         let scale: CGFloat = 2
         let font = UIFont.monospacedSystemFont(ofSize: 17, weight: .regular)
         let height = (font.capHeight * 1.55).rounded()
         let width = (height * 0.72).rounded()
-        let renderer = ImageRenderer(content: Canvas { context, size in
-            FlapTilePainter.paint(code: BoardTables.code(for: .color(.red)),
-                model: .flap(rows: 1, cols: 1), in: CGRect(origin: .zero, size: size), context: &context)
-        }.frame(width: width, height: height))
-        renderer.scale = scale
-        let first = try XCTUnwrap(renderer.cgImage, "first candidate render has backing pixels")
-        let owned = try XCTUnwrap(CGContext(data: nil, width: Int(width * scale), height: Int(height * scale),
-            bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!,
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
-        owned.draw(first, in: CGRect(x: 0, y: 0, width: first.width, height: first.height))
-        let tile = UIImage(cgImage: try XCTUnwrap(owned.makeImage()), scale: scale, orientation: .up)
+        let traits = UITraitCollection(traitsFrom: [UITraitCollection(userInterfaceStyle: .light),
+                                                   UITraitCollection(displayScale: scale)])
+        let (tile, bounds) = TemplateChipRenderer.tile(color: "red", font: font, traits: traits, outlined: false)
+        let backing = try XCTUnwrap(tile.cgImage, "first production render has backing pixels")
+        XCTAssertEqual(bounds.size, CGSize(width: width, height: height))
+        XCTAssertEqual(tile.scale, scale)
+        XCTAssertEqual(backing.width, Int(width * scale))
+        XCTAssertEqual(backing.height, Int(height * scale))
         let format = UIGraphicsImageRendererFormat()
         format.scale = scale
         format.opaque = true
@@ -33,7 +30,7 @@ import FiestaBoardDocuments
             tile.draw(at: CGPoint(x: 8, y: 12))
         }
         let attachment = XCTAttachment(image: actual)
-        attachment.name = "template-tile-cold-cgimage-owned"
+        attachment.name = "template-tile-first-production"
         attachment.lifetime = .keepAlways
         add(attachment)
         let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "template-chip", withExtension: "png", subdirectory: "iOS27"))
@@ -49,8 +46,8 @@ import FiestaBoardDocuments
         }
         let actualPixels = try pixels(captured)
         let expectedPixels = try pixels(expected)
-        print("ColdTemplateTileBackendProbe cgimage-owned exactMatch=\(actualPixels == expectedPixels)")
-        XCTAssertEqual(actualPixels, expectedPixels, "first candidate render must retain the original tile pixels")
+        print("FirstProductionTemplateTile exactMatch=\(actualPixels == expectedPixels)")
+        XCTAssertEqual(actualPixels, expectedPixels, "first production render must retain the original tile pixels")
     }
 }
 
