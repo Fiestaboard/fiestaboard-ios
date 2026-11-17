@@ -1,4 +1,28 @@
 import Foundation
+import FiestaBoardDocuments
+
+/// A nonsecret scope published only after installation and read-ready authentication verification.
+public struct VerifiedConnectionScope: Sendable, Equatable {
+    public let deployment: DeploymentURL
+    public let installationID: String
+    public let connectionID: UUID
+    public let isDemo: Bool
+    init(deployment: DeploymentURL, installationID: String, connectionID: UUID, isDemo: Bool = false) {
+        self.deployment = deployment; self.installationID = installationID
+        self.connectionID = connectionID; self.isDemo = isDemo
+    }
+}
+public struct ScopedPageDocument: Sendable {
+    public let data: Data
+    public let scope: VerifiedConnectionScope
+    public init(data: Data, scope: VerifiedConnectionScope) { self.data = data; self.scope = scope }
+}
+
+public struct ScopedCollectionDocument: Sendable {
+    public let collection: PageCollection?
+    public let scope: VerifiedConnectionScope
+    public init(collection: PageCollection?, scope: VerifiedConnectionScope) { self.collection = collection; self.scope = scope }
+}
 
 public protocol FiestaBoardService: Sendable {
     var deployment: DeploymentURL { get }
@@ -20,6 +44,7 @@ public protocol FiestaBoardService: Sendable {
     func board(_ target: BoardTarget) async throws -> BoardDetail
     func collectionAccess() async -> CollectionWriteAccess
     func collections() async throws -> [PageCollection]
+    func scopedCollectionDocument(id: String?) async throws -> ScopedCollectionDocument
     func collection(id: String) async throws -> PageCollection
     func acknowledgeCollectionCreationReview() async throws
     func createCollection(_ input: CollectionInput) async throws -> PageCollection
@@ -30,11 +55,14 @@ public protocol FiestaBoardService: Sendable {
     func createPage(context: PageCreationContext) async throws -> PageCreationReceipt
     func readPageForDeletion(id: String) async throws -> PageDeletionContext
     func deletePage(context: PageDeletionContext) async throws -> PageDeletionReceipt
+    func schedules(on target: BoardTarget) async throws -> ScheduleList
     func pages() async throws -> [Page]
+    func scopedPageDocument(id: String) async throws -> ScopedPageDocument
     func pageDocumentData(id: String) async throws -> Data
     func page(id: String) async throws -> Page
     func savePage(id: String, patch: PageSavePatch) async throws -> PageSaveReceipt
     func validatePage(requestData: Data, target: BoardTarget) async throws -> TemplateValidationResult
+    func previewFlexiblePage(requestData: Data, target: BoardTarget) async throws -> FlexiblePreviewResult
     func previewPage(requestData: Data, target: BoardTarget) async throws -> TemplatePreviewResult
     func updateBoard(_ patch: BoardPatch, on target: BoardTarget) async throws -> BoardConfigurationReceipt
     func defaultPageWriteCapability() async -> DefaultPageWriteCapability
@@ -53,11 +81,14 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     private let allowsSimulatedCollectionWrites: Bool
     private var generation: UInt64 = 0
     private var observedInstallationID: String?
+    private var activeScope: VerifiedConnectionScope?
+    private var replacementConnectionID: UUID?
     private var persistenceWarning: SessionPersistenceWarning?
     private var access = DraftAccess.readOnly
     private var pageWritesOptedIn = false
     private var previewAudited = false
     private var knownPages: [String: Page] = [:]
+    private var knownPageDocuments: [String: Data] = [:]
     private var savingPages: Set<String> = []
     private var pageReadbacks: Set<String> = []
     private var pageWriteGenerations: [String: UInt64] = [:]
@@ -92,13 +123,21 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         deployment = demoDeployment
         self.transport = transport
         allowsSimulatedCollectionWrites = true
+        activeScope = VerifiedConnectionScope(deployment: demoDeployment, installationID: "demo-local-v1", connectionID: UUID(uuidString: "00000000-0000-4000-8000-000000000001")!, isDemo: true)
     }
 
     public func bootstrap() async throws -> BootstrapSnapshot {
-        try await bootstrapSnapshot(invalidateUnauthenticated: true)
+        let retainedID = activeScope?.connectionID
+        invalidateAuthentication()
+        replacementConnectionID = retainedID ?? replacementConnectionID
+        return try await bootstrapSnapshot(invalidateUnauthenticated: true)
     }
 
     private func bootstrapSnapshot(invalidateUnauthenticated: Bool) async throws -> BootstrapSnapshot {
+        if invalidateUnauthenticated {
+            replacementConnectionID = activeScope?.connectionID ?? replacementConnectionID
+            activeScope = nil
+        }
         let token = generation
         try Task.checkCancellation()
         let health: ServerHealth = try await fetch(APIRequest(path: ["health"], cachePolicy: .noStore))
@@ -107,11 +146,17 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         let identity: ServerIdentity = try await fetch(APIRequest(path: ["discover"], cachePolicy: .noStore))
         guard identity.product == "FiestaBoard" else { throw FiestaBoardError.wrongProduct }
         guard token == generation else { throw FiestaBoardError.staleSession }
+        if let previous = observedInstallationID, previous != identity.installationID {
+            activeScope = nil; replacementConnectionID = UUID()
+        }
         observedInstallationID = identity.installationID
         let auth: AuthStatus = try await fetch(APIRequest(path: ["auth", "status"], cachePolicy: .noStore), invalidateUnauthenticated: invalidateUnauthenticated)
         guard token == generation else { throw FiestaBoardError.staleSession }
         try Task.checkCancellation()
-        if invalidateUnauthenticated && auth.enabled && !auth.authenticated { invalidateAuthentication() }
+        if invalidateUnauthenticated && auth.bootstrapPhase != .ready { invalidateAuthentication() }
+        if invalidateUnauthenticated && auth.bootstrapPhase == .ready && (!auth.enabled || auth.authenticated) {
+            try await publishVerifiedScope(token: token)
+        }
         return BootstrapSnapshot(deployment: deployment, health: health, identity: identity, auth: auth)
     }
 
@@ -124,6 +169,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard token == generation else { throw FiestaBoardError.staleSession }
         let status = try await verifiedAuthReadback()
         guard status.enabled == enabled, status.mode == (enabled ? "enabled" : "disabled"), status.firstRun != true else { throw FiestaBoardError.unknownMutationOutcome }
+        if status.bootstrapPhase == .ready && (!status.enabled || status.authenticated) { try await publishVerifiedScope(token: token) }
         return status
     }
 
@@ -135,6 +181,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard token == generation else { throw FiestaBoardError.staleSession }
         let status = try await verifiedAuthReadback()
         guard status.enabled, status.bootstrapPhase == .ready, status.authenticated, status.username == username else { throw FiestaBoardError.unknownMutationOutcome }
+        try await publishVerifiedScope(token: token)
         return status
     }
 
@@ -152,7 +199,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
 
     public func authStatus() async throws -> AuthStatus {
         let status: AuthStatus = try await fetch(APIRequest(path: ["auth", "status"], cachePolicy: .noStore))
-        if status.enabled && !status.authenticated { invalidateAuthentication() }
+        if status.bootstrapPhase != .ready { invalidateAuthentication() }
         return status
     }
 
@@ -163,12 +210,13 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     /// Retire old reads/mutations before dispatch and clear their cookie generation before accepting a replacement session.
     private func beginAuthenticationTransition() async throws -> UInt64 {
         generation &+= 1
+        activeScope = nil; replacementConnectionID = nil
         creationContexts = [:]; deletionContexts = [:]; creatingPage = false
         savingPages = []; pageReadbacks = []; pageWriteGenerations = [:]
         controlVersion = nil; controlOptIn = false
         resetCollectionSession()
         access = .readOnly
-        pageWritesOptedIn = false; previewAudited = false; knownPages = [:]
+        pageWritesOptedIn = false; previewAudited = false; knownPages = [:]; knownPageDocuments = [:]
         knownBoards = [:]
         let token = generation
         await transport.resetSession()
@@ -188,6 +236,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard token == generation else { throw FiestaBoardError.staleSession }
         let status = try await verifiedAuthReadback()
         guard status.authenticated, status.bootstrapPhase == .ready, status.username == username else { throw FiestaBoardError.unknownMutationOutcome }
+        try await publishVerifiedScope(token: token)
         return status
     }
 
@@ -222,6 +271,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
                 await transport.resetSession()
                 return false
             }
+            try await publishVerifiedScope(token: token)
             return true
         } catch {
             guard token == generation else { throw FiestaBoardError.staleSession }
@@ -245,6 +295,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     }
 
     public func logout() async throws {
+        activeScope = nil
         generation &+= 1
         creationContexts = [:]; deletionContexts = [:]; creatingPage = false
         savingPages = []; pageReadbacks = []; pageWriteGenerations = [:]
@@ -252,7 +303,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         resetCollectionSession()
         let token = generation
         access = .readOnly
-        pageWritesOptedIn = false; previewAudited = false; knownPages = [:]
+        pageWritesOptedIn = false; previewAudited = false; knownPages = [:]; knownPageDocuments = [:]
         knownBoards = [:]
         persistenceWarning = nil
         await transport.forgetRememberedSession()
@@ -271,6 +322,9 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     }
 
     public func connect(allowCandidateWrites: Bool = false) async throws -> ConnectionStatus {
+        if allowsSimulatedCollectionWrites {
+            activeScope = VerifiedConnectionScope(deployment: deployment, installationID: "demo-local-v1", connectionID: UUID(uuidString: "00000000-0000-4000-8000-000000000001")!, isDemo: true)
+        }
         generation &+= 1
         creationContexts = [:]; deletionContexts = [:]; creatingPage = false
         savingPages = []; pageReadbacks = []; pageWriteGenerations = [:]
@@ -278,9 +332,16 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         resetCollectionSession()
         let token = generation
         access = .readOnly
-        pageWritesOptedIn = false; previewAudited = false; knownPages = [:]
+        pageWritesOptedIn = false; previewAudited = false; knownPages = [:]; knownPageDocuments = [:]
         knownBoards = [:]
         controlVersion = nil; controlOptIn = false; defaultContexts = [:]; defaultWriting = false; defaultWriteGeneration &+= 1
+        // Reverify every discovered live connection, including an auth-disabled
+        // selection whose empty remembered-session restore withdrew its first scope.
+        // Reconnect retains a UUID only when discovery still identifies the same install.
+        if !allowsSimulatedCollectionWrites, observedInstallationID != nil {
+            _ = try await bootstrapSnapshot(invalidateUnauthenticated: true)
+            guard token == generation else { throw FiestaBoardError.staleSession }
+        }
         let version: VersionInfo = try await fetch(APIRequest(path: ["version"]))
         let boards = try await boards()
         guard generation == token else { throw FiestaBoardError.staleSession }
@@ -288,7 +349,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         collectionWritesOptedIn = allowCandidateWrites
         collectionCreateAudited = allowsSimulatedCollectionWrites || (version.runningVersion == "10.1.7" && !version.isDev)
         pageWritesOptedIn = allowCandidateWrites
-        previewAudited = ["10.0.0", "10.1.2", "10.1.7"].contains(version.runningVersion ?? "") && !version.isDev
+        previewAudited = CapabilityPolicy.allowsLegacyTemplateEvaluation(runningVersion: version.runningVersion, isDev: version.isDev)
         controlVersion = version; controlOptIn = allowCandidateWrites
         if CapabilityPolicy.allows(.scalarControls, version: version.runningVersion, isDev: version.isDev, optedIn: allowCandidateWrites) { access = .candidateWrites }
         return ConnectionStatus(version: version, access: access, isDemo: false, sessionPersistence: "Memory only")
@@ -312,6 +373,13 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         return detail
     }
 
+    public func schedules(on target: BoardTarget) async throws -> ScheduleList {
+        try validateTarget(target)
+        let result = try await response(APIRequest(path: ["v1", "schedules"],
+            queryItems: [URLQueryItem(name: "board_id", value: target.boardID)], cachePolicy: .noStore))
+        return try ScheduleList(data: result.data, boardID: target.boardID)
+    }
+
     public func pages() async throws -> [Page] {
         struct List: Decodable { let pages: [Page]; let total: Int }
         let list: List = try await fetch(APIRequest(path: ["v1", "pages"]))
@@ -322,14 +390,39 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     }
 
     public func page(id: String) async throws -> Page {
-        guard DeploymentURL.validSegment(id) else { throw FiestaBoardError.invalidPath }
-        let writeGeneration = pageWriteGenerations[id, default: 0]
-        let page: Page = try await fetch(APIRequest(path: ["v1", "pages", id]))
-        guard writeGeneration == pageWriteGenerations[id, default: 0] else { throw FiestaBoardError.stalePageContext }
-        guard page.id == id else { throw FiestaBoardError.invalidResponse }
-        knownPages[id] = page
-        if !savingPages.contains(id) { pageReadbacks.remove(id) }
-        return page
+        try JSONDecoder().decode(Page.self, from: await pageDocumentData(id: id))
+    }
+
+    private func publishVerifiedScope(token: UInt64) async throws {
+        guard let installation = observedInstallationID, !installation.isEmpty else { return }
+        let provisional = await transport.provisionalConnectionID()
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        let id = replacementConnectionID ?? activeScope?.connectionID ?? provisional ?? UUID()
+        let confirmedID = await transport.verifyConnectionID(id, installationID: installation)
+        guard token == generation, let confirmedID else { throw FiestaBoardError.staleSession }
+        activeScope = VerifiedConnectionScope(deployment: deployment, installationID: installation, connectionID: confirmedID)
+        replacementConnectionID = nil
+    }
+
+    /// Scope and exact bytes are captured under one service generation, including vault ownership.
+    public func scopedPageDocument(id: String) async throws -> ScopedPageDocument {
+        let token = generation
+        guard let scope = activeScope else { throw FiestaBoardError.staleSession }
+        let data = try await pageDocumentData(id: id)
+        let owned = scope.isDemo ? true : await transport.ownsConnectionID(scope.connectionID)
+        guard token == generation, activeScope == scope, owned else { throw FiestaBoardError.staleSession }
+        return ScopedPageDocument(data: data, scope: scope)
+    }
+
+    /// Capture content and verified ownership under one service epoch, including new collections.
+    public func scopedCollectionDocument(id: String?) async throws -> ScopedCollectionDocument {
+        let token = generation
+        guard let scope = activeScope else { throw FiestaBoardError.staleSession }
+        let value: PageCollection?
+        if let id { value = try await collection(id: id) } else { value = nil }
+        let owned = scope.isDemo ? true : await transport.ownsConnectionID(scope.connectionID)
+        guard token == generation, activeScope == scope, owned else { throw FiestaBoardError.staleSession }
+        return ScopedCollectionDocument(collection: value, scope: scope)
     }
 
     /// Returns the exact public document bytes, preserving fields outside the read-only Page projection.
@@ -342,6 +435,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
             throw FiestaBoardError.invalidResponse
         }
         knownPages[id] = page
+        knownPageDocuments[id] = result.data
         if !savingPages.contains(id) { pageReadbacks.remove(id) }
         return result.data
     }
@@ -350,8 +444,17 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard DeploymentURL.validSegment(id) else { throw FiestaBoardError.invalidPath }
         try patch.validate()
         guard pageWritesOptedIn, let baseline = knownPages[id], baseline.editProtocol == "page-revision-v1",
-              baseline.revision?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false, baseline.type == "template" else { throw FiestaBoardError.pageWritesDisabled }
+              baseline.revision?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false, CapabilityPolicy.supportsEditableDocument(baseline, version: controlVersion?.runningVersion, isDev: controlVersion?.isDev ?? true) else { throw FiestaBoardError.pageWritesDisabled }
+        guard (!patch.hasFlexibleFields || CapabilityPolicy.supportsFlexibleDocument(baseline)),
+              (patch.template == nil && patch.lineMetadataData == nil) || baseline.supportsTemplateEditing else { throw FiestaBoardError.pageWritesDisabled }
         guard !savingPages.contains(id), !pageReadbacks.contains(id) else { throw FiestaBoardError.pageReadbackRequired }
+        if CapabilityPolicy.supportsFlexibleDocument(baseline) {
+            guard let data = knownPageDocuments[id], case .object(var root) = try? LosslessJSON.parse(data),
+                  case .object(let changes) = try? LosslessJSON.parse(patch.serializedData()) else { throw FiestaBoardError.pageWritesDisabled }
+            for (key, value) in changes where key != "expected_revision" { root[key] = value }
+            let document = try PageDocument(data: LosslessJSON.object(root).serializedData())
+            guard document.flexibleIssues.isEmpty else { throw FiestaBoardError.pageWritesDisabled }
+        }
         pageWriteGenerations[id, default: 0] &+= 1
         deletionContexts = deletionContexts.filter { $0.value.page.id != id }
         savingPages.insert(id); pageReadbacks.insert(id)
@@ -364,7 +467,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
             let receipt = try PageSaveReceipt(rawData: response.data, expectedPageID: id)
             let updated = try JSONDecoder().decode(Page.self, from: receipt.pageData)
             guard updated.revision != patch.expectedRevision else { throw FiestaBoardError.unknownMutationOutcome }
-            knownPages[id] = updated; pageReadbacks.remove(id)
+            knownPages[id] = updated; knownPageDocuments[id] = receipt.pageData; pageReadbacks.remove(id)
             return receipt
         } catch {
             switch error as? FiestaBoardError {
@@ -383,6 +486,22 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         try requirePreview(requestData, target: target, render: true)
         let result = try await response(APIRequest(.post, path: ["templates", "render"], body: requestData))
         return try TemplatePreviewResult(rawData: result.data)
+    }
+    public func previewFlexiblePage(requestData: Data, target: BoardTarget) async throws -> FlexiblePreviewResult {
+        try validateTarget(target)
+        guard knownBoards[target.boardID] != nil,
+              knownPages.values.contains(where: CapabilityPolicy.supportsFlexibleDocument),
+              let members = try? RawJSONObject.members(requestData), Set(members.keys) == ["page", "board_id"],
+              let board = members["board_id"], (try? JSONDecoder().decode(String.self, from: board)) == target.boardID,
+              let page = members["page"], case .object(var author) = try? LosslessJSON.parse(page),
+              author["type"] == .string("flexible"),
+              ["id", "created_at", "updated_at", "revision", "expected_revision", "edit_protocol", "document_protocol", "demo_plugin_id"].allSatisfy({ author[$0] == nil }) else { throw FiestaBoardError.invalidTarget }
+        author["document_protocol"] = .string("page-document-v2")
+        let document = try PageDocument(data: LosslessJSON.object(author).serializedData())
+        guard document.flexibleIssues.isEmpty else { throw FiestaBoardError.previewUnsupported }
+        let result = try await response(APIRequest(.post, path: ["pages", "preview", "flexible"], body: requestData))
+        guard result.status == 200 else { throw FiestaBoardError.rejected(status: result.status) }
+        return try FlexiblePreviewResult(rawData: result.data)
     }
     private func requirePreview(_ data: Data, target: BoardTarget, render: Bool) throws {
         try validateTarget(target)
@@ -507,7 +626,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
               CapabilityPolicy.allows(operation, version: version.runningVersion, isDev: version.isDev, optedIn: controlOptIn) else { throw FiestaBoardError.writesDisabled }
         guard knownBoards[target.boardID] != nil else { throw FiestaBoardError.invalidTarget }
     }
-    private func response(_ request: APIRequest, invalidateUnauthenticated: Bool = true) async throws -> APIResponse {
+    func response(_ request: APIRequest, invalidateUnauthenticated: Bool = true) async throws -> APIResponse {
         let token = generation
         do {
             let result = try await transport.send(request)
@@ -520,7 +639,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
             throw (error as? FiestaBoardError) ?? (request.isMutation ? .unknownMutationOutcome : .networkUnavailable)
         }
     }
-    private func fetch<T: Decodable & Sendable>(_ request: APIRequest, invalidateUnauthenticated: Bool = true) async throws -> T {
+    func fetch<T: Decodable & Sendable>(_ request: APIRequest, invalidateUnauthenticated: Bool = true) async throws -> T {
         let response = try await response(request, invalidateUnauthenticated: invalidateUnauthenticated)
         do { return try JSONDecoder().decode(T.self, from: response.data) }
         catch let error as FiestaBoardError where !request.isMutation { throw error }
@@ -537,11 +656,12 @@ extension LiveFiestaBoardService {
         collectionCreationWriteGeneration = 0; collectionCreationReviewed = false
     }
     private func invalidateAuthentication() {
+        activeScope = nil; replacementConnectionID = UUID()
         generation &+= 1
         creationContexts = [:]; deletionContexts = [:]; creatingPage = false
         savingPages = []; pageReadbacks = []; pageWriteGenerations = [:]
         controlVersion = nil; controlOptIn = false
-        access = .readOnly; pageWritesOptedIn = false; knownPages = [:]
+        access = .readOnly; pageWritesOptedIn = false; knownPages = [:]; knownPageDocuments = [:]
         resetCollectionSession()
     }
     public func collectionAccess() async -> CollectionWriteAccess {
@@ -751,6 +871,7 @@ extension LiveFiestaBoardService {
         guard result.status == 200, (try? RawJSONObject.members(result.data)) != nil,
               let page = try? JSONDecoder().decode(Page.self, from: result.data), page.id == id,
               PageCreationReceipt.validPage(page) else { throw FiestaBoardError.invalidResponse }
+        guard CapabilityPolicy.supportsTemplateDocument(page, version: controlVersion?.runningVersion, isDev: controlVersion?.isDev ?? true) else { throw FiestaBoardError.pageWritesDisabled }
         let context = PageDeletionContext(deployment: deployment, page: page, pageData: result.data, generation: session, token: UUID())
         pageReadbacks.remove(id)
         deletionContexts[context.token] = context

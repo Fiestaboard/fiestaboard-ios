@@ -41,6 +41,7 @@ private actor PageFixtureTransport: APITransport {
     let version: String?
     let isDev: Bool
     let protocolName: String?
+    let documentProtocol: String?
     let revision: String?
     var saveOutcome: FiestaBoardError?
     let saveStatus: Int
@@ -54,8 +55,8 @@ private actor PageFixtureTransport: APITransport {
         await withCheckedContinuation { readObservers.append($0) }
     }
     func releaseRead() { readGate?.resume(); readGate = nil }
-    init(version: String? = "10.1.2", isDev: Bool = false, protocolName: String? = "page-revision-v1", revision: String? = "original", saveOutcome: FiestaBoardError? = nil, saveStatus: Int = 200) {
-        self.version = version; self.isDev = isDev; self.protocolName = protocolName; self.revision = revision; self.saveOutcome = saveOutcome; self.saveStatus = saveStatus
+    init(version: String? = "10.1.2", isDev: Bool = false, documentProtocol: String? = nil, protocolName: String? = "page-revision-v1", revision: String? = "original", saveOutcome: FiestaBoardError? = nil, saveStatus: Int = 200) {
+        self.version = version; self.isDev = isDev; self.documentProtocol = documentProtocol; self.protocolName = protocolName; self.revision = revision; self.saveOutcome = saveOutcome; self.saveStatus = saveStatus
         previewReply = Data(#"{"rendered":"🛰️","lines":["🛰️"],"line_count":1,"charset":"rich_future","charset_issues":[{"row":0,"col":0,"token":{"x":9007199254740993},"reason":"icon","fallback":{}}],"layers":[{"future":true}],"canvas_issues":[{"future":"warning"}]}"#.utf8)
     }
     func resetSession() {}
@@ -70,7 +71,7 @@ private actor PageFixtureTransport: APITransport {
         if request.path == ["templates", "validate"] { return APIResponse(status: 200, data: Data(#"{"valid":false,"errors":[{"line":1,"column":2,"message":"bad expression"}]}"#.utf8)) }
         if request.path == ["templates", "render"] { return APIResponse(status: 200, data: previewReply) }
         var page: [String: Any] = ["id": "p", "name": "Original", "type": "template", "device_type": "panel", "grid_rows": 3, "grid_cols": 15, "template": ["a", "b", "c"]]
-        page["revision"] = revision; page["edit_protocol"] = protocolName
+        page["revision"] = revision; page["edit_protocol"] = protocolName; page["document_protocol"] = documentProtocol
         if request.method == .put {
             if let saveOutcome { throw saveOutcome }
             let body = try JSONSerialization.jsonObject(with: request.body!) as! [String: Any]
@@ -156,7 +157,7 @@ extension PageEditingTests {
         XCTAssertFalse(after.contains { $0.path.contains("live") })
     }
     func testUnknownPreviewVersionRefusesBeforeRequest() async throws {
-        let transport = PageFixtureTransport(version: "10.1.3")
+        let transport = PageFixtureTransport(version: "11.0.0")
         let deployment = try DeploymentURL("https://fixture.test"), service = LiveFiestaBoardService(deployment: try DeploymentURL("https://fixture.test"), transport: transport)
         _ = try await service.connect(allowCandidateWrites: true)
         do { _ = try await service.previewPage(requestData: Data(#"{"template":[],"board_id":"board-2"}"#.utf8), target: BoardTarget(deployment: deployment, boardID: "board-2")); XCTFail() }
@@ -246,14 +247,20 @@ extension PageEditingTests {
 
 
 extension PageEditingTests {
-    func testAudited1017PreviewHasSeparateExactNonDevelopmentVersionGate() async throws {
-        let cases: [(String?, Bool, Bool)] = [("10.1.7", false, true), ("10.1.7", true, false), ("10.1.8", false, false), (nil, false, false)]
+    func testTemplateEvaluationUsesAuditedStableCompatibilityRange() async throws {
+        let cases: [(String?, Bool, Bool)] = [
+            ("10.0.0", false, true), ("10.1.7", false, true), ("10.1.8", false, true),
+            ("10.1.20", false, true), ("10.3.2", false, true),
+            ("9.9.9", false, false), ("10.3.3", false, false), ("11.0.0", false, false),
+            ("10.3.2", true, false), ("10.3.2-dev", false, false), ("10.03.2", false, false),
+            ("10.3", false, false), ("999999999999999999999.3.2", false, false), (nil, false, false)
+        ]
         for (version, dev, permits) in cases {
             let transport = PageFixtureTransport(version: version, isDev: dev)
             let deployment = try DeploymentURL("https://fixture.test")
             let service = LiveFiestaBoardService(deployment: deployment, transport: transport)
             let status = try await service.connect(allowCandidateWrites: true)
-            XCTAssertEqual(status.access, .readOnly, "Collection candidate never widens board controls")
+            if version == "10.1.7" { XCTAssertEqual(status.access, .readOnly, "Preview support never widens board controls") }
             let target = try BoardTarget(deployment: deployment, boardID: "board-2")
             let request = Data(#"{"template":["🛰️"],"board_id":"board-2"}"#.utf8)
             if permits {
@@ -268,6 +275,35 @@ extension PageEditingTests {
             }
             let sent = await transport.requests
             XCTAssertEqual(sent.filter { $0.method == .post }.count, permits ? 2 : 0)
+            XCTAssertEqual(sent.filter { $0.method == .post }.map(\.path), permits ? [["templates", "validate"], ["templates", "render"]] : [])
+            XCTAssertFalse(sent.contains { $0.method == .put || $0.method == .delete || $0.path.contains("live") })
+        }
+    }
+}
+
+
+extension PageEditingTests {
+    func testLegacyDocumentAbsenceRequiresAuditedAdapterWhileAdvertisedProtocolSurvivesNewVersion() async throws {
+        let cases: [(String?, Bool, String?, Bool)] = [
+            ("10.1.2", false, nil, true), ("10.1.2", true, nil, false),
+            (nil, false, nil, false), ("11.0.0", false, nil, false),
+            ("11.0.0", false, "page-document-v1", true),
+            ("11.0.0", false, "page-document-v99", false)
+        ]
+        for (version, dev, documentProtocol, allowed) in cases {
+            let transport = PageFixtureTransport(version: version, isDev: dev, documentProtocol: documentProtocol)
+            let service = LiveFiestaBoardService(deployment: try DeploymentURL("https://fixture.test"), transport: transport)
+            _ = try await service.connect(allowCandidateWrites: true)
+            _ = try await service.pageDocumentData(id: "p")
+            do {
+                _ = try await service.savePage(id: "p", patch: PageSavePatch(name: "Changed", expectedRevision: "original"))
+                XCTAssertTrue(allowed, "Absent protocol cannot grant permission on an unaudited server")
+            } catch {
+                XCTAssertFalse(allowed)
+                XCTAssertEqual(error as? FiestaBoardError, .pageWritesDisabled)
+            }
+            let requests = await transport.requests
+            XCTAssertEqual(requests.filter { $0.method == .put }.count, allowed ? 1 : 0)
         }
     }
 }

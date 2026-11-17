@@ -43,6 +43,22 @@ public struct DeploymentURL: Hashable, Sendable, Codable, CustomStringConvertibl
         return url
     }
 
+    /// Opens the deployment's web route in the browser, without native session material.
+    /// A page ID is exactly one segment; delimiters are encoded, never interpreted.
+    public func webEditorURL(pageID: String, isDemo: Bool) throws -> URL? {
+        guard !isDemo else { return nil }
+        guard !pageID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, pageID.utf8.count <= 512, pageID != ".", pageID != "..",
+              !pageID.contains("/"), !pageID.contains("\\"), !pageID.contains("%"),
+              !pageID.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }),
+              var parts = URLComponents(string: description),
+              let segment = pageID.addingPercentEncoding(withAllowedCharacters: CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")) else {
+            throw FiestaBoardError.invalidPath
+        }
+        parts.percentEncodedPath += "/pages/edit/" + segment
+        guard let url = parts.url else { throw FiestaBoardError.invalidPath }
+        return url
+    }
+
     // Colon is supported only for the collection identifier prefix; ordinary segments stay bounded.
     static func validAPISegment(_ value: String) -> Bool {
         validSegment(value) || (value.hasPrefix("collection:") && validSegment(String(value.dropFirst("collection:".count))))

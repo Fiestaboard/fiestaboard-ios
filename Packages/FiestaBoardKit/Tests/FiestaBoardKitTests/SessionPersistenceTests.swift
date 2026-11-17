@@ -248,9 +248,9 @@ private final class PersistenceResponseGate: @unchecked Sendable {
             if ready { continuation.resume() }
         }
     }
-    func release(cookie: String) {
+    func release(cookie: String, data: Data = Data(#"{"status":"ok"}"#.utf8)) {
         let value = lock.withLock { let result = pending; pending = nil; return result }
-        value?.respond(headers: ["Set-Cookie": cookie], data: Data(#"{"status":"ok"}"#.utf8))
+        value?.respond(headers: ["Set-Cookie": cookie], data: data)
     }
 }
 private final class PersistenceURLProtocol: URLProtocol, @unchecked Sendable {
@@ -562,5 +562,213 @@ extension SessionPersistenceTests {
             XCTAssertEqual(log.requests.last?.value(forHTTPHeaderField: "Cookie"), "fiestaboard_session=new", reason)
             let stored = try await vault.load(for: deployment); XCTAssertNotNil(stored, reason)
         }
+    }
+}
+
+
+extension SessionPersistenceTests {
+    func identityFixture(installation: String = "id-1", username: String = "contract_admin") {
+        FixtureURLProtocol.handler = { request in
+            switch request.url!.lastPathComponent {
+            case "health": return (200, [:], try BootstrapTests.body("health"))
+            case "discover":
+                var value = try JSONSerialization.jsonObject(with: BootstrapTests.body("discover_disabled")) as! [String: Any]
+                value["id"] = installation
+                return (200, [:], try JSONSerialization.data(withJSONObject: value))
+            case "status":
+                var auth = try JSONSerialization.jsonObject(with: BootstrapTests.body("auth_authenticated")) as! [String: Any]
+                auth["username"] = username
+                return (200, [:], try JSONSerialization.data(withJSONObject: auth))
+            case "login": return (200, ["Set-Cookie": "fiestaboard_session=identity; Path=/; Secure; Max-Age=3600"], Data(#"{"status":"ok"}"#.utf8))
+            case "logout": return (200, [:], Data(#"{"status":"ok"}"#.utf8))
+            case "version": return (200, [:], Data(#"{"package_version":"10.1.20","build_version":"test","running_version":"10.1.20","is_dev":false}"#.utf8))
+            case "boards": return (200, [:], Data(#"{"boards":[],"total":0}"#.utf8))
+            case "collection:00000000-0000-4000-8000-000000000022": return (200, [:], Data(#"{"id":"collection:00000000-0000-4000-8000-000000000022","name":"Scoped","page_ids":["p"],"selection_mode":"time","time":{"interval_seconds":30},"revision":"original","edit_protocol":"collection-revision-v1"}"#.utf8))
+            default: return (200, [:], Data(#"{"id":"p","name":"Page","type":"template","device_type":"panel","template":["raw"],"unknown":null}"#.utf8))
+            }
+        }
+    }
+
+    func testConnectionScopeSeparatesFreshLoginsAndRetainsVerifiedRestartAndReconnect() async throws {
+        let vault = MemorySessionVault(); identityFixture()
+        let service = LiveFiestaBoardService(deployment: deployment, transport: transport(vault))
+        _ = try await service.bootstrap()
+        _ = try await service.login(username: "contract_admin", password: "fixture", rememberMe: true)
+        let first = try await service.scopedPageDocument(id: "p")
+        _ = try await service.connect()
+        let reconnect = try await service.scopedPageDocument(id: "p")
+        XCTAssertEqual(first.scope, reconnect.scope)
+        let restarted = LiveFiestaBoardService(deployment: deployment, transport: transport(vault))
+        let restored = try await restarted.restoreRememberedSession(observedInstallationID: "id-1")
+        XCTAssertTrue(restored)
+        let second = try await restarted.scopedPageDocument(id: "p")
+        XCTAssertEqual(first.scope, second.scope)
+        try await restarted.logout()
+        do { _ = try await restarted.scopedPageDocument(id: "p"); XCTFail("logged out scope") } catch {}
+        _ = try await restarted.login(username: "contract_admin", password: "fixture", rememberMe: true)
+        let third = try await restarted.scopedPageDocument(id: "p")
+        XCTAssertNotEqual(first.scope.connectionID, third.scope.connectionID)
+        do { _ = try await service.scopedPageDocument(id: "p"); XCTFail("old window ownership") } catch {}
+        identityFixture(installation: "replacement")
+        _ = try await restarted.bootstrap()
+        let changed = try await restarted.scopedPageDocument(id: "p")
+        XCTAssertEqual(changed.scope.installationID, "replacement")
+        XCTAssertNotEqual(changed.scope.connectionID, third.scope.connectionID)
+    }
+
+    func testV1VaultMigratesAfterVerificationWithoutNewCookieAndKeepsUUID() async throws {
+        let vault = MemorySessionVault(); let seed = transport(vault); fixture()
+        await seed.configureSessionPersistence(rememberMe: true, installationID: "id-1"); try await login(seed)
+        let seeded = try await vault.load(for: deployment)
+        var legacy = try JSONSerialization.jsonObject(with: XCTUnwrap(seeded)) as! [String: Any]
+        legacy["version"] = 1; legacy.removeValue(forKey: "connectionID")
+        try await vault.save(JSONSerialization.data(withJSONObject: legacy), for: deployment)
+        identityFixture()
+        let service = LiveFiestaBoardService(deployment: deployment, transport: transport(vault))
+        let restored = try await service.restoreRememberedSession(observedInstallationID: "id-1")
+        XCTAssertTrue(restored)
+        let first = try await service.scopedPageDocument(id: "p")
+        let stored = try await vault.load(for: deployment)
+        let blob = try XCTUnwrap(stored)
+        let migrated = try JSONSerialization.jsonObject(with: blob) as! [String: Any]
+        XCTAssertEqual(migrated["version"] as? Int, 2)
+        XCTAssertEqual(migrated["connectionID"] as? String, first.scope.connectionID.uuidString)
+        let next = LiveFiestaBoardService(deployment: deployment, transport: transport(vault))
+        _ = try await next.restoreRememberedSession(observedInstallationID: "id-1")
+        let second = try await next.scopedPageDocument(id: "p")
+        XCTAssertEqual(first.scope, second.scope)
+    }
+}
+
+extension SessionPersistenceTests {
+    func testReadinessLossWithdrawsScopeUntilFreshVerification() async throws {
+        let vault = MemorySessionVault(); identityFixture()
+        let service = LiveFiestaBoardService(deployment: deployment, transport: transport(vault))
+        _ = try await service.bootstrap()
+        let original = try await service.scopedPageDocument(id: "p")
+        FixtureURLProtocol.handler = { _ in
+            var auth = try JSONSerialization.jsonObject(with: BootstrapTests.body("auth_authenticated")) as! [String: Any]
+            auth["setup_required"] = true
+            return (200, [:], try JSONSerialization.data(withJSONObject: auth))
+        }
+        _ = try await service.authStatus()
+        identityFixture()
+        do { _ = try await service.scopedPageDocument(id: "p"); XCTFail("Readiness loss must withdraw scope") } catch {}
+        _ = try await service.bootstrap()
+        let reverified = try await service.scopedPageDocument(id: "p")
+        XCTAssertNotEqual(original.scope.connectionID, reverified.scope.connectionID)
+    }
+
+    func testFreshLoginOnSameOriginAlwaysCreatesNewConnectionEvenWithSameUsername() async throws {
+        let vault = MemorySessionVault(); identityFixture()
+        let service = LiveFiestaBoardService(deployment: deployment, transport: transport(vault))
+        _ = try await service.bootstrap()
+        _ = try await service.login(username: "contract_admin", password: "fixture", rememberMe: true)
+        let first = try await service.scopedPageDocument(id: "p")
+        identityFixture(username: "second_account")
+        _ = try await service.login(username: "second_account", password: "fixture", rememberMe: true)
+        let switched = try await service.scopedPageDocument(id: "p")
+        XCTAssertNotEqual(first.scope.connectionID, switched.scope.connectionID)
+        _ = try await service.login(username: "second_account", password: "fixture", rememberMe: true)
+        let next = try await service.scopedPageDocument(id: "p")
+        XCTAssertNotEqual(switched.scope.connectionID, next.scope.connectionID)
+        XCTAssertEqual(first.scope.deployment, next.scope.deployment)
+        XCTAssertNotEqual(first.scope.connectionID, next.scope.connectionID)
+    }
+
+    func testLateScopedPageResponseCannotAcquireNewLoginIdentity() async throws {
+        let gate = PersistenceResponseGate(endpoint: "p")
+        PersistenceURLProtocol.gate = gate
+        let t = URLSessionTransport(deployment: deployment, protocolClasses: [PersistenceURLProtocol.self])
+        let service = LiveFiestaBoardService(deployment: deployment, transport: t)
+        _ = try await service.bootstrap()
+        let pending = Task { try await service.scopedPageDocument(id: "p") }
+        await gate.wait()
+        _ = try await service.login(username: "contract_admin", password: "fixture", rememberMe: false)
+        gate.release(cookie: "fiestaboard_session=old; Path=/; Secure", data: Data(#"{"id":"p","name":"Old","type":"template","device_type":"panel","template":[]}"#.utf8))
+        do { _ = try await pending.value; XCTFail("Late page must not acquire the replacement identity") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+    }
+}
+
+extension SessionPersistenceTests {
+    func testForgettingRememberedMaterialRetainsVerifiedActiveConnection() async throws {
+        let vault = MemorySessionVault(); identityFixture()
+        let service = LiveFiestaBoardService(deployment: deployment, transport: transport(vault))
+        _ = try await service.bootstrap()
+        _ = try await service.login(username: "contract_admin", password: "fixture", rememberMe: true)
+        let first = try await service.scopedPageDocument(id: "p")
+        await service.forgetRememberedSession()
+        let next = try await service.scopedPageDocument(id: "p")
+        XCTAssertEqual(first.scope, next.scope)
+        let stored = try await vault.load(for: deployment)
+        XCTAssertNil(stored)
+    }
+}
+
+extension SessionPersistenceTests {
+    func testReconnectReverifiesInstallationAndWithdrawsScopeForEmptyOrMissingIdentity() async throws {
+        for replacement in ["changed", "", "missing"] {
+            let vault = MemorySessionVault(); identityFixture()
+            let service = LiveFiestaBoardService(deployment: deployment, transport: transport(vault))
+            _ = try await service.bootstrap()
+            let initial = try await service.scopedPageDocument(id: "p")
+            if replacement == "missing" {
+                FixtureURLProtocol.handler = { request in
+                    if request.url!.lastPathComponent == "discover" { return (200, [:], Data(#"{"product":"FiestaBoard","version":"10.1.20","name":"Test"}"#.utf8)) }
+                    if request.url!.lastPathComponent == "health" { return (200, [:], try BootstrapTests.body("health")) }
+                    if request.url!.lastPathComponent == "version" { return (200, [:], Data(#"{"package_version":"10.1.20","build_version":"test","running_version":"10.1.20","is_dev":false}"#.utf8)) }
+                    return (200, [:], Data(#"{"boards":[],"total":0}"#.utf8))
+                }
+            } else { identityFixture(installation: replacement) }
+            _ = try? await service.connect()
+            identityFixture(installation: replacement)
+            if replacement == "changed" {
+                let current = try await service.scopedPageDocument(id: "p")
+                XCTAssertEqual(current.scope.installationID, "changed")
+                XCTAssertNotEqual(current.scope.connectionID, initial.scope.connectionID)
+            } else {
+                do { _ = try await service.scopedPageDocument(id: "p"); XCTFail("Invalid discovery must withdraw scope: \(replacement)") } catch {}
+            }
+        }
+    }
+}
+
+extension SessionPersistenceTests {
+    func testScopedCollectionCreateAndReadShareOnlyVerifiedCurrentConnection() async throws {
+        let vault = MemorySessionVault(); identityFixture()
+        let service = LiveFiestaBoardService(deployment: deployment, transport: transport(vault))
+        do { _ = try await service.scopedCollectionDocument(id: nil); XCTFail("Unverified creation cannot acquire a scope") } catch {}
+        _ = try await service.bootstrap()
+        _ = try await service.login(username: "contract_admin", password: "fixture", rememberMe: true)
+        let first = try await service.scopedCollectionDocument(id: nil)
+        XCTAssertNil(first.collection)
+        let read = try await service.scopedCollectionDocument(id: "collection:00000000-0000-4000-8000-000000000022")
+        XCTAssertEqual(first.scope, read.scope); XCTAssertEqual(read.collection?.revision, "original")
+        let restarted = LiveFiestaBoardService(deployment: deployment, transport: transport(vault))
+        let didRestore = try await restarted.restoreRememberedSession(observedInstallationID: "id-1"); XCTAssertTrue(didRestore)
+        let restored = try await restarted.scopedCollectionDocument(id: nil)
+        XCTAssertEqual(first.scope, restored.scope)
+        _ = try await restarted.login(username: "contract_admin", password: "fixture", rememberMe: false)
+        let newLogin = try await restarted.scopedCollectionDocument(id: nil)
+        XCTAssertNotEqual(first.scope.connectionID, newLogin.scope.connectionID)
+        do { _ = try await service.scopedCollectionDocument(id: nil); XCTFail("Old transport lease cannot issue a creation scope") } catch {}
+        identityFixture(installation: "replacement")
+        _ = try await restarted.bootstrap()
+        let changed = try await restarted.scopedCollectionDocument(id: nil)
+        XCTAssertEqual(changed.scope.installationID, "replacement")
+        XCTAssertNotEqual(changed.scope.connectionID, newLogin.scope.connectionID)
+    }
+    func testLateScopedCollectionReadDoesNotAcquireReplacementLoginScope() async throws {
+        let gate = PersistenceResponseGate(endpoint: "collection:00000000-0000-4000-8000-000000000022")
+        PersistenceURLProtocol.gate = gate
+        let service = LiveFiestaBoardService(deployment: deployment, transport: URLSessionTransport(deployment: deployment, protocolClasses: [PersistenceURLProtocol.self]))
+        _ = try await service.bootstrap()
+        let pending = Task { try await service.scopedCollectionDocument(id: "collection:00000000-0000-4000-8000-000000000022") }
+        await gate.wait()
+        _ = try await service.login(username: "contract_admin", password: "fixture", rememberMe: false)
+        gate.release(cookie: "fiestaboard_session=old; Path=/; Secure", data: Data(#"{"id":"collection:00000000-0000-4000-8000-000000000022","name":"Old","page_ids":["p"],"selection_mode":"time","time":{"interval_seconds":30},"revision":"original","edit_protocol":"collection-revision-v1"}"#.utf8))
+        do { _ = try await pending.value; XCTFail("Late content cannot inherit a new login identity") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
     }
 }

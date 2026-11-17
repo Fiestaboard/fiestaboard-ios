@@ -101,6 +101,10 @@ struct ConnectionView: View {
                         }
                     }
                 }
+                Section("Local drafts") {
+                    NavigationLink("Draft recovery & export") { LocalDraftRecoveryView() }
+                        .accessibilityIdentifier("localDraftRecovery")
+                }
                 if !store.logoutNotices.isEmpty {
                     Section("Sign-out status") {
                         ForEach(store.logoutNotices) { notice in Text(notice.message).font(.callout) }

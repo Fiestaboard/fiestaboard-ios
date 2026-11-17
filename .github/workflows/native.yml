@@ -1,183 +1,49 @@
 name: Native checks
-
 on:
   pull_request:
   push:
-  workflow_dispatch:
-
+    branches: [main]
 permissions:
   contents: read
-
 concurrency:
-  group: native-${{ github.workflow }}-${{ github.ref }}
+  group: native-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
-  contracts:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Tooling, contract integrity and boundary checker tests
-        run: |
-          python3 -m unittest discover -s Tests/Tooling -v
-          python3 -m unittest discover -s Tests/Contracts -v
-          python3 scripts/check-contracts.py
-          python3 Fixtures/contracts/10.1.20/verify.py
-          python3 Fixtures/contracts/10.1.20-pages/verify.py
-      - name: Download pinned source, clean-build image and run isolated HTTP tests
-        run: |
-          set -o pipefail
-          python3 scripts/bootstrap-contracts.py --destination "$RUNNER_TEMP/contracts" --build --test 2>&1 | tee "$RUNNER_TEMP/contract-build.log"
-      - name: Regenerate schemas in a disposable directory and compare
-        run: |
-          python3 - <<'PY'
-          import json, os, pathlib, subprocess, sys
-          temporary = pathlib.Path(os.environ['RUNNER_TEMP'])
-          receipt = json.loads((temporary/'contracts/bootstrap.json').read_text())
-          subprocess.run([sys.executable, 'scripts/contract-backend.py', 'export',
-              '--repo', str(temporary/'contracts/source'), '--commit', receipt['source']['commit'],
-              '--image', receipt['image'], '--root', str(temporary/'regenerated')], check=True)
-          for name in ('public-openapi.json', 'mobile-internal-openapi.json'):
-              actual = json.loads((temporary/'regenerated/Contracts'/name).read_text())
-              expected = json.loads((pathlib.Path('Contracts')/name).read_text())
-              if actual != expected:
-                  raise SystemExit('Regenerated schema differs: ' + name)
-          PY
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: contracts
-          path: |
-            ${{ runner.temp }}/contract-build.log
-            ${{ runner.temp }}/contracts/bootstrap.json
-            ${{ runner.temp }}/regenerated/Contracts
-
-  native:
-    # Set NATIVE_RUNNER to a JSON array, e.g. ["self-hosted","macOS","fiestaboard-xcode27"].
-    # Hosted Xcode 27 availability is unverified; preflight fails clearly if incompatible.
-    runs-on: ${{ fromJSON(vars.NATIVE_RUNNER || '["macos-latest"]') }}
+  build-and-test:
+    runs-on: ${{ fromJSON(vars.NATIVE_RUNNER || '["xcode-27"]') }}
     timeout-minutes: 45
     env:
-      DEVELOPER_DIR: ${{ vars.NATIVE_DEVELOPER_DIR || '/Applications/Xcode.app/Contents/Developer' }}
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
+      IOS_SLICE: ci
     steps:
       - uses: actions/checkout@v4
-      - name: Check selected toolchain
+        with:
+          persist-credentials: false
+      - name: Toolchain preflight
         run: |
-          echo "CLANG_MODULE_CACHE_PATH=$RUNNER_TEMP/native-clang" >> "$GITHUB_ENV"
-          echo "SWIFTPM_MODULECACHE_OVERRIDE=$RUNNER_TEMP/native-clang" >> "$GITHUB_ENV"
           xcodebuild -version
-          swift --version
-          xcrun --sdk iphoneos --show-sdk-version
-          xcrun --sdk iphonesimulator --show-sdk-version
           python3 - <<'PY'
           import re, subprocess
           version = subprocess.check_output(['xcodebuild', '-version'], text=True)
           match = re.search(r'Xcode (\d+)\.(\d+)', version)
           if not match or tuple(map(int, match.groups())) < (27, 1):
-              raise SystemExit('Requires Xcode 27.1+; configure NATIVE_RUNNER and NATIVE_DEVELOPER_DIR.')
+              raise SystemExit('Xcode 27.1+ required; the selected image must supply pinned 27.2.')
           PY
-      - name: Download verified XcodeGen 2.46.0 into runner temp
+      - name: Install verified XcodeGen
         run: |
           curl --fail --location --retry 3 https://github.com/yonaskolb/XcodeGen/releases/download/2.46.0/xcodegen.zip -o "$RUNNER_TEMP/xcodegen.zip"
           echo "4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806  $RUNNER_TEMP/xcodegen.zip" | shasum -a 256 -c -
           unzip -q "$RUNNER_TEMP/xcodegen.zip" -d "$RUNNER_TEMP/xcodegen-release"
           echo "$RUNNER_TEMP/xcodegen-release/xcodegen/bin" >> "$GITHUB_PATH"
-      - name: Verify project generation without changing signing
-        run: python3 scripts/check-project.py
-      - name: Full Swift package suites
+      - name: Repository guards
         run: |
-          set -o pipefail
-          mkdir -p "$RUNNER_TEMP/package-results"
-          for package in FiestaBoardKit FiestaBoardAppState FiestaBoardDocuments FiestaBoardEditorState; do
-            swift test --package-path "Packages/$package" --scratch-path "$RUNNER_TEMP/packages/$package" --cache-path "$RUNNER_TEMP/swift-cache" --config-path "$RUNNER_TEMP/swift-config" --security-path "$RUNNER_TEMP/swift-security" 2>&1 | tee "$RUNNER_TEMP/package-results/$package.log"
-          done
-      - name: Unsigned Simulator and device builds, Release archive
+          python3 -m unittest discover -s Tests/Tooling -v
+          python3 scripts/check-project.py
+      - name: Host package suites
+        run: scripts/test.sh packages
+      - name: App-hosted and launch UI suites on both tier-1 devices
+        run: scripts/test.sh simulators
+      - name: Release archive and probe guard
+        if: ${{ !cancelled() }}
         run: |
-          set -o pipefail
-          scripts/build-draft.sh simulator 2>&1 | tee "$RUNNER_TEMP/simulator-build.log"
-          scripts/build-draft.sh device 2>&1 | tee "$RUNNER_TEMP/device-build.log"
-          scripts/build-draft.sh archive 2>&1 | tee "$RUNNER_TEMP/archive-build.log"
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: native-builds
-          path: |
-            ${{ runner.temp }}/package-results
-            ${{ runner.temp }}/*-build.log
-            .build/FiestaBoard.xcarchive
-
-  ui-runtime:
-    needs: native
-    runs-on: ${{ fromJSON(vars.NATIVE_RUNNER || '["macos-latest"]') }}
-    timeout-minutes: 45
-    strategy:
-      fail-fast: false
-      matrix:
-        family: [iPhone, iPad]
-    env:
-      DEVELOPER_DIR: ${{ vars.NATIVE_DEVELOPER_DIR || '/Applications/Xcode.app/Contents/Developer' }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Create a disposable compatible Simulator
-        id: simulator
-        env:
-          DEVICE_FAMILY: ${{ matrix.family }}
-        run: |
-          echo "CLANG_MODULE_CACHE_PATH=$RUNNER_TEMP/ui-clang" >> "$GITHUB_ENV"
-          python3 - <<'PY'
-          import json, os, subprocess
-          def listing(kind):
-              return json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', kind, '--json'], text=True))[kind]
-          runtimes = [r for r in listing('runtimes') if r.get('isAvailable')
-              and r['identifier'].startswith('com.apple.CoreSimulator.SimRuntime.iOS-')
-              and tuple(map(int, r['version'].split('.'))) >= (26, 0)]
-          if not runtimes:
-              raise SystemExit('No available iOS 26+ runtime; install one on the configured runner.')
-          runtime = max(runtimes, key=lambda r: tuple(map(int, r['version'].split('.'))))
-          family = os.environ['DEVICE_FAMILY']
-          devices = [d for d in listing('devicetypes') if d.get('productFamily') == family]
-          if not devices:
-              raise SystemExit('No installed Simulator device type for ' + family)
-          # Select only a type whose runtime range includes this installed runtime.
-          version = runtime.get('version', '0').split('.')
-          numeric = sum(int(part) << shift for part, shift in zip((version + ['0', '0'])[:3], (16, 8, 0)))
-          devices = [d for d in devices if d.get('minRuntimeVersion', 0) <= numeric <= d.get('maxRuntimeVersion', 0xffffffff)]
-          if not devices:
-              raise SystemExit('No compatible ' + family + ' type for ' + runtime['identifier'])
-          udid = subprocess.check_output(['xcrun', 'simctl', 'create',
-              'FiestaBoard CI ' + os.environ['GITHUB_RUN_ID'] + ' ' + family,
-              devices[-1]['identifier'], runtime['identifier']], text=True).strip()
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
-              output.write('udid=' + udid + '\n')
-          print('Disposable Simulator: ' + family + ' / ' + runtime['version'] + ' / ' + udid)
-          PY
-      - name: Boot and run native onboarding and demo UI tests
-        env:
-          SIMULATOR_UDID: ${{ steps.simulator.outputs.udid }}
-        run: |
-          set -o pipefail
-          python3 Tests/UITests/fixture_server.py &
-          fixture_pid=$!
-          trap 'kill "$fixture_pid" 2>/dev/null || true' EXIT
-          curl --fail --retry 5 --retry-connrefused --retry-delay 1 http://127.0.0.1:18442/ready
-          xcrun simctl boot "$SIMULATOR_UDID"
-          xcrun simctl bootstatus "$SIMULATOR_UDID" -b
-          xcodebuild -project FiestaBoard.xcodeproj -scheme FiestaBoard -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" -derivedDataPath "$RUNNER_TEMP/ui-derived" -resultBundlePath "$RUNNER_TEMP/ui.xcresult" -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- test 2>&1 | tee "$RUNNER_TEMP/ui-runtime.log"
-      - name: Remove only this job's Simulator
-        if: always() && steps.simulator.outputs.udid != ''
-        env:
-          SIMULATOR_UDID: ${{ steps.simulator.outputs.udid }}
-        run: |
-          xcrun simctl shutdown "$SIMULATOR_UDID" || true
-          xcrun simctl delete "$SIMULATOR_UDID"
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: ui-runtime-${{ matrix.family }}
-          path: |
-            ${{ runner.temp }}/ui-runtime.log
-            ${{ runner.temp }}/ui.xcresult
+          scripts/build-draft.sh archive

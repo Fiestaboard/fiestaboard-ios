@@ -18,6 +18,23 @@ import FiestaBoardKit
     private func model(_ actions: EditorRemoteActions) throws -> LocalPageEditorModel {
         try LocalPageEditorModel(rawDocumentData: raw(), identity: identity, draftStore: store, remote: actions)
     }
+    func testUnsupportedDocumentProtocolsCannotSaveEvenWhenRemoteAllowsWrites() async throws {
+        for value in ["\"page-document-v99\"", "{}", "null"] {
+            let source = String(decoding: raw(), as: UTF8.self).dropLast() + ",\"document_protocol\":" + value + "}"
+            var calls = 0
+            let model = try LocalPageEditorModel(rawDocumentData: Data(source.utf8), identity: identity, draftStore: store,
+                remote: EditorRemoteActions(disabledReason: { nil }, save: { _ in
+                    calls += 1
+                    throw FiestaBoardError.invalidResponse
+                }))
+            model.setName("Edited")
+            XCTAssertNotNil(model.serverSaveDisabledReason)
+            XCTAssertFalse(model.canSaveToServer)
+            await model.saveToServer()
+            XCTAssertEqual(calls, 0)
+            XCTAssertEqual(model.name, "Original")
+        }
+    }
     func testSaveSnapshotsBeforeFailureAndKeepsServerDirty() async throws {
         let model = try model(EditorRemoteActions(disabledReason: { nil }, save: { [store, identity] patch in
             guard case .recovered(let draft) = try await store!.load(identity) else { throw FiestaBoardError.invalidResponse }
@@ -249,4 +266,20 @@ import FiestaBoardKit
         XCTAssertNil(model.preview)
     }
 
+
+    /// P1: a Note page opens on a display it fits (Desk), not the first one (Flagship Kitchen);
+    /// a remembered choice still wins; with no fitting display the first one is used.
+    func testInitialDisplayFitsThePage() throws {
+        let deployment = try DeploymentURL("https://example.test")
+        let kitchen = EditorBoardChoice(name: "Kitchen", target: try BoardTarget(deployment: deployment, boardID: "kitchen"), rows: 6, cols: 22)
+        let desk = EditorBoardChoice(name: "Desk", target: try BoardTarget(deployment: deployment, boardID: "desk"), rows: 3, cols: 15)
+        let unknown = EditorBoardChoice(name: "Old", target: try BoardTarget(deployment: deployment, boardID: "old"))
+        XCTAssertEqual(EditorBoardChoice.initialChoice([kitchen, desk], remembered: nil, rows: 3, cols: 15), "desk")
+        XCTAssertEqual(EditorBoardChoice.initialChoice([kitchen, desk], remembered: nil, rows: 6, cols: 22), "kitchen")
+        XCTAssertEqual(EditorBoardChoice.initialChoice([kitchen, desk], remembered: "kitchen", rows: 3, cols: 15), "kitchen")
+        XCTAssertEqual(EditorBoardChoice.initialChoice([kitchen, desk], remembered: "gone", rows: 12, cols: 29), "kitchen")
+        XCTAssertEqual(desk.fits(rows: 3, cols: 15), true)
+        XCTAssertEqual(kitchen.fits(rows: 3, cols: 15), false)
+        XCTAssertNil(unknown.fits(rows: 3, cols: 15))
+    }
 }

@@ -40,6 +40,28 @@ import XCTest
     private func service(_ t: ManagementTransport) throws -> LiveFiestaBoardService {
         LiveFiestaBoardService(deployment: try DeploymentURL("https://fixture.test"), transport: t)
     }
+    func testReaderOnlyFamiliesAndUnknownProtocolsCannotMutate() async throws {
+        let original = String(decoding: ManagementTransport.document, as: UTF8.self)
+        let documents = [
+            #"{"id":"created","name":"Flexible","type":"flexible","edit_protocol":"page-revision-v1","document_protocol":"page-document-v2","revision":"original"}"#,
+            #"{"id":"created","name":"Future","type":"future-family","edit_protocol":"page-revision-v1","document_protocol":"page-document-v99","revision":"original"}"#,
+            original.replacingOccurrences(of: "page-document-v1", with: "page-document-v99"),
+            original.replacingOccurrences(of: #","document_protocol":"page-document-v1""#, with: ""),
+            original.replacingOccurrences(of: #""document_protocol":"page-document-v1""#, with: #""document_protocol":{}"#),
+        ]
+        for raw in documents {
+            let t = ManagementTransport(); await t.setReadDocument(Data(raw.utf8))
+            let s = try service(t); _ = try await s.connect(allowCandidateWrites: true)
+            let bytes = try await s.pageDocumentData(id: "created")
+            XCTAssertEqual(bytes, Data(raw.utf8), "Unsupported documents must remain readable without rebuilding JSON")
+            do { _ = try await s.readPageForDeletion(id: "created"); XCTFail("Unsupported deletion must refuse") }
+            catch { XCTAssertEqual(error as? FiestaBoardError, .pageWritesDisabled) }
+            do { _ = try await s.savePage(id: "created", patch: .init(name: "Changed", expectedRevision: "original")); XCTFail("Unsupported save must refuse") }
+            catch { XCTAssertEqual(error as? FiestaBoardError, .pageWritesDisabled) }
+            let requests = await t.requests
+            XCTAssertFalse(requests.contains(where: \.isMutation), "No mutation may reach the transport")
+        }
+    }
 }
 
 private actor ManagementTransport: APITransport {
@@ -50,6 +72,8 @@ private actor ManagementTransport: APITransport {
     var mutationStatus: Int?
     var mutationData: Data?
     var failure: FiestaBoardError?
+    private var readDocument = document
+    func setReadDocument(_ data: Data) { readDocument = data }
     private var hold = false
     private var pending: [CheckedContinuation<Void, Never>] = []
     private var observers: [(Int, CheckedContinuation<Void, Never>)] = []
@@ -72,7 +96,7 @@ private actor ManagementTransport: APITransport {
             if let failure { throw failure }
             return APIResponse(status: mutationStatus ?? (r.method == .post ? 201 : 200), data: mutationData ?? (r.method == .post ? Self.document : Data(#"{"id":"created","message":"Deleted","default_page_created":false,"new_page_id":null,"active_page_updated":false,"new_active_page_id":null}"#.utf8)))
         }
-        return APIResponse(status: 200, data: Self.document)
+        return APIResponse(status: 200, data: readDocument)
     }
 }
 

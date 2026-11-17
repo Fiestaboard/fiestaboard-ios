@@ -5,9 +5,11 @@ import FiestaBoardKit
 public struct PageEditingContext: Sendable, Equatable {
     public let pageID: String
     public let deployment: DeploymentURL
+    public let scope: VerifiedConnectionScope
     public let originalRevision: String?
     public let editProtocol: String?
-    fileprivate let pageType: String
+    fileprivate let supportsPageEditing: Bool
+    fileprivate let supportsFlexibleEditing: Bool
     fileprivate let generation: UInt64
     fileprivate let documentID: UUID
 }
@@ -46,6 +48,10 @@ public enum PageLibraryPhase: Equatable, Sendable {
     fileprivate var blocked = false
     fileprivate var deletionRecoveryEpochs: [String: UInt64] = [:]
     public var busy: Bool { phase == .working }
+    /// The "Page created" note belongs to the create sheet; clear it once the
+    /// sheet (or the editor it became) closes, so the Pages list never keeps a
+    /// stale "open its editor" instruction after the page was saved.
+    public func dismissCompletion() { if case .completed = phase { phase = .idle } }
     public var needsReview: Bool { blocked }
     public var canCreate: Bool { capability.canCreate && !busy && !blocked }
     public var canDelete: Bool { capability.canDelete && !busy && !blocked }
@@ -53,6 +59,7 @@ public enum PageLibraryPhase: Equatable, Sendable {
 }
 private struct PageIdentity: Hashable { let deployment: DeploymentURL; let id: String }
 public struct PageDocumentSnapshot: Sendable {
+    public let scope: VerifiedConnectionScope
     public let id: String
     public let deployment: DeploymentURL
     public let data: Data
@@ -98,6 +105,12 @@ public struct PreparedAction: Identifiable, Sendable {
     @Published public private(set) var status: ConnectionStatus?
     @Published public private(set) var boards: [BoardSummary] = []
     @Published public private(set) var pages: [Page] = []
+    @Published public private(set) var scheduleList: ScheduleList?
+    @Published public private(set) var scheduleTarget: BoardTarget?
+    @Published public private(set) var schedulesLoading = false
+    @Published public private(set) var scheduleMessage: String?
+    private var scheduleTask: Task<Void, Never>?
+    private var scheduleRequest = UUID()
     @Published public private(set) var collections: [PageCollection] = []
     @Published public private(set) var collectionsLoading = false
     @Published public private(set) var collectionMessage: String?
@@ -147,6 +160,41 @@ public struct PreparedAction: Identifiable, Sendable {
     public var commandBusy: Bool { target.map { inFlight.contains($0) } ?? false }
     public var canWrite: Bool {
         board != nil && status != nil && status?.access != .readOnly && target != nil && !connecting && !refreshing && !commandBusy && !needsReadback && pageLibrary?.busy != true && pageLibrary?.needsReview != true
+    }
+    public var boardActionDisabledReason: ActionDisabledReason? {
+        guard let status else { return .disconnected }
+        guard selectedBoardID != nil else { return .noDisplay }
+        if connecting || refreshing || commandBusy || pageLibrary?.busy == true { return .busy }
+        if needsReadback || pageLibrary?.needsReview == true { return .readbackRequired }
+        guard board != nil else { return .readbackRequired }
+        if status.isDemo { return nil }
+        if let reason = CapabilityPolicy.boardActionDisabledReason(version: status.version.runningVersion,
+            isDev: status.version.isDev, optedIn: pageSessionOptedIn) { return reason }
+        return status.access == .readOnly ? .unsupportedOperation : nil
+    }
+    public var pageManagementDisabledReason: ActionDisabledReason? {
+        guard let status else { return .disconnected }
+        if connecting || pageLibrary?.busy == true { return .busy }
+        if pageLibrary?.needsReview == true { return .readbackRequired }
+        if status.isDemo { return nil }
+        if let reason = CapabilityPolicy.pageManagementDisabledReason(version: status.version.runningVersion,
+            isDev: status.version.isDev, optedIn: pageSessionOptedIn) { return reason }
+        return pageLibrary?.capability.canCreate == true || pageLibrary?.capability.canDelete == true ? nil : .unsupportedOperation
+    }
+    public func pageDeletionDisabledReason(for page: Page) -> ActionDisabledReason? {
+        guard let status, let service else { return .disconnected }
+        let eligibility = CapabilityPolicy.pageDeletionDisabledReason(page, version: status.version.runningVersion,
+            isDev: status.version.isDev, optedIn: pageSessionOptedIn, isSimulated: status.isDemo)
+        if let eligibility, eligibility != .changesDisabled { return eligibility }
+        let identity = PageIdentity(deployment: service.deployment, id: page.id)
+        if connecting || pageLibrary?.busy == true || savingPages.contains(identity) { return .busy }
+        if pageLibrary?.needsReview == true || pageReadbacks.contains(identity) { return .readbackRequired }
+        if let eligibility { return eligibility }
+        return pageLibrary?.canDelete == true ? nil : .unsupportedOperation
+    }
+    public func webEditorURL(pageID: String) -> URL? {
+        guard let service, let status, !connecting else { return nil }
+        return try? service.deployment.webEditorURL(pageID: pageID, isDemo: status.isDemo)
     }
     private var target: BoardTarget? {
         guard let service, let id = selectedBoardID else { return nil }
@@ -246,6 +294,7 @@ public struct PreparedAction: Identifiable, Sendable {
     public func waitForSessionCleanup() async { await retirementTask?.value }
     private func resetConnection() {
         generation &+= 1
+        clearSchedules()
         pageLibraryObservation = nil; pageLibrary = nil; pageLibraryEpoch &+= 1
         connectionTask?.cancel(); refreshTask?.cancel(); commandTask?.cancel(); collectionListTask?.cancel()
         connectionTask = nil; refreshTask = nil; commandTask = nil
@@ -296,6 +345,7 @@ public struct PreparedAction: Identifiable, Sendable {
     @discardableResult public func selectBoard(_ id: String) -> Task<Void, Never> {
         guard boards.contains(where: { $0.id == id }), !connecting else { return Task {} }
         generation &+= 1
+        clearSchedules()
         refreshTask?.cancel(); commandTask?.cancel()
         selectedBoardID = id; board = nil; defaultPageContext = nil; message = nil; usedActions = []
         return refresh()
@@ -368,13 +418,15 @@ public struct PreparedAction: Identifiable, Sendable {
         let writeGeneration = pageWriteGenerations[identity, default: 0]
         guard !savingPages.contains(identity) else { throw FiestaBoardError.pageReadbackRequired }
         do {
-            let data = try await service.pageDocumentData(id: id)
+            let document = try await service.scopedPageDocument(id: id)
+            let data = document.data
+            guard document.scope.deployment == deployment else { throw FiestaBoardError.staleSession }
             guard token == generation, self.service?.deployment == deployment else { throw FiestaBoardError.staleSession }
             guard writeGeneration == pageWriteGenerations[identity, default: 0] else { throw FiestaBoardError.stalePageContext }
             try Task.checkCancellation()
             guard !savingPages.contains(identity) else { throw FiestaBoardError.pageReadbackRequired }
             pageReadbacks.remove(identity)
-            return try acceptPageDocument(id: id, deployment: deployment, data: data)
+            return try acceptPageDocument(id: id, deployment: deployment, scope: document.scope, data: data)
         } catch {
             guard token == generation else { throw FiestaBoardError.staleSession }
             _ = handleAuthenticationLoss(error)
@@ -384,7 +436,9 @@ public struct PreparedAction: Identifiable, Sendable {
 
     public func readbackPage(context: PageEditingContext) async throws -> PageDocumentSnapshot {
         try requirePageContext(context)
-        return try await loadPageDocument(id: context.pageID)
+        let snapshot = try await loadPageDocument(id: context.pageID)
+        guard snapshot.scope == context.scope else { throw FiestaBoardError.staleSession }
+        return snapshot
     }
     /// Explicit, connection-scoped page storage. No save replay or hidden revision refresh.
     public func savePage(patch: PageSavePatch, context: PageEditingContext) async throws -> PageDocumentSnapshot {
@@ -401,7 +455,7 @@ public struct PreparedAction: Identifiable, Sendable {
             let receipt = try await service.savePage(id: context.pageID, patch: patch)
             try requirePageContext(context)
             pageReadbacks.remove(identity); savingPages.remove(identity)
-            return try acceptPageDocument(id: context.pageID, deployment: context.deployment, data: receipt.pageData, incompatibleReferenceCount: receipt.incompatibleReferenceCount)
+            return try acceptPageDocument(id: context.pageID, deployment: context.deployment, scope: context.scope, data: receipt.pageData, incompatibleReferenceCount: receipt.incompatibleReferenceCount)
         } catch {
             guard context.generation == generation else { throw FiestaBoardError.staleSession }
             _ = handleAuthenticationLoss(error)
@@ -419,7 +473,7 @@ public struct PreparedAction: Identifiable, Sendable {
         catch { return .disabled(error.localizedDescription) }
         let identity = PageIdentity(deployment: context.deployment, id: context.pageID)
         guard !savingPages.contains(identity), !pageReadbacks.contains(identity) else { return .disabled(FiestaBoardError.pageReadbackRequired.localizedDescription) }
-        guard pageSessionOptedIn, context.pageType == "template", context.editProtocol == "page-revision-v1", context.originalRevision?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else {
+        guard pageSessionOptedIn, context.supportsPageEditing, context.editProtocol == "page-revision-v1", context.originalRevision?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else {
             return .disabled(FiestaBoardError.pageWritesDisabled.localizedDescription)
         }
         return status?.isDemo == true ? .simulated : .enabled
@@ -448,6 +502,19 @@ public struct PreparedAction: Identifiable, Sendable {
             _ = handleAuthenticationLoss(error); throw error
         }
     }
+    public func previewFlexiblePage(requestData: Data, context: PageEditingContext, target: BoardTarget) async throws -> FlexiblePreviewResult {
+        try requirePageContext(context); try requirePreviewTarget(target)
+        guard context.supportsFlexibleEditing else { throw FiestaBoardError.previewUnsupported }
+        guard let service else { throw FiestaBoardError.staleSession }
+        do {
+            let result = try await service.previewFlexiblePage(requestData: requestData, target: target)
+            try requirePageContext(context); try requirePreviewTarget(target)
+            return result
+        } catch {
+            guard context.generation == generation else { throw FiestaBoardError.staleSession }
+            _ = handleAuthenticationLoss(error); throw error
+        }
+    }
     private func requirePageContext(_ context: PageEditingContext) throws {
         guard context.generation == generation, !connecting, status != nil,
               service?.deployment == context.deployment else { throw FiestaBoardError.staleSession }
@@ -457,14 +524,14 @@ public struct PreparedAction: Identifiable, Sendable {
     private func requirePreviewTarget(_ target: BoardTarget) throws {
         guard target.deployment == service?.deployment, boards.contains(where: { $0.id == target.boardID }) else { throw FiestaBoardError.invalidTarget }
     }
-    private func acceptPageDocument(id: String, deployment: DeploymentURL, data: Data, incompatibleReferenceCount: Int = 0) throws -> PageDocumentSnapshot {
+    private func acceptPageDocument(id: String, deployment: DeploymentURL, scope: VerifiedConnectionScope, data: Data, incompatibleReferenceCount: Int = 0) throws -> PageDocumentSnapshot {
         let page = try JSONDecoder().decode(Page.self, from: data)
         guard page.id == id else { throw FiestaBoardError.invalidResponse }
-        let context = PageEditingContext(pageID: id, deployment: deployment, originalRevision: page.revision,
-                                         editProtocol: page.editProtocol, pageType: page.type, generation: generation, documentID: UUID())
+        let context = PageEditingContext(pageID: id, deployment: deployment, scope: scope, originalRevision: page.revision,
+                                         editProtocol: page.editProtocol, supportsPageEditing: CapabilityPolicy.supportsEditableDocument(page, version: status?.version.runningVersion, isDev: status?.version.isDev ?? true), supportsFlexibleEditing: CapabilityPolicy.supportsFlexibleDocument(page), generation: generation, documentID: UUID())
         pageContexts[id] = context.documentID
         if let index = pages.firstIndex(where: { $0.id == id }) { pages[index] = page }
-        return PageDocumentSnapshot(id: id, deployment: deployment, data: data, context: context, editingAccess: pageEditingAccess(context: context), incompatibleReferenceCount: incompatibleReferenceCount)
+        return PageDocumentSnapshot(scope: scope, id: id, deployment: deployment, data: data, context: context, editingAccess: pageEditingAccess(context: context), incompatibleReferenceCount: incompatibleReferenceCount)
     }
 
     public func prepare(_ payload: ActionPayload) -> PreparedAction? {
@@ -626,6 +693,9 @@ private enum StoreError: LocalizedError {
     }
 
     public func beginCollectionEditor(id: String?) async throws -> CollectionEditorSnapshot {
+        try await loadCollectionEditor(id: id, expectedScope: nil)
+    }
+    private func loadCollectionEditor(id: String?, expectedScope: VerifiedConnectionScope?) async throws -> CollectionEditorSnapshot {
         guard let service, status != nil, !connecting else { throw FiestaBoardError.staleSession }
         let session = generation
         let deployment = service.deployment
@@ -639,10 +709,13 @@ private enum StoreError: LocalizedError {
         }
         let epoch = collectionWriteGenerations[identity, default: 0]
         do {
+            let document = try await service.scopedCollectionDocument(id: id)
+            guard document.scope.deployment == deployment, expectedScope == nil || document.scope == expectedScope else { throw FiestaBoardError.staleSession }
+            let value = document.collection
             let library = try await service.pages()
-            let value: PageCollection?
-            if let id { value = try await service.collection(id: id) } else { value = nil }
             let access = await service.collectionAccess()
+            let verified = try await service.scopedCollectionDocument(id: nil)
+            guard verified.scope == document.scope else { throw FiestaBoardError.staleSession }
             guard session == generation, self.service?.deployment == deployment, status != nil else { throw FiestaBoardError.staleSession }
             try Task.checkCancellation()
             guard epoch == collectionWriteGenerations[identity, default: 0], !collectionMutating.contains(identity) else {
@@ -651,7 +724,7 @@ private enum StoreError: LocalizedError {
             if let id, value?.id != id { throw FiestaBoardError.invalidResponse }
             collectionReadbacks.remove(identity)
             pages = library
-            return acceptCollection(value, deployment: deployment, pages: library, access: access)
+            return acceptCollection(value, scope: document.scope, pages: library, access: access)
         } catch {
             guard session == generation else { throw FiestaBoardError.staleSession }
             _ = handleAuthenticationLoss(error)
@@ -661,13 +734,15 @@ private enum StoreError: LocalizedError {
 
     public func readbackCollection(context: CollectionEditingContext) async throws -> CollectionEditorSnapshot {
         try requireCollectionContext(context, permitConsumedCreate: true)
+        guard let service else { throw FiestaBoardError.staleSession }
+        try await verifyCollectionOwnership(context, service: service, permitConsumedCreate: true)
         guard let id = context.collectionID else {
             // A list can help a person inspect an uncertain create; it cannot
             // determine which new resource, if any, came from that POST.
             await refreshCollections().value
             throw FiestaBoardError.collectionReadbackRequired
         }
-        do { return try await beginCollectionEditor(id: id) }
+        do { return try await loadCollectionEditor(id: id, expectedScope: context.scope) }
         catch FiestaBoardError.rejected(status: 404) {
             collectionDocumentTokens[id] = nil; collectionContexts[context.documentToken] = nil
             collections.removeAll { $0.id == id }
@@ -683,6 +758,7 @@ private enum StoreError: LocalizedError {
         try input.validate()
         guard input.pageIDs.allSatisfy({ member in pages.contains { $0.id == member } }) else { throw FiestaBoardError.collectionWritesDisabled }
         let identity = collectionIdentity(context)
+        try await verifyCollectionOwnership(context, service: service)
         guard !collectionMutating.contains(identity), !collectionReadbacks.contains(identity) else {
             throw FiestaBoardError.collectionReadbackRequired
         }
@@ -709,10 +785,12 @@ private enum StoreError: LocalizedError {
                 throw FiestaBoardError.unknownMutationOutcome
             }
             let access = await service.collectionAccess()
+            let verified = try await service.scopedCollectionDocument(id: nil)
+            guard verified.scope == context.scope else { throw FiestaBoardError.staleSession }
             try requireCollectionContext(context, permitConsumedCreate: true)
             collectionReadbacks.remove(identity)
             collectionContexts[context.documentToken] = nil
-            return acceptCollection(result, deployment: context.deployment, pages: pages, access: access)
+            return acceptCollection(result, scope: context.scope, pages: pages, access: access)
         } catch {
             guard context.generation == generation else { throw FiestaBoardError.staleSession }
             _ = handleAuthenticationLoss(error)
@@ -731,6 +809,7 @@ private enum StoreError: LocalizedError {
             throw FiestaBoardError.collectionWritesDisabled
         }
         let identity = collectionIdentity(context)
+        try await verifyCollectionOwnership(context, service: service)
         guard !collectionMutating.contains(identity), !collectionReadbacks.contains(identity) else {
             throw FiestaBoardError.collectionReadbackRequired
         }
@@ -738,6 +817,8 @@ private enum StoreError: LocalizedError {
         defer { collectionMutating.remove(identity); bumpCollectionWrite(identity) }
         do {
             try await service.deleteCollection(id: id, expectedRevision: expectedRevision)
+            let verified = try await service.scopedCollectionDocument(id: nil)
+            guard verified.scope == context.scope else { throw FiestaBoardError.staleSession }
             try requireCollectionContext(context)
             collectionReadbacks.remove(identity)
             collectionDocumentTokens[id] = nil; collectionContexts[context.documentToken] = nil
@@ -750,8 +831,8 @@ private enum StoreError: LocalizedError {
         }
     }
 
-    private func acceptCollection(_ value: PageCollection?, deployment: DeploymentURL, pages: [Page], access: CollectionWriteAccess) -> CollectionEditorSnapshot {
-        let context = CollectionEditingContext(deployment: deployment, generation: generation,
+    private func acceptCollection(_ value: PageCollection?, scope: VerifiedConnectionScope, pages: [Page], access: CollectionWriteAccess) -> CollectionEditorSnapshot {
+        let context = CollectionEditingContext(deployment: scope.deployment, scope: scope, generation: generation,
             documentToken: UUID(), collectionID: value?.id, originalRevision: value?.revision,
             writeAllowed: pageSessionOptedIn && access.writesOptedIn && (value.map {
                 $0.supportsEditing && $0.editProtocol == "collection-revision-v1"
@@ -766,6 +847,17 @@ private enum StoreError: LocalizedError {
         }
         return CollectionEditorSnapshot(context: context, collection: value, pages: pages,
                                         canSave: context.writeAllowed, isDemo: status?.isDemo == true)
+    }
+
+    private func verifyCollectionOwnership(_ context: CollectionEditingContext, service: any FiestaBoardService, permitConsumedCreate: Bool = false) async throws {
+        do {
+            let verified = try await service.scopedCollectionDocument(id: nil)
+            try requireCollectionContext(context, permitConsumedCreate: permitConsumedCreate)
+            guard verified.scope == context.scope else { throw FiestaBoardError.staleSession }
+        } catch {
+            if context.generation == generation { _ = handleAuthenticationLoss(error) }
+            throw error
+        }
     }
 
     private func requireCollectionSession(_ context: CollectionEditingContext) throws {
@@ -808,11 +900,16 @@ extension BoardStore {
         return (service, library)
     }
 
-    public func createLibraryPage() async throws -> String {
+    /// Creates a page from the library sheet's input, or — with `name`,
+    /// `template` and `family` — from a board frame ("Save as page", B9).
+    public func createLibraryPage(name: String? = nil, template: [String] = [],
+                                  family: PageCreationFamily? = nil) async throws -> String {
         let (service, library) = try requirePageLibrary()
         guard library.canCreate else { throw FiestaBoardError.pageWritesDisabled }
-        let input = PageCreationInput(name: library.name.trimmingCharacters(in: .whitespacesAndNewlines),
-                                      family: library.isPanel ? .panel(rows: library.rows, cols: library.columns) : .flagship)
+        let fromSheet = name == nil
+        let input = PageCreationInput(name: (name ?? library.name).trimmingCharacters(in: .whitespacesAndNewlines),
+                                      family: family ?? (library.isPanel ? .panel(rows: library.rows, cols: library.columns) : .flagship),
+                                      template: template)
         try input.validate()
         let token = generation
         library.phase = .working; library.deletion = nil
@@ -825,8 +922,9 @@ extension BoardStore {
             let receipt = try await service.createPage(context: context)
             guard valid(token), pageLibrary === library else { throw FiestaBoardError.staleSession }
             if !pages.contains(where: { $0.id == receipt.page.id }) { pages.append(receipt.page) }
-            library.name = ""; library.blocked = false
-            library.phase = .completed("Page created. Open its editor to add content.")
+            if fromSheet { library.name = "" }
+            library.blocked = false
+            library.phase = .completed(fromSheet ? "Page created. Open its editor to add content." : "Saved “\(input.name)” as a page.")
             return receipt.page.id
         } catch {
             finishPageLibraryFailure(error, library: library, dispatched: dispatched)
@@ -837,9 +935,10 @@ extension BoardStore {
 
     public func preparePageDeletion(id: String) async throws {
         let (service, library) = try requirePageLibrary()
-        guard library.canDelete, pages.contains(where: { $0.id == id }) else { throw FiestaBoardError.pageWritesDisabled }
+        guard library.canDelete, let page = pages.first(where: { $0.id == id }) else { throw FiestaBoardError.pageWritesDisabled }
         let identity = PageIdentity(deployment: service.deployment, id: id)
         guard !savingPages.contains(identity), !pageReadbacks.contains(identity) else { throw FiestaBoardError.pageReadbackRequired }
+        guard pageDeletionDisabledReason(for: page) == nil else { throw FiestaBoardError.pageWritesDisabled }
         let token = generation; let writeEpoch = pageWriteGenerations[identity, default: 0]
         library.phase = .working; library.deletion = nil
         do {
@@ -948,5 +1047,47 @@ extension BoardStore {
         }
         library.deletionRecoveryEpochs.removeAll()
         library.blocked = false; library.deletion = nil; library.phase = .idle
+    }
+}
+
+
+@MainActor extension BoardStore {
+    private func clearSchedules() {
+        scheduleTask?.cancel(); scheduleTask = nil; scheduleRequest = UUID()
+        scheduleList = nil; scheduleTarget = nil; scheduleMessage = nil; schedulesLoading = false
+    }
+    /// One read bound to this selected display, session generation and request.
+    @discardableResult public func refreshSchedules() -> Task<Void, Never> {
+        clearSchedules()
+        guard let service, status != nil, !connecting else {
+            scheduleMessage = ActionDisabledReason.disconnected.message
+            return Task {}
+        }
+        guard let target else {
+            scheduleMessage = ActionDisabledReason.noDisplay.message
+            return Task {}
+        }
+        let session = generation, request = UUID()
+        scheduleRequest = request; schedulesLoading = true
+        let task = Task { [weak self] in
+            guard let self else { return }
+            defer { if scheduleRequest == request { schedulesLoading = false } }
+            do {
+                let value = try await service.schedules(on: target)
+                guard valid(session), scheduleRequest == request, self.target == target else { return }
+                scheduleTarget = target; scheduleList = value
+            } catch {
+                guard valid(session), scheduleRequest == request, self.target == target else { return }
+                if !handleAuthenticationLoss(error) {
+                    switch error as? FiestaBoardError {
+                    case .rejected(status: 404), .unsupportedOperation:
+                        scheduleMessage = "Schedule reading is unavailable for this display or server. No schedule changes are supported here."
+                    default: scheduleMessage = safeDescription(error)
+                    }
+                }
+            }
+        }
+        scheduleTask = task
+        return task
     }
 }

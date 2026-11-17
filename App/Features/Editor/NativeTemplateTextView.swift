@@ -14,12 +14,16 @@ struct NativeTemplateTextView: UIViewRepresentable {
     @Binding var isEditing: Bool
     var rich: Bool
     var selection: TemplateTextSelection
+    var allowsMultiline = false
+    var documentUndo = false
     var onEditToken: (String, NSRange) -> Void
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
     func makeUIView(context: Context) -> TemplateUITextView {
         let view = TemplateUITextView(usingTextLayoutManager: false)
         view.delegate = context.coordinator
+        view.allowsMultiline = allowsMultiline
+        view.usesDocumentUndo = documentUndo
         view.font = .preferredFont(forTextStyle: .body)
         view.adjustsFontForContentSizeCategory = true
         view.backgroundColor = .secondarySystemGroupedBackground
@@ -29,7 +33,7 @@ struct NativeTemplateTextView: UIViewRepresentable {
         view.autocapitalizationType = .none
         view.smartQuotesType = .no; view.smartDashesType = .no; view.smartInsertDeleteType = .no
         view.accessibilityIdentifier = "templateRowText"
-        view.accessibilityLabel = "Row text"
+        view.accessibilityLabel = allowsMultiline ? "Block text" : "Row text"
         view.tokenTapped = { [weak coordinator = context.coordinator] source, range in coordinator?.parent.onEditToken(source, range) }
         let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.tapToken(_:)))
         tap.cancelsTouchesInView = false
@@ -56,21 +60,7 @@ struct NativeTemplateTextView: UIViewRepresentable {
         init(_ parent: NativeTemplateTextView) { self.parent = parent }
         func render(_ view: TemplateUITextView, source: String, sourceSelection: NSRange) {
             let font = UIFont.preferredFont(forTextStyle: .body)
-            let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: UIColor.label]
-            let result = NSMutableAttributedString(string: "")
-            if parent.rich {
-                for fragment in TemplateSyntax.fragments(source) {
-                    if fragment.kind == .text { result.append(NSAttributedString(string: fragment.source, attributes: attributes)) }
-                    else { result.append(NSAttributedString(attachment: TemplateAttachment(fragment: fragment, font: font))) }
-                }
-            } else { result.append(NSAttributedString(string: source, attributes: attributes)) }
-            view.attributedText = result
-            view.typingAttributes = attributes
-            let start = parent.rich ? TemplateSyntax.displayOffset(sourceOffset: sourceSelection.location, in: source) : sourceSelection.location
-            let end = parent.rich ? TemplateSyntax.displayOffset(sourceOffset: NSMaxRange(sourceSelection), in: source) : NSMaxRange(sourceSelection)
-            let safeStart = min(start, result.length)
-            view.selectedRange = NSRange(location: safeStart, length: max(0, min(end, result.length) - safeStart))
-            view.accessibilityValue = source
+            view.setTemplate(source, rich: parent.rich, font: font, sourceSelection: sourceSelection)
             parent.selection.range = view.sourceSelection
         }
         func textViewDidChangeSelection(_ textView: UITextView) {
@@ -86,6 +76,7 @@ struct NativeTemplateTextView: UIViewRepresentable {
             let source = view.templateSource
             let selection = view.sourceSelection
             parent.text = source
+            parent.selection.range = selection
             // Tokenization after committed text input only; no uppercase/Unicode normalization.
             if !LosslessJSON.stringsEqual(source, parent.text) { render(view, source: parent.text, sourceSelection: selection) }
             else if parent.rich && TemplateSyntax.fragments(source).reduce(0, { $0 + $1.displayLength }) != view.attributedText.length {
@@ -95,10 +86,10 @@ struct NativeTemplateTextView: UIViewRepresentable {
         }
         func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
             // Multiline authoring uses explicit row operations; never silently flatten paste.
-            !text.contains("\n") && !text.contains("\r")
+            parent.allowsMultiline || (!text.contains("\n") && !text.contains("\r"))
         }
         @objc func tapToken(_ gesture: UITapGestureRecognizer) {
-            guard let view = gesture.view as? TemplateUITextView, parent.rich else { return }
+            guard let view = gesture.view as? TemplateUITextView, view.markedTextRange == nil, parent.rich else { return }
             let point = gesture.location(in: view)
             guard let position = view.closestPosition(to: point) else { return }
             let index = view.offset(from: view.beginningOfDocument, to: position)
@@ -118,8 +109,126 @@ struct NativeTemplateTextView: UIViewRepresentable {
 }
 
 final class TemplateUITextView: UITextView {
+    var allowsMultiline = false
+    var usesDocumentUndo = false
+    override var undoManager: UndoManager? { usesDocumentUndo ? nil : super.undoManager }
+    /// Hardware ⌘Z / ⌘⇧Z / ⌘Y reach the session's undo, not UIKit's (PLAN B17).
+    var onUndo: (() -> Void)?
+    var onRedo: (() -> Void)?
+    /// Whether layoutSubviews may toggle scrolling for short single rows (the row editor);
+    /// the document surface always scrolls.
+    var managesOwnScrolling = true
+
+    override var keyCommands: [UIKeyCommand]? {
+        guard onUndo != nil || onRedo != nil else { return super.keyCommands }
+        let commands = [
+            UIKeyCommand(title: "Undo", action: #selector(sessionUndo), input: "z", modifierFlags: .command),
+            UIKeyCommand(title: "Redo", action: #selector(sessionRedo), input: "z", modifierFlags: [.command, .shift]),
+            UIKeyCommand(title: "Redo", action: #selector(sessionRedo), input: "y", modifierFlags: .command)
+        ]
+        commands.forEach { $0.wantsPriorityOverSystemBehavior = true }
+        return (super.keyCommands ?? []) + commands
+    }
+    @objc private func sessionUndo() { onUndo?() }
+    @objc private func sessionRedo() { onRedo?() }
+
+    /// Replaces the whole content with `source`, as attachments (rich) or raw text (plain),
+    /// placing the selection at the given source range. Never call with marked text.
+    /// Decides the unknown-variable warning on chips (only an authoritative catalog warns).
+    var variables: VariableCatalog?
+    /// Extra styling after the text is set (the document's board-width guide and overflow dimming).
+    var decorate: ((NSMutableAttributedString) -> Void)?
+    private var lastRender: (rich: Bool, font: UIFont, color: UIColor)?
+    /// A fixed row height taller than the font's line (P5), or nil for the natural line.
+    var rowHeight: CGFloat?
+    /// The caret keeps the text's height, centred in a taller row.
+    override func caretRect(for position: UITextPosition) -> CGRect {
+        var rect = super.caretRect(for: position)
+        if let rowHeight, let font = lastRender?.font, rowHeight > font.lineHeight + 0.5, rect.height > font.lineHeight + 1 {
+            let height = font.lineHeight
+            rect.origin.y = rect.maxY - (rowHeight + height) / 2 - (rect.height - rowHeight) / 2
+            rect.size.height = height
+        }
+        return rect
+    }
+    private var traitRegistration: (any UITraitChangeRegistration)?
+
+    func setTemplate(_ source: String, rich: Bool, font: UIFont, sourceSelection: NSRange, color: UIColor = .label) {
+        lastRender = (rich, font, color)
+        registerChipTraitChanges()
+        var attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: color]
+        if let rowHeight, rowHeight > font.lineHeight + 0.5 {
+            // P5: rows spread to fill the document's height (iPad portrait, keyboard down); the
+            // glyphs and chips sit in the middle of each taller row.
+            let style = NSMutableParagraphStyle()
+            style.minimumLineHeight = rowHeight; style.maximumLineHeight = rowHeight
+            attributes[.paragraphStyle] = style
+            attributes[.baselineOffset] = ((rowHeight - font.lineHeight) / 2).rounded()
+        }
+        let result = NSMutableAttributedString(string: "")
+        if rich {
+            for fragment in TemplateSyntax.fragments(source) {
+                if fragment.kind == .text { result.append(NSAttributedString(string: fragment.source, attributes: attributes)) }
+                else {
+                    let attachment = TemplateAttachment(fragment: fragment, font: font, variables: variables, traits: traitCollection)
+                    let chip = NSMutableAttributedString(attachment: attachment)
+                    chip.addAttributes(attributes, range: NSRange(location: 0, length: chip.length))
+                    result.append(chip)
+                }
+            }
+        } else { result.append(NSAttributedString(string: source, attributes: attributes)) }
+        decorate?(result)
+        attributedText = result
+        typingAttributes = attributes
+        let start = rich ? TemplateSyntax.displayOffset(sourceOffset: sourceSelection.location, in: source) : sourceSelection.location
+        let end = rich ? TemplateSyntax.displayOffset(sourceOffset: NSMaxRange(sourceSelection), in: source) : NSMaxRange(sourceSelection)
+        let safeStart = min(start, result.length)
+        selectedRange = NSRange(location: safeStart, length: max(0, min(end, result.length) - safeStart))
+        accessibilityValue = source
+    }
+
+    /// Chips re-rasterise on light/dark and Dynamic Type changes (PLAN B31), keeping the selection.
+    private func registerChipTraitChanges() {
+        guard traitRegistration == nil else { return }
+        traitRegistration = registerForTraitChanges([UITraitUserInterfaceStyle.self, UITraitPreferredContentSizeCategory.self, UITraitDisplayScale.self]) { (view: TemplateUITextView, _) in
+            view.rerenderChips()
+        }
+    }
+    /// Number of chip re-renders after trait changes (tests).
+    private(set) var traitRerenderCount = 0
+    func rerenderChips() {
+        guard markedTextRange == nil, let lastRender else { return }
+        traitRerenderCount += 1
+        let font = fontProvider?() ?? lastRender.font
+        setTemplate(templateSource, rich: lastRender.rich, font: font, sourceSelection: sourceSelection, color: lastRender.color)
+    }
+    /// The current font (Dynamic Type), asked again on trait changes.
+    var fontProvider: (() -> UIFont)?
+
+    /// Outlines the chips inside a range selection, or the chip just tapped (PLAN B14). Only the
+    /// attachments whose state changes are redrawn.
+    func updateChipOutlines(tapped: Int? = nil) {
+        guard let text = attributedText, text.length > 0 else { return }
+        let selection = selectedRange
+        var changed: [NSRange] = []
+        text.enumerateAttribute(.attachment, in: NSRange(location: 0, length: text.length)) { value, range, _ in
+            guard let attachment = value as? TemplateAttachment else { return }
+            let inside = selection.length > 0 && NSLocationInRange(range.location, selection)
+            let wanted = inside || range.location == tapped
+            if attachment.outlined != wanted {
+                attachment.rerender(traits: traitCollection, outlined: wanted)
+                changed.append(range)
+            }
+        }
+        for range in changed {
+            layoutManager.invalidateLayout(forCharacterRange: range, actualCharacterRange: nil)
+            layoutManager.invalidateDisplay(forCharacterRange: range)
+        }
+    }
+
     override func layoutSubviews() {
         super.layoutSubviews()
+        guard managesOwnScrolling else { return }
         // A short row must not consume vertical gestures intended for the surrounding
         // editor. Long source still scrolls inside its native text viewport.
         let needsScrolling = contentSize.height > bounds.height + 1
@@ -148,35 +257,59 @@ final class TemplateUITextView: UITextView {
     override func cut(_ sender: Any?) { copy(sender); insertText("") }
     override func paste(_ sender: Any?) {
         guard let source = UIPasteboard.general.string else { return }
-        guard !source.contains("\n"), !source.contains("\r") else {
+        guard allowsMultiline || (!source.contains("\n") && !source.contains("\r")) else {
             UIAccessibility.post(notification: .announcement, argument: "Use separate rows for multiline text.")
             return
         }
         insertTemplate(source)
     }
     func insertTemplate(_ source: String) {
-        guard !source.contains("\n"), !source.contains("\r") else { return }
+        guard allowsMultiline || (!source.contains("\n") && !source.contains("\r")) else { return }
         insertText(source)
     }
 }
 
-private final class TemplateAttachment: NSTextAttachment {
+/// One token as one character (U+FFFC): the caret can never land inside it and Backspace removes
+/// it whole (PLAN B14). The image is the token's chip (`TemplateChipRenderer`); `source` is its
+/// exact template text, which copy, cut and the document's source all read back.
+@MainActor final class TemplateAttachment: NSTextAttachment {
     let source: String
-    init(fragment: TemplateSyntax.Fragment, font: UIFont) {
+    let chip: TemplateChip?
+    /// Board cells this token fills, when known before the server renders (P1 column guide): from
+    /// its filters, or from the catalog's sample value when the catalog is the server's own.
+    let boardWidth: Int?
+    private(set) var outlined = false
+    private var font: UIFont
+
+    /// The token's full source for the callout and the detail line: `weather.temperature | pad:3`,
+    /// `ƒ IF(…)` in full, plus the reason when the board will show ???.
+    var fullName: String { TemplateChip.detail(source: source, chip: chip) }
+    /// A colour tile reads as itself; it has no detail line.
+    var isTile: Bool { if case .tile? = chip?.style { return true }; return false }
+
+    init(fragment: TemplateSyntax.Fragment, font: UIFont, variables: VariableCatalog? = nil, traits: UITraitCollection = .current) {
         source = fragment.source
+        let chip = TemplateChip(fragment: fragment, variables: variables)
+        self.chip = chip
+        let sample: Int? = {
+            guard let variables, variables.isAuthoritative, let chip, case .variable = chip.style else { return nil }
+            return variables.preview(of: chip.title)?.count
+        }()
+        boardWidth = chip?.boardWidth(sampleLength: sample)
+        self.font = font
         super.init(data: nil, ofType: nil)
-        let label = fragment.label
-        let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: UIColor.label]
-        let width = min(230, max(34, (label as NSString).size(withAttributes: attributes).width + 18))
-        let height = font.lineHeight + 6
-        image = UIGraphicsImageRenderer(size: CGSize(width: width, height: height)).image { _ in
-            UIColor.tertiarySystemFill.setFill()
-            UIBezierPath(roundedRect: CGRect(x: 0, y: 0, width: width, height: height), cornerRadius: 7).fill()
-            let style = NSMutableParagraphStyle(); style.lineBreakMode = .byTruncatingMiddle
-            var labelAttributes = attributes; labelAttributes[.paragraphStyle] = style
-            (label as NSString).draw(in: CGRect(x: 9, y: 3, width: width - 18, height: height - 6), withAttributes: labelAttributes)
-        }
-        bounds = CGRect(x: 0, y: font.descender - 3, width: width, height: height)
+        accessibilityLabel = chip?.accessibilityLabel ?? fragment.label
+        rerender(font: font, traits: traits)
     }
     required init?(coder: NSCoder) { return nil }
+
+    /// Redraws for a new font size, appearance or outline state (B31: trait changes re-rasterise).
+    func rerender(font: UIFont? = nil, traits: UITraitCollection, outlined: Bool? = nil) {
+        if let font { self.font = font }
+        if let outlined { self.outlined = outlined }
+        guard let chip else { return }
+        let (image, bounds) = TemplateChipRenderer.render(chip, font: self.font, traits: traits, outlined: self.outlined)
+        self.image = image
+        self.bounds = bounds
+    }
 }

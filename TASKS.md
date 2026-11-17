@@ -2,6 +2,18 @@
 
 This is the short current queue and durable milestone history. Full web-app feature parity is required before the first App Store release. Checkboxes mean the whole listed deliverable is accepted, not that a draft screen exists. `Contracts/parity.json` remains the source-bound release inventory; source/fixture tests alone do not make a workflow release-verified.
 
+## Mobile beta project — October 31
+
+The current [requirements/design](docs/mobile-beta/requirements-design.md), [execution plan](docs/mobile-beta/execution-plan.md) and [refreshed parity inventory](docs/mobile-beta/parity-inventory.json) incorporate current web main and flexible-page PR2395. The older inventory remains historical evidence; no release readiness is implied.
+
+- Reader and physical-preview slice: d77cc59, independently reviewed by Astra; 328 package tests, project/contract checks, generic iOS build, and focused iPhone/iPad simulator journeys pass.
+- Legacy document fallback follow-up: stable 10.1.2 captured adapter only; explicit v1 remains capability-driven on newer servers. Kit 154 and AppState 85 tests pass, including local refusal before transport and extreme physical dimensions. See [verification](docs/mobile-beta/legacy-adapter-verification.md).
+- Verified connection-scoped durable drafts and explicit recovery/export: 000324a + d3021da, independently reviewed; normal connection, remembered restore and account isolation regressions pass.
+- Native destination navigation and read-only schedules: 20b2ecd + a381dc4, independently reviewed; current package suites total 356 passing tests. Pages → Collections → Schedule, Displays → Playback → back, connected/disconnected recovery, and editor draft preservation during rotation pass on iPhone 17 Pro Max and iPad Air 11 M4 simulators (iOS 27.0). This is not schedule mutation or broad settings parity.
+- Next: one native flexible text/Canvas preview-save-reopen journey. Preview target-deletion semantics await the core contract update; local authoring can proceed.
+- Duo runtime evidence: installed profile requires iOS 27.1; only iOS 27.0 simulator runtimes are installed. Actual folding validation remains pending; no runtime installation attempted.
+- Broad settings/integrations/schedules and native accessibility/device acceptance remain open. Original checkout, physical app, and production displays are preserved. No publication or physical install in this phase.
+
 ## Latest editor work — October 29
 
 The new native creative-editor draft is implemented; its [verification report](docs/research/2026-10-29-creative-editor-verification.md) distinguishes tested authoring from the remaining LED/catalog/renderer/device work. The detailed remaining editor queue is at the end of this file. Full rich-editor parity remains open.

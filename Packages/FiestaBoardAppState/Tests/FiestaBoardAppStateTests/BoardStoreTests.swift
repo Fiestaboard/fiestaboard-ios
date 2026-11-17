@@ -214,10 +214,22 @@ private actor DelayedService: FiestaBoardService {
     nonisolated let isDemo = true
     private let demo: DemoFiestaBoardService
     private let delayConnection: Bool
+    private var delaySchedule = false
+    private var scheduleFailure: FiestaBoardError?
+    func delayNextSchedule() { delaySchedule = true }
+    func failSchedule(_ error: FiestaBoardError?) { scheduleFailure = error }
+    func schedules(on target: BoardTarget) async throws -> ScheduleList {
+        let result = try await demo.schedules(on: target)
+        if delaySchedule { delaySchedule = false; await hold() }
+        if let scheduleFailure { throw scheduleFailure }
+        return result
+    }
     private var delayRead = false
     private var delayMutation = false
     private var delayPage = false
     private var delayPreview = false
+    private var flexibleDocument = false
+    func useFlexibleDocument() { flexibleDocument = true }
     private var previewFailure: FiestaBoardError?
     func failNextPreview() { previewFailure = .networkUnavailable }
     func delayNextPreview() { delayPreview = true }
@@ -249,6 +261,15 @@ private actor DelayedService: FiestaBoardService {
     }
     func pages() async throws -> [Page] { try await demo.pages() }
     func page(id: String) async throws -> Page { try await demo.page(id: id) }
+    func scopedPageDocument(id: String) async throws -> ScopedPageDocument {
+        let value = try await demo.scopedPageDocument(id: id)
+        if delayPage { delayPage = false; await hold() }
+        if flexibleDocument {
+            let data = Data(#"{"id":"page-selected","name":"Flexible","type":"flexible","document_protocol":"page-document-v2","edit_protocol":"page-revision-v1","revision":"original","blocks":[{"id":"text","kind":"text","text":"Text"}]}"#.utf8)
+            return ScopedPageDocument(data: data, scope: value.scope)
+        }
+        return value
+    }
     func pageDocumentData(id: String) async throws -> Data {
         let value = try await demo.pageDocumentData(id: id)
         if delayPage { delayPage = false; await hold() }
@@ -268,6 +289,11 @@ private actor DelayedService: FiestaBoardService {
         let value = try await demo.previewPage(requestData: requestData, target: target)
         if delayPreview { delayPreview = false; await hold() }
         return value
+    }
+    func previewFlexiblePage(requestData: Data, target: BoardTarget) async throws -> FlexiblePreviewResult {
+        if let error = previewFailure { previewFailure = nil; throw error }
+        if delayPreview { delayPreview = false; await hold() }
+        return try FlexiblePreviewResult(rawData: Data(#"{"available":true,"page_id":"unsaved","message":"Text","lines":["Text"],"display_type":"template","raw":{},"layout_issues":[]}"#.utf8))
     }
     func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult {
         sentCount += 1
@@ -292,6 +318,16 @@ private actor SessionFaultService: FiestaBoardService {
     private let demo: DemoFiestaBoardService
     private var rejectRead = false
     private var pageFailure: FiestaBoardError?
+    private var documentContract: (version: String?, advertised: Bool, dev: Bool, hasRevision: Bool)?
+    private(set) var pageSaveCount = 0
+    func configureDocumentContract(version: String?, advertised: Bool, dev: Bool, hasRevision: Bool) {
+        documentContract = (version, advertised, dev, hasRevision)
+    }
+    private var managementAccess: PageManagementCapability?
+    func setManagementAccess(_ value: PageManagementCapability) { managementAccess = value }
+    func pageManagementCapability() async -> PageManagementCapability {
+        managementAccess ?? .init(canCreate: false, canDelete: false)
+    }
     private var detailFailure: FiestaBoardError?
     private var emptyBoards = false
     private var delayPages = false
@@ -342,6 +378,11 @@ private actor SessionFaultService: FiestaBoardService {
         // Only the UI permission projection differs from demo; service data/actions remain real and isolated.
         var value = try JSONSerialization.jsonObject(with: JSONEncoder().encode(status)) as! [String: Any]
         value["access"] = "candidateWrites"; value["isDemo"] = false
+        if let documentContract, var version = value["version"] as? [String: Any] {
+            version["running_version"] = documentContract.version
+            version["is_dev"] = documentContract.dev
+            value["version"] = version
+        }
         return try JSONDecoder().decode(ConnectionStatus.self, from: JSONSerialization.data(withJSONObject: value))
     }
     func boards() async throws -> [BoardSummary] { if emptyBoards { return [] }; return try await demo.boards() }
@@ -355,11 +396,21 @@ private actor SessionFaultService: FiestaBoardService {
         if let pageFailure { throw pageFailure }; return try await demo.pages()
     }
     func page(id: String) async throws -> Page { try await demo.page(id: id) }
+    func scopedPageDocument(id: String) async throws -> ScopedPageDocument {
+        let scope = try await demo.scopedPageDocument(id: id).scope
+        return ScopedPageDocument(data: try await pageDocumentData(id: id), scope: scope)
+    }
     func pageDocumentData(id: String) async throws -> Data {
         if rejectRead { rejectRead = false; throw FiestaBoardError.unauthenticated }
-        return try await demo.pageDocumentData(id: id)
+        let data = try await demo.pageDocumentData(id: id)
+        guard let documentContract else { return data }
+        var object = try JSONSerialization.jsonObject(with: data) as! [String: Any]
+        if !documentContract.advertised { object.removeValue(forKey: "document_protocol") }
+        if !documentContract.hasRevision { object.removeValue(forKey: "revision") }
+        return try JSONSerialization.data(withJSONObject: object)
     }
     func savePage(id: String, patch: PageSavePatch) async throws -> PageSaveReceipt {
+        pageSaveCount += 1
         if rejectRead { rejectRead = false; throw FiestaBoardError.unauthenticated }
         return try await demo.savePage(id: id, patch: patch)
     }
@@ -442,6 +493,9 @@ extension BoardStoreTests {
         let snapshot = try await store.loadPageDocument(id: "page-selected")
         XCTAssertEqual(snapshot.id, "page-selected")
         XCTAssertEqual(snapshot.deployment, demo.deployment)
+        XCTAssertEqual(snapshot.scope.deployment, demo.deployment)
+        XCTAssertTrue(snapshot.scope.isDemo)
+        XCTAssertEqual(snapshot.context.scope, snapshot.scope)
         XCTAssertEqual((try JSONSerialization.jsonObject(with: snapshot.data) as? [String: Any])?["id"] as? String, "page-selected")
         XCTAssertFalse(snapshot.data.isEmpty)
     }
@@ -910,5 +964,271 @@ extension BoardStoreTests {
         XCTAssertNil(store.board?.defaultPageID)
         XCTAssertEqual(store.board?.activePageID, selection)
         XCTAssertFalse(store.needsReadback)
+    }
+}
+
+
+extension BoardStoreTests {
+    func testSavePermissionMatchesLegacyAdapterAndAdvertisedDocumentCapability() async throws {
+        let cases: [(String?, Bool, Bool, Bool, Bool)] = [
+            ("10.1.2", false, false, true, true), ("10.1.2", false, true, true, false),
+            ("11.0.0", false, false, true, false), (nil, false, false, true, false),
+            ("11.0.0", true, false, true, true), ("11.0.0", true, false, false, false),
+            ("10.1.2", false, false, false, false)
+        ]
+        for (version, advertised, dev, hasRevision, allowed) in cases {
+            let service = try SessionFaultService(), store = BoardStore()
+            await service.configureDocumentContract(version: version, advertised: advertised, dev: dev, hasRevision: hasRevision)
+            await store.connect(service, allowCandidateWrites: true).value
+            let snapshot = try await store.loadPageDocument(id: "page-selected")
+            XCTAssertEqual(store.status?.version.runningVersion, version)
+            XCTAssertEqual(snapshot.editingAccess.canSave, allowed)
+            XCTAssertEqual(store.pageEditingAccess(context: snapshot.context).canSave, allowed)
+            if !allowed {
+                do {
+                    _ = try await store.savePage(patch: PageSavePatch(name: "Blocked", expectedRevision: "original"), context: snapshot.context)
+                    XCTFail("Store must reject before calling the permissive service")
+                } catch { XCTAssertEqual(error as? FiestaBoardError, .pageWritesDisabled) }
+                let count = await service.pageSaveCount
+                XCTAssertEqual(count, 0)
+            }
+        }
+    }
+}
+
+private actor ReconnectIdentityTransport: APITransport {
+    var installation = "original-installation"
+    func replaceInstallation() { installation = "replacement-installation" }
+    func resetSession() {}
+    func send(_ request: APIRequest) async throws -> APIResponse {
+        let page = #"{"id":"p","name":"Page","type":"template","device_type":"panel","template":["raw"],"unknown":null}"#
+        let raw: String
+        switch request.path {
+        case ["health"]: raw = #"{"status":"ok","service_running":true,"version":"10.1.20"}"#
+        case ["discover"]: raw = "{\"product\":\"FiestaBoard\",\"version\":\"10.1.20\",\"id\":\"\(installation)\",\"name\":\"Test\"}"
+        case ["auth", "status"]: raw = #"{"enabled":false,"setup_required":false,"authenticated":false,"mode":"disabled","first_run":false}"#
+        case ["version"]: raw = #"{"package_version":"10.1.20","build_version":"test","running_version":"10.1.20","is_dev":false}"#
+        case ["v1", "boards"]: raw = #"{"boards":[],"total":0}"#
+        case ["v1", "pages"]: raw = "{\"pages\":[\(page)],\"total\":1}"
+        case ["v1", "pages", "p"]: raw = page
+        default: throw FiestaBoardError.invalidPath
+        }
+        return APIResponse(status: 200, data: Data(raw.utf8))
+    }
+}
+
+extension BoardStoreTests {
+    func testActualReconnectRetainsSameInstallationAndRotatesReplacedInstallationScope() async throws {
+        let transport = ReconnectIdentityTransport()
+        let service = LiveFiestaBoardService(deployment: try DeploymentURL("https://board.test"), transport: transport)
+        let store = BoardStore()
+        _ = try await service.bootstrap()
+        await store.connect(service).value
+        let original = try await store.loadPageDocument(id: "p")
+        await store.reconnect(allowCandidateWrites: false).value
+        let same = try await store.loadPageDocument(id: "p")
+        XCTAssertEqual(original.scope, same.scope)
+        await transport.replaceInstallation()
+        await store.reconnect(allowCandidateWrites: false).value
+        let replacement = try await store.loadPageDocument(id: "p")
+        XCTAssertEqual(replacement.scope.installationID, "replacement-installation")
+        XCTAssertNotEqual(original.scope.connectionID, replacement.scope.connectionID)
+        do { _ = try await store.readbackPage(context: original.context); XCTFail("Old editor context") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+    }
+}
+
+
+extension BoardStoreTests {
+    func testReadbackRefusesScopeChangedInsideRetainedService() async throws {
+        let transport = ReconnectIdentityTransport()
+        let service = LiveFiestaBoardService(deployment: try DeploymentURL("https://board.test"), transport: transport)
+        let store = BoardStore()
+        _ = try await service.bootstrap()
+        await store.connect(service).value
+        let original = try await store.loadPageDocument(id: "p")
+        await transport.replaceInstallation()
+        _ = try await service.bootstrap()
+        do { _ = try await store.readbackPage(context: original.context); XCTFail("Readback cannot move an editor into another scope") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+    }
+}
+
+
+extension BoardStoreTests {
+    func testScheduleListIsBoundToSelectedDisplayAndRejectsLateOldDisplay() async throws {
+        let service = try DelayedService(delayConnection: false)
+        let store = BoardStore()
+        await store.connect(service).value
+        await store.refreshSchedules().value
+        XCTAssertEqual(store.scheduleTarget?.boardID, "board-2")
+        XCTAssertEqual(store.scheduleList?.schedules.first?.boardID, "board-2")
+        await service.delayNextSchedule()
+        let old = store.refreshSchedules()
+        await service.waitUntilBlocked()
+        await store.selectBoard("board-led").value
+        XCTAssertNil(store.scheduleList)
+        await store.refreshSchedules().value
+        await service.release()
+        await old.value
+        XCTAssertEqual(store.scheduleTarget?.boardID, "board-led")
+        XCTAssertEqual(store.scheduleList?.schedules.first?.boardID, "board-led")
+        let writes = await service.sentCount
+        XCTAssertEqual(writes, 0)
+    }
+
+    func testLateScheduleFailureCannotReplaceNewerSameDisplayRead() async throws {
+        let service = try DelayedService(delayConnection: false)
+        let store = BoardStore()
+        await store.connect(service).value
+        await service.delayNextSchedule()
+        let old = store.refreshSchedules()
+        await service.waitUntilBlocked()
+        await store.refreshSchedules().value
+        XCTAssertNotNil(store.scheduleList)
+        await service.failSchedule(.networkUnavailable)
+        await service.release(); await old.value
+        XCTAssertNotNil(store.scheduleList)
+        XCTAssertNil(store.scheduleMessage)
+        XCTAssertFalse(store.schedulesLoading)
+    }
+
+    func testScheduleLateResponseCannotCrossReconnectAndErrorsStayVisible() async throws {
+        let service = try DelayedService(delayConnection: false)
+        let store = BoardStore()
+        await store.connect(service).value
+        await service.delayNextSchedule()
+        let old = store.refreshSchedules()
+        await service.waitUntilBlocked()
+        await store.reconnect(allowCandidateWrites: false).value
+        await service.release()
+        await old.value
+        XCTAssertNil(store.scheduleList)
+        XCTAssertFalse(store.schedulesLoading)
+        for error in [FiestaBoardError.rejected(status: 404), .unsupportedOperation, .networkUnavailable] {
+            await service.failSchedule(error)
+            await store.refreshSchedules().value
+            XCTAssertNil(store.scheduleList)
+            XCTAssertNotNil(store.scheduleMessage)
+            XCTAssertNotNil(store.status)
+        }
+        await service.failSchedule(nil)
+        await store.refreshSchedules().value
+        XCTAssertEqual(store.scheduleList?.total, 1)
+        store.disconnect()
+        XCTAssertNil(store.scheduleList)
+        XCTAssertNil(store.scheduleTarget)
+    }
+
+    func testActionReasonsTrackDisconnectedNoDisplayBusyAndUncertainReadback() async throws {
+        let store = BoardStore()
+        XCTAssertEqual(store.boardActionDisabledReason, .disconnected)
+        let empty = try SessionFaultService()
+        await empty.setEmptyBoards()
+        await store.connect(empty).value
+        XCTAssertEqual(store.boardActionDisabledReason, .noDisplay)
+        let service = try DelayedService(delayConnection: false)
+        await store.connect(service).value
+        XCTAssertNil(store.boardActionDisabledReason)
+        await service.delayNextMutation()
+        let command = store.confirm(try XCTUnwrap(store.prepare(.text("ONCE"))))
+        await service.waitUntilBlocked()
+        XCTAssertEqual(store.boardActionDisabledReason, .busy)
+        await service.release(); await command.value
+        let demo = try DemoFiestaBoardService()
+        await store.connect(demo).value
+        await demo.setSimulation(.unknown)
+        await store.confirm(try XCTUnwrap(store.prepare(.text("MAYBE")))).value
+        XCTAssertEqual(store.boardActionDisabledReason, .readbackRequired)
+    }
+
+    func testPageManagementUnsupportedReasonDoesNotSuggestSettingsAndDemoHasNoWebEscape() async throws {
+        let store = BoardStore()
+        let service = try SessionFaultService()
+        await service.configureDocumentContract(version: "10.3.2", advertised: true, dev: false, hasRevision: true)
+        await store.connect(service, allowCandidateWrites: false).value
+        XCTAssertEqual(store.pageManagementDisabledReason, .unsupportedOperation)
+        XCTAssertEqual(store.boardActionDisabledReason, .unsupportedOperation)
+        await service.configureDocumentContract(version: "10.1.20", advertised: true, dev: false, hasRevision: true)
+        await store.connect(service, allowCandidateWrites: false).value
+        XCTAssertEqual(store.pageManagementDisabledReason, .changesDisabled)
+        await store.connect(try DemoFiestaBoardService()).value
+        XCTAssertNil(store.pageManagementDisabledReason)
+        XCTAssertNil(store.webEditorURL(pageID: "page-selected"))
+    }
+}
+
+
+extension BoardStoreTests {
+    func testDeletionGuidanceChecksDocumentProtocolAndRevisionBeforeOptIn() async throws {
+        func page(type: String = "template", document: String? = "page-document-v1", revision: String? = "r1", edit: String? = "page-revision-v1") throws -> Page {
+            var value: [String: Any] = ["id": "page-selected", "name": "Page", "type": type,
+                "device_type": "flagship"]
+            value["document_protocol"] = document; value["revision"] = revision; value["edit_protocol"] = edit
+            return try JSONDecoder().decode(Page.self, from: JSONSerialization.data(withJSONObject: value))
+        }
+        let unsupported: [(Page, ActionDisabledReason)] = [
+            (try page(type: "flexible", document: "page-document-v2"), .unsupportedDocument),
+            (try page(document: nil), .unsupportedDocument),
+            (try page(revision: nil), .missingRevision),
+            (try page(revision: "  "), .missingRevision),
+            (try page(revision: String(repeating: "r", count: 257)), .missingRevision),
+            (try page(edit: nil), .unsupportedRevisionProtocol),
+            (try page(edit: "future-protocol"), .unsupportedRevisionProtocol)
+        ]
+        for optedIn in [false, true] {
+            let service = try SessionFaultService(), store = BoardStore()
+            await service.configureDocumentContract(version: "10.1.20", advertised: true, dev: false, hasRevision: true)
+            await service.setManagementAccess(.init(canCreate: optedIn, canDelete: optedIn))
+            await store.connect(service, allowCandidateWrites: optedIn).value
+            XCTAssertEqual(store.pageManagementDisabledReason, optedIn ? nil : .changesDisabled,
+                "Library-wide creation guidance remains independent of the current page")
+            for (page, expected) in unsupported {
+                let reason = store.pageDeletionDisabledReason(for: page)
+                XCTAssertEqual(reason, expected)
+                XCTAssertFalse(reason?.message.contains("Enable changes") == true)
+            }
+            XCTAssertEqual(store.pageDeletionDisabledReason(for: try page()), optedIn ? nil : .changesDisabled)
+        }
+    }
+}
+
+extension BoardStoreTests {
+    func testFlexiblePreviewAndSaveAccessStayBoundToDocumentTargetAndSession() async throws {
+        for transition in ["document", "board", "disconnect"] {
+            let service = try DelayedService(delayConnection: false), store = BoardStore()
+            await service.useFlexibleDocument()
+            await store.connect(service).value
+            let original = try await store.loadPageDocument(id: "page-selected")
+            XCTAssertTrue(original.editingAccess.canSave)
+            let target = try BoardTarget(deployment: service.deployment, boardID: "board-led")
+            let body = Data(#"{"page":{"name":"Flexible","type":"flexible","blocks":[{"id":"text","kind":"text","text":"Text"}]},"board_id":"board-led"}"#.utf8)
+            let result = try await store.previewFlexiblePage(requestData: body, context: original.context, target: target)
+            XCTAssertEqual(result.lines, ["Text"])
+            await service.delayNextPreview()
+            let pending = Task { try await store.previewFlexiblePage(requestData: body, context: original.context, target: target) }
+            await service.waitUntilBlocked()
+            switch transition {
+            case "document": _ = try await store.loadPageDocument(id: original.id)
+            case "board": await store.selectBoard("board-led").value
+            default: store.disconnect()
+            }
+            await service.release()
+            do { _ = try await pending.value; XCTFail("Stale preview cannot be adopted") }
+            catch { XCTAssertEqual(error as? FiestaBoardError, transition == "document" ? .stalePageContext : .staleSession) }
+        }
+    }
+}
+
+extension BoardStoreTests {
+    func testTemplateContextCannotAcquireFlexiblePreviewPermission() async throws {
+        let service = try DelayedService(delayConnection: false), store = BoardStore()
+        await store.connect(service).value
+        let original = try await store.loadPageDocument(id: "page-selected")
+        let target = try BoardTarget(deployment: service.deployment, boardID: "board-led")
+        do {
+            _ = try await store.previewFlexiblePage(requestData: Data("{}".utf8), context: original.context, target: target)
+            XCTFail("A template context does not advertise the flexible endpoint")
+        } catch { XCTAssertEqual(error as? FiestaBoardError, .previewUnsupported) }
     }
 }

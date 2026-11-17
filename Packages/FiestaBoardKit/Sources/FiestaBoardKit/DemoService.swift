@@ -36,6 +36,7 @@ public actor DemoFiestaBoardService: FiestaBoardService {
         return .init(writesOptedIn: access.writesOptedIn, canCreate: access.canCreate, isSimulated: true)
     }
     public func collections() async throws -> [PageCollection] { try await service.collections() }
+    public func scopedCollectionDocument(id: String?) async throws -> ScopedCollectionDocument { try await service.scopedCollectionDocument(id: id) }
     public func collection(id: String) async throws -> PageCollection { try await service.collection(id: id) }
     public func acknowledgeCollectionCreationReview() async throws { try await service.acknowledgeCollectionCreationReview() }
     public func createCollection(_ input: CollectionInput) async throws -> PageCollection { try await service.createCollection(input) }
@@ -49,7 +50,9 @@ public actor DemoFiestaBoardService: FiestaBoardService {
     public func readPageForDeletion(id: String) async throws -> PageDeletionContext { try await service.readPageForDeletion(id: id) }
     public func deletePage(context: PageDeletionContext) async throws -> PageDeletionReceipt { try await service.deletePage(context: context) }
     public func disconnect() async { await service.disconnect() }
+    public func schedules(on target: BoardTarget) async throws -> ScheduleList { try await service.schedules(on: target) }
     public func pages() async throws -> [Page] { try await service.pages() }
+    public func scopedPageDocument(id: String) async throws -> ScopedPageDocument { try await service.scopedPageDocument(id: id) }
     public func pageDocumentData(id: String) async throws -> Data { try await service.pageDocumentData(id: id) }
     public func page(id: String) async throws -> Page { try await service.page(id: id) }
     public func savePage(id: String, patch: PageSavePatch) async throws -> PageSaveReceipt { try await service.savePage(id: id, patch: patch) }
@@ -104,6 +107,17 @@ private actor DemoTransport: APITransport {
         }
         if path == ["auth", "logout"] { return reply(#"{"status":"ok"}"#) }
         if path.starts(with: ["v1", "collections"]) { return try collectionResponse(request) }
+        if path == ["v1", "schedules"], request.method == .get {
+            guard let boardID = request.queryItems.first(where: { $0.name == "board_id" })?.value,
+                  ["board-2", "board-led"].contains(boardID) else { throw FiestaBoardError.invalidTarget }
+            let entry: [String: Any] = ["id": "demo-morning", "revision": "demo-schedule-r1",
+                "edit_protocol": "schedule-revision-v1", "board_id": boardID, "page_id": "page-weather",
+                "start_time": "08:00", "end_time": "10:00", "day_pattern": "weekdays", "enabled": true,
+                "recurrence_type": "weekly", "start_type": "fixed", "end_type": "fixed",
+                "resolved_start_time": "08:00", "resolved_end_time": "10:00"]
+            return APIResponse(status: 200, data: try JSONSerialization.data(withJSONObject: [
+                "schedules": [entry], "total": 1, "default_page_id": "page-selected", "enabled": true]))
+        }
         if path == ["v1", "boards"] { return APIResponse(status: 200, data: data["boards"]!) }
         if path == ["templates", "validate"] { return reply(#"{"valid":true,"errors":[]}"#) }
         if path == ["templates", "render"] {

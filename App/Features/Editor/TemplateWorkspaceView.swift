@@ -1,226 +1,262 @@
 import SwiftUI
 import FiestaBoardDocuments
 import FiestaBoardEditorState
+import FiestaBoardKit
 
-/// Authoring canvas and contextual row inspector. The canvas is deliberately a design
-/// projection: live variables, wrapping and fill expansion require server evaluation.
-struct TemplateWorkspaceView: View {
+/// Toolbar and keyboard-accessory actions on the document (PLAN B15/B17). One set of actions,
+/// shared by the visible toolbar under the title and the keyboard accessory that mirrors it.
+@MainActor struct DocumentCommands {
+    let model: LocalPageEditorModel
+    let buffer: DocumentBuffer
+    let pipeline: PreviewPipeline
+    /// The server's catalogs (iOS-F1); nil falls back to the built-in sample.
+    var catalog: EditorCatalogStore? = nil
+
+    var alignment: String { model.lineAlignment(buffer.caretRow) }
+    var wrap: Bool { model.lineWrap(buffer.caretRow) }
+    var canUndo: Bool { model.canUndo || buffer.isDirty }
+    var canRedo: Bool { model.canRedo && !buffer.isDirty }
+    var enabled: Bool { !model.editingFrozen }
+
+    /// Commit typing to the session now (blur, toolbar, undo) and refresh the stage.
+    func commitNow() { pipeline.flush() }
+
+    /// Toolbar actions on a row the session doesn't store yet (a new page's display padding)
+    /// first store the visible rows.
+    private func ensureRowStored(_ row: Int) {
+        guard row >= (model.lines?.count ?? 0) else { return }
+        if buffer.plainMode { model.commitPlainRows(buffer.rows) } else { model.commitRows(buffer.rows) }
+        buffer.markCommitted()
+    }
+    private func selectedRows() -> [Int] { Array(buffer.caretRows).filter { $0 < max(buffer.rows.count, 1) } }
+    func align(_ alignment: String) {
+        commitNow()
+        for row in selectedRows() { ensureRowStored(row); model.setLineAlignment(row, alignment: alignment) }
+        commitNow()
+    }
+    func setWrap(_ wrap: Bool) {
+        commitNow()
+        for row in selectedRows() { ensureRowStored(row); model.setLineWrap(row, wrap: wrap) }
+        commitNow()
+    }
+    func undo() { commitNow(); model.undo(); commitNow() }
+    /// Inserts template source at the caret as typing (chips appear at once; one undo step).
+    func insert(_ source: String) {
+        guard enabled else { return }
+        buffer.focus()
+        buffer.insert(source)
+    }
+    func insertFormula() { guard enabled else { return }; commitNow(); buffer.requestFormula() }
+    /// Variables / Colors / Formatting: a searchable picker in a sheet (iOS-F1, B22).
+    func openPicker(_ kind: InsertPickerKind) { guard enabled else { return }; commitNow(); buffer.requestPicker(kind) }
+    /// The variables the pickers offer and the chips check: the server's `GET /v1/variables`
+    /// (authoritative), else the built-in sample, which may only warn about unknown variables in
+    /// the demo (whose variables it is).
+    var variables: VariableCatalog { catalog?.variables ?? .sample(authoritative: model.isSimulated) }
+    var pickers: InsertPickers {
+        InsertPickers(variables: variables, onInsert: insert, onFormula: insertFormula, onPicker: openPicker,
+                      variablesEnabled: catalog?.variablesAvailable ?? true,
+                      colorsShown: catalog?.colorsAvailable ?? true, formattingShown: catalog?.formattingAvailable ?? true)
+    }
+    func redo() { commitNow(); model.redo(); commitNow() }
+}
+
+/// The visible document toolbar, placed directly under the page title (PLAN B12/B15).
+struct DocumentToolbar: View {
     @ObservedObject var model: LocalPageEditorModel
-    @Binding var isTextInputActive: Bool
-    @State private var selectedRow = 0
-    @State private var rich = true
-    @State private var textSelection = TemplateTextSelection()
-    @State private var tokenEditing: TokenEditing?
-    @State private var availableWidth: CGFloat = 0
-    @State private var confirmRemove = false
-
-    private var geometry: TemplateGeometry? { model.authoringGeometry }
-    private var isPanel: Bool { geometry?.isPanel ?? false }
-    private var columns: Int { geometry?.columns ?? 0 }
-    private var rows: [String] { model.lines ?? [] }
-    private var hasSelection: Bool { rows.indices.contains(selectedRow) }
-    private var rowBinding: Binding<String> { Binding(get: { hasSelection ? rows[selectedRow] : "" }, set: { if hasSelection { model.setLine(selectedRow, text: $0) } }) }
+    @ObservedObject var buffer: DocumentBuffer
+    var pipeline: PreviewPipeline
+    @Binding var rich: Bool
+    @EnvironmentObject private var catalog: EditorCatalogStore
+    /// Draw on board (iOS-F1) slots in before the insert buttons.
+    var slots: AnyView? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Label(geometry == nil ? "Template design" : (isPanel ? "LED design" : "Split-flap design"), systemImage: "rectangle.split.3x3")
-                    .font(.headline)
+        let commands = DocumentCommands(model: model, buffer: buffer, pipeline: pipeline, catalog: catalog)
+        EditorToolbar(alignment: commands.alignment, wrap: commands.wrap,
+                      canUndo: commands.canUndo, canRedo: commands.canRedo, enabled: commands.enabled,
+                      pickers: commands.pickers,
+                      onUndo: commands.undo, onRedo: commands.redo, onAlign: commands.align, onWrap: commands.setWrap,
+                      slots: slots)
+    }
+}
+
+/// The document column of a legacy template page (PLAN B12/B16): one continuous board-shaped
+/// document, line counter and the overflow warning. No per-row controls. The toolbar sits under
+/// the title (`DocumentToolbar`); the keyboard accessory mirrors it.
+struct TemplateWorkspaceView: View {
+    @ObservedObject var model: LocalPageEditorModel
+    @ObservedObject var buffer: DocumentBuffer
+    var pipeline: PreviewPipeline
+    @Binding var isTextInputActive: Bool
+    @Binding var rich: Bool
+    /// Draw on board, when the page can be drawn on (W4: also offered on the keyboard accessory).
+    var onDraw: (() -> Void)? = nil
+    /// The chosen display's `charset_issues` from the last render (B16, W4): lowercase on a flap
+    /// board, or a character it lacks, is listed, never silently changed in the document.
+    var charsetIssues: [TemplateCharsetIssue] = []
+    /// iPad portrait with the keyboard down (P5): the document takes the height under the board
+    /// and its rows spread to fill it.
+    var fillsHeight = false
+    @State private var tokenEditing: TokenEditing?
+    @EnvironmentObject private var catalog: EditorCatalogStore
+
+    private var geometry: TemplateGeometry? { model.authoringGeometry }
+    var boardRows: Int { geometry?.rows ?? 6 }
+    var boardColumns: Int { geometry?.columns ?? 22 }
+    private var uppercase: Bool { !(geometry?.isPanel ?? false) }
+
+    /// The session's rows padded for display to the board's rows (never stored by itself).
+    static func displayRows(_ lines: [String], boardRows: Int) -> [String] {
+        lines.count >= boardRows ? lines : lines + Array(repeating: "", count: boardRows - lines.count)
+    }
+    /// Natural height of the document for `rows` rows (text container insets included).
+    static func documentHeight(rows: Int) -> CGFloat {
+        (CGFloat(rows) * BoardDocumentView.Coordinator.font.lineHeight + 30).rounded(.up)
+    }
+    /// Natural width of the document column for a board `columns` wide (gutter, insets, margin).
+    static func documentWidth(columns: Int) -> CGFloat {
+        let advance = ("M" as NSString).size(withAttributes: [.font: BoardDocumentView.Coordinator.font]).width
+        return (CGFloat(columns) * advance + RowGutterView.width + 48).rounded(.up)
+    }
+    /// `1 / 6 lines` counts up to the last row with content; beyond the board, every row.
+    static func lineCount(_ rows: [String], boardRows: Int) -> Int {
+        if rows.count > boardRows { return rows.count }
+        return max(1, (rows.lastIndex(where: { !$0.isEmpty }) ?? 0) + 1)
+    }
+
+    var body: some View {
+        let rows = buffer.rows
+        let count = Self.lineCount(rows, boardRows: boardRows)
+        let overflow = count > boardRows
+        let commands = DocumentCommands(model: model, buffer: buffer, pipeline: pipeline, catalog: catalog)
+        VStack(alignment: .leading, spacing: 6) {
+            BoardDocumentView(buffer: buffer, sessionRows: Self.displayRows((rich ? model.lines : model.plainLines) ?? [], boardRows: boardRows),
+                              boardRows: boardRows, rich: rich, uppercase: uppercase, editable: !model.editingFrozen,
+                              onEdited: { pipeline.edited() }, onCommitNow: { commands.commitNow() },
+                              onFocusChange: { isTextInputActive = $0 },
+                              accessory: .init(alignment: commands.alignment, wrap: commands.wrap,
+                                               canUndo: commands.canUndo, canRedo: commands.canRedo, enabled: commands.enabled,
+                                               variablesEnabled: catalog.variablesAvailable,
+                                               colorsShown: catalog.colorsAvailable, formattingShown: catalog.formattingAvailable,
+                                               drawShown: onDraw != nil),
+                              onUndo: commands.undo, onRedo: commands.redo, onAlign: commands.align, onWrap: commands.setWrap,
+                              onEditToken: { source, range in editToken(source, range, commands) },
+                              variables: commands.variables, boardColumns: boardColumns,
+                              onInsert: commands.insert, onFormula: commands.insertFormula, onPicker: commands.openPicker,
+                              onDraw: { onDraw?() }, fillsRows: fillsHeight)
+                // Hugs its rows (B33: the board stays the largest element); scrolls when capped.
+                .frame(minHeight: 80, idealHeight: Self.documentHeight(rows: max(rows.count, boardRows)))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(overflow ? Color.orange : Color(uiColor: .separator), lineWidth: overflow ? 2 : 0.5))
+            if rich {
+                // The chip at the caret, in full (compact chips show only a short name; AND-P1).
+                // W4: its line is always reserved, so moving the caret over chips never nudges
+                // the layout; one line, truncated in the middle (the callout has the rest).
+                let detail = buffer.chipDetail
+                Text(detail ?? " ")
+                    .font(.footnote.monospaced()).foregroundStyle(.secondary)
+                    .lineLimit(1).truncationMode(.middle)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .opacity(detail == nil ? 0 : 1)
+                    .accessibilityHidden(detail == nil)
+                    .accessibilityIdentifier(detail == nil ? "" : "chip-detail")
+            }
+            HStack(alignment: .center) {
+                Text(EditorStrings.lineCounter(count, limit: boardRows))
+                    .font(.caption.monospacedDigit()).foregroundStyle(overflow ? .orange : .secondary)
+                    .accessibilityIdentifier("lineCounter")
                 Spacer()
-                Text(geometry.map { "\($0.rows) × \($0.columns)" } ?? "Unknown size").font(.caption).foregroundStyle(.secondary)
-            }
-            if availableWidth >= 760 {
-                HStack(alignment: .top, spacing: 24) {
-                    canvas.frame(maxWidth: .infinity)
-                    inspector.frame(width: 310)
+                Picker(EditorStrings.editingMode, selection: Binding(get: { rich }, set: { value in commands.commitNow(); rich = value })) {
+                    Text(EditorStrings.rich).tag(true); Text(EditorStrings.plain).tag(false)
                 }
-            } else {
-                canvas
-                inspector
+                .pickerStyle(.segmented).frame(maxWidth: 128).controlSize(.small)
+                .disabled(!commands.enabled)
+                .accessibilityIdentifier("editingMode")
             }
-            Text("Design view · Dynamic tokens appear as ◇. Server preview determines final values, spacing, wrapping, and supported characters.")
-                .font(.caption).foregroundStyle(.secondary)
+            if !rich {
+                VStack(alignment: .leading, spacing: 3) {
+                    ForEach(EditorStrings.plainHelp, id: \.self) { line in
+                        Text("• " + line).font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("plainHelp")
+            }
+            ForEach(Array(unknownVariables(rows, commands.variables).prefix(3).enumerated()), id: \.offset) { _, issue in
+                Label { Text(issue) } icon: { Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.orange) }
+                    .font(.footnote)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityIdentifier("unknownVariableIssue")
+            }
+            if !charsetIssues.isEmpty {
+                CharsetIssueList(lines: EditorStrings.charsetIssueGroups(charsetIssues))
+            }
+            if rich, catalog.isLoaded, !catalog.variablesAvailable {
+                // B32: no plugins on this server.
+                Label(CatalogStrings.noVariables, systemImage: "puzzlepiece.extension")
+                    .font(.footnote).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(CatalogStrings.noVariables)
+                    .accessibilityIdentifier("noVariablesNote")
+            }
+            if overflow {
+                Label(EditorStrings.overflowWarning(limit: boardRows), systemImage: "exclamationmark.triangle.fill")
+                    .font(.footnote).foregroundStyle(.orange)
+                    .padding(8).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("rowOverflowWarning")
+            }
         }
-        .onGeometryChange(for: CGFloat.self, of: { $0.size.width }, action: { availableWidth = $0 })
-        .onChange(of: rows.count) { _, count in selectedRow = max(0, min(selectedRow, count - 1)) }
-        .disabled(model.editingFrozen)
+        .sheet(item: $buffer.formulaRequest, onDismiss: { buffer.focus() }) { request in
+            // iOS-F1 (B21): catalogs, colouring and live validation.
+            FormulaEditorSheet(store: catalog, initialExpression: request.expression, isEditing: request.replacing != nil) { source in
+                if let range = request.replacing { buffer.replace(sourceRange: range, with: source, rich: rich) }
+                else { buffer.insertAfterSheet(source) }
+            }
+        }
+        .sheet(item: $buffer.pickerRequest, onDismiss: { buffer.focus() }) { kind in
+            InsertPickerSheet(kind: kind, store: catalog, drawsHeart: geometry.map { $0.rows == 3 && $0.columns == 15 } ?? false) { source in
+                buffer.insertAfterSheet(source)
+            }
+        }
         .sheet(item: $tokenEditing) { draft in
-            TemplateTokenSheet(initialSource: draft.source) { source in
-                applyToken(source, selection: draft.selection)
+            TemplateTokenSheet(initialSource: draft.source, warning: draft.warning) { source in
+                buffer.replace(sourceRange: draft.selection, with: source, rich: rich)
                 tokenEditing = nil
             }
         }
-        .confirmationDialog("Delete row \(selectedRow + 1)?", isPresented: $confirmRemove, titleVisibility: .visible) {
-            Button("Delete row", role: .destructive) { finishTyping(); model.removeLine(selectedRow) }
-        } message: { Text("The row’s text and formatting will be removed. You can undo this change.") }
     }
 
-    private var canvas: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if rows.isEmpty {
-                ContentUnavailableView("Start your page", systemImage: "character.cursor.ibeam", description: Text("Add a row, then type or insert a dynamic token."))
-                Button("Add first row", systemImage: "plus") { model.insertLine(after: nil); selectedRow = 0 }
-                    .buttonStyle(.borderedProminent).accessibilityIdentifier("addFirstTemplateRow")
-            } else {
-                if geometry == nil {
-                    Label("Board size unavailable. Source editing is still available.", systemImage: "questionmark.square.dashed").font(.footnote)
-                }
-                if let geometry, rows.count > geometry.rows {
-                    Label("\(rows.count - geometry.rows) authored rows extend beyond the board height.", systemImage: "arrow.down.to.line").font(.caption).foregroundStyle(.secondary)
-                }
-                ScrollView(.horizontal) {
-                    ScrollView(.vertical) {
-                        LazyVStack(spacing: 5) {
-                            ForEach(rows.indices, id: \.self) { index in
-                                Button {
-                                    finishTyping(); textSelection = TemplateTextSelection(); selectedRow = index
-                                } label: {
-                                    HStack(spacing: 8) {
-                                        Text("\(index + 1)").font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(width: 24)
-                                        if geometry != nil {
-                                            TemplateDesignRow(source: rows[index], columns: columns, panel: isPanel, alignment: model.lineAlignment(index))
-                                            .frame(height: 36)
-                                        } else { Text(rows[index].isEmpty ? "Empty row" : rows[index]).lineLimit(1).frame(height: 36) }
-                                    }
-                                    .padding(5)
-                                    .background(selectedRow == index ? Color.accentColor.opacity(0.14) : Color.clear, in: RoundedRectangle(cornerRadius: 9))
-                                    .overlay(RoundedRectangle(cornerRadius: 9).stroke(selectedRow == index ? Color.accentColor : .clear, lineWidth: 2))
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityLabel("Row \(index + 1)")
-                                .accessibilityValue(rows[index].isEmpty ? "Empty" : rows[index])
-                                .accessibilityAddTraits(selectedRow == index ? [.isSelected] : [])
-                                .accessibilityIdentifier("templateCanvasRow\(index)")
-                            }
-                        }.padding(3)
-                    }.scrollDisabled(rows.count <= 6)
-                    .frame(height: min(360, CGFloat(rows.count) * 51 + 6))
-                    .frame(width: max(280, min(availableWidth >= 760 ? availableWidth - 334 : availableWidth, CGFloat(columns) * 24) - 4, CGFloat(columns) * 12 + 44))
-                }
-                HStack {
-                    Button("Add row", systemImage: "plus") { finishTyping(); model.insertLine(after: selectedRow); textSelection = TemplateTextSelection(); selectedRow = min(selectedRow + 1, rows.count - 1) }
-                        .accessibilityIdentifier("addTemplateRow")
-                    Spacer()
-                    Menu {
-                        Button("Duplicate row", systemImage: "plus.square.on.square") { finishTyping(); model.duplicateLine(selectedRow); textSelection = TemplateTextSelection(); selectedRow += 1 }
-                        Button("Move row up", systemImage: "arrow.up") { move(by: -1) }.disabled(selectedRow == 0)
-                        Button("Move row down", systemImage: "arrow.down") { move(by: 1) }.disabled(selectedRow + 1 >= rows.count)
-                        Button("Delete row", systemImage: "trash", role: .destructive) { confirmRemove = true }
-                    } label: { Label("Row actions", systemImage: "ellipsis.circle") }
-                    .accessibilityIdentifier("templateRowActions")
-                }.buttonStyle(.bordered)
-            }
+    /// A second tap on a chip opens it: formulas in the formula sheet, everything else in the
+    /// token editor (with the unknown-variable reason when there is one).
+    private func editToken(_ source: String, _ range: NSRange, _ commands: DocumentCommands) {
+        commands.commitNow()
+        let fragment = TemplateSyntax.fragments(source).first
+        if fragment?.kind == .formula {
+            var expression = String(source.dropFirst(2).dropLast(2)).trimmingCharacters(in: .whitespaces)
+            if expression.hasPrefix("=") { expression = String(expression.dropFirst()).trimmingCharacters(in: .whitespaces) }
+            buffer.requestFormula(editing: range, expression: expression)
+            return
         }
+        var warning: String?
+        if let fragment, case .unknownVariable(let reason)? = TemplateChip(fragment: fragment, variables: commands.variables)?.style { warning = reason }
+        tokenEditing = TokenEditing(source: source, selection: range, warning: warning)
     }
 
-    @ViewBuilder private var inspector: some View {
-        if hasSelection {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Text("Row \(selectedRow + 1)").font(.headline)
-                    Spacer()
-                    Picker("Editing mode", selection: $rich) {
-                        Text("Rich").tag(true); Text("Source").tag(false)
-                    }.pickerStyle(.segmented).frame(maxWidth: 180)
-                    .onChange(of: rich) { _, _ in finishTyping() }
-                }
-                NativeTemplateTextView(text: rowBinding, isEditing: $isTextInputActive, rich: rich, selection: textSelection) { source, range in
-                    finishTyping(); tokenEditing = TokenEditing(source: source, selection: range)
-                }
-                .id(selectedRow)
-                .frame(height: 120)
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(.separator, lineWidth: 0.5))
-                HStack(spacing: 12) {
-                    Menu {
-                        Button("Variable", systemImage: "curlybraces") { editNewToken("{{weather.temperature}}") }
-                        Button("Formula", systemImage: "function") { editNewToken("{{= 1 + 1 }}") }
-                        Button("Flexible space", systemImage: "arrow.left.and.right") { insert("{{fill_space}}") }
-                        Button("Repeating fill", systemImage: "repeat") { editNewToken("{{fill_space_repeat:-}}") }
-                        if geometry?.isPanel == false {
-                            Section("Color tile") {
-                                ForEach(TemplateSyntax.tileColors.filter { $0 != "purple" }, id: \.self) { color in
-                                    Button(color.capitalized) { insert("{{\(color)}}") }
-                                }
-                            }
-                        }
-                    } label: { Label("Insert", systemImage: "plus.circle") }
-                    .accessibilityIdentifier("insertTemplateToken")
-                    Spacer()
-                    Button("Hide keyboard", systemImage: "keyboard.chevron.compact.down") { finishTyping() }
-                        .labelStyle(.iconOnly).accessibilityIdentifier("editorHideKeyboard")
-                }.buttonStyle(.bordered)
-                Picker("Alignment", selection: Binding(get: { model.lineAlignment(selectedRow) }, set: { finishTyping(); model.setLineAlignment(selectedRow, alignment: $0) })) {
-                    Label("Left", systemImage: "text.alignleft").tag("left")
-                    Label("Center", systemImage: "text.aligncenter").tag("center")
-                    Label("Right", systemImage: "text.alignright").tag("right")
-                }.pickerStyle(.segmented).accessibilityIdentifier("templateAlignment")
-                Toggle("Wrap text", isOn: Binding(get: { model.lineWrap(selectedRow) }, set: { finishTyping(); model.setLineWrap(selectedRow, wrap: $0) }))
-                Text("Tap a token to edit its source. Copying rich text keeps its template syntax.")
-                    .font(.caption).foregroundStyle(.secondary)
-                if isPanel {
-                    Text("LED spans and icons are preserved. New color and icon choices are not available yet.")
-                        .font(.caption).foregroundStyle(.secondary)
+    /// "Row 2 · bogus.thing: “bogus” isn't a plugin… The board shows ??? here." (first three).
+    private func unknownVariables(_ rows: [String], _ variables: VariableCatalog) -> [String] {
+        guard variables.isAuthoritative, rich else { return [] }
+        var issues: [String] = []
+        for (index, row) in rows.enumerated() {
+            for fragment in TemplateSyntax.fragments(row) where fragment.kind == .expression {
+                if let chip = TemplateChip(fragment: fragment, variables: variables), case .unknownVariable(let reason) = chip.style {
+                    issues.append(EditorStrings.unknownVariableIssue(row: index + 1, name: chip.title, reason: reason))
                 }
             }
         }
-    }
-    private func finishTyping() { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
-    private func insert(_ source: String) { finishTyping(); applyToken(source, selection: textSelection.range) }
-    private func applyToken(_ source: String, selection: NSRange) {
-        guard hasSelection, !model.editingFrozen else { return }
-        let original = rows[selectedRow] as NSString
-        guard selection.location <= original.length, NSMaxRange(selection) <= original.length else { return }
-        textSelection.pendingCaret = NSRange(location: selection.location + source.utf16.count, length: 0)
-        model.setLine(selectedRow, text: original.replacingCharacters(in: selection, with: source))
-    }
-    private func editNewToken(_ source: String) { finishTyping(); tokenEditing = TokenEditing(source: source, selection: textSelection.range) }
-    private func move(by offset: Int) { finishTyping(); let next = selectedRow + offset; model.moveLine(selectedRow, to: next); textSelection = TemplateTextSelection(); selectedRow = next }
-}
-
-private struct TemplateDesignRow: View {
-    let source: String
-    let columns: Int
-    let panel: Bool
-    let alignment: String
-    private struct Cell { let text: String; let color: Color? }
-    private var cells: [Cell] {
-        var cells: [Cell] = []
-        for token in TemplateSyntax.fragments(source) {
-            if token.kind == .tile { cells.append(Cell(text: "", color: color(token.label))) }
-            else if token.kind == .text { cells += token.source.map { Cell(text: String($0), color: nil) } }
-            else { cells.append(Cell(text: token.kind == .fill ? "↔" : "◇", color: nil)) }
-        }
-        let leading = max(0, columns - cells.count)
-        if alignment == "right" { cells.insert(contentsOf: Array(repeating: Cell(text: "", color: nil), count: leading), at: 0) }
-        if alignment == "center" { cells.insert(contentsOf: Array(repeating: Cell(text: "", color: nil), count: leading / 2), at: 0) }
-        return Array(cells.prefix(columns))
-    }
-    var body: some View {
-        Canvas { context, size in
-            let values = cells
-            let width = size.width / CGFloat(columns)
-            for index in 0..<columns {
-                let cell = index < values.count ? values[index] : Cell(text: "", color: nil)
-                let rect = CGRect(x: CGFloat(index) * width + 1, y: 1, width: max(1, width - 2), height: size.height - 2)
-                context.fill(Path(roundedRect: rect, cornerRadius: panel ? 2 : 3), with: .color(cell.color ?? Color(white: 0.12)))
-                if !panel {
-                    context.fill(Path(CGRect(x: rect.minX, y: rect.midY, width: rect.width, height: 1)), with: .color(.black.opacity(0.4)))
-                }
-                context.draw(Text(cell.text).font(.system(size: min(19, width * 0.8), weight: .medium, design: .monospaced)).foregroundStyle(.white), at: CGPoint(x: rect.midX, y: rect.midY))
-            }
-        }.accessibilityHidden(true)
-    }
-    private func color(_ name: String) -> Color {
-        switch name.lowercased() {
-        case "red": .red
-        case "orange": .orange
-        case "yellow": .yellow
-        case "green": .green
-        case "blue": .blue
-        case "purple", "violet": .purple
-        case "white", "filled": .white
-        default: .black
-        }
+        return issues
     }
 }
 
@@ -228,17 +264,25 @@ private struct TokenEditing: Identifiable {
     let id = UUID()
     let source: String
     let selection: NSRange
+    var warning: String?
 }
 private struct TemplateTokenSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var source: String
+    var warning: String?
     var onApply: (String) -> Void
-    init(initialSource: String, onApply: @escaping (String) -> Void) {
-        _source = State(initialValue: initialSource); self.onApply = onApply
+    init(initialSource: String, warning: String? = nil, onApply: @escaping (String) -> Void) {
+        _source = State(initialValue: initialSource); self.warning = warning; self.onApply = onApply
     }
     var body: some View {
         NavigationStack {
             Form {
+                if let warning {
+                    Section {
+                        Label { Text(warning) } icon: { Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.orange) }
+                            .accessibilityIdentifier("tokenWarning")
+                    }
+                }
                 Section("Template token") {
                     TextField("Token source", text: $source, axis: .vertical)
                         .font(.body.monospaced()).autocorrectionDisabled().textInputAutocapitalization(.never)
@@ -255,5 +299,69 @@ private struct TemplateTokenSheet: View {
                 }
             }
         }.presentationDetents([.medium, .large])
+    }
+}
+
+/// B16 charset issues, grouped per row and reason (P5). Collapsed it is at most three lines, one
+/// per group, so the list never grows into the board's room; "Show all" opens the rest in place
+/// (scrolling past about eight lines).
+struct CharsetIssueList: View {
+    var lines: [String]
+    static let collapsedCount = 3
+    @State private var expanded = false
+    @State private var width: CGFloat = 0
+    @State private var widest: CGFloat = 0
+
+    /// More groups than fit, or a group that doesn't fit on its one line.
+    private var hasMore: Bool { lines.count > Self.collapsedCount || widest > width + 0.5 }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Group {
+                if expanded {
+                    ScrollView { entries(lines, oneLine: false) }
+                        .frame(maxHeight: 150)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    entries(Array(lines.prefix(Self.collapsedCount)), oneLine: true)
+                }
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel((expanded ? lines : Array(lines.prefix(Self.collapsedCount))).joined(separator: "\n"))
+            .accessibilityIdentifier("charsetIssues")
+            if hasMore || expanded {
+                Button(expanded ? EditorStrings.showFewerIssues : EditorStrings.showAllIssues + " (\(lines.count))") {
+                    withAnimation(.easeInOut(duration: 0.2)) { expanded.toggle() }
+                }
+                .font(.footnote.weight(.semibold))
+                .buttonStyle(.borderless)
+                .accessibilityIdentifier("charsetIssuesShowAll")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { width = $0 }
+        // Each group's one-line width, measured off-screen, tells whether a line is cut.
+        .background(alignment: .topLeading) {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(lines.prefix(Self.collapsedCount).enumerated()), id: \.offset) { _, line in row(line).fixedSize() }
+            }
+            .fixedSize()
+            .hidden()
+            .accessibilityHidden(true)
+            .onGeometryChange(for: CGFloat.self, of: { $0.size.width }) { widest = $0 }
+        }
+    }
+
+    private func entries(_ shown: [String], oneLine: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            ForEach(Array(shown.enumerated()), id: \.offset) { _, line in
+                row(line).lineLimit(oneLine ? 1 : nil).truncationMode(.tail)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+    private func row(_ line: String) -> some View {
+        Label { Text(line) } icon: { Image(systemName: "character.cursor.ibeam").foregroundStyle(.orange) }
+            .font(.footnote)
     }
 }

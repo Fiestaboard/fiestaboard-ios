@@ -29,6 +29,34 @@
             buildForAnalyzing = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "B1C0D78931B261ED7F8F9652"
+               BuildableName = "FiestaBoardAppTests.xctest"
+               BlueprintName = "FiestaBoardAppTests"
+               ReferencedContainer = "container:FiestaBoard.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "BA372C9698ED1A9F022CBE0F"
+               BuildableName = "FiestaBoardRenderTests.xctest"
+               BlueprintName = "FiestaBoardRenderTests"
+               ReferencedContainer = "container:FiestaBoard.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "A7FA0B8C8BF23BC94B380584"
                BuildableName = "FiestaBoardUITests.xctest"
                BlueprintName = "FiestaBoardUITests"
@@ -61,6 +89,28 @@
                BlueprintIdentifier = "A7FA0B8C8BF23BC94B380584"
                BuildableName = "FiestaBoardUITests.xctest"
                BlueprintName = "FiestaBoardUITests"
+               ReferencedContainer = "container:FiestaBoard.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "BA372C9698ED1A9F022CBE0F"
+               BuildableName = "FiestaBoardRenderTests.xctest"
+               BlueprintName = "FiestaBoardRenderTests"
+               ReferencedContainer = "container:FiestaBoard.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "B1C0D78931B261ED7F8F9652"
+               BuildableName = "FiestaBoardAppTests.xctest"
+               BlueprintName = "FiestaBoardAppTests"
                ReferencedContainer = "container:FiestaBoard.xcodeproj">
             </BuildableReference>
          </TestableReference>

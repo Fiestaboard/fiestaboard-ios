@@ -8,31 +8,63 @@ struct PageDetailView: View {
     let page: Page
     @ObservedObject var store: BoardStore
     let prepare: () -> Void
+    /// The page as a board (the Pages list's thumbnail), shown first when there is one (P1).
+    var thumbnail: AnyView? = nil
     @LibraryState private var editing = false
     @LibraryState private var confirmingDelete = false
     @Environment(\.dismiss) private var dismiss
 
+    private var editable: Bool { page.supportsTemplateEditing || CapabilityPolicy.supportsFlexibleDocument(page) }
+    private var boardName: String? { store.boards.first(where: { $0.id == store.selectedBoardID })?.name }
+
+    // P1: plain words. No "read-only", "local draft", "native draft", "plugins are not rendered
+    // here" or "deployment"; the board picture first, then what you can do with the page.
     var body: some View {
         Form {
-            Section("Server template · read-only") {
-                if let lines = page.template {
-                    Text(lines.joined(separator: "\n")).font(.body.monospaced()).textSelection(.enabled)
-                } else {
-                    Text("This page has no plain-text template projection. Use the web interface for its full preview.")
+            if let thumbnail {
+                Section {
+                    thumbnail.frame(maxWidth: 560).frame(maxWidth: .infinity)
+                        .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12))
+                        .listRowBackground(Color.clear)
                 }
-                Text("Template expressions are shown as source. Plugins are not rendered here.")
-                    .font(.footnote).foregroundStyle(.secondary)
             }
-            Section("Page editing") {
-                Button("Edit local draft") { editing = true }
-                    .disabled(store.status == nil || store.connecting)
-                    .accessibilityIdentifier("editLocalDraft")
-                Text("Edit the full page document, keep a local draft, and explicitly evaluate or save supported changes when the deployment allows it.")
-                    .font(.footnote).foregroundStyle(.secondary)
+            Section {
+                if editable {
+                    Button { editing = true } label: { Label(EditorStrings.navigationTitle, systemImage: "pencil") }
+                        .disabled(store.status == nil || store.connecting)
+                        .accessibilityIdentifier("editLocalDraft")
+                } else {
+                    Text(LibraryStrings.webOnly)
+                    if let url = store.webEditorURL(pageID: page.id) {
+                        Link("Open in web editor", destination: url).accessibilityIdentifier("openWebEditor")
+                    }
+                }
+                Button { prepare() } label: { Label(LibraryStrings.showOn(boardName), systemImage: "rectangle.on.rectangle") }
+                    .disabled(!store.canWrite)
+                if let reason = store.boardActionDisabledReason {
+                    Text(LibraryStrings.plain(reason)).font(.footnote).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("showOnBoardDisabledReason")
+                }
+            }
+            if let lines = page.template, lines.contains(where: { !$0.isEmpty }) {
+                Section(LibraryStrings.textSection) {
+                    Text(lines.joined(separator: "\n")).font(.body.monospaced()).textSelection(.enabled)
+                }
+            } else if let blocks = page.blockSummaries {
+                Section(LibraryStrings.blocks(blocks.count)) {
+                    ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
+                        if block.kind == "text", let text = block.text {
+                            Text(text).font(.body.monospaced()).textSelection(.enabled)
+                        } else {
+                            Label(block.kind == "canvas" ? "Canvas" : block.kind.capitalized,
+                                  systemImage: block.kind == "canvas" ? "paintpalette" : "square.dashed")
+                        }
+                    }
+                }
             }
             if let library = store.pageLibrary {
-                Section("Manage page") {
-                    PageLibraryFeedback(library: library, store: store)
+                Section {
+                    PageLibraryFeedback(library: library, store: store, showsCreationCapability: false)
                     Button("Delete page", role: .destructive) {
                         Task {
                             do { try await store.preparePageDeletion(id: page.id); confirmingDelete = true }
@@ -40,15 +72,15 @@ struct PageDetailView: View {
                         }
                     }
                     .accessibilityIdentifier("deleteLibraryPage")
-                    .disabled(!library.canDelete)
+                    .disabled(store.pageDeletionDisabledReason(for: page) != nil)
+                    // The same reason as Show's above is not repeated.
+                    if let reason = store.pageDeletionDisabledReason(for: page), reason != store.boardActionDisabledReason {
+                        Text(LibraryStrings.plain(reason)).font(.footnote).foregroundStyle(.secondary)
+                    }
                 }
             }
-            Section {
-                Text("Destination: \(store.boards.first(where: { $0.id == store.selectedBoardID })?.name ?? "No selected board")")
-                Button(store.status?.isDemo == true ? "Simulate showing on board" : "Show on board", action: prepare)
-                    .disabled(!store.canWrite)
-            }
         }
+        .frame(maxWidth: 1000).frame(maxWidth: .infinity)
         .navigationTitle(page.name)
         .alert("Delete \(store.pageLibrary?.deletion?.page.name ?? page.name)?", isPresented: $confirmingDelete) {
             Button("Delete page", role: .destructive) {
@@ -59,11 +91,10 @@ struct PageDetailView: View {
             }
             Button("Cancel", role: .cancel) { store.cancelPageDeletion() }
         } message: {
-            Text("This removes the page from the server. References can prevent deletion; an active display may receive a replacement page. This cannot be undone here.")
+            Text("This removes the page for everyone. A display showing it moves to another page. This can't be undone.")
         }
-        .sheet(isPresented: $editing) {
-            NavigationStack { LocalPageEditorLoader(pageID: page.id, store: store) }
-        }
+        // iOS-E2 (B29): a navigation destination on iPad, a full-screen cover on a phone.
+        .modifier(EditorPresentation(isPresented: $editing) { LocalPageEditorLoader(pageID: page.id, store: store) })
         .onChange(of: store.status == nil) { _, disconnected in if disconnected { editing = false } }
         .onChange(of: store.connectionLabel) { _, _ in editing = false }
     }
@@ -72,6 +103,7 @@ struct PageDetailView: View {
 struct PageLibraryFeedback: View {
     @ObservedObject var library: PageLibraryState
     @ObservedObject var store: BoardStore
+    var showsCreationCapability = true
     var body: some View {
         if library.busy { ProgressView("Updating library…") }
         if let message = library.phase.message {
@@ -84,8 +116,8 @@ struct PageLibraryFeedback: View {
                 Button("I reviewed the library · allow a new request") { store.acknowledgePageLibraryReview() }
             }
         }
-        if !library.capability.canCreate && !library.capability.canDelete {
-            Text("Page creation and deletion are available in Demo, or on FiestaBoard 10.1.20 after enabling changes in Settings.")
+        if showsCreationCapability, let reason = store.pageManagementDisabledReason {
+            Text(reason.message)
                 .font(.footnote).foregroundStyle(.secondary)
         }
     }
@@ -94,19 +126,26 @@ struct PageLibraryFeedback: View {
 struct CreateLibraryPageView: View {
     @ObservedObject var library: PageLibraryState
     @ObservedObject var store: BoardStore
+    /// Called with the new page's id; the Pages list then opens its editor the
+    /// way every editor opens (B29), after this sheet has gone.
+    var onCreated: (String) -> Void = { _ in }
     @Environment(\.dismiss) private var dismiss
-    @LibraryState private var createdID: String?
+    @FocusState private var nameFocused: Bool
     var body: some View {
         Group {
-            if let id = createdID {
-                LocalPageEditorLoader(pageID: id, store: store)
-            } else {
                 Form {
                     Section("Page") {
                         TextField("New page name", text: $library.name)
+                            .focused($nameFocused)
                             .submitLabel(.done)
-                            .onSubmit { UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil) }
+                            .onSubmit { nameFocused = false }
                             .disabled(library.busy)
+                            // iPad: the keyboard's own Hide key hides the keyboard but leaves
+                            // the field first responder, so the next tap (the format menu)
+                            // brought the keyboard back. Resign with it (E1 open issue 5).
+                            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                                if nameFocused { nameFocused = false }
+                            }
                         Picker("Display format", selection: $library.isPanel) {
                             Text("Split-flap · 6 × 22").tag(false)
                             Text("LED panel").tag(true)
@@ -121,7 +160,7 @@ struct CreateLibraryPageView: View {
                     Section {
                         Button(library.capability.isSimulated ? "Create simulated page" : "Create page") {
                             Task {
-                                do { createdID = try await store.createLibraryPage() }
+                                do { let id = try await store.createLibraryPage(); onCreated(id); dismiss() }
                                 catch { /* Input and recovery remain in the retained library state. */ }
                             }
                         }
@@ -134,7 +173,6 @@ struct CreateLibraryPageView: View {
                 }
                 .navigationTitle("New page")
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") { dismiss() } } }
-            }
         }
         .interactiveDismissDisabled(library.busy)
     }

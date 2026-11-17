@@ -1,0 +1,3652 @@
+{
+  "status": "84 stable IDs with checkpoint evidence; broad beta acceptance and remaining operation refreshes pending",
+  "rows": [
+    {
+      "id": "connection_boot",
+      "area": "connection",
+      "required_workflow": "Boot health/retry and server identity/configuration; distinguish unavailable server from authentication state.",
+      "ios_status": "partial implementation; full acceptance open",
+      "ios_evidence": "App/Features/Connection; Packages/FiestaBoardKit/Sources/FiestaBoardKit/Bootstrap.swift; Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/ConnectionModel.swift",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 290,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/components/boot-gate.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 54,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 289,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "src/service_api/routes.py",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 137,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_config",
+        "get_health",
+        "get_v1_status",
+        "get_discover"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Connect / server picker",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "auth_onboarding",
+      "area": "connection",
+      "required_workflow": "Authentication undecided/enabled/disabled, first administrator setup, remember-me login, wrong password/lockout, redirect and sign out.",
+      "ios_status": "partial implementation; full acceptance open",
+      "ios_evidence": "App/Features/Connection; Packages/FiestaBoardKit/Sources/FiestaBoardKit/Bootstrap.swift; Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/ConnectionModel.swift",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/app/routes/login.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 165,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 43,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 109,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/app/routes/login.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 236,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/app/routes/login.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 212,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 41,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/app/routes/login.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 59,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_auth_login",
+        "post_auth_logout",
+        "post_auth_preference",
+        "post_auth_setup",
+        "get_auth_status"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Connect / server picker",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "account_credentials",
+      "area": "account",
+      "required_workflow": "Change username/password and disable authentication with current-password confirmation; surface account generation/session changes.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 51,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 77,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 138,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_auth_change_password",
+        "post_auth_change_username",
+        "post_auth_disable"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Account / Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "device_activation",
+      "area": "account",
+      "required_workflow": "Inspect, approve or deny the entered/QR device code; expiry/denial/error; enable or disable device enrollment.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 64,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 65,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 63,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 70,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 71,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_auth_device_approve",
+        "post_auth_device_deny",
+        "post_auth_device_inspect",
+        "get_auth_device_settings",
+        "put_auth_device_settings"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Account / Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "session_management",
+      "area": "account",
+      "required_workflow": "List signed-in browsers/TVs; fetch CSRF context; revoke one, all other or all sessions including current.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 66,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 50,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 69,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/sessions.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 67,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_auth_sessions",
+        "get_auth_sessions_context",
+        "post_auth_sessions_revoke",
+        "delete_auth_sessions_session_id"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Account / Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "mcp_credentials",
+      "area": "account",
+      "required_workflow": "Inspect, rotate and delete MCP token; one-time plaintext display/copy; current-token gate on auth-disabled installs.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 188,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 170,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/auth.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 181,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "delete_auth_mcp_token",
+        "get_auth_mcp_token",
+        "post_auth_mcp_token"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Account / Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "home_state",
+      "area": "home",
+      "required_workflow": "Read actual remembered output/external frame, selected page and collection resolution, currently scheduled page, silence/held state and service state independently.",
+      "ios_status": "partial implementation; full acceptance open",
+      "ios_evidence": "App/FiestaBoardApp.swift; App/Features/Control/BoardControlsView.swift; App/BoardOutputView.swift",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 598,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 599,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 255,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 295,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 237,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 238,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 243,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 336,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 337,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_board_current_message",
+        "get_pages_current_display",
+        "get_schedules_active_page",
+        "get_settings_active_page",
+        "put_settings_active_page",
+        "get_silence_status"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Home",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "home_commands",
+      "area": "home",
+      "required_workflow": "Explicit target board message send and restore, discard held send/external frame, service start/stop, force refresh; honor paused/silenced/held/refused/outcome-unknown distinctions.",
+      "ios_status": "partial implementation; full acceptance open",
+      "ios_evidence": "App/FiestaBoardApp.swift; App/Features/Control/BoardControlsView.swift; App/BoardOutputView.swift",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 605,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 606,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 295,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 345,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 346,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 292,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 293,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 590,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 588,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "delete_board_external_frame",
+        "post_force_refresh",
+        "delete_silence_queue",
+        "post_start",
+        "post_stop",
+        "post_v1_boards_board_message",
+        "post_v1_boards_board_restore"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Home",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "temporary_override",
+      "area": "home",
+      "required_workflow": "Temporary or indefinite page/collection/inline compose override, duration, revert to schedule/blank/page, read expiry and cancel/refresh.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift; App/Features/Control/BoardControlsView.swift; App/BoardOutputView.swift",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 264,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 257,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 259,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "delete_settings_temporary_override",
+        "get_settings_temporary_override",
+        "post_settings_temporary_override"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Home",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "board_control",
+      "area": "home",
+      "required_workflow": "Per-board pause/resume, default page and schedule enablement through PATCH BoardDetail.",
+      "ios_status": "partial implementation; full acceptance open",
+      "ios_evidence": "App/FiestaBoardApp.swift; App/Features/Control/BoardControlsView.swift; App/BoardOutputView.swift",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 652,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 325,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 325,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "patch_v1_boards_board"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Home",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "board_configuration",
+      "area": "displays",
+      "required_workflow": "List/add/remove output boards, credentials/API modes, geometry, primary selection, resize/retarget compatibility warnings and settings round trip.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 611,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 618,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 613,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 613,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 610,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 626,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 632,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 638,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 644,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_config_board",
+        "put_config_board",
+        "get_config_full",
+        "get_settings_board",
+        "put_settings_board",
+        "post_settings_board_add",
+        "delete_settings_board_board_id"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Displays / detail Overview, Settings, Playback",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "board_setup",
+      "area": "displays",
+      "required_workflow": "Validate first-run setup, scan boards, test connection, enable local API, send welcome message; report scan/probe/device verdicts.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/setup.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 79,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/setup.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 85,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/setup.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 66,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 624,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/setup.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 63,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/setup.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 73,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_config_board_enable_local_api",
+        "post_config_board_scan",
+        "post_config_board_test",
+        "get_config_validate",
+        "post_send_welcome_message"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Displays / detail Overview, Settings, Playback",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "output_catalog",
+      "area": "displays",
+      "required_workflow": "Installed/available/catalog output discovery and marketplace install; unavailable registry/offline seed and network cases.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 170,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 175,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 173,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 179,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_outputs",
+        "get_outputs_available",
+        "get_outputs_catalog",
+        "post_outputs_output_id_install"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Displays / detail Overview, Settings, Playback",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "output_actions",
+      "area": "displays",
+      "required_workflow": "Schema-driven draft/saved-board test/discover/identify/detect-geometry and arbitrary plugin actions, secret result fields and geometry application.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 203,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 191,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 695,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 699,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_boards_board_id_actions_action",
+        "post_outputs_output_id_actions_action",
+        "post_settings_board_board_id_detect_size",
+        "post_settings_board_board_id_identify"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Displays / detail Overview, Settings, Playback",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "output_board_creation",
+      "area": "displays",
+      "required_workflow": "Choose output model, submit schema settings and geometry, create named output board.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 210,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_outputs_output_id_boards"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Displays / detail Overview, Settings, Playback",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "panel_configuration",
+      "area": "displays",
+      "required_workflow": "Create/edit/remove virtual panels, resolve geometry, display/TV/backdrop/auto-dim/matrix/font/sizing/presentation settings and HDMI kiosk capability.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 664,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 667,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 659,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 681,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 675,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 684,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 686,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_panels",
+        "post_panels",
+        "post_panels_geometry",
+        "delete_panels_panel_id",
+        "patch_panels_panel_id",
+        "get_settings_hdmi_kiosk",
+        "post_settings_hdmi_kiosk"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Displays / detail Overview, Settings, Playback",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "panel_viewer",
+      "area": "displays",
+      "required_workflow": "Read standalone panel configuration/frame with full split-flap/LED rendering and read-only display playback.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 692,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/boards.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 693,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_panel_panel_id",
+        "get_panel_panel_id_frame"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Displays / detail Overview, Settings, Playback",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "wizard_state",
+      "area": "displays",
+      "required_workflow": "Welcome/output/model/connection/panel/easy-plugin setup; skip or complete with durable wizard outcome and reopen.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 215,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/outputs.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 218,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_settings_wizard",
+        "put_settings_wizard"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Displays / detail Overview, Settings, Playback",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "pages_crud",
+      "area": "pages",
+      "required_workflow": "List/get/create/update/delete all single/composite/template page types; duplicate via create; preserve metadata/charset/geometry/transitions/canvases and explicit nulls.",
+      "ios_status": "partial implementation; full acceptance open",
+      "ios_evidence": "App/Features/Library; Packages/FiestaBoardKit/Sources/FiestaBoardKit/PageManagement.swift; Packages/FiestaBoardKit/Sources/FiestaBoardKit/Service.swift",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 254,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 259,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 272,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 256,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 264,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Pages / Picks",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "page_preview",
+      "area": "pages",
+      "required_workflow": "Saved page and batch previews, target geometry/LED spans/icons/cells/layers, availability and rendering errors.",
+      "ios_status": "partial implementation; full acceptance open",
+      "ios_evidence": "App/Features/Library; Packages/FiestaBoardKit/Sources/FiestaBoardKit/PageManagement.swift; Packages/FiestaBoardKit/Sources/FiestaBoardKit/Service.swift",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 276,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 273,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_pages_preview_batch",
+        "post_pages_page_id_preview"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Pages / Picks",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "page_sharing",
+      "area": "pages",
+      "required_workflow": "Export/copy page share string and import pasted/file/shared content; preserve format and validation errors.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/Features/Library; Packages/FiestaBoardKit/Sources/FiestaBoardKit/PageManagement.swift; Packages/FiestaBoardKit/Sources/FiestaBoardKit/Service.swift",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 283,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 280,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_pages_import",
+        "get_pages_page_id_share"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Pages / Picks",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "staff_picks",
+      "area": "pages",
+      "required_workflow": "Browse/filter Picks by device, inspect plugin requirements, retrieve share data and import a pick.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/Features/Library; Packages/FiestaBoardKit/Sources/FiestaBoardKit/PageManagement.swift; Packages/FiestaBoardKit/Sources/FiestaBoardKit/Service.swift",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 287,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/pages.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 288,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_staff_picks",
+        "get_staff_picks_pick_id_share"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Pages / Picks",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "collections",
+      "area": "collections",
+      "required_workflow": "Create/update/delete/list ordered collections with time/variable/random modes, rules, default behavior and per-page durations.",
+      "ios_status": "partial implementation; full acceptance open",
+      "ios_evidence": "App/Features/Collections; Packages/FiestaBoardKit/Sources/FiestaBoardKit/CollectionEditing.swift; Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/CollectionEditorModel.swift",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/collections.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 86,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/collections.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 89,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/collections.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 104,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/collections.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 95,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_v1_collections",
+        "post_v1_collections",
+        "delete_v1_collections_collection_id",
+        "put_v1_collections_collection_id"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Collections",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "schedule_entries",
+      "area": "schedule",
+      "required_workflow": "Board-scoped schedule CRUD/toggle; weekly/annual/one-off recurrence, day patterns, start/end/sun offsets, page/collection targets and compatibility warnings.",
+      "ios_status": "read-only native list/detail implemented and verified; CRUD remains pending",
+      "ios_evidence": "App/Features/Control/SchedulesView.swift; Packages/FiestaBoardKit/Sources/FiestaBoardKit/Schedules.swift",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 271,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 274,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 289,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 280,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_v1_schedules",
+        "post_v1_schedules",
+        "delete_v1_schedules_schedule_id",
+        "put_v1_schedules_schedule_id"
+      ],
+      "beta_acceptance": "partial: reads only; CRUD/calendar acceptance open",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Schedule / display Playback",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "DemoUITests/testDestinationJourneysAndActualReadOnlyScheduleDetails; BoardStoreTests/testScheduleListIsBoundToSelectedDisplayAndRejectsLateOldDisplay; BoardStoreTests/testScheduleLateResponseCannotCrossReconnectAndErrorsStayVisible",
+      "actual_ux_evidence": "navigation/ui-phone-fix1.log and ui-ipad.log; explicit08:00/weekdays assertions",
+      "acceptance_scenario": "selected-board list/detail preserves server time/day semantics; stale replies rejected"
+    },
+    {
+      "id": "schedule_validation",
+      "area": "schedule",
+      "required_workflow": "Calendar/list active resolution, overlaps and gaps, schedule behavior settings and validation.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 373,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 381,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 299,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_schedules_settings",
+        "put_schedules_settings",
+        "post_schedules_validate"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Schedule / display Playback",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "silence_configuration",
+      "area": "schedule",
+      "required_workflow": "Global/per-board silence schedule with overnight windows, indicator/freeze/page, indicator placement, queued-on-exit and explicit nullable page fields.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/schedules.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 364,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "put_settings_silence_schedule"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Schedule / display Playback",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "plugins_configuration",
+      "area": "integrations",
+      "required_workflow": "Installed plugin list/detail/manifest, enable/disable, schema configuration, secret masks/preservation, variables, data and circuit-breaker errors. Cached late answers lift breaker quarantine; preserve per-board geometry identity and error recovery.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 77,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 265,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 320,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 276,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 311,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 274,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 283,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 289,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 295,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 270,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "src/plugins/registry.py",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 2163,
+          "current_file_state": "changed; semantic re-audit pending"
+        },
+        {
+          "path": "web/app/routes/integrations._index.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 616,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_displays_raw_batch",
+        "get_plugins",
+        "get_plugins_errors",
+        "get_plugins_plugin_id_manifest",
+        "get_plugins_plugin_id_variables",
+        "get_v1_plugins_plugin_id",
+        "patch_v1_plugins_plugin_id",
+        "get_v1_plugins_plugin_id_data"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Integrations",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "plugin_instances",
+      "area": "integrations",
+      "required_workflow": "List/add/delete named plugin instances; configure and identify instance-specific secrets, variables and OAuth connections.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 323,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 326,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 332,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_plugins_plugin_id_instances",
+        "post_plugins_plugin_id_instances",
+        "delete_plugins_plugin_id_instances_instance_label"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Integrations",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "plugin_demo",
+      "area": "integrations",
+      "required_workflow": "Inspect/create plugin demo pages with provenance and idempotent existing-demo behavior.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 313,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 316,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_plugins_plugin_id_demo_page",
+        "post_plugins_plugin_id_demo_page"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Integrations",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "plugin_marketplace",
+      "area": "integrations",
+      "required_workflow": "Registry list/install, Git repository install, update/uninstall, available update checks and bulk application; display progress/errors/provenance.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 88,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 80,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 83,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 103,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 112,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 106,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 94,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/plugin-registry.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 99,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_plugins_install",
+        "get_plugins_registry",
+        "post_plugins_registry_plugin_id_install",
+        "get_plugins_updates",
+        "post_plugins_updates_apply",
+        "post_plugins_updates_check",
+        "delete_plugins_plugin_id_uninstall",
+        "post_plugins_plugin_id_update"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Integrations",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "plugin_options",
+      "area": "integrations",
+      "required_workflow": "Dynamic schema remote options, query/search/dependent settings, pagination/current labels, secret-preserving settings context and loading/error/empty cases.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/plugins.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 306,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_plugins_plugin_id_options_options_id"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Integrations",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "oauth_connections",
+      "area": "integrations",
+      "required_workflow": "List status/configuration/scopes/expiry/reconnect reason, start relay/device/key_exchange/plex_pin, complete pasted URL/code, disconnect, browser return and plugin/AI routing.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/plugin-settings/oauth-connection.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 281,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/oauth.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 100,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/oauth.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 119,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/oauth.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 104,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/oauth.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 113,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_oauth_callback",
+        "get_oauth_connections",
+        "delete_oauth_connections_connection_id",
+        "post_oauth_connections_connection_id_authorize",
+        "post_oauth_connections_connection_id_complete"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Integrations",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "template_authoring",
+      "area": "editor",
+      "required_workflow": "Variable/function discovery, validation and side-effect-free server rendering with text, tokens, line metadata, geometry, charset warnings and canvas layers.",
+      "ios_status": "partial implementation; full acceptance open",
+      "ios_evidence": "App/Features/Editor; Packages/FiestaBoardDocuments; Packages/FiestaBoardEditorState",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 184,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 154,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 152,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 151,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_templates_render",
+        "post_templates_validate",
+        "get_v1_functions",
+        "get_v1_variables"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Pages / native editor",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "template_live_output",
+      "area": "editor",
+      "required_workflow": "Explicit live-to-board render with named target, pause/silence/override/held handling; separate saved state from live hardware effect.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/Features/Editor; Packages/FiestaBoardDocuments; Packages/FiestaBoardEditorState",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 209,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_templates_render_live"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Pages / native editor",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "integration_helpers",
+      "area": "integrations",
+      "required_workflow": "Bay Wheels/Muni station/stop lists and nearby/address search, traffic geocode/validation, stock search/validation, generic data test fetch and Home Assistant entity picker.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 85,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 98,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 112,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 193,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/templates.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 225,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 116,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 129,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 143,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 178,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 181,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 148,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/misc.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 163,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_baywheels_stations",
+        "get_baywheels_stations_nearby",
+        "get_baywheels_stations_search",
+        "post_generic_data_test_fetch",
+        "get_home_assistant_entities",
+        "get_muni_stops",
+        "get_muni_stops_nearby",
+        "get_muni_stops_search",
+        "get_stocks_search",
+        "post_stocks_validate",
+        "post_traffic_routes_geocode",
+        "post_traffic_routes_validate"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Integrations",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "ai_configuration",
+      "area": "ai",
+      "required_workflow": "Provider CRUD/order/protocol/model/base URL/key/sign-in preset configuration, default provider, approval mode/turn cap and provider model/test results.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 154,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 157,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 165,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 168,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_settings_ai",
+        "put_settings_ai",
+        "get_settings_ai_providers_provider_id_models",
+        "post_settings_ai_test"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "AI assistant / Settings AI",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "ai_generate",
+      "area": "ai",
+      "required_workflow": "Generate page draft with warnings and explicit staged application/save semantics.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 182,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_pages_ai_generate"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "AI assistant / Settings AI",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "ai_chat",
+      "area": "ai",
+      "required_workflow": "Global/editor POST SSE chat: text/status/tool streaming/call/result/warning/error/done, approvals, elicitation, cancel and non-replayed interrupted turns.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api-stream.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 69,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_pages_ai_chat"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "AI assistant / Settings AI",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "ai_history",
+      "area": "ai",
+      "required_workflow": "List/search/open/save/rename/delete/clear/export conversations and restore editor/global context with interrupted-turn semantics.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 228,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 210,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 226,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 212,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 221,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 215,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/ai.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 231,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "delete_ai_conversations",
+        "get_ai_conversations",
+        "delete_ai_conversations_conversation_id",
+        "get_ai_conversations_conversation_id",
+        "patch_ai_conversations_conversation_id",
+        "put_ai_conversations_conversation_id",
+        "get_ai_conversations_conversation_id_export"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "AI assistant / Settings AI",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "general_settings",
+      "area": "settings",
+      "required_workflow": "General config/instance identity/timezone/date/output mode, aggregate settings and restore notices/dismissal.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 138,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 143,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 161,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 131,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 133,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 127,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 125,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_config_general",
+        "put_config_general",
+        "get_settings_all",
+        "get_settings_output",
+        "put_settings_output",
+        "delete_settings_restore_notice",
+        "get_settings_restore_notice"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "display_preferences",
+      "area": "settings",
+      "required_workflow": "Board/site animations, reduce motion, preview/display preferences and capability-appropriate native presentation.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 163,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 165,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_settings_display",
+        "put_settings_display"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "polling_preferences",
+      "area": "settings",
+      "required_workflow": "Polling/UI and plugin refresh/update intervals with restart requirements and scheduling cadence.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 185,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 187,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 154,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 156,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_settings_plugins",
+        "put_settings_plugins",
+        "get_settings_polling",
+        "put_settings_polling"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "location_settings",
+      "area": "settings",
+      "required_workflow": "Location latitude/longitude/timezone and single-day/week sunrise/sunset values, no-location and polar/DST cases.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 172,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 174,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 180,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/settings.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 182,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_settings_location",
+        "put_settings_location",
+        "get_settings_location_sun_times",
+        "get_settings_location_sun_times_week"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "mqtt_settings",
+      "area": "settings",
+      "required_workflow": "MQTT broker settings/credentials and runtime enabled/connected/running state.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 353,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 345,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 348,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_mqtt_status",
+        "get_settings_mqtt",
+        "put_settings_mqtt"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "backup_restore",
+      "area": "settings",
+      "required_workflow": "Download complete backup and import/restore with reinstall_plugins choice, pre-restore copies, skipped files, external-plugin/manual install and reload errors.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 356,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 376,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_backup_export",
+        "post_backup_import"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "system_updates",
+      "area": "settings",
+      "required_workflow": "Current/running/build version, sidecar status and rollback/regression information, check/apply updates, auto interval and release channel switch; manual instructions when unavailable.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 403,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 406,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 307,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 302,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 310,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 316,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 305,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 299,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_system_channel",
+        "post_system_channel",
+        "post_system_update",
+        "get_system_update_check",
+        "post_system_update_auto",
+        "get_system_update_status",
+        "get_version"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "system_power",
+      "area": "settings",
+      "required_workflow": "Explicit restart/shutdown with progress and later reconnect health; capability/error handling.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 321,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 323,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_system_restart",
+        "post_system_shutdown"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "wifi_management",
+      "area": "settings",
+      "required_workflow": "Capability-gated Wi-Fi status/scan/saved profiles/connect/disconnect/forget including password and lost-connectivity recovery.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 381,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 391,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 397,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 389,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 399,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 384,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 382,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_network_wifi_capability",
+        "post_network_wifi_connect",
+        "post_network_wifi_disconnect",
+        "get_network_wifi_saved",
+        "delete_network_wifi_saved_con_name",
+        "post_network_wifi_scan",
+        "get_network_wifi_status"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "diagnostics",
+      "area": "displays",
+      "required_workflow": "Blank/fill/info/test board, clear/cache status, system/network diagnostics and hardware verdicts.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 325,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 339,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 337,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 328,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 333,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 343,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 341,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/api/system.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 335,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_debug_blank",
+        "get_debug_cache_status",
+        "post_debug_clear_cache",
+        "post_debug_fill",
+        "post_debug_info",
+        "get_debug_network_diagnostics",
+        "get_debug_system_info",
+        "post_debug_test_connection"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Displays / detail Overview, Settings, Playback",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "native_connection_management",
+      "area": "connection",
+      "required_workflow": "Manual URL/server selection, deployment identity, discovery permission and offline reconnect",
+      "ios_status": "partial implementation; full acceptance open",
+      "ios_evidence": "App/Features/Connection; Packages/FiestaBoardKit/Sources/FiestaBoardKit/Bootstrap.swift; Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/ConnectionModel.swift",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/base-path.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 21,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Connect / server picker",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "route_navigation",
+      "area": "adaptive",
+      "required_workflow": "All browser route destinations and nested layouts, back navigation and durable selection",
+      "ios_status": "implemented native destinations; two cross-section journeys verified; full parity remains open",
+      "ios_evidence": "App/FiestaBoardApp.swift; commits20b2ecd,a381dc4,df6a6af",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/app/routes.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 7,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [],
+      "beta_acceptance": "partial: native destinations verified; all workflows not complete",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Cross-cutting navigation/platform",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "DemoUITests/testDestinationJourneysAndActualReadOnlyScheduleDetails; DemoUITests/testEditorSheetAndSelectionSurviveWindowAdaptation",
+      "actual_ux_evidence": "navigation/ui-phone-fix1.log and ui-ipad.log; actual iPhone17ProMax/iPadAir11M4 iOS27.0; rotation phone earlier ui-phone.log",
+      "acceptance_scenario": "Pages\u2192Collections\u2192Schedule; Displays\u2192Playback\u2192back; maintain editor across rotation"
+    },
+    {
+      "id": "deep_links",
+      "area": "adaptive",
+      "required_workflow": "Query/hash deep links, legacy settings sections, safe post-login redirect and activation code",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift; Tests/UITests/DemoUITests.swift; docs/research/2026-10-29-creative-editor-verification.md",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/app/routes/settings.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 117,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Cross-cutting navigation/platform",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "panel_link_sharing",
+      "area": "displays",
+      "required_workflow": "Copy/open a panel viewer URL, long and short viewer route",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/settings/fiestapanel-settings.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 374,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_panel_panel_id",
+        "get_panel_panel_id_frame"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Displays / detail Overview, Settings, Playback",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "panel_presentation",
+      "area": "displays",
+      "required_workflow": "Fullscreen panel/TV display, animation/matrix/font/backdrop/auto-dim and sleep behavior",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/panel/panel-view.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 1,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_panel_panel_id",
+        "get_panel_panel_id_frame"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Displays / detail Overview, Settings, Playback",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "page_library_navigation",
+      "area": "pages",
+      "required_workflow": "Library search/filter/sort/grid-list, geometry/device compatibility and duplicate actions",
+      "ios_status": "partial implementation; full acceptance open",
+      "ios_evidence": "App/Features/Library; Packages/FiestaBoardKit/Sources/FiestaBoardKit/PageManagement.swift; Packages/FiestaBoardKit/Sources/FiestaBoardKit/Service.swift",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/app/routes/pages._index.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 1,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id",
+        "post_pages_preview_batch",
+        "post_pages_page_id_preview"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Pages / Picks",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "editor_document",
+      "area": "editor",
+      "required_workflow": "Rich/plain template editor, tokens/formulas, line alignment/wrap, colors/icons and cell editing",
+      "ios_status": "partial implementation; full acceptance open",
+      "ios_evidence": "App/Features/Editor; Packages/FiestaBoardDocuments; Packages/FiestaBoardEditorState",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/page-builder.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 135,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/components/charset-template-editor.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 3,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/components/tiptap-template-editor/TipTapTemplateEditor.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 1,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id",
+        "post_templates_render",
+        "post_templates_validate",
+        "get_v1_functions",
+        "get_v1_variables"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Pages / native editor",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "editor_charset",
+      "area": "editor",
+      "required_workflow": "Character-set-aware visual cells, painting, geometry and LED formatting",
+      "ios_status": "partial implementation; full acceptance open",
+      "ios_evidence": "App/Features/Editor; Packages/FiestaBoardDocuments; Packages/FiestaBoardEditorState",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/charset-template-editor.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 1,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/components/charset-template-editor.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 3,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/components/tiptap-template-editor/TipTapTemplateEditor.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 1,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/lib/board-characters-to-template.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 56,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/components/tiptap-template-editor/utils/constants.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 34,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id",
+        "post_templates_render",
+        "post_templates_validate",
+        "get_v1_functions",
+        "get_v1_variables"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Pages / native editor",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "editor_drafts",
+      "area": "editor",
+      "required_workflow": "Draft recovery, unsaved navigation protection and page/new editor state",
+      "ios_status": "verified connection-scoped durable drafts and legacy recovery/export implemented; broader editor acceptance open",
+      "ios_evidence": "commits000324a,d3021da; LocalDraftRecoveryView; LocalDraftStore; VerifiedConnectionScope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/page-draft.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 1,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [],
+      "beta_acceptance": "partial: identity/recovery routing verified; flexible invalid-draft workflow pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Pages / native editor",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "SessionPersistenceTests/testConnectionScopeSeparatesFreshLoginsAndRetainsVerifiedRestartAndReconnect; DraftTests/testScopedIdentityNeverAdoptsLegacyAndInventoryPreservesOriginalBytes; DemoUITests/testRecoveryInventoryReachableConnectedAndDisconnected",
+      "actual_ux_evidence": "navigation/ui-phone-fix1.log and ui-ipad.log verify reachable recovery inventory; populated export UI success not yet verified",
+      "acceptance_scenario": "fresh login isolates; verified remembered restart retains; legacy/corrupt entries stay recoverable without silent adoption"
+    },
+    {
+      "id": "editor_undo",
+      "area": "editor",
+      "required_workflow": "Undo/redo, local selection and keyboard editing across rich/plain/canvas controls",
+      "ios_status": "partial implementation; full acceptance open",
+      "ios_evidence": "App/Features/Editor; Packages/FiestaBoardDocuments; Packages/FiestaBoardEditorState",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/page-builder.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 1,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/components/charset-template-editor.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 3,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/components/tiptap-template-editor/TipTapTemplateEditor.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 1,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Pages / native editor",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "canvas_management",
+      "area": "editor",
+      "required_workflow": "Up to eight canvases; add/remove/select and area, bleed, scale and flow",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/Features/Editor; Packages/FiestaBoardDocuments; Packages/FiestaBoardEditorState",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/canvas-editor/canvases-panel.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 131,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id",
+        "post_templates_render",
+        "post_templates_validate",
+        "get_v1_functions",
+        "get_v1_variables",
+        "post_pages_preview_batch",
+        "post_pages_page_id_preview"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Pages / native editor",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "canvas_draw",
+      "area": "editor",
+      "required_workflow": "Draw brush/eraser/bucket/eyedropper, RGB palette, zoom/grid and accessible pixel cursor",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/Features/Editor; Packages/FiestaBoardDocuments; Packages/FiestaBoardEditorState",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/canvas-editor/canvas-draw-tab.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 195,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id",
+        "post_templates_render",
+        "post_templates_validate",
+        "get_v1_functions",
+        "get_v1_variables"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Pages / native editor",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "canvas_shapes",
+      "area": "editor",
+      "required_workflow": "Shapes parameters, order and dynamic expressions",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/Features/Editor; Packages/FiestaBoardDocuments; Packages/FiestaBoardEditorState",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/canvas-editor/canvas-shapes-editor.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 1,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id",
+        "post_templates_render",
+        "post_templates_validate",
+        "get_v1_functions",
+        "get_v1_variables"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Pages / native editor",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "canvas_source",
+      "area": "editor",
+      "required_workflow": "Canvas plugin source variable or arbitrary expression",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/Features/Editor; Packages/FiestaBoardDocuments; Packages/FiestaBoardEditorState",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/canvas-editor/canvas-source-picker.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 3,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id",
+        "post_templates_render",
+        "post_templates_validate",
+        "get_v1_functions",
+        "get_v1_variables"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Pages / native editor",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "calendar_interaction",
+      "area": "schedule",
+      "required_workflow": "Calendar/list views, recurrence/timezone-aware drag and resize, accessible entry form",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/schedule/schedule-calendar-view.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 1,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_v1_schedules",
+        "post_v1_schedules",
+        "delete_v1_schedules_schedule_id",
+        "put_v1_schedules_schedule_id",
+        "get_schedules_settings",
+        "put_schedules_settings",
+        "post_schedules_validate",
+        "get_settings_location",
+        "put_settings_location",
+        "get_settings_location_sun_times",
+        "get_settings_location_sun_times_week"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Schedule / display Playback",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "collection_rules_editor",
+      "area": "collections",
+      "required_workflow": "Collection page ordering, rule modes/expressions, durations and default controls",
+      "ios_status": "partial implementation; full acceptance open",
+      "ios_evidence": "App/Features/Collections; Packages/FiestaBoardKit/Sources/FiestaBoardKit/CollectionEditing.swift; Packages/FiestaBoardEditorState/Sources/FiestaBoardEditorState/CollectionEditorModel.swift",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/app/routes/collections.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 1,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_v1_collections",
+        "post_v1_collections",
+        "delete_v1_collections_collection_id",
+        "put_v1_collections_collection_id",
+        "get_board_current_message",
+        "get_pages_current_display",
+        "get_schedules_active_page",
+        "get_settings_active_page",
+        "put_settings_active_page",
+        "get_silence_status"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Collections",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "oauth_relay_flow",
+      "area": "integrations",
+      "required_workflow": "Relay browser start, signed local/prefixed callback, refusal/expiry and manual URL/code rescue",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/plugin-settings/oauth-connection.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 255,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_oauth_callback",
+        "get_oauth_connections",
+        "delete_oauth_connections_connection_id",
+        "post_oauth_connections_connection_id_authorize",
+        "post_oauth_connections_connection_id_complete"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Integrations",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "oauth_device_flow",
+      "area": "integrations",
+      "required_workflow": "Device verification URL/code, server polling and pending/expired/denied/failed statuses",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/plugin-settings/oauth-connection.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 14,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_oauth_callback",
+        "get_oauth_connections",
+        "delete_oauth_connections_connection_id",
+        "post_oauth_connections_connection_id_authorize",
+        "post_oauth_connections_connection_id_complete"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Integrations",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "oauth_key_exchange_flow",
+      "area": "integrations",
+      "required_workflow": "Key exchange callback or explicit headless pasted provider code",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/plugin-settings/oauth-connection.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 589,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_oauth_callback",
+        "get_oauth_connections",
+        "delete_oauth_connections_connection_id",
+        "post_oauth_connections_connection_id_authorize",
+        "post_oauth_connections_connection_id_complete"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Integrations",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "oauth_plex_flow",
+      "area": "integrations",
+      "required_workflow": "Plex PIN authorization opens browser and server polls, optional forward URL",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/plugin-settings/oauth-connection.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 274,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_oauth_callback",
+        "get_oauth_connections",
+        "delete_oauth_connections_connection_id",
+        "post_oauth_connections_connection_id_authorize",
+        "post_oauth_connections_connection_id_complete"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Integrations",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "oauth_app_registration",
+      "area": "integrations",
+      "required_workflow": "Shared/user OAuth app registration fields, reconnect, saved paste offer and AI provider sign-in",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/plugin-settings/oauth-connection.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 160,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_oauth_callback",
+        "get_oauth_connections",
+        "delete_oauth_connections_connection_id",
+        "post_oauth_connections_connection_id_authorize",
+        "post_oauth_connections_connection_id_complete",
+        "post_displays_raw_batch",
+        "get_plugins",
+        "get_plugins_errors",
+        "get_plugins_plugin_id_manifest",
+        "get_plugins_plugin_id_variables",
+        "get_v1_plugins_plugin_id",
+        "patch_v1_plugins_plugin_id",
+        "get_v1_plugins_plugin_id_data",
+        "get_settings_ai",
+        "put_settings_ai",
+        "get_settings_ai_providers_provider_id_models",
+        "post_settings_ai_test"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Integrations",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "ai_staging",
+      "area": "ai",
+      "required_workflow": "Editor AI staging/diffs, approvals/questions, global drawer and saved conversation context",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/use-ai-chat.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 270,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_pages_ai_chat",
+        "delete_ai_conversations",
+        "get_ai_conversations",
+        "delete_ai_conversations_conversation_id",
+        "get_ai_conversations_conversation_id",
+        "patch_ai_conversations_conversation_id",
+        "put_ai_conversations_conversation_id",
+        "get_ai_conversations_conversation_id_export",
+        "get_v1_pages",
+        "post_v1_pages",
+        "delete_v1_pages_page_id",
+        "get_v1_pages_page_id",
+        "put_v1_pages_page_id"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "AI assistant / Settings AI",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "appearance_theme",
+      "area": "settings",
+      "required_workflow": "Light/dark/system appearance",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/settings/appearance-settings.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 9,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "localization",
+      "area": "settings",
+      "required_workflow": "Fourteen locales and language persistence, locale-aware formatting/output labels",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/i18n/config.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 1,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "accessibility",
+      "area": "adaptive",
+      "required_workflow": "Skip/focus/labels, motion preferences, keyboard and form error announcements",
+      "ios_status": "partial implementation; full acceptance open",
+      "ios_evidence": "App/FiestaBoardApp.swift; Tests/UITests/DemoUITests.swift; docs/research/2026-10-29-creative-editor-verification.md",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/skip-to-content.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 1,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_settings_display",
+        "put_settings_display"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Cross-cutting navigation/platform",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "pwa_installation",
+      "area": "adaptive",
+      "required_workflow": "Browser install prompt, manifest/service worker and installed-app lifecycle",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift; Tests/UITests/DemoUITests.swift; docs/research/2026-10-29-creative-editor-verification.md",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/install-prompt.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 1,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Cross-cutting navigation/platform",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "offline_recovery",
+      "area": "connection",
+      "required_workflow": "Offline page and health retry; cache/offline/read/write distinction",
+      "ios_status": "partial implementation; full acceptance open",
+      "ios_evidence": "App/Features/Connection; Packages/FiestaBoardKit/Sources/FiestaBoardKit/Bootstrap.swift; Packages/FiestaBoardAppState/Sources/FiestaBoardAppState/ConnectionModel.swift",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/app/routes/offline.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 1,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Connect / server picker",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "geolocation_permission",
+      "area": "settings",
+      "required_workflow": "Use browser location to fill server latitude/longitude",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/settings/location-settings.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 88,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "get_settings_location",
+        "put_settings_location",
+        "get_settings_location_sun_times",
+        "get_settings_location_sun_times_week"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "external_plugin_documents",
+      "area": "integrations",
+      "required_workflow": "Fetch repository README and manifest-derived preview images/relative links",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/lib/github.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 47,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Integrations",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "mcp_connector_instructions",
+      "area": "settings",
+      "required_workflow": "Generate/copy MCP client instructions and endpoint/token config",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/settings/mcp-settings.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 47,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "removed_debug_monitor",
+      "area": "settings",
+      "required_workflow": "Legacy /debug monitor route explains removed monitoring and docker logs command",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/app/routes/debug.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 23,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Settings",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "adaptive_device_poses",
+      "area": "adaptive",
+      "required_workflow": "Preserve every workflow across compact/expanded/resized/folded/seated/standing layouts",
+      "ios_status": "phone/tablet rotation preserves draft; resize/folding acceptance pending",
+      "ios_evidence": "App/FiestaBoardApp.swift; Tests/UITests/DemoUITests.swift; docs/research/2026-10-29-creative-editor-verification.md",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/app/routes.ts",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 7,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [],
+      "beta_acceptance": "partial: Duo installed profile requires missing27.1 runtime; no actual fold claim",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Cross-cutting navigation/platform",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "DemoUITests/testEditorSheetAndSelectionSurviveWindowAdaptation",
+      "actual_ux_evidence": "navigation/ui-phone.log and ui-ipad.log; iPhone17ProMax and iPadAir11M4 iOS27.0"
+    },
+    {
+      "id": "plugin_color_rules",
+      "area": "integrations",
+      "required_workflow": "Ordered field color conditions, comparison operators, fallback/empty rules, per-instance configuration and generated field_color variables.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/app/routes/integrations._index.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 616,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "src/plugins/registry.py",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 1354,
+          "current_file_state": "changed; semantic re-audit pending"
+        }
+      ],
+      "operation_ids": [
+        "patch_v1_plugins_plugin_id",
+        "get_plugins_plugin_id_variables"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Integrations",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "plugin_json_mapper",
+      "area": "integrations",
+      "required_workflow": "Probe JSON endpoint from schema-declared request fields, inspect response tree and edit ordered variable/path/default mapping rows. Both json-path-mapper and generic-data-mapping-helper aliases remain valid.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/plugin-settings/json-path-mapper-field.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 14,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/components/plugin-settings/schema-form.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 1020,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "post_generic_data_test_fetch",
+        "patch_v1_plugins_plugin_id"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Integrations",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    },
+    {
+      "id": "schema_widgets",
+      "area": "integrations",
+      "required_workflow": "Schema conditional visibility and sections; password/secret masks, textarea/timezone/page picker, typed enums, remote options and mode-cards/device-picker/tile-grid controls; preserve omitted/null/unknown settings fields.",
+      "ios_status": "no complete native implementation evidenced",
+      "ios_evidence": "App/FiestaBoardApp.swift exposes no corresponding feature flow; inspect existing 84-row checklist for acceptance scope",
+      "web_reference_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+      "current_web_commit": "3669e60864a38df4738de20fafe7b72675a230a0",
+      "web_sources": [
+        {
+          "path": "web/src/components/plugin-settings/schema-form.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 63,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/components/plugin-settings/schema-form.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 875,
+          "current_file_state": "unchanged bytes"
+        },
+        {
+          "path": "web/src/components/plugin-settings/board-widgets.tsx",
+          "historical_commit": "b5eac069dce10945eac61e1fdadf6ee4a903ba08",
+          "historical_line": 94,
+          "current_file_state": "unchanged bytes"
+        }
+      ],
+      "operation_ids": [
+        "patch_v1_plugins_plugin_id",
+        "post_plugins_plugin_id_options_options_id"
+      ],
+      "beta_acceptance": "pending",
+      "owner": "iOS feature owner pending assignment",
+      "android_equivalent": "share semantic requirements; Android owner to audit independently",
+      "native_destination": "Integrations",
+      "acceptance_scenario_ref": "requirements-design.md: Beta acceptance; execution-plan.md: P1\u2013P6",
+      "automated_test": "pending per-workflow mapping; existing group evidence is not full acceptance",
+      "actual_ux_evidence": "pending current beta pairing; see dated historical reports"
+    }
+  ],
+  "pending_upstream_deltas": [
+    {
+      "id": "flexible_document_read",
+      "required_workflow": "Mixed template/flexible/future library reading without weakening legacy identity; preserve unsupported documents read-only.",
+      "source_commit": "1a94b34b90213648433fe7bf90b77be8c9300de3",
+      "upstream": "PR2395 draft to next",
+      "native_destination": "Pages / native editor / Displays",
+      "implementation": "implemented in d77cc59; unsupported mutations blocked",
+      "acceptance_scenario_ref": "execution-plan.md P1/P3/P4",
+      "automated_test": "FlexiblePageReaderTests; PageManagementTests reader-only mutation regression; EditorTests unsupported protocol regression",
+      "actual_ux_evidence": "ConnectionUITests mixed-library journey passed on iPhone17 Pro Max and iPad Air11 M4 simulators, iOS27.0",
+      "beta_acceptance": "reader slice verified; full beta/device/accessibility matrix remains open"
+    },
+    {
+      "id": "flexible_block_authoring",
+      "required_workflow": "Native stable-ID text/Canvas/spacer block authoring, style/conditions/priority/targets, invalid-draft retention and exact extensions.",
+      "source_commit": "1a94b34b90213648433fe7bf90b77be8c9300de3",
+      "upstream": "PR2395 draft to next",
+      "native_destination": "Pages / native editor / Displays",
+      "implementation": "pending",
+      "acceptance_scenario_ref": "execution-plan.md P1/P3/P4",
+      "automated_test": "pending",
+      "actual_ux_evidence": "pending",
+      "beta_acceptance": "pending"
+    },
+    {
+      "id": "flexible_target_preview",
+      "required_workflow": "Generation/target-scoped server preview of each document target and ordinary/native mode; reject stale responses.",
+      "source_commit": "1a94b34b90213648433fe7bf90b77be8c9300de3",
+      "upstream": "PR2395 draft to next",
+      "native_destination": "Pages / native editor / Displays",
+      "implementation": "pending",
+      "acceptance_scenario_ref": "execution-plan.md P1/P3/P4",
+      "automated_test": "pending",
+      "actual_ux_evidence": "pending",
+      "beta_acceptance": "pending"
+    },
+    {
+      "id": "physical_frame_modes",
+      "required_workflow": "Explicit physical_frame_version and width/height; exact 32x8, 52x16, 64x64 and unchanged legacy grid.",
+      "source_commit": "1a94b34b90213648433fe7bf90b77be8c9300de3",
+      "upstream": "PR2395 draft to next",
+      "native_destination": "Pages / native editor / Displays",
+      "implementation": "decoder and native image surface implemented in d77cc59; flexible endpoint adapter remains pending",
+      "acceptance_scenario_ref": "execution-plan.md P1/P3/P4",
+      "automated_test": "PhysicalFramePreviewTests exact32x8/52x16/64x64, unsupported/null marker and malformed bounds; native physical-preview UI test",
+      "actual_ux_evidence": "physical-preview interaction passed on iPhone17 Pro Max and iPad Air11 M4 simulators; synthetic loopback response",
+      "beta_acceptance": "partial; actual backend flexible preview and physical-device matrix remain open"
+    }
+  ]
+}

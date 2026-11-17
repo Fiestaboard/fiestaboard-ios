@@ -1,4 +1,5 @@
 import Foundation
+import FiestaBoardDocuments
 
 /// A partial page update. Unknown document fields never enter the write body.
 public struct PageSavePatch: Encodable, Sendable, Equatable {
@@ -6,21 +7,53 @@ public struct PageSavePatch: Encodable, Sendable, Equatable {
     public let template: [String]?
     public let expectedRevision: String
     public let lineMetadataData: Data?
-    public init(name: String? = nil, template: [String]? = nil, lineMetadataData: Data? = nil, expectedRevision: String) {
-        self.name = name; self.template = template; self.lineMetadataData = lineMetadataData; self.expectedRevision = expectedRevision
+    public let blocksData: Data?
+    public let styleData: Data?
+    public let layoutData: Data?
+    public let targetsData: Data?
+    /// Board shape change (PLAN B20/§2.4): raw `device_type` / `notes_*` / `grid_*` values by key.
+    public let geometryData: [String: Data]
+    public static let geometryKeys = ["device_type", "notes_wide", "notes_tall", "grid_rows", "grid_cols"]
+    /// A legacy page's pixel canvases (PLAN B24/§2.4): the raw `canvases` bytes, `null` or an array of objects.
+    public let canvasesData: Data?
+    public var hasFlexibleFields: Bool { blocksData != nil || styleData != nil || layoutData != nil || targetsData != nil }
+    public init(name: String? = nil, template: [String]? = nil, lineMetadataData: Data? = nil,
+                blocksData: Data? = nil, styleData: Data? = nil, layoutData: Data? = nil, targetsData: Data? = nil,
+                geometryData: [String: Data] = [:], canvasesData: Data? = nil, expectedRevision: String) {
+        self.name = name; self.template = template; self.lineMetadataData = lineMetadataData
+        self.geometryData = geometryData; self.canvasesData = canvasesData
+        self.blocksData = blocksData; self.styleData = styleData; self.layoutData = layoutData; self.targetsData = targetsData
+        self.expectedRevision = expectedRevision
     }
     enum CodingKeys: String, CodingKey { case name, template, expectedRevision = "expected_revision" }
     public func validate() throws {
-        guard name != nil || template != nil || lineMetadataData != nil, !expectedRevision.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-              name.map({ !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) ?? true else {
-            throw FiestaBoardError.pageWritesDisabled
-        }
+        guard name != nil || template != nil || lineMetadataData != nil || hasFlexibleFields || !geometryData.isEmpty || canvasesData != nil,
+              geometryData.keys.allSatisfy(Self.geometryKeys.contains), !hasFlexibleFields || (geometryData.isEmpty && canvasesData == nil),
+              !expectedRevision.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              name.map({ (1...100).contains($0.unicodeScalars.count) && !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) ?? true,
+              !hasFlexibleFields || (template == nil && lineMetadataData == nil) else { throw FiestaBoardError.pageWritesDisabled }
         if let lineMetadataData { try RawJSONObject.validateObjectArray(lineMetadataData) }
+        if let canvasesData, canvasesData != Data("null".utf8) {
+            // Same checks as line_metadata (objects only, no duplicate keys), plus the server's limit of 8.
+            try RawJSONObject.validateObjectArray(canvasesData)
+            guard case .array(let canvases) = try LosslessJSON.parse(canvasesData), canvases.count <= 8 else { throw FiestaBoardError.pageWritesDisabled }
+        }
+        if hasFlexibleFields {
+            var root: LosslessJSONObject = ["name": .string(name ?? "Page"), "type": .string("flexible"), "document_protocol": .string("page-document-v2"), "blocks": .array([.object(["id": .string("default"), "kind": .string("spacer")])])]
+            for (key, bytes) in rawFields {
+                root[key] = try LosslessJSON.parse(bytes)
+            }
+            let document = try PageDocument(data: LosslessJSON.object(root).serializedData())
+            guard document.flexibleIssues.isEmpty else { throw FiestaBoardError.pageWritesDisabled }
+        }
     }
-    /// JSONEncoder cannot preserve arbitrary JSON number spellings. Use serializedData for
-    /// metadata patches; refusing regular Encodable prevents accidental lossy transport.
+    private var rawFields: [(String, Data)] {
+        [("line_metadata", lineMetadataData), ("blocks", blocksData), ("style", styleData), ("layout", layoutData), ("targets", targetsData)].compactMap { key, value in value.map { (key, $0) } }
+            + Self.geometryKeys.compactMap { key in geometryData[key].map { (key, $0) } }
+            + (canvasesData.map { [("canvases", $0)] } ?? [])
+    }
     public func encode(to encoder: any Encoder) throws {
-        guard lineMetadataData == nil else { throw FiestaBoardError.pageWritesDisabled }
+        guard rawFields.isEmpty else { throw FiestaBoardError.pageWritesDisabled }
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encodeIfPresent(name, forKey: .name)
         try container.encodeIfPresent(template, forKey: .template)
@@ -28,14 +61,12 @@ public struct PageSavePatch: Encodable, Sendable, Equatable {
     }
     public func serializedData() throws -> Data {
         try validate()
-        let ordinary = PageSavePatch(name: name, template: template, expectedRevision: expectedRevision)
-        let encoded = try JSONEncoder().encode(ordinary)
-        _ = try RawJSONObject.members(encoded)
-        guard let lineMetadataData else { return encoded }
+        let encoded = try JSONEncoder().encode(PageSavePatch(name: name, template: template, expectedRevision: expectedRevision))
         guard encoded.last == 125 else { throw FiestaBoardError.invalidResponse }
         var result = Data(encoded.dropLast())
-        result.append(Data(",\"line_metadata\":".utf8))
-        result.append(lineMetadataData)
+        for (key, data) in rawFields {
+            result.append(Data((",\"" + key + "\":").utf8)); result.append(data)
+        }
         result.append(125)
         _ = try RawJSONObject.members(result)
         return result
@@ -78,7 +109,57 @@ public struct TemplateValidationResult: Sendable {
         valid = value.valid; errors = value.errors; self.rawData = rawData; self.isSimulated = isSimulated
     }
 }
+public struct PhysicalPreviewFrame: Sendable, Equatable {
+    public let width: Int
+    public let height: Int
+    public let rgba: Data
+}
+public enum PreviewSurface: Sendable, Equatable {
+    case legacy, physical(PhysicalPreviewFrame), unsupported
+
+    static func read(_ data: Data?) throws -> Self {
+        guard let data, data != Data("null".utf8) else { return .legacy }
+        let layers = try JSONDecoder().decode([Layer].self, from: data)
+        if layers.contains(where: { $0.surface == .unsupported }) { return .unsupported }
+        let frames = layers.compactMap { layer -> PhysicalPreviewFrame? in
+            if case .physical(let frame) = layer.surface { return frame }; return nil
+        }
+        guard !frames.isEmpty else { return .legacy }
+        // V1 is a complete surface, not an overlay in legacy character coordinates.
+        guard frames.count == 1, layers.count == 1 else { throw FiestaBoardError.invalidResponse }
+        return .physical(frames[0])
+    }
+
+    private struct Layer: Decodable {
+        let surface: PreviewSurface
+        enum CodingKeys: String, CodingKey { case x, y, width, height, rgba, version = "physical_frame_version" }
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            guard c.contains(.version) else {
+                surface = .legacy; return
+            }
+            guard (try? c.decode(Int.self, forKey: .version)) == 1 else {
+                surface = .unsupported; return
+            }
+            let width = try c.decode(Int.self, forKey: .width)
+            let height = try c.decode(Int.self, forKey: .height)
+            guard (1...512).contains(width), (1...512).contains(height),
+                  try c.decode(Int.self, forKey: .x) == 0, try c.decode(Int.self, forKey: .y) == 0 else {
+                throw FiestaBoardError.invalidResponse
+            }
+            let encoded = try c.decode(String.self, forKey: .rgba)
+            let count = width * height * 4
+            guard encoded.utf8.count == ((count + 2) / 3) * 4,
+                  let bytes = Data(base64Encoded: encoded), bytes.count == count,
+                  stride(from: 3, to: count, by: 4).allSatisfy({ bytes[$0] == 255 }) else {
+                throw FiestaBoardError.invalidResponse
+            }
+            surface = .physical(PhysicalPreviewFrame(width: width, height: height, rgba: bytes))
+        }
+    }
+}
 public struct TemplatePreviewResult: Sendable {
+    public let surface: PreviewSurface
     public let rendered: String
     public let lines: [String]
     public let charset: String?
@@ -87,6 +168,11 @@ public struct TemplatePreviewResult: Sendable {
     public let hasLayers: Bool
     public let rawData: Data
     public let isSimulated: Bool
+    /// Full decodes of the optional members (PLAN §2.3, §3.3). Elements that do not match the
+    /// verified 10.3.2 shapes are skipped, never fatal; the counts above stay exact.
+    public let charsetIssues: [TemplateCharsetIssue]
+    public let canvasIssues: [TemplateCanvasIssue]
+    public let layers: [TemplatePreviewLayer]
     public init(rawData: Data, isSimulated: Bool = false) throws {
         struct Reply: Decodable { let rendered: String; let lines: [String]; let line_count: Int; let charset: String? }
         guard let reply = try? JSONDecoder().decode(Reply.self, from: rawData), reply.line_count == reply.lines.count,
@@ -96,7 +182,97 @@ public struct TemplatePreviewResult: Sendable {
         charsetIssueCount = try RawJSONObject.arrayCount(members["charset_issues"])
         canvasIssueCount = try RawJSONObject.arrayCount(members["canvas_issues"])
         hasLayers = try RawJSONObject.arrayCount(members["layers"]) > 0
+        surface = try PreviewSurface.read(members["layers"])
+        charsetIssues = LenientArray.decode(members["charset_issues"])
+        canvasIssues = LenientArray.decode(members["canvas_issues"])
+        layers = LenientArray.decode(members["layers"])
         self.rawData = rawData; self.isSimulated = isSimulated
+    }
+}
+
+/// `charset_issues[]` entry: FiestaUI `CharsetValidationIssue` (`S:src/led/charsets.py:385`).
+public struct TemplateCharsetIssue: Decodable, Sendable, Equatable {
+    /// FiestaUI `BoardToken` JSON: `type` is `char` (with `value`) or `color` (with `code`).
+    public struct Token: Decodable, Sendable, Equatable {
+        public let kind: String?
+        public let value: String?
+        public let code: String?
+        public let color: String?
+        public let icon: String?
+        public init(kind: String?, value: String? = nil, code: String? = nil, color: String? = nil, icon: String? = nil) {
+            self.kind = kind; self.value = value; self.code = code; self.color = color; self.icon = icon
+        }
+        // W4: the wire key is `type` (src/markup.py BoardToken.to_dict); `kind` never decoded.
+        enum CodingKeys: String, CodingKey { case kind = "type", value, code, color, icon }
+    }
+    public init(row: Int, col: Int, token: Token?, reason: String?, fallback: Token?) {
+        self.row = row; self.col = col; self.token = token; self.reason = reason; self.fallback = fallback
+    }
+    public let row: Int
+    public let col: Int
+    public let token: Token?
+    public let reason: String?
+    public let fallback: Token?
+}
+/// `canvas_issues[]` entry (`S:src/canvas/evaluate.py:75`).
+public struct TemplateCanvasIssue: Decodable, Sendable, Equatable {
+    public let canvasID: String?
+    public let path: String?
+    public let message: String
+    public init(canvasID: String?, path: String?, message: String) { self.canvasID = canvasID; self.path = path; self.message = message }
+    enum CodingKeys: String, CodingKey { case canvasID = "canvas_id", path, message }
+}
+/// `layers[]` entry: FiestaUI `LedBitmapLayer` `{x, y, width, height, rgba}` (`S:src/canvas/layer.py:57`).
+public struct TemplatePreviewLayer: Decodable, Sendable, Equatable {
+    public let x: Int
+    public let y: Int
+    public let width: Int
+    public let height: Int
+    public let rgba: String
+}
+private enum LenientArray {
+    private struct Element<T: Decodable>: Decodable {
+        let value: T?
+        init(from decoder: any Decoder) throws { value = try? T(from: decoder) }
+    }
+    static func decode<T: Decodable>(_ data: Data?) -> [T] {
+        guard let data, let elements = try? JSONDecoder().decode([Element<T>].self, from: data) else { return [] }
+        return elements.compactMap(\.value)
+    }
+}
+
+/// Wire contract of POST /pages/preview/flexible, distinct from legacy template rendering.
+public struct FlexiblePreviewResult: Sendable {
+    public let surface: PreviewSurface
+    public let lines: [String]
+    public let displayType: String
+    public let layoutIssueCount: Int
+    public let layoutWarnings: [String]
+    public let canvasWarnings: [String]
+    public let canvasIssueCount: Int
+    public let hasLayers: Bool
+    public let rawData: Data
+    public init(rawData: Data) throws {
+        struct Reply: Decodable { let available: Bool; let page_id: String; let message: String; let lines: [String]; let display_type: String }
+        guard let reply = try? JSONDecoder().decode(Reply.self, from: rawData), reply.available, reply.page_id == "unsaved",
+              reply.message == reply.lines.joined(separator: "\n"),
+              let members = try? RawJSONObject.members(rawData), members["layout_issues"] != nil, let raw = members["raw"],
+              (try? RawJSONObject.members(raw)) != nil else { throw FiestaBoardError.invalidResponse }
+        lines = reply.lines; displayType = reply.display_type
+        layoutIssueCount = try RawJSONObject.arrayCount(members["layout_issues"])
+        canvasIssueCount = try RawJSONObject.arrayCount(members["canvas_issues"])
+        func messages(_ bytes: Data?) throws -> [String] {
+            guard let bytes, bytes != Data("null".utf8), case .array(let values) = try LosslessJSON.parse(bytes) else { return [] }
+            return try values.map { value in
+                if case .object(let object) = value, case .string(let text) = object["message"] { return text }
+                return String(decoding: try value.serializedData(), as: UTF8.self)
+            }
+        }
+        layoutWarnings = try messages(members["layout_issues"])
+        canvasWarnings = try messages(members["canvas_issues"])
+        hasLayers = try RawJSONObject.arrayCount(members["layers"]) > 0
+        surface = try PreviewSurface.read(members["layers"])
+        self.rawData = rawData
     }
 }
 
@@ -179,6 +355,7 @@ enum RawJSONObject {
 }
 
 extension FiestaBoardService {
+    public func previewFlexiblePage(requestData: Data, target: BoardTarget) async throws -> FlexiblePreviewResult { throw FiestaBoardError.previewUnsupported }
     public func savePage(id: String, patch: PageSavePatch) async throws -> PageSaveReceipt { throw FiestaBoardError.pageWritesDisabled }
     public func validatePage(requestData: Data, target: BoardTarget) async throws -> TemplateValidationResult { throw FiestaBoardError.previewUnsupported }
     public func previewPage(requestData: Data, target: BoardTarget) async throws -> TemplatePreviewResult { throw FiestaBoardError.previewUnsupported }

@@ -281,3 +281,72 @@ extension ConnectionModelTests {
         XCTAssertTrue(Set(updated.map(\.id)).isDisjoint(with: Set(records.prefix(10).map(\.id))))
     }
 }
+
+/// Exercises the actual URLSessionTransport restore boundary without using the host Keychain.
+private actor EmptyRememberedConnectionVault: SessionVault {
+    func load(for deployment: DeploymentURL) -> Data? { nil }
+    func save(_ data: Data, for deployment: DeploymentURL) {}
+    func remove(for deployment: DeploymentURL) {}
+}
+
+private final class AuthDisabledConnectionURLProtocol: URLProtocol, @unchecked Sendable {
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func stopLoading() {}
+    override func startLoading() {
+        let page = #"{"id":"p","name":"Page","type":"template","device_type":"panel","template":["raw"],"unknown":null}"#
+        let body: String
+        switch request.url!.lastPathComponent {
+        case "health": body = #"{"status":"ok","service_running":true,"version":"10.1.20"}"#
+        case "discover": body = #"{"product":"FiestaBoard","version":"10.1.20","id":"native-installation","name":"Test"}"#
+        case "status": body = #"{"enabled":false,"setup_required":false,"authenticated":false,"mode":"disabled","first_run":false}"#
+        case "version": body = #"{"package_version":"10.1.20","build_version":"test","running_version":"10.1.20","is_dev":false}"#
+        case "boards": body = #"{"boards":[],"total":0}"#
+        case "pages": body = "{\"pages\":[\(page)],\"total\":1}"
+        case "collection:00000000-0000-4000-8000-000000000022": body = #"{"id":"collection:00000000-0000-4000-8000-000000000022","name":"Collection","page_ids":["p"],"selection_mode":"time","time":{"interval_seconds":30},"revision":"original","edit_protocol":"collection-revision-v1"}"#
+        case "p": body = page
+        default:
+            client?.urlProtocol(self, didFailWithError: URLError(.badURL)); return
+        }
+        let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: [:])!
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: Data(body.utf8))
+        client?.urlProtocolDidFinishLoading(self)
+    }
+}
+
+extension ConnectionModelTests {
+    func testAuthDisabledSelectionWithNoRememberedMaterialPublishesScopeForLocalEditor() async throws {
+        for hasVault in [false, true] {
+            let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            defer { try? FileManager.default.removeItem(at: directory) }
+            let deployment = try DeploymentURL("https://board.example.com")
+            let vault: (any SessionVault)? = hasVault ? EmptyRememberedConnectionVault() : nil
+            let transport = URLSessionTransport(deployment: deployment, protocolClasses: [AuthDisabledConnectionURLProtocol.self], vault: vault)
+            let service = LiveFiestaBoardService(deployment: deployment, transport: transport)
+            let store = BoardStore()
+            let model = ConnectionModel(store: store, catalog: ServerCatalog(directory: directory), discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, serviceFactory: { _ in service })
+            model.address = deployment.description
+            await model.connectAddress().value
+            XCTAssertEqual(model.phase, .connected, "vault present: \(hasVault)")
+            XCTAssertNotNil(store.status)
+            let snapshot = try await store.loadPageDocument(id: "p")
+            XCTAssertEqual(snapshot.scope.installationID, "native-installation")
+            XCTAssertEqual(snapshot.scope.deployment, deployment)
+            XCTAssertFalse(snapshot.scope.isDemo)
+            XCTAssertNotNil(store.status, "Opening an editor must keep the connection active")
+            let creation = try await store.beginCollectionEditor(id: nil)
+            let collection = try await store.beginCollectionEditor(id: "collection:00000000-0000-4000-8000-000000000022")
+            XCTAssertEqual(creation.scope, snapshot.scope); XCTAssertNil(creation.collection)
+            XCTAssertEqual(collection.scope, snapshot.scope); XCTAssertEqual(collection.context.scope, snapshot.scope)
+            XCTAssertEqual(collection.collection?.revision, "original")
+            await store.reconnect(allowCandidateWrites: false).value
+            let reconnected = try await store.loadPageDocument(id: "p")
+            XCTAssertEqual(snapshot.scope, reconnected.scope)
+            let restoredCollection = try await store.beginCollectionEditor(id: "collection:00000000-0000-4000-8000-000000000022")
+            XCTAssertEqual(collection.scope, restoredCollection.scope)
+            do { _ = try await store.readbackCollection(context: collection.context); XCTFail("Durable scope must not revive an old live context") }
+            catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
+        }
+    }
+}

@@ -26,6 +26,32 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft.core
         GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: FiestaBoardDocuments
+  FiestaBoardRender:
+    type: framework
+    platform: iOS
+    sources:
+      - path: Packages/FiestaBoardRender/Sources/FiestaBoardRender
+        excludes: [RenderAssets]
+      - path: App/PackageResources.swift
+      - path: Packages/FiestaBoardRender/Sources/FiestaBoardRender/RenderAssets
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft.render
+        GENERATE_INFOPLIST_FILE: YES
+  FiestaBoardRenderTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Packages/FiestaBoardRender/Tests/FiestaBoardRenderTests]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft.render.tests
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: FiestaBoardRender
   FiestaBoardAppState:
     type: framework
     platform: iOS
@@ -36,6 +62,7 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
     dependencies:
       - target: FiestaBoardKit
+      - target: FiestaBoardRender
   FiestaBoardDocuments:
     type: framework
     platform: iOS
@@ -63,6 +90,8 @@ targets:
         excludes: [PackageResources.swift]
       - path: ThirdPartyNotices/FiestaBoardTV-MIT.txt
         buildPhase: resources
+      - path: ThirdPartyNotices/SplineSansMono-OFL.txt
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft
@@ -75,16 +104,29 @@ targets:
       - target: FiestaBoardAppState
       - target: FiestaBoardDocuments
       - target: FiestaBoardEditorState
+      - target: FiestaBoardRender
   FiestaBoardUITests:
     type: bundle.ui-testing
     platform: iOS
     sources:
       - path: Tests/UITests
-        excludes: [fixture_server.py]
+        excludes: ["*.py", "__pycache__"]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft.uitests
         GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: FiestaBoard
+  FiestaBoardAppTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests/AppTests]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft.apptests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/FiestaBoard.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/FiestaBoard
+        BUNDLE_LOADER: $(TEST_HOST)
     dependencies:
       - target: FiestaBoard
 schemes:
@@ -93,11 +135,13 @@ schemes:
       targets:
         FiestaBoard: all
         FiestaBoardUITests: [test]
+        FiestaBoardRenderTests: [test]
+        FiestaBoardAppTests: [test]
     run:
       commandLineArguments:
         '--demo': false
     test:
-      targets: [FiestaBoardUITests]
+      targets: [FiestaBoardUITests, FiestaBoardRenderTests, FiestaBoardAppTests]
     profile:
       config: Release
       commandLineArguments:

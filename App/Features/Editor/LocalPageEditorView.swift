@@ -7,7 +7,8 @@ import FiestaBoardKit
 private typealias EditorState<Value> = SwiftUI.State<Value>
 
 /// Present this view in a sheet or navigation destination using a full raw page response.
-/// Local checkpoints and explicit revision-checked server storage are distinct actions.
+/// Legacy template pages open in the document editor (`EditorRoot`); flexible and read-only
+/// documents keep the form editor until their cards arrive (wave 2).
 @MainActor
 public struct LocalPageEditorView: View {
     @Environment(\.dismiss) private var dismiss
@@ -19,12 +20,24 @@ public struct LocalPageEditorView: View {
 
     public init(rawDocumentData: Data, identity: DraftIdentity, draftStore: LocalDraftStore, remote: EditorRemoteActions? = nil, boards: [EditorBoardChoice] = []) throws {
         let model = try LocalPageEditorModel(
-            rawDocumentData: rawDocumentData, identity: identity, draftStore: draftStore, remote: remote, boards: boards
+            rawDocumentData: rawDocumentData, identity: identity, draftStore: draftStore, remote: remote, boards: boards,
+            boardMemory: .standard
         )
         _model = StateObject(wrappedValue: model)
     }
 
+    private var usesDocumentEditor: Bool { !model.supportsFlexibleEditing && model.lines != nil }
+
     public var body: some View {
+        if usesDocumentEditor { EditorRoot(model: model) } else {
+            // The form editor (flexible and other non-document pages) gives the iPad split view
+            // the same signal as EditorRoot, so the sidebar collapses for every editor (B29).
+            formEditor.preference(key: EditorIsOpenKey.self, value: true)
+        }
+    }
+
+    private var formEditor: some View {
+        ScrollViewReader { proxy in
         Form {
             if let recovery = model.recoveryNotice {
                 Section("Draft recovery") {
@@ -42,31 +55,41 @@ public struct LocalPageEditorView: View {
             Section("Page name") {
                 TextField("Name", text: Binding(get: { model.name }, set: { model.setName($0) }))
                     .autocorrectionDisabled()
-                    .disabled(model.editingFrozen)
+                    .disabled(model.editingFrozen || !model.supportsLocalAuthoring).id("pageName")
             }
-            if model.lines != nil {
+            if model.supportsFlexibleEditing {
                 Section {
-                    TemplateWorkspaceView(model: model, isTextInputActive: $isTextInputActive)
+                    FlexibleWorkspaceView(model: model, isTextInputActive: $isTextInputActive) { issue in
+                        let destination: String
+                        if issue.key == "name" { destination = "pageName" }
+                        else if issue.blockID == nil { destination = "flexiblePageOptions" }
+                        else if issue.shapeIndex != nil { destination = "canvasShapeInspector" }
+                        else { destination = "flexibleInspector" }
+                        DispatchQueue.main.async { withAnimation { proxy.scrollTo(destination, anchor: .top) } }
+                    }
                 }
             } else {
                 Section("Read-only content") {
                     Text("This page’s content mode or metadata cannot be safely edited here. Its full raw document is preserved.")
-                    Text(model.pageType).font(.caption.monospaced())
-                    Text(model.readOnlyDocumentText)
-                        .font(.caption.monospaced())
-                        .textSelection(.enabled)
+                    // The raw document stays reachable but off the main surface (D1 gate: no JSON
+                    // on the editor's main surface).
+                    DisclosureGroup("Full page document · select to copy") {
+                        Text(model.pageType).font(.caption.monospaced())
+                        Text(model.readOnlyDocumentText)
+                            .font(.caption.monospaced())
+                            .textSelection(.enabled)
+                    }
                 }
             }
-            Section {
-                Label("Local draft", systemImage: "internaldrive")
-                Text("Save local draft keeps changes on this device. A separate confirmed server save updates stored page content. Use the design canvas and row tools to edit text, tokens, and formatting.")
-                    .font(.footnote).foregroundStyle(.secondary)
-                Text(model.hasUnsavedChanges ? "Unsaved local changes" : "No unsaved local changes")
-                    .font(.footnote)
-                Text(model.hasServerChanges ? "Changed from server baseline" : "Matches server baseline")
-                    .font(.footnote)
-            }
             evaluationSection
+            Section("Draft status") {
+                LabeledContent("Local", value: model.hasUnsavedChanges ? "Unsaved local changes" : "No unsaved local changes")
+                LabeledContent("Server", value: model.serverSnapshotStatus)
+                DisclosureGroup("Saving and evaluation help") {
+                    Text("Save local draft keeps a recovery copy on this device. A confirmed server save updates stored page content. Evaluation uses the current document and selected display without updating stored content or sending to hardware.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+            }.font(.footnote)
             serverSection
             if let message = model.message {
                 Section { Text(message).foregroundStyle(.secondary) }
@@ -79,6 +102,8 @@ public struct LocalPageEditorView: View {
                     .disabled(model.isSaving || model.editingFrozen)
             }
         }
+        .frame(maxWidth: 1120)
+        .frame(maxWidth: .infinity)
         .presentationSizing(.page)
         .navigationTitle("Page editor")
         .navigationBarTitleDisplayMode(.inline)
@@ -92,10 +117,18 @@ public struct LocalPageEditorView: View {
                 }.disabled(model.isSaving || model.editingFrozen)
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
+                if model.supportsFlexibleEditing {
+                    // Remain reachable above the keyboard for both UIKit block text and
+                    // SwiftUI fields, independently of the inspector's scroll position.
+                    Button("Hide keyboard", systemImage: "keyboard.chevron.compact.down") { commitTextInput() }
+                        .labelStyle(.iconOnly).accessibilityIdentifier("flexibleHideKeyboard")
+                }
                 Button("Undo", systemImage: "arrow.uturn.backward") { commitTextInput(); model.undo() }
-                    .disabled(!model.canUndo || model.editingFrozen)
+                    .help(model.undoActionName.map { "Undo " + $0 } ?? "Undo")
+                    .disabled(!model.canUndo || model.editingFrozen).keyboardShortcut("z", modifiers: .command)
                 Button("Redo", systemImage: "arrow.uturn.forward") { commitTextInput(); model.redo() }
-                    .disabled(!model.canRedo || model.editingFrozen)
+                    .help(model.redoActionName.map { "Redo " + $0 } ?? "Redo")
+                    .disabled(!model.canRedo || model.editingFrozen).keyboardShortcut("z", modifiers: [.command, .shift])
             }
         }
         .confirmationDialog("Keep your local changes?", isPresented: $confirmClose, titleVisibility: .visible) {
@@ -120,6 +153,7 @@ public struct LocalPageEditorView: View {
             Text("Your current local work will be saved before replacing the editor. Undo history will be cleared so an old server revision cannot return.")
         }
         .task { await model.checkRecovery() }
+        }
     }
 
     @ViewBuilder private var serverSection: some View {
@@ -147,39 +181,66 @@ public struct LocalPageEditorView: View {
     }
 
     @ViewBuilder private var evaluationSection: some View {
-        Section("Template evaluation") {
+        Section(model.supportsFlexibleEditing ? "Flexible preview" : "Template evaluation") {
             Picker("Board for evaluation", selection: Binding(get: { model.selectedBoardID }, set: { model.chooseBoard($0) })) {
                 Text("Choose a board").tag(String?.none)
                 ForEach(model.boards) { board in Text(board.name).tag(Optional(board.id)) }
-            }.disabled(model.editingFrozen)
+            }.disabled(model.editingFrozen).accessibilityIdentifier("evaluationBoardPicker")
             HStack {
-                Button("Validate") { commitTextInput(); Task { await model.evaluate(preview: false) } }
-                    .accessibilityIdentifier("validatePage")
+                if !model.supportsFlexibleEditing {
+                    Button("Validate") { commitTextInput(); Task { await model.evaluate(preview: false) } }
+                        .accessibilityIdentifier("validatePage")
+                }
                 Spacer()
                 Button("Preview") { commitTextInput(); Task { await model.evaluate(preview: true) } }
                     .accessibilityIdentifier("previewPage")
             }.disabled(!model.canEvaluate || model.isEvaluating)
-            Text("Evaluation uses the current raw document and selected board. It does not update the page or send content to a display.")
-                .font(.footnote).foregroundStyle(.secondary)
             if model.isEvaluating { ProgressView("Evaluating…") }
             if let result = model.validation {
                 Text(result.isSimulated ? "Demo validation · simulated" : "Server validation")
                     .font(.caption).foregroundStyle(.secondary)
                 Text(result.valid ? "No template syntax errors reported." : "Template syntax errors")
                 ForEach(Array(result.errors.enumerated()), id: \.offset) { _, issue in
-                    Text("Line \(issue.line), column \(issue.column): \(issue.message)").font(.footnote)
+                    Text(EditorStrings.validationIssue(issue)).font(.footnote)
+                }
+            }
+            if let result = model.flexiblePreview {
+                Text("Server preview · requested board: \(model.boards.first(where: { $0.id == model.selectedBoardID })?.name ?? "Unselected")")
+                    .font(.caption).foregroundStyle(.secondary)
+                switch result.surface {
+                case .physical(let frame): PhysicalFrameView(frame: frame)
+                case .unsupported: Text("This server uses an unsupported visual preview format.")
+                case .legacy:
+                    Text(result.lines.joined(separator: "\n")).font(.body.monospaced()).textSelection(.enabled)
+                    if result.hasLayers { Text("Visual overlays are retained; inspect the full result or web preview.").font(.footnote) }
+                }
+                Text("Layout warnings: \(result.layoutIssueCount) · Canvas warnings: \(result.canvasIssueCount)").font(.footnote)
+                ForEach(Array(result.layoutWarnings.enumerated()), id: \.offset) { _, warning in
+                    Label(warning, systemImage: "exclamationmark.triangle").font(.footnote)
+                }
+                ForEach(Array(result.canvasWarnings.enumerated()), id: \.offset) { _, warning in
+                    Label(warning, systemImage: "paintbrush").font(.footnote)
+                }
+                DisclosureGroup("Full preview and warnings") {
+                    Text(String(decoding: result.rawData, as: UTF8.self)).font(.caption.monospaced()).textSelection(.enabled)
                 }
             }
             if let result = model.preview {
-                Text(result.isSimulated ? "Demo preview · simulated, expressions are not evaluated" : "Server-rendered text preview")
+                Text(result.isSimulated ? "Demo preview · simulated, expressions are not evaluated" : "Server preview")
                     .font(.caption).foregroundStyle(.secondary)
-                Text(result.lines.joined(separator: "\n")).font(.body.monospaced()).textSelection(.enabled)
+                switch result.surface {
+                case .physical(let frame):
+                    PhysicalFrameView(frame: frame)
+                case .unsupported:
+                    Text("This server uses a visual preview format this app does not support.")
+                case .legacy:
+                    Text(result.lines.joined(separator: "\n")).font(.body.monospaced()).textSelection(.enabled)
+                    if result.hasLayers {
+                        Text("This preview includes visual overlays. Use the web preview to inspect them.").font(.footnote)
+                    }
+                }
                 if let charset = result.charset { Text("Character set: \(charset)").font(.caption) }
                 Text("Character warnings: \(result.charsetIssueCount) · Canvas warnings: \(result.canvasIssueCount)").font(.footnote)
-                if result.hasLayers {
-                    Text("This result includes visual layers. This text-only preview cannot display those layers; use the web preview to inspect them.")
-                        .font(.footnote)
-                }
                 DisclosureGroup("Full evaluation result and warnings") {
                     Text(String(decoding: result.rawData, as: UTF8.self)).font(.caption.monospaced()).textSelection(.enabled)
                 }

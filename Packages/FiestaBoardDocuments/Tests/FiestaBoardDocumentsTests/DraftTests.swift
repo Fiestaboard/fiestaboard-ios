@@ -137,3 +137,55 @@ final class DraftTests: XCTestCase, @unchecked Sendable {
         do { try await store.save(invalid); XCTFail("invalid document") } catch {}
     }
 }
+
+
+extension DraftTests {
+    func testScopedIdentityNeverAdoptsLegacyAndInventoryPreservesOriginalBytes() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = LocalDraftStore(directory: directory)
+        let legacy = DraftIdentity(deploymentID: "https://board.test", pageID: "p")
+        let scoped = DraftIdentity(deploymentID: "https://board.test", installationID: "install", connectionID: UUID(), pageID: "p")
+        let snapshot = try DocumentEditingSession(data: raw).snapshot(identity: legacy)
+        try await store.save(snapshot)
+        let legacyURL = await store.fileURL(for: legacy)
+        XCTAssertEqual(legacyURL.lastPathComponent, "40c7569e9f9494c4bd9a20d63e6b10f2bdd08ce552971678e003e5cb3f726808.json")
+        let bytes = try Data(contentsOf: legacyURL)
+        let scopedSnapshot = DraftSnapshot(identity: scoped, revision: 9, baselineData: raw, documentData: raw)
+        try await store.save(scopedSnapshot)
+        guard case .recovered(let recovered) = try await store.load(scoped) else { return XCTFail("v2 draft") }
+        XCTAssertEqual(recovered.schemaVersion, 2)
+        XCTAssertEqual(recovered.baselineData, raw)
+        XCTAssertEqual(recovered.documentData, raw)
+        // Remove only this test's scoped file before checking the legacy-only inventory.
+        try FileManager.default.removeItem(at: await store.fileURL(for: scoped))
+        let missing = try await store.load(scoped)
+        XCTAssertEqual(missing, .absent)
+        let entries = try await store.recoveryInventory()
+        XCTAssertEqual(entries.count, 1)
+        XCTAssertEqual(entries.first?.snapshot, snapshot)
+        XCTAssertEqual(entries.first?.fileURL, legacyURL)
+        XCTAssertEqual(try Data(contentsOf: legacyURL), bytes)
+        let corruptURL = directory.appendingPathComponent("preserved.json")
+        try Data("broken".utf8).write(to: corruptURL)
+        let all = try await store.recoveryInventory()
+        XCTAssertEqual(all.count, 2)
+        XCTAssertTrue(all.contains { $0.fileURL == corruptURL && $0.corruptionReason != nil })
+    }
+
+    func testScopedHashSeparatesInstallationConnectionFramingAndExactUnicode() async throws {
+        let store = LocalDraftStore(directory: FileManager.default.temporaryDirectory)
+        let connection = UUID()
+        let values = [
+            DraftIdentity(deploymentID: "a", installationID: "bc", connectionID: connection, pageID: "é"),
+            DraftIdentity(deploymentID: "ab", installationID: "c", connectionID: connection, pageID: "é"),
+            DraftIdentity(deploymentID: "a", installationID: "bc", connectionID: UUID(), pageID: "é"),
+            DraftIdentity(deploymentID: "a", installationID: "bc", connectionID: connection, pageID: "e\u{301}"),
+            DraftIdentity(deploymentID: "a", pageID: "é")
+        ]
+        var urls: Set<URL> = []
+        for value in values { urls.insert(await store.fileURL(for: value)) }
+        XCTAssertEqual(urls.count, values.count)
+        XCTAssertEqual(Set(values).count, values.count)
+    }
+}

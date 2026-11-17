@@ -11,8 +11,16 @@ public struct DocumentEditingSession: Sendable {
     private struct Version: Sendable {
         let document: PageDocument
         let baseline: PageDocument
+        let action: String
+        let focus: FlexibleLocation?
+        let oppositeFocus: FlexibleLocation?
     }
-    private var version: Version { Version(document: document, baseline: baseline) }
+    public private(set) var historyFocus: FlexibleLocation?
+    public var undoActionName: String? { undoHistory.last?.action }
+    public var redoActionName: String? { redoHistory.last?.action }
+    private func version(action: String = "Edit document", focus: FlexibleLocation? = nil, oppositeFocus: FlexibleLocation? = nil) -> Version {
+        Version(document: document, baseline: baseline, action: action, focus: focus, oppositeFocus: oppositeFocus)
+    }
     private var undoHistory: [Version] = []
     private var redoHistory: [Version] = []
 
@@ -57,6 +65,43 @@ public struct DocumentEditingSession: Sendable {
         try candidate.duplicateTemplateLine(at: index)
         try adopt(candidate)
     }
+    /// One undo step for a burst of document typing (rows inserted, joined or edited together).
+    public mutating func replaceTemplateRows(_ rows: [String], action: String = "Typing") throws {
+        var candidate = document
+        try candidate.replaceTemplateRows(rows)
+        try adopt(candidate, action: action)
+    }
+    /// Plain mode's commit (rows with prefixes), one undo step like typing.
+    public mutating func replacePlainRows(_ rows: [String], action: String = "Typing") throws {
+        var candidate = document
+        try candidate.replacePlainRows(rows)
+        try adopt(candidate, action: action)
+    }
+    /// Board shape change (PLAN B20), one undo step.
+    public mutating func setGeometry(_ geometry: PageGeometry) throws {
+        var candidate = document
+        try candidate.setGeometry(geometry)
+        // Empty rows past the new board's last row are padding, not content: drop them in the same step.
+        if var rows = candidate.editableTemplateLines {
+            while rows.count > geometry.rows, rows.last?.isEmpty == true { rows.removeLast() }
+            if rows.count != candidate.editableTemplateLines?.count { try candidate.replaceTemplateRows(rows) }
+        }
+        try adopt(candidate, action: "Change board size")
+    }
+    /// A draw-mode stroke (PLAN B23, iOS-F1): rows and their forced alignment/wrap, one undo step,
+    /// so Undo restores the text and each row's previous alignment and wrap together.
+    public mutating func applyStroke(_ stroke: StrokeTransaction) throws {
+        var candidate = document
+        try candidate.applyStroke(stroke)
+        try adopt(candidate, action: "Paint")
+    }
+    /// A legacy page's pixel canvases (PLAN B24/§2.4), one undo step per call: a whole drag,
+    /// paint stroke or inspector change is committed once, when it ends.
+    public mutating func setCanvases(_ canvases: [LegacyCanvas], action: String = "Edit canvases") throws {
+        var candidate = document
+        try candidate.setCanvases(canvases)
+        try adopt(candidate, action: action)
+    }
     public mutating func setLineAlignment(at index: Int, alignment: String) throws {
         var candidate = document
         try candidate.setLineAlignment(at: index, alignment: alignment)
@@ -67,31 +112,40 @@ public struct DocumentEditingSession: Sendable {
         try candidate.setLineWrap(at: index, wrap: wrap)
         try adopt(candidate)
     }
-    private mutating func adopt(_ candidate: PageDocument) throws {
+    public mutating func editFlexible(action: String = "Edit flexible content", focus: FlexibleLocation? = nil, undoFocus: FlexibleLocation? = nil, _ operation: (inout PageDocument) throws -> Void) throws {
+        guard document.supportsFlexibleEditing else { throw FlexibleEditError.unsupported }
+        var candidate = document
+        try operation(&candidate)
+        try adopt(candidate, action: action, focus: focus, undoFocus: undoFocus)
+    }
+    private mutating func adopt(_ candidate: PageDocument, action: String = "Edit document", focus: FlexibleLocation? = nil, undoFocus: FlexibleLocation? = nil) throws {
         guard candidate != document else { return }
         try advanceRevision()
-        undoHistory.append(version)
+        undoHistory.append(version(action: action, focus: undoFocus ?? focus, oppositeFocus: focus))
         trim(&undoHistory)
         redoHistory.removeAll()
         document = candidate
+        historyFocus = focus
     }
     public mutating func undo() throws {
         guard let prior = undoHistory.last else { return }
         try advanceRevision()
         undoHistory.removeLast()
-        redoHistory.append(version)
+        redoHistory.append(version(action: prior.action, focus: prior.oppositeFocus, oppositeFocus: prior.focus))
         trim(&redoHistory)
         document = prior.document
         baseline = prior.baseline
+        historyFocus = prior.focus
     }
     public mutating func redo() throws {
         guard let next = redoHistory.last else { return }
         try advanceRevision()
         redoHistory.removeLast()
-        undoHistory.append(version)
+        undoHistory.append(version(action: next.action, focus: next.oppositeFocus, oppositeFocus: next.focus))
         trim(&undoHistory)
         document = next.document
         baseline = next.baseline
+        historyFocus = next.focus
     }
     /// Use the captured document that completed the write, not a newer in-flight editor value.
     public mutating func markSaved(_ document: PageDocument, baseline capturedBaseline: PageDocument? = nil) {
@@ -112,7 +166,7 @@ public struct DocumentEditingSession: Sendable {
         let recovered = try PageDocument(data: snapshot.documentData)
         let nextRevision = max(revision, snapshot.revision)
         guard nextRevision < .max else { throw DraftError.revisionExhausted }
-        undoHistory.append(version)
+        undoHistory.append(version(action: "Recover local draft"))
         trim(&undoHistory)
         redoHistory.removeAll()
         revision = nextRevision + 1
@@ -120,6 +174,7 @@ public struct DocumentEditingSession: Sendable {
         document = recovered
         savedDocument = recovered
         savedBaseline = recoveredBaseline
+        historyFocus = nil
     }
     /// Acknowledged server storage establishes a new baseline. Old history is deliberately
     /// cleared: undo must never restore an obsolete server concurrency token.
@@ -131,6 +186,7 @@ public struct DocumentEditingSession: Sendable {
         baseline = accepted
         undoHistory.removeAll()
         redoHistory.removeAll()
+        historyFocus = nil
     }
 
     private mutating func advanceRevision() throws {
