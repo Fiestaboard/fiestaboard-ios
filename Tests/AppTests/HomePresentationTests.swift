@@ -19,10 +19,7 @@ import FiestaBoardAppState
                 }, device: device, appearance: appearance, dynamicType: type)
                 XCTAssertEqual(image.size, device.size)
                 XCTAssertEqual(image.scale, device.scale)
-                let attachment = XCTAttachment(image: image)
-                attachment.name = "home-override-\(appearance)-\(type)-\(device.rawValue)"
-                attachment.lifetime = .keepAlways
-                add(attachment)
+                IOSSnapshot.assertMatches(image, named: "i7-home-summary-\(appearance)-\(type == .large ? "default" : "ax3")", device: device)
             }
         }
     }
