@@ -26,7 +26,7 @@ pattern='FigmaGeometryRegistry|FigmaNodeModifier|figmaNode|ParityFixture|fiestab
 # A12: the DEBUG timing and review probes A4b-A11 added, and their defaults
 # keys. Each is compiled out with `#if DEBUG`.
 pattern+='|previewInputLatency|inputToPreviewSeconds|FIESTABOARD_TEST_NAMESPACE|PanelNavigationProbe|RenderPacingProbe|MatrixPreparationProbe|FocusChangeProbe|DrawnPreviewMarker'
-pattern+='|ShellPlacementProbe|shellTabPlacement|shellTabAccessoryPlacement|cache:(offline|updating|board|page-)|shell:connecting-label'
+pattern+='|ShellPlacementProbe|shellTabPlacement|shellTabAccessoryPlacement|shellAccessoryEnvironment|cache:(offline|updating|board|page-)|shell:connecting-label'
 pattern+='|FIESTABOARD_CLOSE_TRACE|traceClose|inputToPreviewPhases|markInputPhase'
 pattern+='|ConnectReviewDiscovery|fiestaboard\.(panelProfile|renderProfile|viewerMaterial)'
 pattern+='|I[0-9]+:[0-9]+;[0-9]+:[0-9]+|(^|[^0-9])[0-9]{2,4}:[0-9]{3,7}([^0-9]|$)|parity:[a-z]+'
