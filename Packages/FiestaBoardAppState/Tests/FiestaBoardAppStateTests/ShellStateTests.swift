@@ -62,3 +62,12 @@ extension ShellStateTests {
         XCTAssertTrue(state.reconnected)
     }
 }
+
+extension ShellStateTests {
+    func testBackoffGrowsAcrossAttemptsAndResetsAfterSuccess() {
+        var backoff = ShellBackoff()
+        XCTAssertEqual((0..<6).map { _ in backoff.next() }, [2, 4, 8, 16, 30, 30])
+        backoff.reset()
+        XCTAssertEqual(backoff.next(), 2)
+    }
+}

@@ -70,6 +70,20 @@ import FiestaBoardKit
         XCTAssertEqual(status.runtime["board-2"]?.error, "fresh")
     }
 
+    func testHubStatusFailurePublishesReachabilityWithoutDisplayRead() async throws {
+        let store = BoardStore()
+        await store.connect(try FixtureFiestaBoardService()).value
+        let reader = try DelayedStatusReader(marker: "unreachable", blocked: false)
+        let status = BoardStatus(store: store, reader: { reader })
+        defer { status.stop() }
+        let failed = expectation(description: "hub-level status failure invalidates reachability")
+        let subscription = store.$hubReachable.dropFirst().filter { $0 == false }.first().sink { _ in failed.fulfill() }
+        status.start()
+        await fulfillment(of: [failed], timeout: 3)
+        subscription.cancel()
+        XCTAssertEqual(store.hubReachable, false)
+    }
+
     private func waitForFresh(_ status: BoardStatus) async {
         let done = expectation(description: "new hub facts published")
         let token = Publishers.CombineLatest4(status.$runtime, status.$frames, status.$display, status.$nowShowing)
@@ -131,6 +145,7 @@ private actor DelayedStatusReader: BoardStatusReading, TemporaryOverrideClearing
     func boardSettings() async throws -> [StoredBoardEntry] { await gate.wait("settings"); return [] }
     func serviceStatus() async throws -> ServiceStatusReport {
         await gate.wait("runtime")
+        if marker == "unreachable" { throw FiestaBoardError.networkUnavailable }
         return try JSONDecoder().decode(ServiceStatusReport.self,
             from: Data("{\"boards\":{\"board-2\":{\"error\":\"\(marker)\"}}}".utf8))
     }
