@@ -168,6 +168,10 @@ struct EditorRoot: View {
         }
         .task { await catalog.load(deploymentID: model.identity.deploymentID, isSimulated: model.isSimulated) }
         .onChange(of: model.name) { _, name in if name != titleDraft { titleDraft = name } }
+        #if DEBUG
+        .onChange(of: confirmClose) { _, _ in traceClose("confirmationChanged") }
+        .onDisappear { traceClose("disappeared") }
+        #endif
         .onChange(of: model.selectedBoardID) { _, _ in pipeline.targetChanged() }
         // Recovery, reload or a save changed the session on its own: show its render.
         .onChange(of: model.documentRevision) { _, _ in
@@ -311,7 +315,8 @@ struct EditorRoot: View {
             .overlay(alignment: .topTrailing) {
                 Color.clear.frame(width: 1, height: 1)
                     .accessibilityElement()
-                    .accessibilityLabel("Preview input latency")
+                    .accessibilityLabel("Preview input latency; " + pipeline.state.inputToPreviewPhases
+                        .sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" }.joined(separator: ", "))
                     .accessibilityIdentifier("previewInputLatency")
                     .accessibilityValue(pipeline.state.inputToPreviewSeconds.map { String($0) } ?? "pending")
             }
@@ -455,16 +460,37 @@ struct EditorRoot: View {
     // MARK: Actions
 
     private func close() {
+        #if DEBUG
+        traceClose("entry")
+        #endif
         pipeline.flush()
+        #if DEBUG
+        traceClose("flushed")
+        #endif
         buffer.resignFocus()
+        #if DEBUG
+        traceClose("resigned")
+        #endif
         if model.hasServerChanges { confirmClose = true } else { leave(checkpoint: false) }
+        #if DEBUG
+        traceClose("requested")
+        #endif
     }
     private func leave(checkpoint: Bool = false) {
+        #if DEBUG
+        traceClose("leave")
+        #endif
         pipeline.cancel()
         model.cancelScheduledDraftSave()
         model.endEditingSession()
         dismiss()
     }
+    #if DEBUG
+    private func traceClose(_ event: String) {
+        guard ProcessInfo.processInfo.environment["FIESTABOARD_TEST_NAMESPACE"] != nil else { return }
+        print("FIESTABOARD_CLOSE_TRACE event=\(event) dirty=\(buffer.isDirty) serverChanges=\(model.hasServerChanges) focused=\(isTextInputActive) confirmation=\(confirmClose)")
+    }
+    #endif
     private func save(confirmedResize: Bool = false) {
         pipeline.flush()
         buffer.resignFocus()

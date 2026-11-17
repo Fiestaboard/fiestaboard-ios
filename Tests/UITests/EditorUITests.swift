@@ -51,7 +51,7 @@ import XCTest
         guard let seconds = Double(probe.value as? String ?? "") else {
             XCTFail("No timing for the current adopted preview"); return
         }
-        XCTAssertLessThanOrEqual(seconds, 0.75, "Last edit to preview adoption, measured inside the app")
+        XCTAssertLessThanOrEqual(seconds, 0.75, "Last edit to preview adoption, measured inside the app; \(probe.label)")
     }
     /// A toolbar action: the button under the title, or (phone, keyboard up, where the title and
     /// toolbar step aside for the board — W2 B30) its keyboard-accessory mirror.
@@ -243,11 +243,10 @@ import XCTest
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
         let address = app.textFields["connectionAddress"]
         XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 8))
+        allowFixtureHTTP(app)
         reveal(address, app); typeConnectionAddress("http://127.0.0.1:\(fixturePort)/" + alias, into: address, in: app)
         let name = app.textFields["Server name (optional)"]
         reveal(name, app); name.tap(); name.typeText(alias + "\n")
-        let localHTTP = app.switches["connectionLocalHTTP"]
-        reveal(localHTTP, app); localHTTP.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
         let connect = app.buttons["connectionConnect"]
         reveal(connect, app); connect.tap()
         let username = app.textFields["Username"]

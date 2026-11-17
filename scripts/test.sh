@@ -19,7 +19,7 @@ case "${1:-all}" in
 esac
 # CI selects one exact device and a bounded suite; local defaults retain the full run.
 ios_test_shard="${IOS_TEST_SHARD:-all}"
-case "$ios_test_shard" in all|units|ui-a|ui-b|ui-c|ui-d|ui-e) ;; *) echo 'Invalid IOS_TEST_SHARD' >&2; exit 2 ;; esac
+case "$ios_test_shard" in all|units|ui-a|ui-b|ui-c|ui-d|ui-e|ui-f|ui-g|ui-h) ;; *) echo 'Invalid IOS_TEST_SHARD' >&2; exit 2 ;; esac
 models=('iPhone 17' 'iPad Air 11-inch (M4)')
 if [[ -n "${IOS_TEST_MODEL:-}" ]]; then
   case "$IOS_TEST_MODEL" in
@@ -60,6 +60,22 @@ for model in "${models[@]}"; do
     simulator_failed=1
   fi
   # Release this job's selected simulator before starting the next device/archive.
-  xcrun simctl shutdown "$udid"
+  if xcrun simctl shutdown "$udid"; then
+    :
+  else
+    shutdown_status=$?
+    # The device may already be shut down. Accept only a fresh, exact-device
+    # confirmation; a failed query or any other state retains the cleanup error.
+    if xcrun simctl list devices --json | python3 -c '
+import json, sys
+devices = [device for group in json.load(sys.stdin)["devices"].values() for device in group
+           if device.get("udid") == sys.argv[1]]
+sys.exit(0 if len(devices) == 1 and devices[0].get("state") == "Shutdown" else 1)
+' "$udid"; then
+      echo "Selected simulator $udid is already shut down."
+    else
+      exit "$shutdown_status"
+    fi
+  fi
 done
 exit "$simulator_failed"

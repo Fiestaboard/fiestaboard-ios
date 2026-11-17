@@ -22,7 +22,7 @@ import XCTest
                                        ("Mystery", "B5-mystery", "UNKNOWN MODEL")] {
             choose(display, app)
             XCTAssertTrue(waitFor(10) { ((board.value as? String) ?? "").localizedCaseInsensitiveContains(check) }, "\(display): \(board.value ?? "-")")
-            XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@", "web preview")).firstMatch.exists)
+            XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "web preview")).firstMatch.exists)
             shot(app, "W4-\(file)", settle: 3)
         }
     }

@@ -54,20 +54,12 @@ extension XCTestCase {
         XCTFail("The connection address keyboard must be ready before typing", file: file, line: line)
     }
 
-    /// Real app sign-in against the loopback HTTP fixture, never a shipping demo path.
-    @MainActor func launchFixture(_ app: XCUIApplication, arguments: [String] = []) {
-        app.launchArguments = arguments
-        app.launch()
+    /// Verify real loopback permission before opening a fixture form keyboard.
+    @MainActor func allowFixtureHTTP(_ app: XCUIApplication) {
         func reveal(_ element: XCUIElement) {
             for _ in 0..<12 { if element.exists && element.isHittable { break }; app.swipeUp() }
             for _ in 0..<12 { if element.exists && element.isHittable { break }; app.swipeDown() }
         }
-        let address = app.textFields["connectionAddress"]
-        // At accessibility sizes the form may not instantiate this off-screen row yet.
-        reveal(address)
-        XCTAssertTrue(address.waitForExistence(timeout: 10))
-        let port = String(FixtureHTTPServer.shared.port)
-        // Enable explicit HTTP consent before opening the keyboard at large text sizes.
         let localHTTP = app.switches["connectionLocalHTTP"]
         reveal(localHTTP)
         // At accessibility sizes a visible label makes the whole switch "hittable"
@@ -98,6 +90,22 @@ extension XCTestCase {
                 predicate: NSPredicate(format: "value == '1'"), object: localHTTP)], timeout: 2)
         }
         XCTAssertEqual(localHTTP.value as? String, "1", "Explicitly allow the loopback HTTP fixture before connecting")
+    }
+
+    /// Real app sign-in against the loopback HTTP fixture, never a shipping demo path.
+    @MainActor func launchFixture(_ app: XCUIApplication, arguments: [String] = []) {
+        app.launchArguments = arguments
+        app.launch()
+        func reveal(_ element: XCUIElement) {
+            for _ in 0..<12 { if element.exists && element.isHittable { break }; app.swipeUp() }
+            for _ in 0..<12 { if element.exists && element.isHittable { break }; app.swipeDown() }
+        }
+        let address = app.textFields["connectionAddress"]
+        // At accessibility sizes the form may not instantiate this off-screen row yet.
+        reveal(address)
+        XCTAssertTrue(address.waitForExistence(timeout: 10))
+        let port = String(FixtureHTTPServer.shared.port)
+        allowFixtureHTTP(app)
         reveal(address)
         typeConnectionAddress("http://127.0.0.1:\(port)/board-manual-\(UUID().uuidString.lowercased())", into: address, in: app)
         let connect = app.buttons["connectionConnect"]
@@ -108,8 +116,11 @@ extension XCTestCase {
         reveal(username); username.tap(); username.typeText("fixture_admin")
         let password = app.secureTextFields["connectionPassword"]
         reveal(password); password.tap(); password.typeText("fixture-password")
-        let signIn = app.buttons["connectionSignIn"]
-        reveal(signIn); signIn.tap()
+        // SecureField's native Go action invokes the same sign-in handler and clears focus.
+        // At accessibility sizes the form button can remain below the keyboard.
+        let go = app.keyboards.buttons["Go"]
+        XCTAssertTrue(go.waitForExistence(timeout: 8), "The password keyboard must expose its Go action")
+        go.tap()
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15))
     }
 }

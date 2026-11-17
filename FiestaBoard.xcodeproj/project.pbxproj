@@ -178,6 +178,7 @@
 		E05D4B423EE03A5812BAA09F /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3B380D9832C5FAA53AF1EDA /* SignInView.swift */; };
 		E196A0F1550B27C0AA0B9E10 /* GlassProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 289D38D82453F9F4D390146B /* GlassProbe.swift */; };
 		E1C6F0A591B4B27B2DF568B9 /* CanvasUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 329CB2667B0AF52C92B8C25F /* CanvasUITests.swift */; };
+		E25E72C83092855FF52C30D7 /* CanvasRevealGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82112BD5D96C1972DCA845D8 /* CanvasRevealGeometry.swift */; };
 		E30F7894CC2DE1EE719BFA9C /* FiestaBoardEditorState.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0CE51B6E8E630F1CA0FAFFB0 /* FiestaBoardEditorState.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		E44ED4B01D237DB088168E47 /* FigmaNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81E90191BA9A1E89316C89FC /* FigmaNode.swift */; };
 		E4E653C3C1172A9AF200939E /* ParityProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46C67A1E415B837C2FFE203D /* ParityProbe.swift */; };
@@ -438,6 +439,7 @@
 		8142EE8F6466519C5DE63C2B /* TacoLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TacoLoader.swift; sourceTree = "<group>"; };
 		81B84E148F0E840D85457DD5 /* MatrixRaster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixRaster.swift; sourceTree = "<group>"; };
 		81E90191BA9A1E89316C89FC /* FigmaNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FigmaNode.swift; sourceTree = "<group>"; };
+		82112BD5D96C1972DCA845D8 /* CanvasRevealGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasRevealGeometry.swift; sourceTree = "<group>"; };
 		8624ABBD546279E8133D9396 /* FiestaBoardUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FiestaBoardUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		88D20A64E911A3536D1F434B /* FlexibleWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlexibleWorkspaceView.swift; sourceTree = "<group>"; };
 		88FC48CA3F91EB260F3FD8F8 /* CanvasAreaPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasAreaPicker.swift; sourceTree = "<group>"; };
@@ -856,6 +858,7 @@
 				896FA249037A06136453B330 /* BarEvidenceUITests.swift */,
 				B0D58C91FCFB7C0909D35936 /* BoardViewportUITests.swift */,
 				A0547B69CE895F2F4F57FCF6 /* BoardVisualsUITests.swift */,
+				82112BD5D96C1972DCA845D8 /* CanvasRevealGeometry.swift */,
 				329CB2667B0AF52C92B8C25F /* CanvasUITests.swift */,
 				6C3F1838186E744DA302ABA0 /* EditorUITests.swift */,
 				17C9F199741FDCC7AED7601C /* FixtureBoardRoutes.swift */,
@@ -1338,6 +1341,7 @@
 				9B1E2D43FAD06722244202F0 /* BarEvidenceUITests.swift in Sources */,
 				8371500590B12076405A4A1F /* BoardViewportUITests.swift in Sources */,
 				93667E6F6860BA1EC032359F /* BoardVisualsUITests.swift in Sources */,
+				E25E72C83092855FF52C30D7 /* CanvasRevealGeometry.swift in Sources */,
 				E1C6F0A591B4B27B2DF568B9 /* CanvasUITests.swift in Sources */,
 				2B60831683DA1544E9E5D5C4 /* EditorUITests.swift in Sources */,
 				22B9443A49503B0D0E88F817 /* FixtureBoardRoutes.swift in Sources */,

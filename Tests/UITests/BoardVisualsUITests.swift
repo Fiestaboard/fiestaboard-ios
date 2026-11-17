@@ -37,9 +37,9 @@ final class BoardVisualsUITests: XCTestCase {
             }
             let board = app.descendants(matching: .any)["homeBoard"]
             XCTAssertTrue(board.waitForExistence(timeout: 10))
-            XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@", "may be cached")).firstMatch.exists,
+            XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "may be cached")).firstMatch.exists,
                            "no permanent cache disclaimer")
-            XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "Source")).firstMatch.exists, "no source: label")
+            XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Source")).firstMatch.exists, "no source: label")
             assertBoardIsTheLargestElement(board, in: app, allowedAbove: [name, mode, "Collection", "Paused", "Silence mode active"])
             settle(1.2) // let the flip settle before the picture
             shot(app, "D1-B8-\(scenario)")
@@ -62,7 +62,7 @@ final class BoardVisualsUITests: XCTestCase {
                                        ("Wall", "D1-B3-wall-home", "FOUR NOTES"), ("Mystery", "D1-B5-mystery", "UNKNOWN MODEL")] {
             choose(display, in: app)
             waitFor(board, NSPredicate(format: "value CONTAINS %@", check), 10, display)
-            XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@", "web preview")).firstMatch.exists)
+            XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "web preview")).firstMatch.exists)
             settle(2.5)
             shot(app, file)
         }
@@ -128,7 +128,7 @@ final class BoardVisualsUITests: XCTestCase {
         let others = app.descendants(matching: .any)["otherDisplay_hall"]
         XCTAssertTrue(others.waitForExistence(timeout: 10))
         for jargon in ["127.0.0.1", "read-only", "checked separately", "Board controls enabled"] {
-            XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@", jargon)).firstMatch.exists, jargon)
+            XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", jargon)).firstMatch.exists, jargon)
         }
         XCTAssertFalse(app.descendants(matching: .any)["homeChangesOff"].exists)
         try await Task.sleep(nanoseconds: 2_500_000_000)
@@ -158,7 +158,7 @@ final class BoardVisualsUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["notOnThisDisplay_note"].exists, "a Note page on a Flagship")
         XCTAssertFalse(app.descendants(matching: .any)["notOnThisDisplay_morning"].exists)
         XCTAssertTrue(app.staticTexts["Note Array"].exists && app.staticTexts["Panel"].exists)
-        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@", "no fixed grid")).firstMatch.exists)
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "no fixed grid")).firstMatch.exists)
         try await Task.sleep(nanoseconds: 1_500_000_000)
         shot(app, "W2-B11-pages")
         app.swipeUp()
@@ -205,7 +205,7 @@ final class BoardVisualsUITests: XCTestCase {
         reveal(save, app)
         waitFor(save, NSPredicate(format: "enabled == true"), 10, "Save as page enabled")
         save.tap()
-        let saved = app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "Saved as “From board")).firstMatch
+        let saved = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Saved as “From board")).firstMatch
         XCTAssertTrue(saved.waitForExistence(timeout: 10), app.debugDescription)
         shot(app, "W2-B9-saved-as-page")
         let restore = app.buttons["outOfSyncRestore"]
@@ -289,7 +289,7 @@ final class BoardVisualsUITests: XCTestCase {
         let search = app.searchFields["Find a page"]
         XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("Keyboard check")
         XCTAssertTrue(pageCard(app, named: "Keyboard check").waitForExistence(timeout: 5))
-        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Open its editor")).firstMatch.exists,
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Open its editor")).firstMatch.exists,
                        "no stale creation note once the editor has closed")
         shot(app, "W2-library-after-create")
     }

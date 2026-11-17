@@ -6,7 +6,13 @@
     "BoardViewportUITests"
   ],
   "ui-b": [
-    "EditorUITests"
+    "EditorUITests/testAlignAndWrapFollowCaretRow",
+    "EditorUITests/testBoardStaysBigAndAllRowsShow",
+    "EditorUITests/testCompactChipCalloutShowsTheFullName",
+    "EditorUITests/testDisabledSaveSaysWhy",
+    "EditorUITests/testGeometryChangeAndShrinkConfirmation",
+    "EditorUITests/testHomeControlActionsAndPlainPageScreen",
+    "EditorUITests/testInsertChipsFromTheKeyboardAccessory"
   ],
   "ui-c": [
     "BarEvidenceUITests",
@@ -18,6 +24,26 @@
     "FormulaUITests"
   ],
   "ui-e": [
-    "PolishUITests"
+    "PolishUITests/testCharsetIssuesAreGroupedWithShowAll",
+    "PolishUITests/testDocumentFillsTheHeightOnIPad",
+    "PolishUITests/testOverrideBadgeCancel",
+    "PolishUITests/testRecordKillAndReopen",
+    "PolishUITests/testShowWhenAndPriorityAreAdvanced",
+    "PolishUITests/testVoiceOverLabelDump"
+  ],
+  "ui-f": [
+    "EditorUITests/testNewPageIsBoardShaped",
+    "EditorUITests/testNotePageOpensOnAFittingDisplay",
+    "EditorUITests/testPlainModeShowsPrefixes",
+    "EditorUITests/testReturnMovesToTheNextEmptyRow",
+    "EditorUITests/testShortMetadataNoteOpensInTheDocumentEditor",
+    "EditorUITests/testTypingReachesTheBoard",
+    "EditorUITests/testTypingReachesTheBoardThroughFixtureRender"
+  ],
+  "ui-g": [
+    "PolishUITests/testRecordCaretOverChips"
+  ],
+  "ui-h": [
+    "PolishUITests/testRecordTypingUndoRedo"
   ]
 }
