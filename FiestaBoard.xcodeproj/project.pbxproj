@@ -89,9 +89,11 @@
 		58706BFF2DDC3D2BFC6FBC3D /* FiestaBoardRender.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FBC75D21814880B62B94594 /* FiestaBoardRender.framework */; };
 		587319BB9B867A70BF524DC5 /* CollectionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27FA85577B2370468BEDF1F7 /* CollectionEditorView.swift */; };
 		59EA78CA529CEA8D7E35A74A /* PackageResources.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C2B0E6480EA5DA45AAE4DC4 /* PackageResources.swift */; };
+		5A3478FFEABDF1466B4A6213 /* BitmapCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD6A6AC69EA2756D13DF6A50 /* BitmapCapture.swift */; };
 		5D5E488450B7AD9EC48F2A06 /* DocumentEditingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DC63171EF43451C07069156 /* DocumentEditingSession.swift */; };
 		5DC4613DF5EF268CADB860ED /* CanvasesPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB40318E2937E815C0FA1A93 /* CanvasesPanel.swift */; };
 		61ECA5F07357B6E51DA59555 /* PageDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60CD69EE0A48BCB225F494E6 /* PageDetailView.swift */; };
+		661072D3DAB2785A44D9581A /* BitmapCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D06071FB71DF8B9AC66B106C /* BitmapCaptureTests.swift */; };
 		69FAE33C2ABCA25412B6CEEB /* FiestaBoardTV-MIT.txt in Resources */ = {isa = PBXBuildFile; fileRef = 918875B3FE2650F6F4E9D4CA /* FiestaBoardTV-MIT.txt */; };
 		6AA09D1220D1BD62BEE46095 /* LineMetadataSplice.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8C962887306A8D9C4B15B87 /* LineMetadataSplice.swift */; };
 		6C4063298A37AE806F6C8F3E /* SampleValues.swift in Sources */ = {isa = PBXBuildFile; fileRef = F18E3DC520B729D270F497DF /* SampleValues.swift */; };
@@ -507,6 +509,7 @@
 		CBAA32A7BB31C756C4A9E5E4 /* CharsetIssuesFormattingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharsetIssuesFormattingTests.swift; sourceTree = "<group>"; };
 		CC9E37508A49A342F1029CB6 /* BoardFrameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardFrameView.swift; sourceTree = "<group>"; };
 		CFB2DF849651A564FCE1F486 /* LosslessJSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LosslessJSON.swift; sourceTree = "<group>"; };
+		D06071FB71DF8B9AC66B106C /* BitmapCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitmapCaptureTests.swift; sourceTree = "<group>"; };
 		D7E01E3327C65040C61DF652 /* PageEditorLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageEditorLoader.swift; sourceTree = "<group>"; };
 		D8C962887306A8D9C4B15B87 /* LineMetadataSplice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineMetadataSplice.swift; sourceTree = "<group>"; };
 		D8F61E1D6DA7D9178AE932E5 /* FiestaBoardApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiestaBoardApp.swift; sourceTree = "<group>"; };
@@ -516,6 +519,7 @@
 		DA267F50587A6D860EAB1C52 /* BoardViewportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardViewportTests.swift; sourceTree = "<group>"; };
 		DAA57B032E8ABCB03F5F6FBA /* LedGoldenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedGoldenTests.swift; sourceTree = "<group>"; };
 		DD24039968B9260446818E7F /* MatrixPixelFrames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixPixelFrames.swift; sourceTree = "<group>"; };
+		DD6A6AC69EA2756D13DF6A50 /* BitmapCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitmapCapture.swift; sourceTree = "<group>"; };
 		E0EBDE35CC98E3503AD48784 /* LaunchUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchUITests.swift; sourceTree = "<group>"; };
 		E27F4FC5A09E5E215D1C351A /* LedRasterizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedRasterizer.swift; sourceTree = "<group>"; };
 		E560F163CC7CD3785EECA9FF /* FixtureRenderRoutes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureRenderRoutes.swift; sourceTree = "<group>"; };
@@ -948,6 +952,8 @@
 		D053550250ED46034E306AFD /* FiestaBoardRenderTests */ = {
 			isa = PBXGroup;
 			children = (
+				DD6A6AC69EA2756D13DF6A50 /* BitmapCapture.swift */,
+				D06071FB71DF8B9AC66B106C /* BitmapCaptureTests.swift */,
 				C48001C341291CD87E52A402 /* BoardCanvasTests.swift */,
 				32BB9863B236F028ECD38024 /* BoardGeometryTests.swift */,
 				243B601AF6228C1D6B5AC497 /* BoardLayoutTests.swift */,
@@ -1448,6 +1454,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5A3478FFEABDF1466B4A6213 /* BitmapCapture.swift in Sources */,
+				661072D3DAB2785A44D9581A /* BitmapCaptureTests.swift in Sources */,
 				F631808CB73FF331EBEBE437 /* BoardCanvasTests.swift in Sources */,
 				0913F75453BB18F0C0758E7C /* BoardGeometryTests.swift in Sources */,
 				F0E438AE948797DB1BBE1634 /* BoardLayoutTests.swift in Sources */,
