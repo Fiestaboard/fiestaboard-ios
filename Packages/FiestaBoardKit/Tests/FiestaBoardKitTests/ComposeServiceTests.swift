@@ -10,7 +10,7 @@ import FiestaBoardDocuments
         let corpus = try JSONSerialization.jsonObject(with: bytes) as! [String: Any]
         return try XCTUnwrap((corpus["records"] as? [[String: Any]])?.first { $0["case"] as? String == name })
     }
-    private func setup(outcome: String = "formatted-timed-primary", protocolName: String? = "compose-intent-v1") async throws -> (LiveFiestaBoardService, ComposeRequest, RequestLog) {
+    private func setup(outcome: String = "formatted-timed-primary", protocolName: String? = "compose-intent-v1", budget: HubRequestBudget? = nil) async throws -> (LiveFiestaBoardService, ComposeRequest, RequestLog) {
         let recorded = try fixture("compose-authenticated", outcome)
         var board = try fixture("compose-authenticated", "primary-capability")["response"] as! [String: Any]
         board["compose_protocol"] = protocolName
@@ -40,7 +40,7 @@ import FiestaBoardDocuments
             }
         }
         let service = LiveFiestaBoardService(deployment: deployment,
-            transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self]))
+            transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self], requestBudget: budget))
         _ = try await service.bootstrap()
         _ = try await service.login(username: "contract_admin", password: "fixture-password", rememberMe: false)
         _ = try await service.connect(allowCandidateWrites: true)
@@ -100,5 +100,30 @@ import FiestaBoardDocuments
         XCTAssertEqual(body["diagnostics"] as? Bool, true)
         XCTAssertEqual((body["preview"] as? [String: String])?["data"], "cached")
         XCTAssertNil(body["duration"]); XCTAssertNil(body["silence"])
+    }
+}
+
+
+private actor ComposeBudgetHold {
+    private var held: CheckedContinuation<Void, Never>?
+    private var ready: CheckedContinuation<Void, Never>?
+    func hold() async { await withCheckedContinuation { held = $0; ready?.resume(); ready = nil } }
+    func wait() async { if held == nil { await withCheckedContinuation { ready = $0 } } }
+    func release() { held?.resume(); held = nil }
+}
+
+extension ComposeServiceTests {
+    func testForgetWhileComposeWaitsForTransportBudgetPreventsWireDispatch() async throws {
+        let budget = HubRequestBudget(limit: 1)
+        let (service, request, log) = try await setup(budget: budget)
+        let hold = ComposeBudgetHold()
+        let occupying = Task { try await budget.run { await hold.hold() } }
+        await hold.wait()
+        let sending = Task { try await service.sendCompose(request) }
+        while await budget.waitingCount == 0 { await Task.yield() }
+        await service.forgetRememberedSession()
+        await hold.release(); try await occupying.value
+        do { _ = try await sending.value; XCTFail("Forgotten authority must retire a queued intent") } catch {}
+        XCTAssertTrue(log.requests.filter { $0.url?.lastPathComponent == "compose" }.isEmpty, "Rechecking only after the response cannot undo physical dispatch")
     }
 }
