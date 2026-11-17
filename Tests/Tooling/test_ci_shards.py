@@ -13,10 +13,24 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 SHARDS = {
     'ui-a': ['BoardVisualsUITests', 'LaunchUITests', 'ParityFoundationUITests', 'BoardViewportUITests'],
-    'ui-b': ['EditorUITests'],
+    'ui-b': [f'EditorUITests/{method}' for method in [
+        'testAlignAndWrapFollowCaretRow', 'testBoardStaysBigAndAllRowsShow',
+        'testCompactChipCalloutShowsTheFullName', 'testDisabledSaveSaysWhy',
+        'testGeometryChangeAndShrinkConfirmation', 'testHomeControlActionsAndPlainPageScreen',
+        'testInsertChipsFromTheKeyboardAccessory']],
+    'ui-f': [f'EditorUITests/{method}' for method in [
+        'testNewPageIsBoardShaped', 'testNotePageOpensOnAFittingDisplay',
+        'testPlainModeShowsPrefixes', 'testReturnMovesToTheNextEmptyRow',
+        'testShortMetadataNoteOpensInTheDocumentEditor', 'testTypingReachesTheBoard',
+        'testTypingReachesTheBoardThroughFixtureRender']],
     'ui-c': ['BarEvidenceUITests', 'CanvasUITests', 'IntegrationUITests', 'SaveUITests'],
     'ui-d': ['FormulaUITests'],
-    'ui-e': ['PolishUITests'],
+    'ui-e': [f'PolishUITests/{method}' for method in [
+        'testCharsetIssuesAreGroupedWithShowAll', 'testDocumentFillsTheHeightOnIPad',
+        'testOverrideBadgeCancel', 'testRecordKillAndReopen',
+        'testShowWhenAndPriorityAreAdvanced', 'testVoiceOverLabelDump']],
+    'ui-g': ['PolishUITests/testRecordCaretOverChips'],
+    'ui-h': ['PolishUITests/testRecordTypingUndoRedo'],
 }
 MODELS = {'iPhone 17': 'phone-id', 'iPad Air 11-inch (M4)': 'pad-id'}
 
@@ -47,10 +61,18 @@ name = pathlib.Path(sys.argv[0]).name
 with open(os.environ['CX_COMMAND_LOG'], 'a') as log:
     log.write(json.dumps([name] + sys.argv[1:]) + '\\n')
 if name == 'xcrun' and sys.argv[1:3] == ['simctl', 'list']:
+    cleanup = any(entry[1:3] == ['simctl', 'shutdown']
+                  for entry in map(json.loads, pathlib.Path(os.environ['CX_COMMAND_LOG']).read_text().splitlines()))
+    if cleanup:
+        status_exit = int(os.environ.get('CX_STATUS_LIST_EXIT', '0'))
+        if status_exit: sys.exit(status_exit)
+    state = os.environ.get('CX_FINAL_STATE', 'Shutdown')
     print(json.dumps({'devices': {'com.apple.CoreSimulator.SimRuntime.iOS-27-2': [
-        {'name': 'iPhone 17', 'udid': 'phone-id', 'isAvailable': True},
-        {'name': 'iPad Air 11-inch (M4)', 'udid': 'pad-id', 'isAvailable': True}
+        {'name': 'iPhone 17', 'udid': 'phone-id', 'isAvailable': True, 'state': state},
+        {'name': 'iPad Air 11-inch (M4)', 'udid': 'pad-id', 'isAvailable': True, 'state': 'Shutdown'}
     ]}}))
+if name == 'xcrun' and sys.argv[1:3] == ['simctl', 'shutdown']:
+    sys.exit(int(os.environ.get('CX_SHUTDOWN_EXIT', '0')))
 if name == 'xcodebuild':
     sys.exit(int(os.environ.get('CX_XCODE_EXIT', '0')))
 '''
@@ -131,14 +153,40 @@ if name == 'xcodebuild':
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(self.commands, [])
 
-    def test_manifest_covers_every_ui_test_class_exactly_once(self):
+    def test_already_shutdown_cleanup_preserves_success_and_continues(self):
+        result = self.run_runner(IOS_TEST_SHARD='ui-a', CX_SHUTDOWN_EXIT='149')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len(self.builds()), 2)
+
+    def test_shutdown_failure_requires_the_selected_device_to_be_shutdown(self):
+        for overrides in [{'CX_FINAL_STATE': 'Booted'}, {'CX_STATUS_LIST_EXIT': '7'}]:
+            with self.subTest(overrides=overrides):
+                self.log.unlink(missing_ok=True)
+                result = self.run_runner(IOS_TEST_SHARD='ui-a', IOS_TEST_MODEL='iPhone 17',
+                                         CX_SHUTDOWN_EXIT='149', **overrides)
+                self.assertEqual(result.returncode, 149, result.stderr)
+
+    def test_already_shutdown_cleanup_cannot_mask_test_failure(self):
+        result = self.run_runner(IOS_TEST_SHARD='ui-a', IOS_TEST_MODEL='iPhone 17',
+                                 CX_SHUTDOWN_EXIT='149', CX_XCODE_EXIT='65')
+        self.assertEqual(result.returncode, 1, result.stderr)
+
+    def test_manifest_covers_every_ui_test_method_exactly_once(self):
         manifest = json.loads((ROOT / 'scripts/ios-ui-shards.json').read_text())
         self.assertEqual(manifest, SHARDS)
-        classes = []
+        methods = {}
         for path in (ROOT / 'Tests/UITests').glob('*.swift'):
-            classes += re.findall(r'\bclass\s+(\w+)\s*:\s*XCTestCase\b', path.read_text())
-        assigned = [name for group in manifest.values() for name in group]
-        self.assertCountEqual(assigned, classes)
+            source = path.read_text()
+            classes = re.findall(r'\bclass\s+(\w+)\s*:\s*XCTestCase\b', source)
+            if classes:
+                self.assertEqual(len(classes), 1)
+                methods[classes[0]] = [f'{classes[0]}/{name}' for name in
+                                      re.findall(r'\bfunc\s+(test\w+)\s*\(', source)]
+        assigned = []
+        for group in manifest.values():
+            for selector in group:
+                assigned.extend([selector] if '/' in selector else methods[selector])
+        self.assertCountEqual(assigned, [name for group in methods.values() for name in group])
         self.assertEqual(len(assigned), len(set(assigned)))
 
 
