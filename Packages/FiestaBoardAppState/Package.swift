@@ -4,5 +4,6 @@ let package = Package(
     name: "FiestaBoardAppState", platforms: [.iOS("26.0"), .macOS(.v15)],
     products: [.library(name: "FiestaBoardAppState", targets: ["FiestaBoardAppState"])],
     dependencies: [.package(path: "../FiestaBoardKit"), .package(path: "../FiestaBoardRender")],
-    targets: [.target(name: "FiestaBoardAppState", dependencies: ["FiestaBoardKit", "FiestaBoardRender"]),
+    targets: [.target(name: "FiestaBoardAppState", dependencies: ["FiestaBoardKit", "FiestaBoardRender"],
+                      resources: [.copy("PrivacyInfo.xcprivacy")]),
               .testTarget(name: "FiestaBoardAppStateTests", dependencies: ["FiestaBoardAppState", "FiestaBoardKit"], resources: [.copy("ServiceFixtures")])])
