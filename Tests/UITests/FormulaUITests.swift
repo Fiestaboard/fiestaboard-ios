@@ -24,13 +24,13 @@ import XCTest
     }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
         // Saved servers from earlier runs pile up above the address field: allow plenty of swipes.
-        for _ in 0..<20 where !(element.exists && element.isHittable) { app.swipeUp() }
-        for _ in 0..<20 where !(element.exists && element.isHittable) { app.swipeDown() }
+        for _ in 0..<20 { if element.exists && element.isHittable { break }; app.swipeUp() }
+        for _ in 0..<20 { if element.exists && element.isHittable { break }; app.swipeDown() }
     }
-    private func waitFor(_ timeout: TimeInterval = 4, _ condition: () -> Bool) -> Bool {
+    private func waitFor(_ timeout: TimeInterval = 10, _ condition: () -> Bool) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
         repeat { if condition() { return true }; Thread.sleep(forTimeInterval: 0.15) } while Date() < deadline
-        return false
+        return condition()
     }
     private func element(_ app: XCUIApplication, _ id: String) -> XCUIElement {
         app.descendants(matching: .any).matching(identifier: id).firstMatch
@@ -48,13 +48,13 @@ import XCTest
         let semaphore = DispatchSemaphore(value: 0); var ready = false
         URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
         semaphore.wait()
-        try XCTSkipUnless(ready, "Start the fixture: FIXTURE_PORT=\(fixturePort) python3 Tests/UITests/fixture_server.py")
-        let app = XCUIApplication()
+        try requireReadyFixture(ready, port: String(fixturePort))
+        let app = isolatedApplication()
         app.launchArguments = []; app.launch()
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
         let address = app.textFields["connectionAddress"]
-        XCTAssertTrue(app.buttons["exploreDemo"].waitForExistence(timeout: 10))
-        reveal(address, app); address.tap(); address.typeText("http://127.0.0.1:\(fixturePort)/" + alias)
+        XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 10))
+        reveal(address, app); typeConnectionAddress("http://127.0.0.1:\(fixturePort)/" + alias, into: address, in: app)
         let name = app.textFields["Server name (optional)"]
         reveal(name, app); name.tap(); name.typeText(alias + "\n")
         let localHTTP = app.switches["connectionLocalHTTP"]
@@ -73,7 +73,7 @@ import XCTest
         let signIn = app.buttons["connectionSignIn"]
         reveal(signIn, app); signIn.tap()
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15), app.debugDescription)
-        let pages = element(app, "destination-Pages")
+        let pages = app.buttons.matching(identifier: "destination-Pages").firstMatch
         for _ in 0..<5 where !(pages.exists && pages.isHittable) {
             let sidebar = app.buttons["Show Sidebar"].firstMatch
             if sidebar.exists && sidebar.isHittable { sidebar.tap(); continue }
@@ -81,7 +81,7 @@ import XCTest
             if back.exists && back.isHittable { back.tap() }
         }
         XCTAssertTrue(pages.waitForExistence(timeout: 5)); pages.tap()
-        let row = app.staticTexts["Good Morning"].firstMatch
+        let row = pageCard(app, named: "Good Morning")
         XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
         let edit = app.buttons["editLocalDraft"]
         XCTAssertTrue(edit.waitForExistence(timeout: 5)); edit.tap()

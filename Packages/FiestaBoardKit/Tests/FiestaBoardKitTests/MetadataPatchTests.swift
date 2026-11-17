@@ -11,7 +11,7 @@ final class MetadataPatchTests: XCTestCase {
         XCTAssertEqual(try JSONDecoder().decode(String.self, from: XCTUnwrap(members["expected_revision"])), "original")
     }
     @MainActor func testDemoStoresRawMetadataAndPreservesItThroughSubsequentNamePatch() async throws {
-        let demo = try DemoFiestaBoardService()
+        let demo = try FixtureFiestaBoardService()
         _ = try await demo.connect(allowCandidateWrites: true)
         let before = try await demo.page(id: "page-selected")
         let metadata = Data(#"[{"alignment":"right","opaque":9223372036854775807123456789,"decimal":1.23000e+99}]"#.utf8)

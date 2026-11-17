@@ -38,9 +38,9 @@ final class BoardVisualsUITests: XCTestCase {
             }
             let board = app.descendants(matching: .any)["homeBoard"]
             XCTAssertTrue(board.waitForExistence(timeout: 10))
-            XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@", "may be cached")).firstMatch.exists,
+            XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "may be cached")).firstMatch.exists,
                            "no permanent cache disclaimer")
-            XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "Source")).firstMatch.exists, "no source: label")
+            XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Source")).firstMatch.exists, "no source: label")
             assertBoardIsTheLargestElement(board, in: app, allowedAbove: [name, mode, "Collection", "Paused", "Silence mode active"])
             settle(1.2) // let the flip settle before the picture
             shot(app, "D1-B8-\(scenario)")
@@ -63,7 +63,7 @@ final class BoardVisualsUITests: XCTestCase {
                                        ("Wall", "D1-B3-wall-home", "FOUR NOTES"), ("Mystery", "D1-B5-mystery", "UNKNOWN MODEL")] {
             choose(display, in: app)
             waitFor(board, NSPredicate(format: "value CONTAINS %@", check), 10, display)
-            XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@", "web preview")).firstMatch.exists)
+            XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "web preview")).firstMatch.exists)
             settle(2.5)
             shot(app, file)
         }
@@ -85,9 +85,6 @@ final class BoardVisualsUITests: XCTestCase {
         let page = app.buttons["Good Morning"]
         XCTAssertTrue(page.waitForExistence(timeout: 5))
         page.tap()
-        let confirm = app.buttons["Confirm board action"]
-        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
-        confirm.tap()
         let back = app.navigationBars.buttons["FiestaBoard"]
         if back.waitForExistence(timeout: 3) { back.tap() }
         waitFor(board, NSPredicate(format: "value CONTAINS %@", "GOOD MORNING"), 8, "flipped frame")
@@ -132,9 +129,9 @@ final class BoardVisualsUITests: XCTestCase {
         let others = app.descendants(matching: .any)["otherDisplay_hall"]
         XCTAssertTrue(others.waitForExistence(timeout: 10))
         for jargon in ["127.0.0.1", "read-only", "checked separately", "Board controls enabled"] {
-            XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@", jargon)).firstMatch.exists, jargon)
+            XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", jargon)).firstMatch.exists, jargon)
         }
-        XCTAssertTrue(app.descendants(matching: .any)["homeChangesOff"].exists, "greyed actions explain themselves")
+        XCTAssertFalse(app.descendants(matching: .any)["homeChangesOff"].exists)
         try await Task.sleep(nanoseconds: 2_500_000_000)
         shot(app, "W2-home")
         app.swipeUp()
@@ -162,7 +159,7 @@ final class BoardVisualsUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["notOnThisDisplay_note"].exists, "a Note page on a Flagship")
         XCTAssertFalse(app.descendants(matching: .any)["notOnThisDisplay_morning"].exists)
         XCTAssertTrue(app.staticTexts["Note Array"].exists && app.staticTexts["Panel"].exists)
-        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@", "no fixed grid")).firstMatch.exists)
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "no fixed grid")).firstMatch.exists)
         try await Task.sleep(nanoseconds: 1_500_000_000)
         shot(app, "W2-B11-pages")
         app.swipeUp()
@@ -185,7 +182,7 @@ final class BoardVisualsUITests: XCTestCase {
             try await Task.sleep(nanoseconds: 1_500_000_000)
             shot(app, "W2-B9-\(scenario)")
             if dismiss {
-                XCTAssertFalse(app.buttons["outOfSyncDismiss"].isEnabled, "Dismiss is a write: off while changes are off")
+                XCTAssertTrue(app.buttons["outOfSyncDismiss"].isEnabled, "An authenticated connection can dismiss")
                 enableChanges(app)
                 let button = app.buttons["outOfSyncDismiss"]
                 XCTAssertTrue(button.waitForExistence(timeout: 15)); reveal(button, app)
@@ -209,13 +206,11 @@ final class BoardVisualsUITests: XCTestCase {
         reveal(save, app)
         waitFor(save, NSPredicate(format: "enabled == true"), 10, "Save as page enabled")
         save.tap()
-        let saved = app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "Saved as “From board")).firstMatch
+        let saved = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Saved as “From board")).firstMatch
         XCTAssertTrue(saved.waitForExistence(timeout: 10), app.debugDescription)
         shot(app, "W2-B9-saved-as-page")
         let restore = app.buttons["outOfSyncRestore"]
         reveal(restore, app); restore.tap()
-        let confirm = app.buttons["Confirm board action"]
-        XCTAssertTrue(confirm.waitForExistence(timeout: 5)); confirm.tap()
         XCTAssertTrue(banner.waitForNonExistence(timeout: 15),
                       "Restore puts the page back; outcome: \(app.staticTexts["actionOutcome"].exists ? app.staticTexts["actionOutcome"].label : "none")")
         waitFor(board, NSPredicate(format: "value CONTAINS %@", "HELLO"), 15, "the page is back")
@@ -271,7 +266,7 @@ final class BoardVisualsUITests: XCTestCase {
     /// "Page created. Open its editor…" note.
     @MainActor
     func testLibraryCreateSheetKeyboardAndOutcome() throws {
-        let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
+        let app = isolatedApplication(); launchFixture(app)
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
         selectDestination("Pages", in: app)
         let create = app.buttons["newLibraryPage"]
@@ -292,8 +287,10 @@ final class BoardVisualsUITests: XCTestCase {
         app.buttons["createLibraryPage"].tap()
         XCTAssertTrue(app.navigationBars["Edit Page"].waitForExistence(timeout: 8))
         app.buttons["Close"].tap()
-        XCTAssertTrue(app.staticTexts["Keyboard check"].waitForExistence(timeout: 5))
-        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Open its editor")).firstMatch.exists,
+        let search = app.searchFields["Find a page"]
+        XCTAssertTrue(search.waitForExistence(timeout: 5)); search.tap(); search.typeText("Keyboard check")
+        XCTAssertTrue(pageCard(app, named: "Keyboard check").waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "Open its editor")).firstMatch.exists,
                        "no stale creation note once the editor has closed")
         shot(app, "W2-library-after-create")
     }
@@ -317,21 +314,15 @@ final class BoardVisualsUITests: XCTestCase {
     }
 
     @MainActor private func enableChanges(_ app: XCUIApplication) {
-        selectDestination("Settings", in: app)
-        let toggle = app.switches["Enable changes on this server"]
-        reveal(toggle, app)
-        if toggle.value as? String != "1" { toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap() }
-        let apply = app.buttons["Apply change setting"]
-        reveal(apply, app); apply.tap()
-        selectDestination("Home", in: app)
+        XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
     }
 
     @MainActor private func launchSignedIn(scenario: String) -> XCUIApplication {
-        let app = XCUIApplication(); app.launchArguments = []; app.launch()
+        let app = isolatedApplication(); app.launchArguments = []; app.launch()
         let alias = "board-\(scenario)-" + UUID().uuidString.prefix(6).lowercased()
         let address = app.textFields["connectionAddress"]
-        XCTAssertTrue(app.buttons["exploreDemo"].waitForExistence(timeout: 10))
-        reveal(address, app); address.tap(); address.typeText("http://127.0.0.1:\(port)/" + alias)
+        XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 10))
+        reveal(address, app); typeConnectionAddress("http://127.0.0.1:\(port)/" + alias, into: address, in: app)
         let name = app.textFields["Server name (optional)"]
         reveal(name, app); name.tap(); name.typeText(alias + "\n")
         let localHTTP = app.switches["connectionLocalHTTP"]
@@ -355,7 +346,7 @@ final class BoardVisualsUITests: XCTestCase {
     }
 
     @MainActor private func selectDestination(_ name: String, in app: XCUIApplication) {
-        let destination = app.descendants(matching: .any).matching(identifier: "destination-" + name).firstMatch
+        let destination = app.buttons.matching(identifier: "destination-" + name).firstMatch
         for _ in 0..<5 {
             if destination.exists && destination.isHittable { destination.tap(); return }
             let sidebar = app.buttons["Show Sidebar"].firstMatch

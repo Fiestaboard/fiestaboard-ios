@@ -43,7 +43,7 @@ import XCTest
         XCTAssertEqual(log.requests.filter { $0.httpMethod != "GET" }.count, 2)
     }
     func testDemoPauseScheduleDefaultAndRestoreKeepSelectionSeparate() async throws {
-        let service = try DemoFiestaBoardService()
+        let service = try FixtureFiestaBoardService()
         _ = try await service.connect()
         let target = try BoardTarget(deployment: service.deployment, boardID: "board-2")
         let original = try await service.board(target)
@@ -96,7 +96,7 @@ extension BoardControlTests {
         catch { XCTAssertEqual(error as? FiestaBoardError, .writesDisabled) }
         do { _ = try await service.restoreBoard(target); XCTFail("Expected write gate") }
         catch { XCTAssertEqual(error as? FiestaBoardError, .writesDisabled) }
-        let demo = try DemoFiestaBoardService()
+        let demo = try FixtureFiestaBoardService()
         _ = try await demo.connect()
         do { _ = try await demo.updateBoard(BoardPatch(paused: false), on: target); XCTFail("Expected scope rejection") }
         catch { XCTAssertEqual(error as? FiestaBoardError, .invalidTarget) }

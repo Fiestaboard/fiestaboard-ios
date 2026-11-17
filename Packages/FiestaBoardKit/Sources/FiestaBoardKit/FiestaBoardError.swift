@@ -55,7 +55,7 @@ public enum FiestaBoardError: Error, Sendable, Equatable, LocalizedError {
         case .collectionReadbackRequired: "Compare the collection with the server before another write. After an uncertain creation, inspect the list and start a new draft."
         case .collectionInUse: "This collection is still referenced. Remove its references before deleting it."
         case .staleCollectionContext: "The collection context changed. Keep your draft and reopen the current collection."
-        case .writesDisabled: "Enable changes in Settings to use controls supported by this server version."
+        case .writesDisabled: "Sign in to control this display."
         }
     }
 }

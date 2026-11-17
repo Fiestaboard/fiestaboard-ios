@@ -9,7 +9,7 @@ concurrency:
   group: native-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  build-and-test:
+  foundation:
     runs-on: ${{ fromJSON(vars.NATIVE_RUNNER || '["xcode-27"]') }}
     timeout-minutes: 45
     env:
@@ -43,8 +43,6 @@ jobs:
           node scripts/vocabulary/check-vocabulary.mjs
       - name: Host package suites
         run: scripts/test.sh packages
-      - name: App-hosted and launch UI suites on both tier-1 devices
-        run: scripts/test.sh simulators
       - name: Release archive and probe guard
         if: ${{ !cancelled() }}
         run: |
@@ -58,9 +56,92 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: native-results-and-parity
+          name: native-foundation-and-parity
           path: |
             ~/Library/Developer/FiestaBoard/ios/results/ci
             build/parity
             Tests/__Snapshots__/iOS27
           retention-days: 14
+
+  device-units:
+    needs: foundation
+    runs-on: ${{ fromJSON(vars.NATIVE_RUNNER || '["xcode-27"]') }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - device: iphone
+            model: iPhone 17
+          - device: ipad
+            model: iPad Air 11-inch (M4)
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
+      IOS_SLICE: ci-units-${{ matrix.device }}
+      IOS_TEST_MODEL: ${{ matrix.model }}
+      IOS_TEST_SHARD: units
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: App-hosted, golden and renderer suites
+        run: |
+          xcodebuild -version
+          scripts/test.sh simulators
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-units-${{ matrix.device }}
+          path: ~/Library/Developer/FiestaBoard/ios/results/${{ env.IOS_SLICE }}
+          retention-days: 14
+
+  device-ui:
+    needs: device-units
+    runs-on: ${{ fromJSON(vars.NATIVE_RUNNER || '["xcode-27"]') }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        device: [iphone, ipad]
+        shard: [ui-a, ui-b, ui-f, ui-c, ui-d, ui-e, ui-g, ui-h]
+        include:
+          - device: iphone
+            model: iPhone 17
+          - device: ipad
+            model: iPad Air 11-inch (M4)
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.2.app/Contents/Developer
+      IOS_SLICE: ci-${{ matrix.device }}-${{ matrix.shard }}
+      IOS_TEST_MODEL: ${{ matrix.model }}
+      IOS_TEST_SHARD: ${{ matrix.shard }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Retained UI shard (serial XCTest)
+        run: |
+          xcodebuild -version
+          scripts/test.sh simulators
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-${{ matrix.device }}-${{ matrix.shard }}
+          path: ~/Library/Developer/FiestaBoard/ios/results/${{ env.IOS_SLICE }}
+          retention-days: 14
+
+  # Preserve the protected check name; skipped/cancelled/failed prerequisites fail it.
+  build-and-test:
+    if: always()
+    needs: [foundation, device-units, device-ui]
+    runs-on: ${{ fromJSON(vars.NATIVE_RUNNER || '["xcode-27"]') }}
+    timeout-minutes: 5
+    env:
+      FOUNDATION: ${{ needs.foundation.result }}
+      UNITS: ${{ needs.device-units.result }}
+      UI: ${{ needs.device-ui.result }}
+    steps:
+      - name: Require every suite and Release guard
+        run: |
+          [[ "$FOUNDATION" == success && "$UNITS" == success && "$UI" == success ]]

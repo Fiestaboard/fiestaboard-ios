@@ -4,7 +4,7 @@ import XCTest
 /// on the Pixoo, one canvas "sun"), against the mock fixture
 /// (`FIXTURE_PORT=<port> python3 Tests/UITests/fixture_server.py`). No real server, no hardware.
 /// Screenshots are attachments named `F2-…-mockfixture`, also written to SHOT_DIR when set.
-final class CanvasUITests: XCTestCase {
+@MainActor final class CanvasUITests: XCTestCase {
     override func setUp() { continueAfterFailure = false }
 
     private var port: String { ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "18442" }
@@ -13,7 +13,7 @@ final class CanvasUITests: XCTestCase {
     /// First visible result: add a rectangle, drag it on the pixel grid, see the stage's layer move;
     /// the dragged values are whole numbers; one Undo puts it back.
     func testDragRectangleUpdatesTheStage() throws {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         try openPixelClock(app)
         let surface = app.segmentedControls["editingSurface"]
         XCTAssertTrue(surface.waitForExistence(timeout: 5), "Text | Canvases appears on the Pixoo (an LED pixel display)")
@@ -33,7 +33,8 @@ final class CanvasUITests: XCTestCase {
         let before = layers(app)
 
         // Add a rectangle (it lands selected, in the middle of the 32 × 30 content).
-        app.buttons["canvasAddShape"].tap()
+        let addShape = app.buttons["canvasAddShape"]
+        reveal(addShape, app); addShape.tap()
         let rectangle = app.buttons["Rectangle"].firstMatch
         XCTAssertTrue(rectangle.waitForExistence(timeout: 3)); rectangle.tap()
         let overlay = element(app, "canvasShapeOverlay_2")
@@ -65,7 +66,7 @@ final class CanvasUITests: XCTestCase {
 
     /// Area drag-select, bleed/scale/text controls, the Draw tab and the expression lock.
     func testAreaDrawAndExpressionLock() throws {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         try openPixelClock(app)
         app.segmentedControls["editingSurface"].buttons["Canvases"].tap()
         let picker = element(app, "canvasAreaPicker")
@@ -73,8 +74,11 @@ final class CanvasUITests: XCTestCase {
         reveal(picker, app)
         XCTAssertEqual(picker.value as? String, "Rows 1 to 5, columns 1 to 8", "picker \(picker.frame), panel \(element(app, "canvasesPanel").frame)")
         // Drag from cell (row 3, col 5) to (row 8, col 14), 1-based.
-        let from = picker.coordinate(withNormalizedOffset: CGVector(dx: 4.5 / 16, dy: 2.5 / 10))
-        let to = picker.coordinate(withNormalizedOffset: CGVector(dx: 13.5 / 16, dy: 7.5 / 10))
+        let frame = picker.frame
+        let origin = app.coordinate(withNormalizedOffset: .zero)
+        let from = origin.withOffset(CGVector(dx: frame.minX + frame.width * 4.5 / 16, dy: frame.minY + frame.height * 2.5 / 10))
+        let to = origin.withOffset(CGVector(dx: frame.minX + frame.width * 13.5 / 16, dy: frame.minY + frame.height * 7.5 / 10))
+        XCTAssertLessThan(frame.minY + frame.height * 7.5 / 10, app.windows.firstMatch.frame.maxY - 20)
         from.press(forDuration: 0.2, thenDragTo: to, withVelocity: 150, thenHoldForDuration: 0.2)
         XCTAssertTrue(waitFor(4) { picker.value as? String == "Rows 3 to 8, columns 5 to 14" }, "\(picker.value ?? "")")
         XCTAssertEqual(fieldValue(app, "canvasAreaRow"), "3"); XCTAssertEqual(fieldValue(app, "canvasAreaCols"), "10")
@@ -110,7 +114,7 @@ final class CanvasUITests: XCTestCase {
 
     /// The split-flap notice: on a Flagship display the toggle goes and the page says why.
     func testSplitFlapDisplayShowsTheNotice() throws {
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         try openPixelClock(app)
         XCTAssertTrue(app.segmentedControls["editingSurface"].waitForExistence(timeout: 5))
         let picker = app.buttons["evaluationBoardPicker"]
@@ -137,32 +141,35 @@ final class CanvasUITests: XCTestCase {
         repeat { if condition() { return true }; Thread.sleep(forTimeInterval: 0.2) } while Date() < deadline
         return false
     }
-    /// Scrolls the canvases panel (or the connection form) until `element` is fully on screen.
+    /// Reveal controls inside the panel viewport, using its rail without editing the canvas.
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
         let window = app.windows.firstMatch.frame
-        // The panel scrolls under the Text | Canvases control: that is the visible top.
         let toggle = app.segmentedControls["editingSurface"]
-        func top() -> CGFloat { toggle.exists ? toggle.frame.maxY + 8 : window.minY + 80 }
-        func visible() -> Bool { element.exists && element.isHittable && element.frame.maxY < window.maxY - 20 && element.frame.minY > top() }
-        let panel = app.descendants(matching: .any).matching(identifier: "canvasesPanel").firstMatch
-        for _ in 0..<12 where !visible() {
-            // Drag the panel's own scroll view by its header area, never across a drawing surface.
-            // Start on a caption of the panel that overlaps no drawing surface.
-            let surfaces = ["canvasAreaPicker", "canvasPixelPad", "canvasShapesSurface"].map { self.element(app, $0) }.filter { $0.exists }.map { $0.frame }
-            let captions = ["Pixel canvases", "Canvas ID", "Area (board character cells)", "Row", "Column", "Rows", "Columns",
-                            "Drag across the grid to set the area, or use the row and column fields.", "Bleed to the panel edge", "Scale",
-                            "Text under the canvas", "Drag to paint. Each stroke is one undo step.", "Fill", "Outline", "Only if",
-                            "Tap a shape to select it, drag to move it, drag a handle to resize. Values snap to whole pixels.",
-                            "Every field takes a number or colour, or an expression such as {{weather.temperature}}."]
-            let texts = panel.exists ? panel.staticTexts.matching(NSPredicate(format: "label IN %@", captions)).allElementsBoundByIndex : []
-            let caption = texts.first { t in
-                let f = t.frame
-                return f.minY > top() + 20 && f.maxY < window.maxY - 80 && f.width > 30 && !surfaces.contains { $0.insetBy(dx: -30, dy: -30).intersects(f) }
+        let rail = self.element(app, "canvasesPanelHandle")
+        func bounds() -> (top: CGFloat, bottom: CGFloat) {
+            if toggle.exists, rail.exists {
+                return CanvasRevealGeometry.panelBounds(viewport: rail.frame, coveringTop: toggle.frame.maxY)
             }
-            let from = caption.map { $0.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5)) } ?? app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15))
-            let up = !element.exists || element.frame.maxY >= window.maxY - 20
-            from.press(forDuration: 0.05, thenDragTo: from.withOffset(CGVector(dx: 0, dy: up ? -160 : 160)), withVelocity: 600, thenHoldForDuration: 0.1)
+            return (window.minY + 80, window.maxY - 20)
         }
+        func visible() -> Bool {
+            guard element.exists, element.isHittable else { return false }
+            let frame = element.frame, viewport = bounds()
+            return CanvasRevealGeometry.isExposed(frame, top: viewport.top, bottom: viewport.bottom)
+        }
+        for _ in 0..<12 {
+            if visible() { break }
+            let viewport = bounds()
+            let distance: CGFloat
+            if element.exists {
+                distance = CanvasRevealGeometry.scrollDistance(element.frame, top: viewport.top, bottom: viewport.bottom)
+            } else { distance = -min(160, (viewport.bottom - viewport.top) / 2) }
+            if distance == 0 { break }
+            let from = rail.exists ? rail.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+                : app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            from.press(forDuration: 0.05, thenDragTo: from.withOffset(CGVector(dx: 0, dy: distance)), withVelocity: 600, thenHoldForDuration: 0.1)
+        }
+        XCTAssertTrue(visible(), "The interaction target must be exposed inside its scroll viewport")
     }
     private func shot(_ app: XCUIApplication, _ name: String) {
         Thread.sleep(forTimeInterval: 1.5)
@@ -182,7 +189,7 @@ final class CanvasUITests: XCTestCase {
 
     private func openPixelClock(_ app: XCUIApplication) throws {
         try connectToFixture(app, scenario: "manual")
-        let destination = element(app, "destination-Pages")
+        let destination = app.buttons.matching(identifier: "destination-Pages").firstMatch
         for _ in 0..<5 {
             if destination.exists && destination.isHittable { destination.tap(); break }
             let sidebar = app.buttons["Show Sidebar"].firstMatch
@@ -190,7 +197,7 @@ final class CanvasUITests: XCTestCase {
             let back = app.navigationBars.buttons["FiestaBoard"].firstMatch
             if back.exists && back.isHittable { back.tap() }
         }
-        let row = app.staticTexts["Pixel Clock"].firstMatch
+        let row = pageCard(app, named: "Pixel Clock")
         XCTAssertTrue(row.waitForExistence(timeout: 8))
         for _ in 0..<6 where !row.isHittable { app.swipeUp() }
         row.tap()
@@ -204,16 +211,16 @@ final class CanvasUITests: XCTestCase {
         let semaphore = DispatchSemaphore(value: 0); var ready = false
         URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
         semaphore.wait()
-        try XCTSkipUnless(ready, "Start the fixture: FIXTURE_PORT=\(port) python3 Tests/UITests/fixture_server.py")
+        try requireReadyFixture(ready, port: port)
         app.launchArguments = []; app.launch()
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
         func revealForm(_ element: XCUIElement) {
-            for _ in 0..<8 where !(element.exists && element.isHittable) { app.swipeUp() }
-            for _ in 0..<8 where !(element.exists && element.isHittable) { app.swipeDown() }
+            for _ in 0..<8 { if element.exists && element.isHittable { break }; app.swipeUp() }
+            for _ in 0..<8 { if element.exists && element.isHittable { break }; app.swipeDown() }
         }
         let address = app.textFields["connectionAddress"]
-        XCTAssertTrue(app.buttons["exploreDemo"].waitForExistence(timeout: 8))
-        revealForm(address); address.tap(); address.typeText("http://127.0.0.1:\(port)/" + alias)
+        XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 8))
+        revealForm(address); typeConnectionAddress("http://127.0.0.1:\(port)/" + alias, into: address, in: app)
         let name = app.textFields["Server name (optional)"]
         revealForm(name); name.tap(); name.typeText(alias + "\n")
         let localHTTP = app.switches["connectionLocalHTTP"]

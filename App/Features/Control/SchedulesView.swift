@@ -10,7 +10,7 @@ import FiestaBoardAppState
                 Picker("Display", selection: Binding(get: { store.selectedBoardID ?? "" }, set: { store.selectBoard($0) })) {
                     ForEach(store.boards) { Text($0.name).tag($0.id) }
                 }.disabled(store.commandBusy || store.refreshing)
-                Text(store.status?.isDemo == true ? "Demo · simulated schedule data · read only" : "Server schedule · read only")
+                Text("Hub schedule")
                     .font(.caption).foregroundStyle(.secondary)
             }
             if store.schedulesLoading { ProgressView("Reading schedule…") }
@@ -99,7 +99,7 @@ private struct ScheduleDetailView: View {
                 optional("Edit protocol", entry.editProtocol)
                 optional("Created", entry.createdAt)
                 optional("Updated", entry.updatedAt)
-                Text("Schedule editing is not available in this native draft.").font(.footnote).foregroundStyle(.secondary)
+                Text("Edit this schedule in your hub’s web interface.").font(.footnote).foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: 900).frame(maxWidth: .infinity)

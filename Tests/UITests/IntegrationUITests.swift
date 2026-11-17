@@ -17,7 +17,7 @@ import XCTest
     func testIPadSidebarFollowsTheEditorForAnExistingPage() throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad only")
         XCUIDevice.shared.orientation = .portrait
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         // Sign in upright: the iPad connection form is flaky in landscape (E1 open issue 5).
         try connectToFixture(app, scenario: "manual")
         XCUIDevice.shared.orientation = .landscapeLeft
@@ -57,7 +57,7 @@ import XCTest
     func testIPadSidebarAndRotationForANewPage() throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad only")
         XCUIDevice.shared.orientation = .landscapeLeft
-        let app = XCUIApplication(); app.launchArguments = ["--demo"]; app.launch()
+        let app = isolatedApplication(); launchFixture(app)
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
         openPages(app)
         XCTAssertTrue(waitForSidebar(app, visible: true))
@@ -94,7 +94,7 @@ import XCTest
 
     func testPhoneEditorIsFullScreenOnBothPaths() throws {
         try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .phone, "iPhone only")
-        let app = XCUIApplication()
+        let app = isolatedApplication()
         try connectToFixture(app, scenario: "manual")
         openPages(app)
         openEditor(app, page: "Good Morning")
@@ -102,7 +102,7 @@ import XCTest
         shot(app, "W2-INT-existing-fullscreen")
         close(app)
 
-        app.terminate(); app.launchArguments = ["--demo"]; app.launch()
+        app.terminate(); launchFixture(app)
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
         openPages(app)
         let create = app.buttons["newLibraryPage"]
@@ -138,7 +138,7 @@ import XCTest
     }
 
     private func sidebarItem(_ app: XCUIApplication) -> XCUIElement {
-        app.descendants(matching: .any).matching(identifier: "destination-Pages").firstMatch
+        app.buttons.matching(identifier: "destination-Pages").firstMatch
     }
     private func waitForSidebar(_ app: XCUIApplication, visible: Bool, timeout: TimeInterval = 5) -> Bool {
         let deadline = Date().addingTimeInterval(timeout)
@@ -228,12 +228,12 @@ import XCTest
         let semaphore = DispatchSemaphore(value: 0); var ready = false
         URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
         semaphore.wait()
-        try XCTSkipUnless(ready, "Start the fixture: FIXTURE_PORT=\(port) python3 Tests/UITests/fixture_server.py")
+        try requireReadyFixture(ready, port: port)
         app.launchArguments = []; app.launch()
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
         let address = app.textFields["connectionAddress"]
-        XCTAssertTrue(app.buttons["exploreDemo"].waitForExistence(timeout: 10))
-        reveal(address, app); address.tap(); address.typeText("http://127.0.0.1:\(port)/" + alias)
+        XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 10))
+        reveal(address, app); typeConnectionAddress("http://127.0.0.1:\(port)/" + alias, into: address, in: app)
         let name = app.textFields["Server name (optional)"]
         reveal(name, app); name.tap(); name.typeText(alias + "\n")
         let localHTTP = app.switches["connectionLocalHTTP"]
@@ -254,7 +254,7 @@ import XCTest
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15), app.staticTexts["connectionMessage"].firstMatch.debugDescription)
     }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
-        for _ in 0..<8 where !(element.exists && element.isHittable) { app.swipeUp() }
-        for _ in 0..<8 where !(element.exists && element.isHittable) { app.swipeDown() }
+        for _ in 0..<8 { if element.exists && element.isHittable { break }; app.swipeUp() }
+        for _ in 0..<8 { if element.exists && element.isHittable { break }; app.swipeDown() }
     }
 }

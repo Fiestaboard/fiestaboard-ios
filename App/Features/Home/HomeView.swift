@@ -98,7 +98,7 @@ struct HomeView<ChangePage: View, Controls: View>: View {
     private var overrideCancelReason: String? {
         if !status.canClearOverride { return "This connection can't cancel an override. Use the web app." }
         switch store.boardActionDisabledReason {
-        case .changesDisabled?: return "Changing this board from the app is turned off."
+        case .changesDisabled?: return "Sign in to control this display."
         case .unsupportedOperation?: return "This server version can't be changed from the app yet."
         case .readbackRequired?: return "Refresh to see the board before making another change."
         default: return store.canWrite ? nil : "Wait for the board, then try again."
@@ -106,7 +106,7 @@ struct HomeView<ChangePage: View, Controls: View>: View {
     }
 
     /// "Override: Nm remaining" with its ✕ (B8, `DELETE /settings/temporary-override`). With
-    /// changes off the ✕ stays, dimmed; tapping it says why and offers "Turn on".
+    /// permission denied, the ✕ stays dimmed and explains why.
     private func overrideBadge(_ now: NowShowing) -> some View {
         let reason = overrideCancelReason
         return HStack(spacing: 4) {
@@ -132,10 +132,7 @@ struct HomeView<ChangePage: View, Controls: View>: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(reason ?? "").font(.callout).fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("overrideCancelReason")
-                    if store.boardActionDisabledReason == .changesDisabled {
-                        Button("Turn on") { showOverrideReason = false; openSettings() }
-                            .font(.callout.weight(.semibold))
-                    }
+
                 }
                 .padding(14).frame(idealWidth: 260, maxWidth: 300)
                 .presentationCompactAdaptation(.popover)
@@ -230,7 +227,7 @@ struct HomeView<ChangePage: View, Controls: View>: View {
     /// Three equal quick actions in one row (icon over label), so the board
     /// keeps the screen and the lower half has room for the cards.
     /// While changes from the app are off (or the server can't take them), Change page and Compose
-    /// are not shown greyed out: the plain "turned off · Turn on" line under the row says why (P1).
+    /// are not shown greyed out: the plain permission line under the row says why (P1).
     private var writeActionsHidden: Bool {
         switch store.boardActionDisabledReason {
         case .changesDisabled?, .unsupportedOperation?: return true
@@ -251,29 +248,13 @@ struct HomeView<ChangePage: View, Controls: View>: View {
                 .frame(maxWidth: writeActionsHidden ? (wide ? 200 : 150) : .infinity)
             // W4: with changes off, the reason and its fix fill the row as a card of the same
             // height, instead of a lone half-width tile over a line of grey text.
-            if store.boardActionDisabledReason == .changesDisabled { changesOffCard }
-            else if writeActionsHidden { Spacer(minLength: 0) }
+            if writeActionsHidden { Spacer(minLength: 0) }
         }
         .buttonStyle(.plain)
         .frame(maxWidth: wide ? 640 : .infinity, alignment: .leading)
     }
 
-    private var changesOffCard: some View {
-        HStack(alignment: .center, spacing: 10) {
-            Image(systemName: "lock.fill").font(.title3).foregroundStyle(.secondary)
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Changing this board from the app is turned off")
-                    .font(.footnote).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
-                Button("Turn on", action: openSettings).font(.footnote.weight(.semibold)).foregroundStyle(.orange)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 12).padding(.vertical, 8)
-        .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(.secondarySystemBackground)))
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier("homeChangesOff")
-    }
+
 }
 
 /// One quick-action tile: icon above a one-line label, full tile tappable.

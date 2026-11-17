@@ -1,17 +1,18 @@
+@testable import FiestaBoardKit
 import Foundation
 
-public enum DemoSimulation: String, CaseIterable, Codable, Sendable { case accepted, held, partial, rejected, unknown }
+public enum FixtureSimulation: String, CaseIterable, Codable, Sendable { case accepted, held, partial, rejected, unknown }
 
 /// Every action stays in memory. The demo never creates a URLSession or contacts hardware.
-public actor DemoFiestaBoardService: FiestaBoardService {
+public actor FixtureFiestaBoardService: FiestaBoardService {
     public nonisolated let deployment: DeploymentURL
     public nonisolated let isDemo = true
-    private let simulation: DemoTransport
+    private let simulation: FixtureTransport
     private let service: LiveFiestaBoardService
 
     public init() throws {
         deployment = try DeploymentURL("https://demo.fiestaboard.invalid")
-        simulation = try DemoTransport()
+        simulation = try FixtureTransport()
         service = LiveFiestaBoardService(demoDeployment: deployment, transport: simulation)
     }
     public func bootstrap() async throws -> BootstrapSnapshot {
@@ -21,7 +22,7 @@ public actor DemoFiestaBoardService: FiestaBoardService {
             auth: AuthStatus(enabled: false, setupRequired: false, authenticated: false, mode: "disabled", firstRun: false))
     }
     public func login(username: String, password: String, rememberMe: Bool) async throws -> AuthStatus { try await authStatus() }
-    public func setSimulation(_ mode: DemoSimulation) async { await simulation.setMode(mode) }
+    public func setSimulation(_ mode: FixtureSimulation) async { await simulation.setMode(mode) }
     public func authStatus() async throws -> AuthStatus { try await service.authStatus() }
     public func login(username: String, password: String) async throws -> AuthStatus { try await service.authStatus() }
     public func logout() async throws { try await service.logout() }
@@ -71,15 +72,15 @@ public actor DemoFiestaBoardService: FiestaBoardService {
     public func selectPage(id: String, on target: BoardTarget) async throws -> MutationResult { try await service.selectPage(id: id, on: target) }
 }
 
-private actor DemoTransport: APITransport {
+private actor FixtureTransport: APITransport {
     private var data: [String: Data] = [:]
     private var pageKeys: Set<String> = ["page", "page-weather"]
-    private var mode = DemoSimulation.accepted
+    private var mode = FixtureSimulation.accepted
     private var collections: [String: PageCollection] = [:]
 
     init() throws {
         for name in ["boards", "board", "board-led", "pages", "page", "page-weather"] {
-            guard let url = Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "DemoFixtures") else {
+            guard let url = Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "ServiceFixtures") else {
                 throw FiestaBoardError.invalidResponse
             }
             data[name] = try Data(contentsOf: url)
@@ -94,7 +95,7 @@ private actor DemoTransport: APITransport {
             try JSONDecoder().decode(BoardDetail.self, from: data[name]!).validate()
         }
     }
-    func setMode(_ mode: DemoSimulation) { self.mode = mode }
+    func setMode(_ mode: FixtureSimulation) { self.mode = mode }
     func resetSession() {}
 
     func send(_ request: APIRequest) async throws -> APIResponse {

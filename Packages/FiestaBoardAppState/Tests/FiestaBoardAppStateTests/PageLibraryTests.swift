@@ -4,7 +4,7 @@ import FiestaBoardKit
 
 @MainActor final class PageLibraryTests: XCTestCase {
     func testCreatePanelUpdatesLibraryAndPreservesGeometry() async throws {
-        let store = BoardStore(); let demo = try DemoFiestaBoardService()
+        let store = BoardStore(); let demo = try FixtureFiestaBoardService()
         await store.connect(demo).value
         let library = try XCTUnwrap(store.pageLibrary)
         library.name = "My LED"; library.isPanel = true; library.rows = 8; library.columns = 16
@@ -16,7 +16,7 @@ import FiestaBoardKit
         XCTAssertEqual(library.name, "")
     }
     func testUnknownCreationRetainsInputAndRequiresExplicitReadbackAndNewIntent() async throws {
-        let store = BoardStore(); let demo = try DemoFiestaBoardService()
+        let store = BoardStore(); let demo = try FixtureFiestaBoardService()
         await store.connect(demo).value
         let library = try XCTUnwrap(store.pageLibrary); library.name = "Uncertain page"
         await demo.setSimulation(.unknown)
@@ -34,7 +34,7 @@ import FiestaBoardKit
         XCTAssertEqual(library.name, "Uncertain page")
     }
     func testDeleteOriginalRevisionRefusesAfterConcurrentEdit() async throws {
-        let store = BoardStore(); let demo = try DemoFiestaBoardService()
+        let store = BoardStore(); let demo = try FixtureFiestaBoardService()
         await store.connect(demo).value
         let library = try XCTUnwrap(store.pageLibrary); library.name = "Delete test"
         let id = try await store.createLibraryPage()
@@ -45,7 +45,7 @@ import FiestaBoardKit
         XCTAssertNotNil(store.pages.first { $0.id == id })
     }
     func testConfirmedDeletionRefreshesPagesAndBoardState() async throws {
-        let store = BoardStore(); let demo = try DemoFiestaBoardService()
+        let store = BoardStore(); let demo = try FixtureFiestaBoardService()
         await store.connect(demo).value
         let library = try XCTUnwrap(store.pageLibrary); library.name = "Delete me"
         let id = try await store.createLibraryPage()
@@ -56,7 +56,7 @@ import FiestaBoardKit
         XCTAssertTrue(library.phase.message?.contains("deleted") == true)
     }
     func testUnknownStateSurvivesDisconnectAndReconnect() async throws {
-        let store = BoardStore(); let demo = try DemoFiestaBoardService()
+        let store = BoardStore(); let demo = try FixtureFiestaBoardService()
         await store.connect(demo).value
         let library = try XCTUnwrap(store.pageLibrary); library.name = "Keep me"
         await demo.setSimulation(.unknown)
@@ -117,14 +117,14 @@ extension PageLibraryTests {
 private actor LibraryGateService: FiestaBoardService {
     nonisolated let deployment: DeploymentURL
     nonisolated let isDemo = true
-    let base: DemoFiestaBoardService
+    let base: FixtureFiestaBoardService
     var libraryReads = 0
     private var deletionError: FiestaBoardError?
     private var gateCreation = false
     private var gateLibrary = false
     private var creationWaiter: CheckedContinuation<Void, Never>?
     private var libraryWaiter: CheckedContinuation<Void, Never>?
-    init() throws { base = try DemoFiestaBoardService(); deployment = base.deployment }
+    init() throws { base = try FixtureFiestaBoardService(); deployment = base.deployment }
     func failDeletion(_ error: FiestaBoardError?) { deletionError = error }
     func holdCreation() { gateCreation = true }
     func holdLibraryRead() { gateLibrary = true }

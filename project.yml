@@ -17,11 +17,7 @@ targets:
     platform: iOS
     sources:
       - path: Packages/FiestaBoardKit/Sources/FiestaBoardKit
-        excludes: [DemoFixtures]
       - path: App/PackageResources.swift
-      - path: Packages/FiestaBoardKit/Sources/FiestaBoardKit/DemoFixtures
-        type: folder
-        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft.core
@@ -97,6 +93,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: App/Info.plist
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]": Tests/Support/Simulator.entitlements
         SUPPORTS_MACCATALYST: NO
         ENABLE_USER_SCRIPT_SANDBOXING: YES
     dependencies:
@@ -141,31 +138,10 @@ schemes:
         FiestaBoardUITests: [test]
         FiestaBoardRenderTests: [test]
         FiestaBoardAppTests: [test]
-    run:
-      commandLineArguments:
-        '--demo': false
     test:
       targets: [FiestaBoardUITests, FiestaBoardRenderTests, FiestaBoardAppTests]
     profile:
       config: Release
-      commandLineArguments:
-        '--demo': false
-    archive:
-      config: Release
-  FiestaBoard Demo:
-    build:
-      targets:
-        FiestaBoard: all
-        FiestaBoardUITests: [test]
-    run:
-      commandLineArguments:
-        '--demo': true
-    test:
-      targets: [FiestaBoardUITests]
-    profile:
-      config: Release
-      commandLineArguments:
-        '--demo': false
     archive:
       config: Release
   FiestaBoard Device Test:
@@ -175,8 +151,6 @@ schemes:
     run:
       config: Debug
       debugEnabled: false
-      commandLineArguments:
-        '--demo': false
     profile:
       config: Release
     archive:

@@ -38,11 +38,6 @@ class BuildDraftTests(unittest.TestCase):
         self.assertEqual(args[-1], 'build')
         self.assertNotIn('-archivePath', args)
 
-    def test_demo_scheme_name_remains_one_argument(self):
-        args = self.run_build('device', 'demo')
-        self.assertEqual(args[args.index('-scheme') + 1], 'FiestaBoard Demo')
-        self.assertEqual(args[args.index('-destination') + 1], 'generic/platform=iOS')
-
     def test_archive_uses_dedicated_archive_path(self):
         args = self.run_build('archive')
         self.assertEqual(args[-1], 'archive')

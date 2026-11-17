@@ -1,0 +1,33 @@
+{
+  "boards": [
+    {
+      "id": "board-2",
+      "name": "Demo Kitchen",
+      "device_type": "panel",
+      "rows": 6,
+      "cols": 22,
+      "is_primary": true,
+      "paused": false,
+      "schedule_enabled": true,
+      "auto_restore": true,
+      "output": "fiestapanel",
+      "device_model": "fiestapanel_split_flap",
+      "charset": "vestaboard_v1"
+    },
+    {
+      "id": "board-led",
+      "name": "Demo Pixel Panel",
+      "device_type": "panel",
+      "rows": 2,
+      "cols": 4,
+      "is_primary": false,
+      "paused": false,
+      "schedule_enabled": true,
+      "auto_restore": true,
+      "output": "fiestapanel",
+      "device_model": "divoom_pixoo64",
+      "charset": "led_3x5"
+    }
+  ],
+  "total": 2
+}

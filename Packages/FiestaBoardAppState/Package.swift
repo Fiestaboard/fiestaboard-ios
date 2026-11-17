@@ -5,4 +5,4 @@ let package = Package(
     products: [.library(name: "FiestaBoardAppState", targets: ["FiestaBoardAppState"])],
     dependencies: [.package(path: "../FiestaBoardKit"), .package(path: "../FiestaBoardRender")],
     targets: [.target(name: "FiestaBoardAppState", dependencies: ["FiestaBoardKit", "FiestaBoardRender"]),
-              .testTarget(name: "FiestaBoardAppStateTests", dependencies: ["FiestaBoardAppState", "FiestaBoardKit"])])
+              .testTarget(name: "FiestaBoardAppStateTests", dependencies: ["FiestaBoardAppState", "FiestaBoardKit"], resources: [.copy("ServiceFixtures")])])

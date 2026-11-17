@@ -78,6 +78,6 @@ private typealias ControlState<Value> = SwiftUI.State<Value>
         case .restore: change = "Restore the content FiestaBoard currently intends to show"
         case .text, .page: change = "Change content"
         }
-        return "\(action.isDemo ? "Simulated — " : "")\(change) on \(action.boardName) at \(action.target.deployment.description)?"
+        return "\(change) on \(action.boardName) at \(action.target.deployment.description)?"
     }
 }

@@ -10,7 +10,7 @@ public struct ConnectionPersistence: Sendable {
 }
 
 public enum ConnectionPhase: Sendable, Equatable {
-    case picker, checking, authentication(BootstrapPhase), connected, demo
+    case picker, checking, authentication(BootstrapPhase), connected
 }
 
 /// One window's onboarding intent. Secrets never enter the catalog or preferences.
@@ -34,7 +34,6 @@ public enum ConnectionPhase: Sendable, Equatable {
     @Published public var setupToken = ""
     @Published public var rememberMe = false
     @Published public var alias = ""
-    public private(set) var demoService: DemoFiestaBoardService?
     private let store: BoardStore
     private let catalog: ServerCatalog
     private let discovery: any ServerDiscovering
@@ -54,8 +53,7 @@ public enum ConnectionPhase: Sendable, Equatable {
         self.store = store; self.catalog = catalog; self.discovery = discovery
         self.preferences = preferences; factory = serviceFactory
     }
-    @discardableResult public func start(demo: Bool = false) -> Task<Void, Never> {
-        if demo { return startDemo() }
+    @discardableResult public func start() -> Task<Void, Never> {
         return Task { await reloadCatalog() }
     }
     public func findServers() {
@@ -212,10 +210,10 @@ public enum ConnectionPhase: Sendable, Equatable {
         if snapshot.phase != .ready { phase = .authentication(snapshot.phase); return }
         if handedToStore && store.hasRetainedService {
             // A required shell read may fail after authentication succeeded. Retry that retained actor without retiring its cookie.
-            await store.reconnect(allowCandidateWrites: false, preferredBoardID: selected?.preferredBoardID).value
+            await store.reconnect(allowCandidateWrites: true, preferredBoardID: selected?.preferredBoardID).value
         } else {
             handedToStore = true
-            await store.connect(next, preferredBoardID: selected?.preferredBoardID).value
+            await store.connect(next, allowCandidateWrites: true, preferredBoardID: selected?.preferredBoardID).value
         }
         guard valid(token) else { return }
         if store.status != nil { phase = .connected }
@@ -230,19 +228,12 @@ public enum ConnectionPhase: Sendable, Equatable {
         selected = saved; preferences.set(saved.id.uuidString, forKey: selectedKey)
         await reloadCatalog()
     }
-    @discardableResult public func startDemo() -> Task<Void, Never> {
-        cancel()
-        do {
-            let demo = try DemoFiestaBoardService(); demoService = demo; phase = .demo
-            return store.connect(demo)
-        } catch { message = "Demo could not start."; return Task {} }
-    }
     public func cancel() {
         generation = UUID(); operation?.cancel(); operation = nil; stopDiscovery()
         let old = service, ownedByStore = handedToStore, previous = cleanupTask
         store.disconnect()
         if let old, !ownedByStore { cleanupTask = Task { await previous?.value; await old.disconnect() } }
-        service = nil; handedToStore = false; demoService = nil; snapshot = nil
+        service = nil; handedToStore = false; snapshot = nil
         busy = false; phase = .picker; password = ""; setupToken = ""; rememberMe = false
         requiresStateCheck = false; requiresSetupProof = false; validationFields = []; persistence = .init(); message = nil
     }

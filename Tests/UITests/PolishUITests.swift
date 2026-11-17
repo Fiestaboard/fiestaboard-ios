@@ -46,22 +46,6 @@ import XCTest
         let mode = element(app, "modeBadge")
         XCTAssertTrue(waitFor(10) { mode.exists && mode.label == "Override: 9m remaining" }, app.debugDescription)
         let cancel = element(app, "overrideCancel")
-        XCTAssertTrue(cancel.exists, "the ✕ is shown with changes off")
-        XCTAssertEqual(cancel.value as? String, "Unavailable")
-        shot(app, "W4b-B8-override-changes-off", settle: 2)
-        cancel.tap()
-        let reason = element(app, "overrideCancelReason")
-        XCTAssertTrue(reason.waitForExistence(timeout: 4), app.debugDescription)
-        XCTAssertEqual(reason.label, "Changing this board from the app is turned off.")
-        shot(app, "W4b-B8-override-reason", settle: 1)
-        XCTAssertTrue(app.buttons["Turn on"].firstMatch.exists)
-        app.buttons["Turn on"].firstMatch.tap()
-        let toggle = app.switches["Enable changes on this server"]
-        reveal(toggle, app)
-        if toggle.value as? String != "1" { toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap() }
-        let apply = app.buttons["Apply change setting"]
-        reveal(apply, app); apply.tap()
-        selectDestination("Home", in: app)
         XCTAssertTrue(waitFor(15) { cancel.exists && (cancel.value as? String ?? "") != "Unavailable" }, app.debugDescription)
         shot(app, "W4b-B8-override-changes-on", settle: 2)
         cancel.tap()
@@ -72,17 +56,11 @@ import XCTest
 
     /// B26 (P5): Show when and Priority sit under "Advanced"; when set and closed, a chip says so.
     func testShowWhenAndPriorityAreAdvanced() throws {
-        let app = XCUIApplication(); app.launchArguments = []; app.launch()
+        let app = isolatedApplication(); app.launchArguments = []; app.launch()
         connect(app, path: "flexible-" + UUID().uuidString.prefix(8).lowercased())
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15))
-        selectDestination("Settings", in: app)
-        let writes = app.switches["Enable changes on this server"]
-        reveal(writes, app); writes.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
-        let apply = app.buttons["Apply change setting"]
-        reveal(apply, app); apply.tap()
-        XCTAssertTrue(app.buttons["Disconnect"].waitForExistence(timeout: 10))
         selectDestination("Pages", in: app)
-        let row = app.staticTexts["Flexible document"].firstMatch
+        let row = pageCard(app, named: "Flexible document")
         XCTAssertTrue(row.waitForExistence(timeout: 8)); row.tap()
         app.buttons["editLocalDraft"].tap()
         let advanced = app.buttons["Advanced"]
@@ -179,18 +157,26 @@ import XCTest
     func testRecordCaretOverChips() throws {
         let app = try signIn(scenario: "manual")
         let document = openEditor(app, page: "Good Morning")
+        let original = try XCTUnwrap(document.value as? String)
+        var expectedRows = original.components(separatedBy: "\n")
+        XCTAssertGreaterThan(expectedRows.count, 1)
+        XCTAssertEqual(expectedRows[1], "{{weather.temperature|pad:3}}° {{weather.condition}}")
+        expectedRows[1] = "° {{weather.condition}}"
         document.tap(); Thread.sleep(forTimeInterval: 1)
-        document.typeKey(.upArrow, modifierFlags: .command)          // document start
-        document.typeKey(.downArrow, modifierFlags: []); Thread.sleep(forTimeInterval: 1)   // row 2, before the chip
+        let row = app.staticTexts["documentRow_2"]
+        XCTAssertTrue(row.waitForExistence(timeout: 3))
+        document.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: document.frame.width - 12, dy: row.frame.midY - document.frame.minY)).tap()
+        document.typeKey(.leftArrow, modifierFlags: .command) // start of row 2, before the chip
         document.typeKey(.rightArrow, modifierFlags: []); Thread.sleep(forTimeInterval: 1.2) // after the chip
         document.typeKey(.leftArrow, modifierFlags: .shift); Thread.sleep(forTimeInterval: 1.5) // outlined
         document.typeKey(.rightArrow, modifierFlags: []); Thread.sleep(forTimeInterval: 1)
-        document.typeKey(.delete, modifierFlags: []); Thread.sleep(forTimeInterval: 1.5)   // whole chip gone
+        document.typeText(XCUIKeyboardKey.delete.rawValue); Thread.sleep(forTimeInterval: 1.5)   // whole chip gone
         let value = (document.value as? String) ?? ""
-        XCTAssertFalse(value.contains("weather.temperature"), value)
-        XCTAssertTrue(value.contains("° {{weather.condition}}"), "the rest of row 2 is untouched: \(value)")
+        // The later formula also references weather.temperature and must remain intact.
+        XCTAssertEqual(value, expectedRows.joined(separator: "\n"), "only the selected chip is deleted")
         app.buttons["accessory_undo"].tap(); Thread.sleep(forTimeInterval: 1.5)
-        XCTAssertTrue(((document.value as? String) ?? "").contains("{{weather.temperature|pad:3}}°"), "undo brings the chip back")
+        XCTAssertEqual(document.value as? String, original, "undo restores the exact document")
         close(app)
     }
 
@@ -223,13 +209,20 @@ import XCTest
     /// B28: type, kill the app, reopen: the recovery prompt brings the work back; then leaving
     /// with changes asks "Discard unsaved changes?".
     func testRecordKillAndReopen() throws {
-        let app = try signIn(scenario: "manual")
+        let app = try signIn(scenario: "manual", remember: true)
         let document = openEditor(app, page: "Hello World")
         document.tap(); Thread.sleep(forTimeInterval: 1)
         document.typeKey(.upArrow, modifierFlags: .command)
         document.typeText("KEEP ME"); Thread.sleep(forTimeInterval: 3.5) // the automatic checkpoint (2 s)
         app.terminate(); Thread.sleep(forTimeInterval: 1.5)
         app.launch()
+        // A relaunch shows the connection picker. Reuse the persisted deployment,
+        // not a fresh fixture prefix, so this still exercises draft recovery.
+        let saved = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "board-manual-")).firstMatch
+        XCTAssertTrue(saved.waitForExistence(timeout: 10), app.debugDescription)
+        reveal(saved, app); saved.tap()
+        // Restore, rather than log in again: a fresh login deliberately gets a new
+        // connection ID and must not adopt another connection's draft.
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15), app.debugDescription)
         let reopened = openEditor(app, page: "Hello World")
         let banner = element(app, "recoveryBanner")
@@ -258,8 +251,8 @@ import XCTest
     private func area(_ e: XCUIElement) -> CGFloat { e.frame.width * e.frame.height }
     private func connect(_ app: XCUIApplication, path: String) {
         let address = app.textFields["connectionAddress"]
-        XCTAssertTrue(app.buttons["exploreDemo"].waitForExistence(timeout: 10))
-        reveal(address, app); address.tap(); address.typeText("http://127.0.0.1:\(fixturePort)/" + path)
+        XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 10))
+        reveal(address, app); typeConnectionAddress("http://127.0.0.1:\(fixturePort)/" + path, into: address, in: app)
         let name = app.textFields["Server name (optional)"]
         reveal(name, app); name.tap(); name.typeText(path + "\n")
         let localHTTP = app.switches["connectionLocalHTTP"]
@@ -271,27 +264,38 @@ import XCTest
         let connect = app.buttons["connectionConnect"]
         reveal(connect, app); connect.tap()
     }
-    private func signIn(scenario: String) throws -> XCUIApplication {
+    private func signIn(scenario: String, remember: Bool = false) throws -> XCUIApplication {
         var request = URLRequest(url: URL(string: "http://127.0.0.1:\(fixturePort)/ready")!); request.timeoutInterval = 3
         let semaphore = DispatchSemaphore(value: 0); var ready = false
         URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
         semaphore.wait()
-        try XCTSkipUnless(ready, "Start the fixture: FIXTURE_PORT=\(fixturePort) python3 Tests/UITests/fixture_server.py")
-        let app = XCUIApplication()
+        try requireReadyFixture(ready, port: String(fixturePort))
+        let app = isolatedApplication()
         app.launchArguments = []; app.launch()
         connect(app, path: "board-\(scenario)-" + UUID().uuidString.prefix(8).lowercased())
+        authenticate(app, remember: remember)
+        return app
+    }
+    private func authenticate(_ app: XCUIApplication, remember: Bool) {
         let username = app.textFields["Username"]
         XCTAssertTrue(username.waitForExistence(timeout: 10), app.debugDescription)
         reveal(username, app); username.tap(); username.typeText("fixture_admin")
         let password = app.secureTextFields["connectionPassword"]
         reveal(password, app); password.tap(); password.typeText("fixture-password")
+        if remember {
+            let toggle = app.switches["Remember sign-in"]
+            reveal(toggle, app)
+            if toggle.value as? String != "1" {
+                toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.93, dy: 0.5)).tap()
+            }
+            XCTAssertEqual(toggle.value as? String, "1", "recovery uses an explicitly remembered connection")
+        }
         let signIn = app.buttons["connectionSignIn"]
         reveal(signIn, app); signIn.tap()
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15), app.debugDescription)
-        return app
     }
     private func selectDestination(_ name: String, in app: XCUIApplication) {
-        let destination = element(app, "destination-" + name)
+        let destination = app.buttons.matching(identifier: "destination-" + name).firstMatch
         for _ in 0..<5 {
             if destination.exists && destination.isHittable { destination.tap(); return }
             let sidebar = app.buttons["Show Sidebar"].firstMatch
@@ -303,12 +307,12 @@ import XCTest
     }
     @discardableResult private func openEditor(_ app: XCUIApplication, page: String) -> XCUIElement {
         selectDestination("Pages", in: app)
-        let row = app.staticTexts[page].firstMatch
+        let row = pageCard(app, named: page)
         XCTAssertTrue(row.waitForExistence(timeout: 8), app.debugDescription)
         for _ in 0..<8 where !row.isHittable { app.swipeUp() }
         row.tap()
         let edit = app.buttons["editLocalDraft"]
-        for _ in 0..<4 where !(edit.exists && edit.isHittable) { app.swipeUp() }
+        for _ in 0..<4 { if edit.exists && edit.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(edit.waitForExistence(timeout: 5)); edit.tap()
         let document = app.textViews["boardDocument"]
         XCTAssertTrue(document.waitForExistence(timeout: 8), app.debugDescription)
@@ -328,8 +332,8 @@ import XCTest
         return false
     }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
-        for _ in 0..<12 where !(element.exists && element.isHittable) { app.swipeUp() }
-        for _ in 0..<16 where !(element.exists && element.isHittable) { app.swipeDown() }
+        for _ in 0..<12 { if element.exists && element.isHittable { break }; app.swipeUp() }
+        for _ in 0..<16 { if element.exists && element.isHittable { break }; app.swipeDown() }
     }
     private func shot(_ app: XCUIApplication, _ name: String, settle: TimeInterval = 1.5, window: XCUIApplication? = nil) {
         Thread.sleep(forTimeInterval: settle)

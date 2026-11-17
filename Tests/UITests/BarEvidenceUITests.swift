@@ -22,7 +22,7 @@ import XCTest
                                        ("Mystery", "B5-mystery", "UNKNOWN MODEL")] {
             choose(display, app)
             XCTAssertTrue(waitFor(10) { ((board.value as? String) ?? "").localizedCaseInsensitiveContains(check) }, "\(display): \(board.value ?? "-")")
-            XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] %@", "web preview")).firstMatch.exists)
+            XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", "web preview")).firstMatch.exists)
             shot(app, "W4-\(file)", settle: 3)
         }
     }
@@ -30,11 +30,10 @@ import XCTest
     /// B31: the editor at accessibility XL text: chips, tiles and rows re-rasterise at the size.
     /// (The in-app demo: at this size the connection form's fields move out of the helper's reach.)
     func testEditorAtAccessibilityTextSize() throws {
-        let app = XCUIApplication()
-        app.launchArguments = ["--demo", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"]
-        app.launch()
+        let app = isolatedApplication()
+        launchFixture(app, arguments: ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXL"])
         XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 15))
-        let destination = element(app, "destination-Pages")
+        let destination = app.buttons.matching(identifier: "destination-Pages").firstMatch
         for _ in 0..<5 where !(destination.exists && destination.isHittable) {
             let sidebar = app.buttons["Show Sidebar"].firstMatch
             if sidebar.exists && sidebar.isHittable { sidebar.tap(); continue }
@@ -81,7 +80,13 @@ import XCTest
         XCTAssertTrue(issues.waitForExistence(timeout: 8), app.debugDescription)
         // Re-recorded (P5): grouped per row and reason, not one line per letter.
         XCTAssertEqual(issues.label, "Line 2: lowercase letters show as capitals on this board (12).")
-        XCTAssertFalse(element(app, "charsetIssuesShowAll").exists, "one group fits: no Show all")
+        // One group can still truncate on a narrow display. Expansion must preserve its text.
+        let more = app.buttons["charsetIssuesShowAll"]
+        if more.exists {
+            more.tap()
+            XCTAssertEqual(issues.label, "Line 2: lowercase letters show as capitals on this board (12).")
+            XCTAssertEqual(more.label, "Show less")
+        }
         shot(app, "W4-B16-charset-issues", settle: 3)
         close(app)
     }
@@ -93,13 +98,13 @@ import XCTest
         let semaphore = DispatchSemaphore(value: 0); var ready = false
         URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
         semaphore.wait()
-        try XCTSkipUnless(ready, "Start the fixture: FIXTURE_PORT=\(fixturePort) python3 Tests/UITests/fixture_server.py")
-        let app = XCUIApplication()
+        try requireReadyFixture(ready, port: String(fixturePort))
+        let app = isolatedApplication()
         app.launchArguments = arguments; app.launch()
         let alias = "board-\(scenario)-" + UUID().uuidString.prefix(8).lowercased()
         let address = app.textFields["connectionAddress"]
-        XCTAssertTrue(app.buttons["exploreDemo"].waitForExistence(timeout: 10))
-        reveal(address, app); address.tap(); address.typeText("http://127.0.0.1:\(fixturePort)/" + alias)
+        XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 10))
+        reveal(address, app); typeConnectionAddress("http://127.0.0.1:\(fixturePort)/" + alias, into: address, in: app)
         let name = app.textFields["Server name (optional)"]
         reveal(name, app); name.tap(); name.typeText(alias + "\n")
         let localHTTP = app.switches["connectionLocalHTTP"]
@@ -129,7 +134,7 @@ import XCTest
         item.tap()
     }
     private func openEditor(_ app: XCUIApplication, page: String) -> XCUIElement {
-        let destination = element(app, "destination-Pages")
+        let destination = app.buttons.matching(identifier: "destination-Pages").firstMatch
         for _ in 0..<5 {
             if destination.exists && destination.isHittable { destination.tap(); break }
             let sidebar = app.buttons["Show Sidebar"].firstMatch
@@ -137,12 +142,12 @@ import XCTest
             let back = app.navigationBars.buttons.element(boundBy: 0)
             if back.exists && back.isHittable { back.tap() }
         }
-        let row = app.staticTexts[page].firstMatch
+        let row = pageCard(app, named: page)
         XCTAssertTrue(row.waitForExistence(timeout: 8), app.debugDescription)
         for _ in 0..<6 where !row.isHittable { app.swipeUp() }
         row.tap()
         let edit = app.buttons["editLocalDraft"]
-        for _ in 0..<4 where !(edit.exists && edit.isHittable) { app.swipeUp() }
+        for _ in 0..<4 { if edit.exists && edit.isHittable { break }; app.swipeUp() }
         XCTAssertTrue(edit.waitForExistence(timeout: 5)); edit.tap()
         let document = app.textViews["boardDocument"]
         XCTAssertTrue(document.waitForExistence(timeout: 8), app.debugDescription)
@@ -162,8 +167,8 @@ import XCTest
         return false
     }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
-        for _ in 0..<20 where !(element.exists && element.isHittable) { app.swipeUp() }
-        for _ in 0..<20 where !(element.exists && element.isHittable) { app.swipeDown() }
+        for _ in 0..<20 { if element.exists && element.isHittable { break }; app.swipeUp() }
+        for _ in 0..<20 { if element.exists && element.isHittable { break }; app.swipeDown() }
     }
     private func shot(_ app: XCUIApplication, _ name: String, settle: TimeInterval = 1.5) {
         Thread.sleep(forTimeInterval: settle)

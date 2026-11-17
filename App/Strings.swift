@@ -184,7 +184,7 @@ enum LibraryStrings {
     /// Kit's action reasons are written for engineers; these say the same thing plainly.
     static func plain(_ reason: ActionDisabledReason) -> String {
         switch reason {
-        case .changesDisabled: "Changing this board from the app is turned off. Turn it on in Settings."
+        case .changesDisabled: "Sign in to control this display."
         case .noDisplay: "Choose a display first."
         case .disconnected: "Connect to your FiestaBoard first."
         case .busy: "Wait for the board to finish."
