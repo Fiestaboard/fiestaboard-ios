@@ -22,6 +22,10 @@ public actor FixtureFiestaBoardService: FiestaBoardService {
     private var homeReadStarted = false
     private var homeReadStart: CheckedContinuation<Void, Never>?
     private var homeReadRelease: CheckedContinuation<Void, Never>?
+    private var undoSupported = false
+    private var undoExpiry = Date.distantPast
+    var undoOptIns: [Bool] = []
+    var restoredBoards: [String] = []
 
     public init(homeAudit: Bool = false, deploymentString: String = "https://demo.fiestaboard.invalid") throws {
         self.homeAudit = homeAudit
@@ -361,7 +365,27 @@ private actor FixtureTransport: APITransport {
 }
 
 // Explicit synthetic Home behavior controls. Actual wire bodies stay in Tests/Fixtures/Home.
-extension FixtureFiestaBoardService: TemporaryOverrideClearing, HomePageSelecting, HomePageHolding, BoardStatusReading {
+extension FixtureFiestaBoardService: TemporaryOverrideClearing, HomePageSelecting, HomePageHolding, BoardStatusReading, HomeOverrideUndoing {
+    func configureUndo(supported: Bool, expiresAt: Date) { undoSupported = supported; undoExpiry = expiresAt }
+    public func homeOverrideStatus(boardID: String) async throws -> HomeOverrideStatus {
+        let value = undoSupported
+        await blockHomeReadIfNeeded()
+        if let error = nextHomeReadFailure { nextHomeReadFailure = nil; throw error }
+        return try JSONDecoder().decode(HomeOverrideStatus.self, from: JSONSerialization.data(withJSONObject:
+            ["undo_supported":value,"active":true,"board_id":boardID]))
+    }
+    public func cancelHomeOverride(boardID: String, requestingUndo: Bool) async throws -> HomeOverrideCancellation {
+        undoOptIns.append(requestingUndo)
+        try await clearTemporaryOverride(boardID: boardID)
+        let value: [String: String] = requestingUndo && undoSupported
+            ? ["undo_token":"synthetic-short-lived-receipt","undo_expires_at":ISO8601DateFormatter().string(from: undoExpiry)] : [:]
+        return try JSONDecoder().decode(HomeOverrideCancellation.self, from: JSONSerialization.data(withJSONObject:value))
+    }
+    public func undoHomeOverride(boardID: String, token: String) async throws -> HomeOverrideStatus {
+        restoredBoards.append(boardID); try await homeMutation()
+        return try JSONDecoder().decode(HomeOverrideStatus.self, from: JSONSerialization.data(withJSONObject:
+            ["undo_supported":true,"active":true,"board_id":boardID]))
+    }
     func configureHome(failure: FiestaBoardError? = nil, delayed: Bool = false, readbackFailure: FiestaBoardError? = nil) {
         homeFailure = failure; homeDelayed = delayed; homeFailReadback = readbackFailure
     }
