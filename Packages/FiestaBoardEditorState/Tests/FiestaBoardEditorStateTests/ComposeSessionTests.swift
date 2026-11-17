@@ -98,6 +98,7 @@ import FiestaBoardDocuments
         session.retryPreview(); await settle(); XCTAssertEqual(renderer.inputs.count,3)
         renderer.answer(try reply("RECOVERED")); await settle(); XCTAssertNil(session.previewFailure)
     }
+    #if DEBUG
     func testLatencyExcludesDeliberateDebounceWithoutRelaxingPostDebounceBudget() async throws {
         let clock = ManualSleeper(), renderer = ComposeRenderGate()
         var now = 10.0
@@ -108,6 +109,7 @@ import FiestaBoardDocuments
         XCTAssertEqual(try XCTUnwrap(session.postDebouncePreviewSeconds),0.10,accuracy:0.00001)
         XCTAssertEqual(try XCTUnwrap(session.inputToPreviewSeconds),0.35,accuracy:0.00001)
     }
+    #endif
     func testOfflineAndCloseKeepInputButDoNotAdoptLatePreviewOrSend() async throws {
         let clock = ManualSleeper(), renderer = ComposeRenderGate()
         let session = ComposeSession(scope:try scope(),sleep:{ try await clock.sleep($0) },render:{ try await renderer.render($0) })

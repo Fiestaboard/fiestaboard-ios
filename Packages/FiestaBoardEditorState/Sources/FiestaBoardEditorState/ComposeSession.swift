@@ -90,8 +90,10 @@ public struct PreparedComposeIntent: Sendable {
     @Published public private(set) var online: Bool
     @Published public private(set) var unavailableBufferedTargetID: String?
     @Published public private(set) var bufferedTargetPresentation: ComposeBufferTarget?
+    #if DEBUG
     public private(set) var inputToPreviewSeconds: TimeInterval?
     public private(set) var postDebouncePreviewSeconds: TimeInterval?
+    #endif
     private let sleep: Sleeper
     private let render: Renderer
     private let monotonicNow: @MainActor () -> TimeInterval
@@ -121,7 +123,10 @@ public struct PreparedComposeIntent: Sendable {
     public func update(_ input: ComposeInput) {
         guard !closed else { return }
         preparedID = nil; revision &+= 1; self.input = input
-        lastInputAt = monotonicNow(); inputToPreviewSeconds = nil; postDebouncePreviewSeconds = nil
+        lastInputAt = monotonicNow()
+        #if DEBUG
+        inputToPreviewSeconds = nil; postDebouncePreviewSeconds = nil
+        #endif
         previewIsStale = true; previewFailure = nil
         schedulePreview()
     }
@@ -274,7 +279,9 @@ public struct PreparedComposeIntent: Sendable {
         preparedID = nil; epoch &+= 1; readyRevision = nil; readyAt = nil
         debounceTask?.cancel(); debounceTask = nil
         previewIsStale = true; previewFailure = nil
+        #if DEBUG
         inputToPreviewSeconds = nil; postDebouncePreviewSeconds = nil
+        #endif
     }
     private func schedulePreview() {
         debounceTask?.cancel(); debounceTask = nil; readyRevision = nil; readyAt = nil
@@ -293,7 +300,10 @@ public struct PreparedComposeIntent: Sendable {
               unavailableBufferedTargetID == nil, scope.valid, input.valid else { return }
         readyRevision = nil
         let captured = ComposePreviewInput(scope: scope, input: input, revision: revision)
-        let capturedEpoch = epoch, inputAt = lastInputAt, debounceAt = readyAt, render = self.render
+        let capturedEpoch = epoch, render = self.render
+        #if DEBUG
+        let inputAt = lastInputAt, debounceAt = readyAt
+        #endif
         previewIsUpdating = true
         renderTask = Task { [weak self] in
             let outcome: Result<TemplatePreviewResult, any Error>
@@ -305,9 +315,11 @@ public struct PreparedComposeIntent: Sendable {
                 case .success(let result):
                     preview = result; previewIsStale = false; previewFailure = nil
                     previewInputDigest = Self.digest(captured.input)
+                    #if DEBUG
                     let end = monotonicNow()
                     inputToPreviewSeconds = inputAt.map { max(0, end - $0) }
                     postDebouncePreviewSeconds = debounceAt.map { max(0, end - $0) }
+                    #endif
                 case .failure(let error):
                     if !(error is CancellationError) { previewFailure = "Preview unavailable" }
                     previewIsStale = true
