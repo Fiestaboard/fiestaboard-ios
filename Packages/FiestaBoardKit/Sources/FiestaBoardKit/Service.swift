@@ -85,6 +85,8 @@ public actor LiveFiestaBoardService: FiestaBoardService, ComposePrincipalProvidi
     private var observedInstallationID: String?
     private var activeScope: VerifiedConnectionScope?
     private var activeComposePrincipal: ComposePrincipalProof?
+    private var composeBoards: [String: (generation: UInt64, detail: BoardDetail)] = [:]
+    private var consumedComposeRequests: Set<UUID> = []
     private var replacementConnectionID: UUID?
     private var persistenceWarning: SessionPersistenceWarning?
     private var access = DraftAccess.readOnly
@@ -405,6 +407,7 @@ public actor LiveFiestaBoardService: FiestaBoardService, ComposePrincipalProvidi
         let detail: BoardDetail = try await fetch(APIRequest(path: ["v1", "boards", target.boardID]))
         try detail.validate()
         guard detail.summary.id == target.boardID else { throw FiestaBoardError.invalidResponse }
+        composeBoards[target.boardID] = (generation, detail)
         return detail
     }
 
@@ -459,6 +462,42 @@ public actor LiveFiestaBoardService: FiestaBoardService, ComposePrincipalProvidi
         let proof = await transport.rememberedComposePrincipal(installationID: installationID)
         guard token == generation else { return nil }
         return proof
+    }
+
+    /// Compose's audited operation guard is independent of generic legacy
+    /// editor/settings write capability. Cached/offline proof cannot pass it.
+    private func requireCompose(_ request: ComposeRequest, writing: Bool) async throws -> UInt64 {
+        let token = generation
+        guard controlVersion?.runningVersion == "11.0.0-alpha.3", !writing || controlOptIn,
+              request.target.deployment == deployment, knownBoards[request.target.boardID] != nil,
+              request.principal.verifiedOnline else { throw FiestaBoardError.writesDisabled }
+        let proof = await composePrincipal()
+        guard token == generation, proof == request.principal else { throw FiestaBoardError.staleSession }
+        guard let entry = composeBoards[request.target.boardID], entry.generation == token,
+              entry.detail.composeProtocol == "compose-intent-v1",
+              try ComposeGeometry(summary: entry.detail.summary) == request.geometry else { throw FiestaBoardError.unsupportedOperation }
+        return token
+    }
+    public func sendCompose(_ request: ComposeRequest) async throws -> ComposeReceipt {
+        let token = try await requireCompose(request, writing: true)
+        guard !consumedComposeRequests.contains(request.requestID) else { throw FiestaBoardError.invalidRequestContext }
+        let body = try request.encoded()
+        consumedComposeRequests.insert(request.requestID)
+        let result = try await response(APIRequest(.post, path: ["v1", "boards", request.target.boardID, "compose"],
+            body: body, cachePolicy: .noStore))
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        _ = try await requireCompose(request, writing: true)
+        return try ComposeReceipt(rawData: result.data, httpStatus: result.status, expectedBoardID: request.target.boardID,
+            expectedRequestID: request.requestID, expectedDuration: request.duration)
+    }
+    public func previewCompose(_ request: ComposeRequest) async throws -> TemplatePreviewResult {
+        let token = try await requireCompose(request, writing: false)
+        let result = try await response(APIRequest(.post, path: ["templates", "render"],
+            body: try request.previewEncoded(), cachePolicy: .noStore))
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        _ = try await requireCompose(request, writing: false)
+        guard result.status == 200 else { throw FiestaBoardError.invalidResponse }
+        return try TemplatePreviewResult(rawData: result.data)
     }
 
     /// Scope and exact bytes are captured under one service generation, including vault ownership.

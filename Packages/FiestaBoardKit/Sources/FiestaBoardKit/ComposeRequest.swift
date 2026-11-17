@@ -7,6 +7,17 @@ public enum ComposeGeometry: Equatable, Sendable, Encodable {
     case flagship, note
     case noteArray(wide: Int, tall: Int)
     case panel(rows: Int, cols: Int)
+    public init(summary: BoardSummary) throws {
+        switch summary.deviceType {
+        case "flagship" where summary.rows == 6 && summary.cols == 22: self = .flagship
+        case "note" where summary.rows == 3 && summary.cols == 15: self = .note
+        case "note_array" where summary.rows % 3 == 0 && summary.cols % 15 == 0:
+            self = .noteArray(wide: summary.cols / 15, tall: summary.rows / 3)
+        case "panel": self = .panel(rows: summary.rows, cols: summary.cols)
+        default: throw FiestaBoardError.invalidTarget
+        }
+        try validate()
+    }
     func validate() throws {
         switch self {
         case .flagship, .note: break
@@ -91,9 +102,30 @@ public struct ComposeRequest: Sendable {
         return try JSONEncoder().encode(Body(request_id: requestID, prepared_at: Self.instant(preparedAt),
             template: lines, line_metadata: lineMetadata, geometry: geometry, duration: durationBody, silence: silence))
     }
+    /// Preview never dispatches duration/silence intent or uses the live-render
+    /// mutation route. Expired authoring metadata does not prevent this read.
+    public func previewEncoded() throws -> Data {
+        let lines = text.components(separatedBy: "\n")
+        guard principal.verifiedOnline, principal.identity.deploymentID == target.deployment.description,
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              lines.count <= 512, lines.reduce(0, { $0 + $1.utf8.count }) <= 65_536,
+              lines.allSatisfy({ $0.unicodeScalars.count <= 4096 }), lineMetadata.count == lines.count,
+              lineMetadata.allSatisfy({ ["left", "center", "right"].contains($0.alignment) }) else { throw FiestaBoardError.invalidRequestContext }
+        let shape = try JSONSerialization.jsonObject(with: JSONEncoder().encode(geometry)) as! [String: Any]
+        var body = shape
+        body["board_id"] = target.boardID; body["template"] = lines
+        body["line_metadata"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(lineMetadata))
+        body["diagnostics"] = true; body["preview"] = ["data": "cached"]
+        return try JSONSerialization.data(withJSONObject: body, options: [.sortedKeys])
+    }
     private static func instant(_ date: Date) -> String {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter.string(from: date)
     }
 }
+public protocol ComposeServicing: Sendable {
+    func sendCompose(_ request: ComposeRequest) async throws -> ComposeReceipt
+    func previewCompose(_ request: ComposeRequest) async throws -> TemplatePreviewResult
+}
+extension LiveFiestaBoardService: ComposeServicing {}
