@@ -61,7 +61,8 @@ extension FixtureRouter {
                     state.boards[id] = ["compose_receipt": ["request_id": uuid, "status": "sent"], "text": lines.joined(separator: "\n")]
                 }
                 state.composeReceipts[key] = receipt
-                return reply(unknown ? 503 : 200, unknown ? ["detail": receipt] : receipt, noStore: true)
+                if unknown { return reply(503, ["detail": receipt], noStore: true) }
+                return reply(200, receipt, noStore: true)
             }
             if method == "GET", segments.count == 5, segments[3] == "compose" {
                 guard let receipt = state.composeReceipts[id + "/" + segments[4].lowercased()] else { return reply(404) }

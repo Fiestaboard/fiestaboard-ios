@@ -30,7 +30,7 @@ SHARDS = {
         'testOverrideBadgeCancel', 'testRecordKillAndReopen',
         'testShowWhenAndPriorityAreAdvanced', 'testVoiceOverLabelDump']],
     'ui-g': ['PolishUITests/testRecordCaretOverChips'],
-    'ui-h': ['PolishUITests/testRecordTypingUndoRedo'],
+    'ui-h': ['PolishUITests/testRecordTypingUndoRedo', 'ComposeUITests'],
 }
 MODELS = {'iPhone 17': 'phone-id', 'iPad Air 11-inch (M4)': 'pad-id'}
 
