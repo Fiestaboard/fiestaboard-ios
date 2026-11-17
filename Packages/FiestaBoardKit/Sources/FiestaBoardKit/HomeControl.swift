@@ -2,10 +2,11 @@ import Foundation
 
 public enum HomeControlOperation: CaseIterable, Sendable { case cancelOverride, selectPage, timedOverride, undoOverride }
 public extension CapabilityPolicy {
-    /// Scoped I7 operations audited at immutable v11 e8306aca0. This grants no
+    /// Scoped I7 operations audited at e8306aca0 (alpha.2) and immutable
+    /// 6be367f4 (alpha.3), whose actual Docker recordings cover these operations. This grants no
     /// editor, scalar-setting, evaluation or page-storage write capability.
     static func allowsHomeControl(_ operation: HomeControlOperation, version: String?, hasScopedStatus: Bool) -> Bool {
-        hasScopedStatus && version == "11.0.0-alpha.2"
+        hasScopedStatus && ["11.0.0-alpha.2", "11.0.0-alpha.3"].contains(version ?? "")
     }
 }
 public struct HomeControlReceipt: Decodable, Sendable {
@@ -52,6 +53,28 @@ extension LiveFiestaBoardService: HomePageSelecting, HomePageHolding {
               temporary ? receipt.active == true : receipt.sent != nil else {
             throw FiestaBoardError.unknownMutationOutcome
         }
+        return receipt
+    }
+}
+
+/// The scoped pause endpoint acknowledges only the selected display's state.
+public struct HomePauseReceipt: Decodable, Sendable {
+    public let boardID: String
+    public let paused: Bool
+    enum CodingKeys: String, CodingKey { case boardID = "board_id", paused }
+}
+public protocol HomeDisplayResuming: Sendable {
+    func resumeHomeDisplay(boardID: String) async throws -> HomePauseReceipt
+}
+extension LiveFiestaBoardService: HomeDisplayResuming {
+    public func resumeHomeDisplay(boardID: String) async throws -> HomePauseReceipt {
+        guard DeploymentURL.validSegment(boardID) else { throw FiestaBoardError.invalidTarget }
+        struct Resume: Encodable { let paused = false }
+        let result = try await response(APIRequest(.post, path: ["settings", "board", boardID, "pause"],
+            body: try JSONEncoder().encode(Resume())))
+        guard result.status == 200,
+              let receipt = try? JSONDecoder().decode(HomePauseReceipt.self, from: result.data),
+              receipt.boardID == boardID, !receipt.paused else { throw FiestaBoardError.unknownMutationOutcome }
         return receipt
     }
 }

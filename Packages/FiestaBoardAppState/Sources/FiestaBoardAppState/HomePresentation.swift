@@ -55,7 +55,8 @@ public struct HomePresentation: Equatable, Sendable {
         if case .override = showing?.mode { activeOverride = true }
         else { activeOverride = detail?.overrideStartedAt != nil }
         let mode: String
-        if activeOverride { mode = "Override" }
+        if detail?.summary.paused == true { mode = "Paused" }
+        else if activeOverride { mode = "Override" }
         else if showing?.collection == true { mode = "Collection" }
         else if showing?.mode == .schedule || detail?.summary.scheduleEnabled == true { mode = "Schedule Mode" }
         else { mode = "Manual Mode" }
