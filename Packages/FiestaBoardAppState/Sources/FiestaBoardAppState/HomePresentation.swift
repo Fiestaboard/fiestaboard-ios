@@ -76,3 +76,16 @@ public struct HomePresentation: Equatable, Sendable {
             banner: banner, nextChange: next)
     }
 }
+
+public enum HomeControlOutcome: Equatable, Sendable {
+    case pageSelected, overrideCanceled, unconfirmed, signInRequired, failed
+    public var message: String {
+        switch self {
+        case .pageSelected: "Page selected"
+        case .overrideCanceled: "Override canceled"
+        case .unconfirmed: "The result couldn't be confirmed. Refresh before trying again."
+        case .signInRequired: "Sign in again to control this display."
+        case .failed: "Couldn't read the display. Refresh and try again."
+        }
+    }
+}

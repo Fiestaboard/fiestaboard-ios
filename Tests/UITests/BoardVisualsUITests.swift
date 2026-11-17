@@ -18,9 +18,9 @@ final class BoardVisualsUITests: XCTestCase {
             ("manual", "Hello World", "Manual Mode", []),
             ("schedule", "Hello World", "Schedule Mode", []),
             ("schedule-gap", "Schedule gap (no default page set)", "Schedule Mode", []),
-            ("collection", "Morning rotation › ", "Schedule Mode", ["collectionBadge"]),
-            ("collection-native-null", "Morning rotation › Device selecting…", "Schedule Mode", ["collectionBadge"]),
-            ("override", "Desk Note", "Override: 9m remaining", []),
+            ("collection", "Morning rotation › ", "Collection", ["collectionBadge"]),
+            ("collection-native-null", "Morning rotation › Device selecting…", "Collection", ["collectionBadge"]),
+            ("override", "Desk Note", "Override", []),
             ("paused", "Hello World", "Manual Mode", ["pausedBadge"]),
             ("silence", "Hello World", "Manual Mode", ["silenceBadge"]),
         ]
@@ -84,6 +84,8 @@ final class BoardVisualsUITests: XCTestCase {
         let page = app.buttons["Good Morning"]
         XCTAssertTrue(page.waitForExistence(timeout: 5))
         page.tap()
+        let show = app.buttons["homeShowPage"]
+        XCTAssertTrue(show.waitForExistence(timeout: 5)); show.tap()
         let back = app.navigationBars.buttons["FiestaBoard"]
         if back.waitForExistence(timeout: 3) { back.tap() }
         waitFor(board, NSPredicate(format: "value CONTAINS %@", "GOOD MORNING"), 8, "flipped frame")
@@ -91,6 +93,22 @@ final class BoardVisualsUITests: XCTestCase {
         waitFor(name, NSPredicate(format: "label == %@", "Good Morning"), 8, "now showing follows the send")
         settle(4)
         shot(app, "D1-B6-after-change")
+    }
+
+    @MainActor
+    func testHomeHeroShowsTitleAndScopedChangePageSheet() async throws {
+        try await requireFixture()
+        let app = launchSignedIn(scenario: "manual")
+        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.descendants(matching: .any)["homeBoard"].exists)
+        XCTAssertTrue(app.buttons["homeCompose"].exists)
+        let change = app.buttons["changePage"]
+        XCTAssertTrue(change.waitForExistence(timeout: 10)); change.tap()
+        XCTAssertTrue(app.navigationBars["Change Page"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Cancel"].exists)
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.navigationBars["Home"].exists)
+        app.terminate()
     }
 
     // MARK: helpers
@@ -127,7 +145,8 @@ final class BoardVisualsUITests: XCTestCase {
         XCTAssertTrue(upNext.waitForExistence(timeout: 10), app.debugDescription)
         let others = app.descendants(matching: .any)["otherDisplay_hall"]
         XCTAssertTrue(others.waitForExistence(timeout: 10))
-        for jargon in ["127.0.0.1", "read-only", "checked separately", "Board controls enabled"] {
+        XCTAssertTrue(app.buttons["homeDisplayPicker"].label.contains("127.0.0.1"), "The display switcher includes its host line")
+        for jargon in ["read-only", "checked separately", "Board controls enabled"] {
             XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", jargon)).firstMatch.exists, jargon)
         }
         XCTAssertFalse(app.descendants(matching: .any)["homeChangesOff"].exists)
@@ -313,7 +332,7 @@ final class BoardVisualsUITests: XCTestCase {
 
     @MainActor private func launchSignedIn(scenario: String) -> XCUIApplication {
         let app = isolatedApplication(); app.launchArguments = []; app.launch()
-        let alias = "board-\(scenario)-" + UUID().uuidString.prefix(6).lowercased()
+        let alias = "board-i7-\(scenario)-" + UUID().uuidString.prefix(6).lowercased()
         let address = app.textFields["connectionAddress"]
         XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 10))
         reveal(address, app); typeConnectionAddress("http://127.0.0.1:\(port)/" + alias, into: address, in: app)

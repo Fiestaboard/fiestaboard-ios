@@ -55,6 +55,17 @@ extension FixtureRouter {
                    "source": active != nil ? "manual" : (scheduled != nil ? "schedule" : "none"), "default_page_id": null,
                    "override_expires_at": id == "kitchen" && state.scenario == "override" && !state.overrideCleared ? "2026-10-31T09:09:00Z" as Any : null,
                    "layers": id == "pixoo" ? [["x": 40, "y": 2, "width": 2, "height": 2, "rgba": "AP8A/wD/AP8A/wD/AP8A/w=="]] as Any : null]) { _, new in new }
+        if state.homeContract {
+            // New I7 synthetic cases reuse the actual H1/H2 shapes; legacy
+            // migration-control bytes remain unchanged in their own namespace.
+            let activeOverride = id == "kitchen" && state.scenario == "override" && !state.overrideCleared
+            out["override_started_at"] = activeOverride ? ISO8601DateFormatter().string(from: state.started) as Any : null
+            if activeOverride { out["override_expires_at"] = ISO8601DateFormatter().string(from: state.started.addingTimeInterval(540)) }
+            out["next_change_at"] = id == "kitchen" && state.scenario == "schedule" ? ISO8601DateFormatter().string(from: state.started.addingTimeInterval(3600)) as Any : null
+            out["next_change_reason"] = id == "kitchen" && state.scenario == "schedule" ? "schedule" as Any : null
+            out["next_page_id"] = id == "kitchen" && state.scenario == "schedule" ? "morning" as Any : null
+            out["health"] = ["reachable": null, "last_error": null, "breaker_open": false]
+        }
         return out
     }
     func boardRoute(_ method: String, _ route: String, _ body: [String: Any], _ boardID: String, _ state: State) -> Response? {

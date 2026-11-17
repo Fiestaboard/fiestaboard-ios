@@ -44,7 +44,7 @@ import XCTest
     func testOverrideBadgeCancel() throws {
         let app = try signIn(scenario: "override")
         let mode = element(app, "modeBadge")
-        XCTAssertTrue(waitFor(10) { mode.exists && mode.label == "Override: 9m remaining" }, app.debugDescription)
+        XCTAssertTrue(waitFor(10) { mode.exists && mode.label == "Override" }, app.debugDescription)
         let cancel = element(app, "overrideCancel")
         XCTAssertTrue(waitFor(15) { cancel.exists && (cancel.value as? String ?? "") != "Unavailable" }, app.debugDescription)
         shot(app, "W4b-B8-override-changes-on", settle: 2)

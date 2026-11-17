@@ -134,6 +134,7 @@ public struct PreparedAction: Identifiable, Sendable {
         case .unavailable: return false
         }
     }
+    private(set) var boardSnapshotEpoch: UInt64 = 0
     @Published public private(set) var board: BoardDetail?
     @Published public private(set) var selectedBoardID: String?
     @Published public private(set) var message: String?
@@ -167,6 +168,13 @@ public struct PreparedAction: Identifiable, Sendable {
     @Published private var inFlight: Set<BoardTarget> = []
     private var usedActions: Set<UUID> = []
     public var commandBusy: Bool { target.map { inFlight.contains($0) } ?? false }
+    /// Common authenticated/readback barrier for the separately audited Home
+    /// operations. The caller must additionally prove its operation capability.
+    public var canPerformScopedHomeControl: Bool {
+        canProbeReachability && hubReachable != false && board != nil && target != nil
+            && !connecting && !refreshing && !commandBusy && !needsReadback
+            && pageLibrary?.busy != true && pageLibrary?.needsReview != true
+    }
     public var canWrite: Bool {
         networkAvailable && hubReachable != false && board != nil && status != nil && status?.access != .readOnly && target != nil && !connecting && !refreshing && !commandBusy && !needsReadback && pageLibrary?.busy != true && pageLibrary?.needsReview != true
     }
@@ -675,6 +683,7 @@ public struct PreparedAction: Identifiable, Sendable {
         return task
     }
     private func acceptSnapshot(_ detail: BoardDetail) {
+        boardSnapshotEpoch &+= 1
         board = detail
         if let index = boards.firstIndex(where: { $0.id == detail.summary.id }) { boards[index] = detail.summary }
     }

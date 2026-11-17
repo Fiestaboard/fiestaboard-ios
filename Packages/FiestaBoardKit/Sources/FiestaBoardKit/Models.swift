@@ -98,6 +98,7 @@ public struct BoardDetail: Codable, Sendable {
     public let nextChangeReason: String?
     public let nextPageID: String?
     public let health: DisplayHealth?
+    public let hasScopedHomeStatus: Bool
     public let layers: [CanvasLayer]?
     public var renderingSupport: RenderingSupport {
         guard summary.charset == "vestaboard_v1", layers?.isEmpty != false,
@@ -120,6 +121,7 @@ public struct BoardDetail: Codable, Sendable {
     public init(from decoder: any Decoder) throws {
         summary = try BoardSummary(from: decoder)
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        hasScopedHomeStatus = [.overrideStartedAt, .overrideExpiresAt, .nextChangeAt, .nextChangeReason, .health].allSatisfy { c.contains($0) }
         characters = try c.decodeIfPresent([[Int]].self, forKey: .characters)
         expectedCharacters = try c.decodeIfPresent([[Int]].self, forKey: .expectedCharacters)
         text = try c.decodeIfPresent(String.self, forKey: .text)
@@ -156,6 +158,13 @@ public struct BoardDetail: Codable, Sendable {
         try c.encodeIfPresent(nextChangeReason, forKey: .nextChangeReason)
         try c.encodeIfPresent(nextPageID, forKey: .nextPageID)
         try c.encodeIfPresent(health, forKey: .health)
+        if hasScopedHomeStatus {
+            try c.encode(overrideStartedAt, forKey: .overrideStartedAt)
+            try c.encode(overrideExpiresAt, forKey: .overrideExpiresAt)
+            try c.encode(nextChangeAt, forKey: .nextChangeAt)
+            try c.encode(nextChangeReason, forKey: .nextChangeReason)
+            try c.encode(health, forKey: .health)
+        }
     }
     func validate() throws {
         try summary.validate()

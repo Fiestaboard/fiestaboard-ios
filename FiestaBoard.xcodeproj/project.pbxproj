@@ -39,11 +39,14 @@
 		1EF763AF48347C9529347361 /* LocalDraftStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07FC5948A1A2BF18D9D2F81A /* LocalDraftStore.swift */; };
 		1F17B659C5A4800BBD4066C0 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = B269490EAA2BC1900A3319B2 /* Models.swift */; };
 		1F4559915E486F9E2FB5C7CF /* TemplateChipFactoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD6BE9A9CDCA742A1B397022 /* TemplateChipFactoryTests.swift */; };
+		1F91B39BD390D142CF6B4F5D /* HomePresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F3ED2E4566FB29FD9D32688 /* HomePresentation.swift */; };
 		1FBFFAD821D54D2D27072B18 /* ShellUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6C742893B9B09F27B4844F0 /* ShellUITests.swift */; };
 		204DDA96797CF06C1153ED61 /* BoardControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F8903FDA40B3CA977BB2F9 /* BoardControls.swift */; };
 		216E17622D37BAC98E2FC3E7 /* PageEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0B00B96E005DAE7C0B39B09 /* PageEditing.swift */; };
 		22B9443A49503B0D0E88F817 /* FixtureBoardRoutes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17C9F199741FDCC7AED7601C /* FixtureBoardRoutes.swift */; };
+		22C678E84B3F53496673611E /* HomePresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E22D3B921378DC289C0EB91 /* HomePresentationTests.swift */; };
 		237CA8C9E997BD6399A1F7CA /* StrokeTransaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF16DDCF129380FBA1D99C7A /* StrokeTransaction.swift */; };
+		263E243D442B2F1E402ADA91 /* HomeChangePageSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D87E2255874FD2E4D1AC18 /* HomeChangePageSheet.swift */; };
 		26BDA27FD0C340D492E2AE57 /* LedRasterizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E27F4FC5A09E5E215D1C351A /* LedRasterizer.swift */; };
 		26F841521FDDF88C5793A83B /* NativeSeedChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20FA0715F7D33289D681DBF3 /* NativeSeedChrome.swift */; };
 		2962C6835DC311B89804BF0E /* Transport.swift in Sources */ = {isa = PBXBuildFile; fileRef = E86A00533E2B630F562A1AC0 /* Transport.swift */; };
@@ -92,6 +95,7 @@
 		5A3478FFEABDF1466B4A6213 /* BitmapCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD6A6AC69EA2756D13DF6A50 /* BitmapCapture.swift */; };
 		5D5E488450B7AD9EC48F2A06 /* DocumentEditingSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DC63171EF43451C07069156 /* DocumentEditingSession.swift */; };
 		5DC4613DF5EF268CADB860ED /* CanvasesPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB40318E2937E815C0FA1A93 /* CanvasesPanel.swift */; };
+		61CCF60D3DFB359AF4318AF6 /* HomeControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B953EB57C3AA01BAB89A2C2 /* HomeControl.swift */; };
 		61ECA5F07357B6E51DA59555 /* PageDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60CD69EE0A48BCB225F494E6 /* PageDetailView.swift */; };
 		661072D3DAB2785A44D9581A /* BitmapCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D06071FB71DF8B9AC66B106C /* BitmapCaptureTests.swift */; };
 		69FAE33C2ABCA25412B6CEEB /* FiestaBoardTV-MIT.txt in Resources */ = {isa = PBXBuildFile; fileRef = 918875B3FE2650F6F4E9D4CA /* FiestaBoardTV-MIT.txt */; };
@@ -170,6 +174,7 @@
 		C46722FA41E6A76CE9DFCA28 /* FiestaBoardAppState.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2E21A61E3064CBB07099A3E1 /* FiestaBoardAppState.framework */; };
 		C60C83F52F1EDEF3766EED47 /* FiestaBoardKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C68E60195CC592B0A15AC6F0 /* Service+Catalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10EF04B4678A93E1C933C71B /* Service+Catalog.swift */; };
+		CA6FD807D34FDEC5985723C4 /* HomeStatusSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 081E72D8041CB8B8299EB35F /* HomeStatusSummary.swift */; };
 		CBB1D95B44199F7EFB45BD39 /* BoardSeamsAndModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DD2B3159501C8F2330E6630 /* BoardSeamsAndModelTests.swift */; };
 		CBC14CF8FFA847CEDCDD4184 /* TemplateChipRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53140029485A055AD658A255 /* TemplateChipRenderer.swift */; };
 		CC424E3DD74DF685254BD43E /* StaticPaintBatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8588741EA4ECE3A2E7E59D8 /* StaticPaintBatchTests.swift */; };
@@ -347,6 +352,7 @@
 		065715F661A235683CCA6A66 /* EditorPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorPresentation.swift; sourceTree = "<group>"; };
 		07D53EC08F3E7E113C2035CD /* TacoMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TacoMark.swift; sourceTree = "<group>"; };
 		07FC5948A1A2BF18D9D2F81A /* LocalDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDraftStore.swift; sourceTree = "<group>"; };
+		081E72D8041CB8B8299EB35F /* HomeStatusSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeStatusSummary.swift; sourceTree = "<group>"; };
 		0889FC6B6D55878B12953F10 /* PreviewStage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewStage.swift; sourceTree = "<group>"; };
 		08A7CF83290AB187BA76D6AE /* Service+Status.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Service+Status.swift"; sourceTree = "<group>"; };
 		08CD0DA7C751195DD5C9810F /* FlapPhysics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlapPhysics.swift; sourceTree = "<group>"; };
@@ -360,6 +366,7 @@
 		0F379EE8104D0AF1F1BA7473 /* BoardCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardCanvas.swift; sourceTree = "<group>"; };
 		10140A34F5ECD86154D7E82A /* TacoLoader */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TacoLoader; path = App/Resources/TacoLoader; sourceTree = SOURCE_ROOT; };
 		10B4ECDC3AC96A79FEB3E9B8 /* TemplateSyntax.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateSyntax.swift; sourceTree = "<group>"; };
+		10D87E2255874FD2E4D1AC18 /* HomeChangePageSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeChangePageSheet.swift; sourceTree = "<group>"; };
 		10EF04B4678A93E1C933C71B /* Service+Catalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Service+Catalog.swift"; sourceTree = "<group>"; };
 		11208C1A2EECBA9BE45CCA05 /* TemplateUITextViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateUITextViewTests.swift; sourceTree = "<group>"; };
 		14DCA60302FF7F66D64DBC69 /* EditorRoot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorRoot.swift; sourceTree = "<group>"; };
@@ -402,6 +409,7 @@
 		39882C2621927BF6BC8C856A /* BoardControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardControlsView.swift; sourceTree = "<group>"; };
 		3A04568998109174FE6CF424 /* FlapAtlasTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlapAtlasTests.swift; sourceTree = "<group>"; };
 		3A4AFA62170739D55EE77AA5 /* DisplayModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayModel.swift; sourceTree = "<group>"; };
+		3B953EB57C3AA01BAB89A2C2 /* HomeControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeControl.swift; sourceTree = "<group>"; };
 		3D5842953E51F07878D5A3BB /* BoardOutputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardOutputView.swift; sourceTree = "<group>"; };
 		3DD4D3175C0AE6D2D868EC75 /* DeploymentURL.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeploymentURL.swift; sourceTree = "<group>"; };
 		3DDC280AD26E72F5627BC62B /* BoardOffset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardOffset.swift; sourceTree = "<group>"; };
@@ -428,6 +436,7 @@
 		5C4F0188E06EA6D06CB9C797 /* MatrixTransitionSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixTransitionSurface.swift; sourceTree = "<group>"; };
 		5DC63171EF43451C07069156 /* DocumentEditingSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentEditingSession.swift; sourceTree = "<group>"; };
 		5DD2B3159501C8F2330E6630 /* BoardSeamsAndModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardSeamsAndModelTests.swift; sourceTree = "<group>"; };
+		5E22D3B921378DC289C0EB91 /* HomePresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomePresentationTests.swift; sourceTree = "<group>"; };
 		60CD69EE0A48BCB225F494E6 /* PageDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageDetailView.swift; sourceTree = "<group>"; };
 		614D7369EFE17A7F0CB19B83 /* Catalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Catalog.swift; sourceTree = "<group>"; };
 		662071B8513793CE06718B54 /* LedDot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedDot.swift; sourceTree = "<group>"; };
@@ -461,6 +470,7 @@
 		8D0769B4598394A149E221E8 /* SessionVault.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionVault.swift; sourceTree = "<group>"; };
 		8EA4080F422F75BB6EDCE14D /* PagesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagesListView.swift; sourceTree = "<group>"; };
 		8EC4319060375B1C6504FA07 /* ShellNetwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellNetwork.swift; sourceTree = "<group>"; };
+		8F3ED2E4566FB29FD9D32688 /* HomePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomePresentation.swift; sourceTree = "<group>"; };
 		8FBC75D21814880B62B94594 /* FiestaBoardRender.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FiestaBoardRender.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		901CEAE27D523037566492AA /* SplineSansMono-OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "SplineSansMono-OFL.txt"; sourceTree = "<group>"; };
 		918875B3FE2650F6F4E9D4CA /* FiestaBoardTV-MIT.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "FiestaBoardTV-MIT.txt"; sourceTree = "<group>"; };
@@ -655,6 +665,7 @@
 				1FEF31B8E11F52CFE1BCB7B8 /* DrawModeTests.swift */,
 				A5846B98CDA945180CC7B8F3 /* GlassProbeTests.swift */,
 				17AA72D990ED60C85912AA69 /* GoldenSeedTests.swift */,
+				5E22D3B921378DC289C0EB91 /* HomePresentationTests.swift */,
 				9EAF3EC9114378244809DC09 /* ParityFoundationTests.swift */,
 				55F8958AD1F9D24DE397C6D7 /* SessionVaultRuntimeTests.swift */,
 				B545425EBCD80E9D1EE7DA0D /* ShellPresentationTests.swift */,
@@ -672,6 +683,8 @@
 			isa = PBXGroup;
 			children = (
 				F10565CA2D32497EFEDA162A /* HomeCards.swift */,
+				10D87E2255874FD2E4D1AC18 /* HomeChangePageSheet.swift */,
+				081E72D8041CB8B8299EB35F /* HomeStatusSummary.swift */,
 				303AB3F8B1E5C7F725129E4B /* HomeView.swift */,
 				233BD4E3B5E7ACACB5CEF599 /* OutOfSyncBanner.swift */,
 				1F18CFA2EA2DBEE5C93C28AA /* StatusReaderRegistry.swift */,
@@ -690,6 +703,7 @@
 				3DD4D3175C0AE6D2D868EC75 /* DeploymentURL.swift */,
 				39295C71C5ED93F6ABEFB0B4 /* FiestaBoardError.swift */,
 				2662195EBC75B32C6C4D1F53 /* Formula.swift */,
+				3B953EB57C3AA01BAB89A2C2 /* HomeControl.swift */,
 				7C53D8997F3544E68E18B8EF /* MobileSession.swift */,
 				B269490EAA2BC1900A3319B2 /* Models.swift */,
 				F72D5E21E5D6A566C8AF4873 /* Models+Status.swift */,
@@ -719,6 +733,7 @@
 				F4490F7035D0FAA8FEDE9402 /* CollectionContext.swift */,
 				40AB705E1DB7F29BE21009EE /* ConnectionModel.swift */,
 				B91E5864EFCBE5AEB441B033 /* DisplayBadges.swift */,
+				8F3ED2E4566FB29FD9D32688 /* HomePresentation.swift */,
 				78BA57525989C1533ACFDBD0 /* HomeSummary.swift */,
 				1AF0741C9C94B7EE04EE2C6C /* OutOfSync.swift */,
 				52A87D40ACEF372F34A5DF44 /* PageThumbnails.swift */,
@@ -1363,6 +1378,7 @@
 				078026B7E4D421E7148C5185 /* CollectionContext.swift in Sources */,
 				F8BF5AA50FF2360BC2C4333D /* ConnectionModel.swift in Sources */,
 				B20EF81EF154A2EA107EBA12 /* DisplayBadges.swift in Sources */,
+				1F91B39BD390D142CF6B4F5D /* HomePresentation.swift in Sources */,
 				FC44F267C3A7B32A3774B5A4 /* HomeSummary.swift in Sources */,
 				3B086D744E54E75ECD8CAA96 /* OutOfSync.swift in Sources */,
 				528936A2CB49D90959535576 /* PageThumbnails.swift in Sources */,
@@ -1405,6 +1421,7 @@
 				E196A0F1550B27C0AA0B9E10 /* GlassProbe.swift in Sources */,
 				0C02ABF56379AD707D1154EA /* GlassProbeTests.swift in Sources */,
 				9E1C9B10C44C9A876CA0ECE6 /* GoldenSeedTests.swift in Sources */,
+				22C678E84B3F53496673611E /* HomePresentationTests.swift in Sources */,
 				11FC63D742F1680FD271E6D4 /* ParityFoundationTests.swift in Sources */,
 				E4E653C3C1172A9AF200939E /* ParityProbe.swift in Sources */,
 				D4E2223DF64508E4FAD15563 /* SessionVaultRuntimeTests.swift in Sources */,
@@ -1430,6 +1447,7 @@
 				ECCD8C8DE3D983B4431AFAAE /* DeploymentURL.swift in Sources */,
 				B87FD124C751FC4DA14916E3 /* FiestaBoardError.swift in Sources */,
 				14943782D8BF8AC90A9F5255 /* Formula.swift in Sources */,
+				61CCF60D3DFB359AF4318AF6 /* HomeControl.swift in Sources */,
 				8388109738D8C3FA4CCA123A /* MobileSession.swift in Sources */,
 				2D955A909400BB75C265B044 /* Models+Status.swift in Sources */,
 				1F17B659C5A4800BBD4066C0 /* Models.swift in Sources */,
@@ -1559,6 +1577,8 @@
 				2A84FF6991DFCC8759F254CF /* FlexibleWorkspaceView.swift in Sources */,
 				424BA90671D510ED1CBEC37C /* FormulaEditorSheet.swift in Sources */,
 				FA82E332EFDFB6E66A0712A6 /* HomeCards.swift in Sources */,
+				263E243D442B2F1E402ADA91 /* HomeChangePageSheet.swift in Sources */,
+				CA6FD807D34FDEC5985723C4 /* HomeStatusSummary.swift in Sources */,
 				3925C07AC2DE62611C5593B2 /* HomeView.swift in Sources */,
 				547863ABF74A03F815E67ED7 /* InsertMenus.swift in Sources */,
 				CFB504FE552730FAA589CF16 /* InsertPickerSheet.swift in Sources */,

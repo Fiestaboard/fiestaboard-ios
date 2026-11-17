@@ -57,3 +57,75 @@ import XCTest
         XCTAssertEqual(log.requests.count, 1)
     }
 }
+
+extension HomeContractTests {
+    func testHomeControlPolicyIsOperationScopedAndRequiresReadContract() {
+        for operation in HomeControlOperation.allCases {
+            XCTAssertTrue(CapabilityPolicy.allowsHomeControl(operation, version: "11.0.0-alpha.2", hasScopedStatus: true))
+            XCTAssertFalse(CapabilityPolicy.allowsHomeControl(operation, version: "11.0.0-alpha.3", hasScopedStatus: true))
+            XCTAssertFalse(CapabilityPolicy.allowsHomeControl(operation, version: "11.0.0-alpha.2", hasScopedStatus: false))
+        }
+        XCTAssertFalse(CapabilityPolicy.allows(.scalarControls, version: "11.0.0-alpha.2", isDev: false, optedIn: true), "The new audit never enables unrelated editor or scalar writes")
+    }
+    func testTimedPageUsesScopedRecordedOverrideContract() async throws {
+        let log = RequestLog()
+        let body = try read("override-timed")
+        let source = try JSONSerialization.jsonObject(with: read("SOURCE")) as! [String: Any]
+        let pageID = (source["scenario"] as! [String: String])["pageID"]!
+        FixtureURLProtocol.handler = { request in log.append(request); return (200, [:], body) }
+        let deployment = try DeploymentURL("https://hub.test")
+        let service = LiveFiestaBoardService(deployment: deployment,
+            transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self]))
+        let receipt = try await service.selectHomePage(pageID: pageID, boardID: "cx-kitchen", durationMinutes: 180)
+        XCTAssertEqual(receipt.boardID, "cx-kitchen")
+        XCTAssertEqual(log.requests[0].url?.path, "/api/settings/temporary-override")
+        let sent = try XCTUnwrap(JSONSerialization.jsonObject(with: XCTUnwrap(log.requests[0].httpBody)) as? [String: Any])
+        XCTAssertEqual(sent["board_id"] as? String, "cx-kitchen")
+        XCTAssertEqual(sent["page_id"] as? String, pageID)
+        XCTAssertEqual(sent["duration_minutes"] as? Int, 180)
+        XCTAssertEqual(sent["revert_mode"] as? String, "schedule")
+        do { _ = try await service.selectHomePage(pageID: pageID, boardID: "cx-kitchen", durationMinutes: 0); XCTFail("Invalid duration must fail before dispatch") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .invalidTarget) }
+        XCTAssertEqual(log.requests.count, 1)
+    }
+}
+
+extension HomeContractTests {
+    func testActualV11MobileSelectionAndUnauthorizedReplies() async throws {
+        let version = try JSONDecoder().decode(VersionInfo.self, from: read("HostV11/home-version"))
+        XCTAssertEqual(version.runningVersion, "11.0.0-alpha.2")
+        let source = try JSONSerialization.jsonObject(with: read("HostV11/SOURCE")) as! [String: Any]
+        let pageID = (source["scenario"] as! [String: String])["pageID"]!
+        let success = try read("HostV11/page-select")
+        let log = RequestLog()
+        FixtureURLProtocol.handler = { request in log.append(request); return (200, [:], success) }
+        let deployment = try DeploymentURL("https://hub.test")
+        let service = LiveFiestaBoardService(deployment: deployment,
+            transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self]))
+        let receipt = try await service.selectHomePage(pageID: pageID, boardID: "cx-kitchen", durationMinutes: nil)
+        XCTAssertEqual(receipt.sent, false, "Selection acknowledgement is not physical-send proof")
+        XCTAssertEqual(log.requests[0].httpMethod, "PUT")
+        XCTAssertEqual(log.requests[0].url?.path, "/api/v1/boards/cx-kitchen/active-page")
+        XCTAssertEqual(try JSONSerialization.jsonObject(with: XCTUnwrap(log.requests[0].httpBody)) as? [String: String], ["page_id":pageID])
+        let unauthorized = try read("HostV11/page-select-unauthorized")
+        FixtureURLProtocol.handler = { request in log.append(request); return (401, [:], unauthorized) }
+        do { _ = try await service.selectHomePage(pageID: pageID, boardID: "cx-kitchen", durationMinutes: nil); XCTFail("Actual mobile refusal cannot acknowledge selection") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .unauthenticated) }
+        XCTAssertEqual(log.requests.count, 2, "No replay after the recorded 401")
+    }
+    func testHomeReadSentinelSurvivesRoundTripAndForeignReceiptFails() async throws {
+        let detail = try JSONDecoder().decode(BoardDetail.self, from: read("home-manual"))
+        XCTAssertTrue(detail.hasScopedHomeStatus)
+        let roundTrip = try JSONDecoder().decode(BoardDetail.self, from: JSONEncoder().encode(detail))
+        XCTAssertTrue(roundTrip.hasScopedHomeStatus)
+        let source = try JSONSerialization.jsonObject(with: read("HostV11/SOURCE")) as! [String: Any]
+        let pageID = (source["scenario"] as! [String: String])["pageID"]!
+        let wrong = try read("HostV11/page-select")
+        FixtureURLProtocol.handler = { _ in (200, [:], wrong) }
+        let deployment = try DeploymentURL("https://hub.test")
+        let service = LiveFiestaBoardService(deployment: deployment,
+            transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self]))
+        do { _ = try await service.selectHomePage(pageID: pageID, boardID: "cx-desk", durationMinutes: nil); XCTFail("Receipt for another display must not acknowledge the operation") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .unknownMutationOutcome) }
+    }
+}

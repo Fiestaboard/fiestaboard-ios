@@ -10,7 +10,7 @@ import base64
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-BUILD = Path.home() / 'Library/Developer/FiestaBoard/ios/cx-i5-native-fixture-controls'
+BUILD = Path(os.environ.get('CX_NATIVE_FIXTURE_BUILD_DIR', str(Path.home() / 'Library/Developer/FiestaBoard/ios/cx-i5-native-fixture-controls')))
 
 class NativeFixtureTests(unittest.TestCase):
     @classmethod
@@ -71,6 +71,17 @@ while let line = readLine() {
             with self.subTest(scenario=c['scenario'],route=c['route'],body=c['body']):
                 self.assertEqual(results[i*2+1]['status'],c['status'])
                 self.assertEqual(results[i*2+1]['body'],c['response'])
+
+    def test_i7_h2_fields_are_scoped_to_new_synthetic_cases(self):
+        prefix='/board-i7-schedule-new/api/'
+        result=self.run_sequence([
+            dict(method='POST',target=prefix+'auth/device/login',body={'username':'fixture_admin','password':'fixture-password','client_id':'fiestaboard-ios'}),
+            dict(target=prefix+'v1/boards/kitchen',headers={'authorization':'Bearer fb_mob_fixture_board-i7-schedule-new'})])[-1]
+        self.assertEqual(result['status'],200)
+        self.assertEqual(result['body']['next_change_reason'],'schedule')
+        self.assertEqual(result['body']['next_page_id'],'morning')
+        self.assertIsInstance(result['body']['next_change_at'],str)
+        self.assertIsNone(result['body']['health']['reachable'])
 
     def test_bearer_is_bound_to_namespace_and_logout_revokes(self):
         prefix='/board-manual-a/api/'

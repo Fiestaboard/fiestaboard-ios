@@ -10,6 +10,7 @@ final class FixtureRouter {
     }
     final class State {
         let scenario: String
+        let homeContract: Bool
         var mode: String
         var setup: Bool
         var token: String?
@@ -24,9 +25,11 @@ final class FixtureRouter {
         let started = Date()
         init(prefix: String, flexible: [String: Any]) {
             self.flexible = flexible
+            homeContract = prefix.hasPrefix("/board-i7-")
             setup = prefix.hasPrefix("/setup-")
             mode = prefix.hasPrefix("/mixed-") || prefix.hasPrefix("/flexible-") ? "disabled" : (setup ? "undecided" : "enabled")
-            scenario = prefix.hasPrefix("/board-") ? String(prefix.dropFirst(7).split(separator: "-").dropLast().joined(separator: "-")) : "manual"
+            let rawScenario = prefix.hasPrefix("/board-") ? String(prefix.dropFirst(7).split(separator: "-").dropLast().joined(separator: "-")) : "manual"
+            scenario = homeContract ? String(rawScenario.dropFirst(3)) : rawScenario
             sync = ["foreign": scenario == "out-of-sync", "overwritten": scenario == "overwritten", "kept": scenario == "kept"]
         }
     }
