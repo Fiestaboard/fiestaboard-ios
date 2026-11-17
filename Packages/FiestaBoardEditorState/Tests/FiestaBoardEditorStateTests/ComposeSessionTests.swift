@@ -188,10 +188,13 @@ extension ComposeSessionTests {
         defer { try? FileManager.default.removeItem(at: directory) }
         let target = try scope(), buffer = ComposeBufferStore(directory: directory), lease = try await buffer.open(target.identity)
         _ = try await buffer.save(.init(identity: target.identity, revision: 9, text: "KEPT", targetID: "removed"), using: lease)
-        let session = ComposeSession(scope: target, online: false, render: { _ in throw FiestaBoardError.networkUnavailable })
+        let session = ComposeSession(scope: target, online: true, render: { _ in throw FiestaBoardError.networkUnavailable })
         _ = try await session.bindBuffer(buffer, resolveTarget: { _ in nil })
         XCTAssertEqual(session.input.text, "KEPT"); XCTAssertEqual(session.scope, target)
         XCTAssertEqual(session.unavailableBufferedTargetID, "removed")
+        XCTAssertNil(session.prepare(), "An unavailable saved target must not silently send to the default display")
+        session.changeScope(target) // Explicitly choosing the current display resolves the missing target.
+        XCTAssertNotNil(session.prepare())
     }
     func testAcknowledgedBufferRevisionCannotClearNewerUnsavedTyping() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
