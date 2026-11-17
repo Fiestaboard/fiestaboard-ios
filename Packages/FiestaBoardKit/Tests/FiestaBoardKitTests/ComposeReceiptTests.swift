@@ -68,3 +68,18 @@ extension ComposeReceiptTests {
         XCTAssertNil(malformed.composeRequestID)
     }
 }
+
+extension ComposeReceiptTests {
+    func testAcceptedReceiptWithFailedRegionsIsContradictoryAndNeverAcknowledged() throws {
+        let captured = try record("formatted-timed-primary")
+        let original = captured["response"] as! [String: Any]
+        for state in ["sent", "unchanged"] {
+            var changed = original
+            changed["status"] = state; changed["sent"] = state == "sent"
+            changed["failed_regions"] = [["row": 0, "col": 0]]
+            XCTAssertThrowsError(try decode(captured, response: changed)) { error in
+                XCTAssertEqual(error as? FiestaBoardError, .unknownMutationOutcome)
+            }
+        }
+    }
+}
