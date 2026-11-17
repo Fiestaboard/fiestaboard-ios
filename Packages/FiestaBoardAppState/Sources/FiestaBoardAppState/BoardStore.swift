@@ -85,6 +85,7 @@ public struct LogoutNotice: Identifiable, Sendable, Equatable {
 }
 public enum ActionPayload: Sendable {
     case text(String), page(String), configuration(BoardPatch), restore
+    case compose(ComposeRequest), composePage(name: String, request: ComposeRequest)
     case homeCancelOverride, homeUndoOverride, homeResumeDisplay, homePage(id: String, durationMinutes: Int?, untilCanceled: Bool)
     fileprivate var homeOperation: HomeControlOperation? {
         switch self {
@@ -95,6 +96,18 @@ public enum ActionPayload: Sendable {
         default: nil
         }
     }
+}
+public struct ComposeOperationRecord: Sendable {
+    public let actionID: UUID
+    public let request: ComposeRequest
+    public let receipt: ComposeReceipt
+    public let acceptedReadback: Bool
+    fileprivate let generation: UInt64
+}
+public struct ComposePageOperationRecord: Sendable {
+    public let actionID: UUID
+    public let request: ComposeRequest
+    public let receipt: ComposePageReceipt
 }
 fileprivate struct HomeUndoContext: Sendable {
     let id = UUID()
@@ -119,6 +132,9 @@ public struct PreparedAction: Identifiable, Sendable {
 
 // Combine keeps this draft buildable where compiler macro sandbox execution is unavailable.
 @MainActor public final class BoardStore: ObservableObject {
+    @Published public private(set) var composePrincipal: ComposePrincipalProof?
+    @Published public private(set) var composeOperation: ComposeOperationRecord?
+    @Published public private(set) var composePageOperation: ComposePageOperationRecord?
     @Published public private(set) var pageLibrary: PageLibraryState?
     private var pageLibraryObservation: AnyCancellable?
     private var pageLibraryEpoch: UInt64 = 0
@@ -207,6 +223,16 @@ public struct PreparedAction: Identifiable, Sendable {
     }
     public var canWrite: Bool {
         canProbeReachability && hubReachable != false && board != nil && status != nil && status?.access != .readOnly && target != nil && !connecting && !refreshing && !commandBusy && !needsReadback && pageLibrary?.busy != true && pageLibrary?.needsReview != true
+    }
+    private var supportsCompose: Bool {
+        status?.version.runningVersion == "11.0.0-alpha.3" && board?.composeProtocol == "compose-intent-v1"
+            && composePrincipal?.verifiedOnline == true && service is any ComposeServicing
+    }
+    public var canPerformCompose: Bool { canPerformScopedHomeControl && supportsCompose && board?.summary.paused == false }
+    public var canSaveComposePage: Bool { canPerformScopedHomeControl && supportsCompose }
+    private func isCurrentComposeRequest(_ request: ComposeRequest) -> Bool {
+        supportsCompose && request.target == target && request.principal == composePrincipal
+            && board.map { (try? ComposeGeometry(summary: $0.summary)) == request.geometry } == true
     }
     public var boardActionDisabledReason: ActionDisabledReason? {
         guard let status else { return .disconnected }
@@ -312,6 +338,11 @@ public struct PreparedAction: Identifiable, Sendable {
                         message = "Display details could not be loaded. Refresh before using controls. " + safeDescription(error)
                     }
                 }
+                if let provider = next as? any ComposePrincipalProviding {
+                    let proof = await provider.composePrincipal()
+                    guard valid(token) else { return }
+                    composePrincipal = proof
+                }
             } catch {
                 guard valid(token) else { return }
                 if pathToken == reachabilityEpoch, (error as? FiestaBoardError) == .networkUnavailable { hubReachable = false }
@@ -345,6 +376,7 @@ public struct PreparedAction: Identifiable, Sendable {
     public func waitForSessionCleanup() async { await retirementTask?.value }
     private func resetConnection() {
         generation &+= 1
+        composePrincipal = nil; composeOperation = nil; composePageOperation = nil
         homeUndoCapability = nil; homeUndoContext = nil
         clearSchedules()
         pageLibraryObservation = nil; pageLibrary = nil; pageLibraryEpoch &+= 1
@@ -397,6 +429,7 @@ public struct PreparedAction: Identifiable, Sendable {
     @discardableResult public func selectBoard(_ id: String) -> Task<Void, Never> {
         guard boards.contains(where: { $0.id == id }), !connecting else { return Task {} }
         generation &+= 1
+        composeOperation = nil; composePageOperation = nil
         homeUndoCapability = nil; homeUndoContext = nil
         clearSchedules()
         refreshTask?.cancel(); commandTask?.cancel()
@@ -670,6 +703,8 @@ public struct PreparedAction: Identifiable, Sendable {
     }
     private func canPrepare(_ payload: ActionPayload) -> Bool {
         if case .homeUndoOverride = payload { return canUndoHomeOverride }
+        if case .compose(let request) = payload { return canPerformCompose && isCurrentComposeRequest(request) }
+        if case .composePage(_, let request) = payload { return canSaveComposePage && isCurrentComposeRequest(request) }
         return payload.homeOperation.map { canPerformHomeControl($0) } ?? canWrite
     }
     func homeActionWasAcknowledged(_ action: PreparedAction) -> Bool {
@@ -678,6 +713,8 @@ public struct PreparedAction: Identifiable, Sendable {
     public func prepare(_ payload: ActionPayload) -> PreparedAction? {
         guard canPrepare(payload), let target, let summary = boards.first(where: { $0.id == target.boardID }) else { return nil }
         switch payload {
+        case .compose(let request): guard (try? request.encoded(now: now())) != nil else { return nil }
+        case .composePage(let name, let request): guard (try? request.pageEncoded(name: name)) != nil else { return nil }
         case .text(let value): guard !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
         case .page(let id): guard pages.contains(where: { $0.id == id }) else { return nil }
         case .configuration(let patch):
@@ -711,13 +748,36 @@ public struct PreparedAction: Identifiable, Sendable {
         usedActions.insert(action.id)
         inFlight.insert(action.target)
         readbackTargets.insert(action.target)
+        let composeLibrary: PageLibraryState?
+        if case .composePage = action.payload { composeLibrary = pageLibrary } else { composeLibrary = nil }
+        if let composeLibrary { composeLibrary.blocked = true; composeLibrary.phase = .working; pageLibraryEpoch &+= 1 }
         let token = generation, pathToken = reachabilityEpoch
         let task = Task { [weak self] in
             guard let self else { return }
-            defer { inFlight.remove(action.target) }
+            defer {
+                inFlight.remove(action.target)
+                if let composeLibrary, case .working = composeLibrary.phase {
+                    composeLibrary.phase = .reviewRequired("The result is not confirmed. Check Pages before starting another request.")
+                }
+            }
             do {
                 let receipt: String
                 switch action.payload {
+                case .compose(let request):
+                    guard let writer = service as? any ComposeServicing else { throw FiestaBoardError.writesDisabled }
+                    let result = try await writer.sendCompose(request)
+                    guard valid(token) else { return }
+                    composeOperation = .init(actionID: action.id, request: request, receipt: result, acceptedReadback: false, generation: token)
+                    if let retry = result.retryAfterSeconds { recordHubReadFailure(FiestaBoardError.rateLimited(retryAfterSeconds: retry), pathToken: pathToken) }
+                    receipt = Self.describeCompose(result)
+                case .composePage(let name, let request):
+                    guard let writer = service as? any ComposeServicing else { throw FiestaBoardError.writesDisabled }
+                    let result = try await writer.saveComposePage(name: name, request: request)
+                    guard valid(token) else { return }
+                    composePageOperation = .init(actionID: action.id, request: request, receipt: result)
+                    if !pages.contains(where: { $0.id == result.page.id }) { pages.append(result.page) }
+                    composeLibrary?.blocked = false; composeLibrary?.phase = .completed("Page created.")
+                    receipt = "Saved as a page. Display and Schedule were not changed."
                 case .text(let value): receipt = Self.describe(try await service.sendText(value, to: action.target), simulated: action.isDemo)
                 case .page(let id): receipt = Self.describe(try await service.selectPage(id: id, on: action.target), simulated: action.isDemo)
                 case .configuration(let patch):
@@ -790,6 +850,7 @@ public struct PreparedAction: Identifiable, Sendable {
                 }
             } catch {
                 guard valid(token) else { return }
+                if let composeLibrary { finishPageLibraryFailure(error, library: composeLibrary, dispatched: true) }
                 if handleAuthenticationLoss(error) { return }
                 recordHubReadFailure(error, pathToken: pathToken)
                 message = (action.isDemo ? "Simulated — " : "") + safeDescription(error)
@@ -801,6 +862,8 @@ public struct PreparedAction: Identifiable, Sendable {
                     readbackTargets.insert(action.target)
                     message = (message ?? "") + " Refresh before another action; some settings may have changed."
                 } else {
+                    if case .compose = action.payload { readbackTargets.insert(action.target); return }
+                    if case .composePage = action.payload { readbackTargets.insert(action.target); return }
                     switch error as? FiestaBoardError {
                     case .unknownMutationOutcome, .partialWrite: readbackTargets.insert(action.target)
                     default: readbackTargets.remove(action.target)
@@ -823,6 +886,63 @@ public struct PreparedAction: Identifiable, Sendable {
         boardSnapshotEpoch &+= 1
         board = detail
         if let index = boards.firstIndex(where: { $0.id == detail.summary.id }) { boards[index] = detail.summary }
+        if let operation = composeOperation, operation.generation == generation,
+           operation.request.target.boardID == detail.summary.id, operation.request.principal == composePrincipal {
+            let accepted = [.sent, .unchanged].contains(operation.receipt.state) && detail.composeRequestID == operation.request.requestID
+            composeOperation = .init(actionID: operation.actionID, request: operation.request, receipt: operation.receipt,
+                                     acceptedReadback: accepted, generation: operation.generation)
+        }
+    }
+    public func previewCompose(_ request: ComposeRequest) async throws -> TemplatePreviewResult {
+        guard canProbeReachability, !connecting, isCurrentComposeRequest(request), let reader = service as? any ComposeServicing else { throw FiestaBoardError.invalidTarget }
+        let token = generation, pathToken = reachabilityEpoch
+        do {
+            let result = try await reader.previewCompose(request)
+            guard valid(token), isCurrentComposeRequest(request) else { throw FiestaBoardError.invalidTarget }
+            recordHubResponse(pathToken: pathToken); return result
+        } catch {
+            guard token == generation else { throw FiestaBoardError.staleSession }
+            if !handleAuthenticationLoss(error) { recordHubReadFailure(error, pathToken: pathToken) }
+            throw error
+        }
+    }
+    @discardableResult public func checkComposeOutcome() -> Task<Void, Never> {
+        guard canProbeReachability, !connecting, !commandBusy, let operation = composeOperation,
+              operation.generation == generation, isCurrentComposeRequest(operation.request),
+              let capturedService = service, let reader = capturedService as? any ComposeServicing else { return Task {} }
+        let token = generation, pathToken = reachabilityEpoch, target = operation.request.target
+        inFlight.insert(target); readbackTargets.insert(target)
+        return Task { [weak self] in
+            guard let self else { return }
+            defer { inFlight.remove(target) }
+            do {
+                let result = try await reader.composeOutcome(operation.request)
+                guard valid(token), composeOperation?.actionID == operation.actionID else { return }
+                composeOperation = .init(actionID: operation.actionID, request: operation.request, receipt: result, acceptedReadback: false, generation: token)
+                message = Self.describeCompose(result)
+                if let retry = result.retryAfterSeconds { recordHubReadFailure(FiestaBoardError.rateLimited(retryAfterSeconds: retry), pathToken: pathToken) }
+                let detail = try await capturedService.board(target)
+                guard valid(token) else { return }
+                acceptSnapshot(detail); readbackTargets.remove(target); recordHubResponse(pathToken: pathToken)
+            } catch {
+                guard valid(token) else { return }
+                if !handleAuthenticationLoss(error) { recordHubReadFailure(error, pathToken: pathToken); message = safeDescription(error) }
+            }
+        }
+    }
+    private static func describeCompose(_ receipt: ComposeReceipt) -> String {
+        switch receipt.state {
+        case .sent: "Message acknowledged by the display service. Physical output is not independently verified."
+        case .unchanged: "Content was already current. The requested duration was accepted."
+        case .held: "Message held until silence ends; it has not been sent."
+        case .preparing, .dispatching: "Message outcome is pending. Check its outcome without sending again."
+        case .notSent: "Message was not sent. Your draft is kept."
+        case .partial: "Only part of the display accepted the content. Your draft is kept."
+        case .unknown: "Message outcome is unknown. Your draft is kept; it will not be sent again automatically."
+        case .expired: "The requested end time passed. Your draft is kept."
+        case .superseded: "A newer display action replaced this message. Your draft is kept."
+        case .rejected: "The display declined this message. Your draft is kept."
+        }
     }
     /// Authentication loss ends this UI session at every request boundary. It also
     /// invalidates prepared actions; a readback failure cannot erase an earlier receipt.

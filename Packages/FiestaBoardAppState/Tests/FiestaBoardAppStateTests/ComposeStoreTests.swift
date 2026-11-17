@@ -91,7 +91,9 @@ private actor ComposeStoreService: FiestaBoardService, ComposeServicing, Compose
         else { body["held_until"] = NSNull() }
         if let retrySeconds { body["retry_after_seconds"] = retrySeconds }
         else { body["retry_after_seconds"] = NSNull() }
-        return try ComposeReceipt(rawData: JSONSerialization.data(withJSONObject: code >= 400 ? ["detail": body] : body), httpStatus: code,
+        let envelope: [String: Any] = code >= 400 ? ["detail": body] : body
+        let encoded = try JSONSerialization.data(withJSONObject: envelope)
+        return try ComposeReceipt(rawData: encoded, httpStatus: code,
             expectedBoardID: request.target.boardID, expectedRequestID: request.requestID, expectedDuration: request.duration, isOutcomeRead: read)
     }
     func board(_ target: BoardTarget) throws -> BoardDetail {
@@ -145,6 +147,7 @@ private actor ComposeStoreService: FiestaBoardService, ComposeServicing, Compose
     func testOfflineAndChangedTargetCannotDispatchCapturedCompose() async throws {
         let (store, service, request) = try await connected()
         store.networkAvailable = false; XCTAssertNil(store.prepare(.compose(request))); store.networkAvailable = true
+        await store.probeReachability().value
         let action = try XCTUnwrap(store.prepare(.compose(request)))
         let other = try XCTUnwrap(store.boards.first { $0.id != request.target.boardID })
         await store.selectBoard(other.id).value; await store.confirm(action).value
