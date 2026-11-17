@@ -10,7 +10,7 @@ import FiestaBoardDocuments
         let corpus = try JSONSerialization.jsonObject(with: bytes) as! [String: Any]
         return try XCTUnwrap((corpus["records"] as? [[String: Any]])?.first { $0["case"] as? String == name })
     }
-    private func setup(outcome: String = "formatted-timed-primary", protocolName: String? = "compose-intent-v1", budget: HubRequestBudget? = nil) async throws -> (LiveFiestaBoardService, ComposeRequest, RequestLog) {
+    private func setup(outcome: String = "formatted-timed-primary", protocolName: String? = "compose-intent-v1", budget: HubRequestBudget? = nil, catalogArrays: Bool = false) async throws -> (LiveFiestaBoardService, ComposeRequest, RequestLog) {
         let recorded = try fixture("compose-authenticated", outcome)
         var board = try fixture("compose-authenticated", "primary-capability")["response"] as! [String: Any]
         board["compose_protocol"] = protocolName
@@ -22,6 +22,17 @@ import FiestaBoardDocuments
         let preview = try JSONSerialization.data(withJSONObject: fixture("operations-authenticated", "preview-primary-formatting")["response"]!)
         let created = try JSONSerialization.data(withJSONObject: fixture("operations-authenticated", "create-hall-1")["response"]!)
         let readback = try JSONSerialization.data(withJSONObject: fixture("operations-authenticated", "created-readback-hall-1")["response"]!)
+        var variables = try fixture("catalog-authenticated", "variables-local-provider")["response"] as! [String: Any]
+        if catalogArrays {
+            var fields = variables["variables"] as! [String: [String]]
+            fields["date_time"]! += ["future.*.name", "future.0.name"]
+            variables["variables"] = fields
+        }
+        let variablesBytes = try JSONSerialization.data(withJSONObject: variables)
+        let manifestBytes = try JSONSerialization.data(withJSONObject: fixture("catalog-authenticated", "date-time-manifest")["response"]!)
+        let functionBytes = try JSONSerialization.data(withJSONObject: fixture("catalog-authenticated", "formula-functions")["response"]!)
+        let validBytes = try JSONSerialization.data(withJSONObject: fixture("catalog-authenticated", "validate-valid")["response"]!)
+        let invalidBytes = try JSONSerialization.data(withJSONObject: fixture("catalog-authenticated", "validate-syntax")["response"]!)
         let log = RequestLog(), deployment = try DeploymentURL("https://board.test/prefix")
         FixtureURLProtocol.handler = { request in
             log.append(request)
@@ -40,6 +51,12 @@ import FiestaBoardDocuments
             case "compose": return (responseStatus, [:], response)
             case "render": return (200, [:], preview)
             case "pages": return (201, [:], created)
+            case "variables": return (200, [:], variablesBytes)
+            case "manifest": return (200, [:], manifestBytes)
+            case "functions": return (200, [:], functionBytes)
+            case "validate":
+                let body = try JSONSerialization.jsonObject(with: request.httpBody!) as! [String: Any]
+                return (200, [:], (body["template"] as? [String]) == ["{{= 1+2 }}"] ? validBytes : invalidBytes)
             default:
                 if request.url!.path.contains("/pages/") { return (200, [:], readback) }
                 if request.url!.path.contains("/compose/") { return (200, [:], poll) }
@@ -169,5 +186,54 @@ extension ComposeServiceTests {
         XCTAssertNil(body["request_id"]); XCTAssertNil(body["protocol"]); XCTAssertNil(body["prepared_at"])
         XCTAssertEqual(log.requests.filter { $0.url?.path.contains("/pages/") == true && $0.httpMethod == "GET" }.count, 1)
         XCTAssertTrue(log.requests.filter { $0.url?.path.contains("/compose") == true || $0.url?.path.contains("active-page") == true || $0.url?.path.contains("schedule") == true }.isEmpty)
+    }
+}
+
+
+extension ComposeServiceTests {
+    func testComposeCatalogUsesActualScalarMetadataWithoutExampleValuesOrArrayHydration() async throws {
+        let (service, request, log) = try await setup(catalogArrays: true)
+        let catalog = try await service.composeTemplateCatalog(request)
+        XCTAssertTrue(catalog.isServerCatalog)
+        let plugin = try XCTUnwrap(catalog.plugins.first)
+        XCTAssertEqual(plugin.id, "date_time"); XCTAssertEqual(plugin.fieldCount, 27)
+        XCTAssertTrue(plugin.arrays.isEmpty)
+        XCTAssertTrue(plugin.groups.flatMap(\.fields).allSatisfy { $0.preview == nil })
+        XCTAssertTrue(plugin.groups.flatMap(\.fields).contains { $0.path == "date_time.day_of_week" })
+        XCTAssertTrue(log.requests.filter { $0.url?.path.contains("/displays/") == true }.isEmpty)
+        XCTAssertTrue(log.requests.filter { $0.httpMethod == "POST" && $0.url?.lastPathComponent != "login" }.isEmpty)
+    }
+    func testComposeFunctionsAndFormulaValidationUseActualServerVerdictsWithoutSending() async throws {
+        let (service, request, log) = try await setup()
+        let functions = try await service.composeFormulaFunctions(request)
+        XCTAssertEqual(functions.names.count, 78); XCTAssertTrue(functions.names.contains("NOW"))
+        let valid = try await service.validateComposeFormula("1+2", request: request)
+        let invalid = try await service.validateComposeFormula("1+@", request: request)
+        XCTAssertTrue(valid.valid); XCTAssertFalse(invalid.valid)
+        XCTAssertTrue(invalid.messages.contains { $0.contains("#SYNTAX") })
+        XCTAssertTrue(log.requests.filter { $0.url?.path.contains("/compose") == true || $0.url?.lastPathComponent == "pages" }.isEmpty)
+        let posts = log.requests.filter { $0.httpMethod == "POST" && $0.url?.lastPathComponent != "login" }
+        XCTAssertEqual(posts.count, 2); XCTAssertTrue(posts.allSatisfy { $0.url?.path.hasSuffix("/templates/validate") == true })
+    }
+    func testRetiredComposeCatalogScopeCannotReachWire() async throws {
+        let (service, request, log) = try await setup()
+        await service.forgetRememberedSession()
+        do { _ = try await service.composeTemplateCatalog(request); XCTFail("Retired catalog scope") } catch {}
+        do { _ = try await service.composeFormulaFunctions(request); XCTFail("Retired function scope") } catch {}
+        do { _ = try await service.validateComposeFormula("1+2", request: request); XCTFail("Retired formula scope") } catch {}
+        XCTAssertTrue(log.requests.filter { ["variables", "functions", "validate", "manifest"].contains($0.url!.lastPathComponent) }.isEmpty)
+    }
+    func testForgetWhileCatalogWaitsForBudgetPreventsWireDispatch() async throws {
+        let budget = HubRequestBudget(limit: 1)
+        let (service, request, log) = try await setup(budget: budget)
+        let hold = ComposeBudgetHold()
+        let occupying = Task { try await budget.run { await hold.hold() } }
+        await hold.wait()
+        let reading = Task { try await service.composeFormulaFunctions(request) }
+        while await budget.waitingCount == 0 { await Task.yield() }
+        await service.forgetRememberedSession()
+        await hold.release(); try await occupying.value
+        do { _ = try await reading.value; XCTFail("Forgotten queued read") } catch {}
+        XCTAssertTrue(log.requests.filter { $0.url?.lastPathComponent == "functions" }.isEmpty)
     }
 }

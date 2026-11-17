@@ -2,7 +2,7 @@ import XCTest
 @testable import FiestaBoardKit
 @testable import FiestaBoardAppState
 
-private actor ComposeStoreService: FiestaBoardService, ComposeServicing, ComposePrincipalProviding {
+private actor ComposeStoreService: FiestaBoardService, ComposeServicing, ComposePrincipalProviding, ComposeCatalogReading {
     nonisolated let deployment: DeploymentURL
     nonisolated let isDemo = false
     let base: FixtureFiestaBoardService
@@ -12,6 +12,7 @@ private actor ComposeStoreService: FiestaBoardService, ComposeServicing, Compose
     var sends: [ComposeRequest] = []
     var creates: [ComposeRequest] = []
     var polls = 0
+    var catalogReads = 0
     var state = ComposeReceipt.State.sent
     var retrySeconds: Int?
     var readbackFails = false
@@ -53,6 +54,17 @@ private actor ComposeStoreService: FiestaBoardService, ComposeServicing, Compose
     func previewCompose(_ request: ComposeRequest) async throws -> TemplatePreviewResult {
         let lines = request.text.components(separatedBy: "\n")
         return try TemplatePreviewResult(rawData: JSONSerialization.data(withJSONObject: ["rendered": request.text, "lines": lines, "line_count": lines.count, "charset": "ascii"]))
+    }
+    func composeTemplateCatalog(_ request: ComposeRequest) async throws -> TemplateCatalog {
+        catalogReads += 1
+        if delayed { await withCheckedContinuation { sendGate = $0; sendObserver?.resume(); sendObserver = nil } }
+        return TemplateCatalog(plugins: [], colors: [], formatting: [], isServerCatalog: true)
+    }
+    func composeFormulaFunctions(_ request: ComposeRequest) async throws -> FunctionCatalog {
+        catalogReads += 1; return FunctionCatalog(functions: [])
+    }
+    func validateComposeFormula(_ expression: String, request: ComposeRequest) async throws -> FormulaCheck {
+        catalogReads += 1; return FormulaCheck(valid: true, messages: [])
     }
     func saveComposePage(name: String, request: ComposeRequest) async throws -> ComposePageReceipt {
         creates.append(request)
@@ -208,5 +220,35 @@ private actor ComposeStoreService: FiestaBoardService, ComposeServicing, Compose
         await service.configure(); await store.reviewPageLibrary(); store.acknowledgePageLibraryReview()
         await store.refresh().value
         XCTAssertFalse(store.pageLibrary?.needsReview ?? true)
+    }
+}
+
+
+extension ComposeStoreTests {
+    func testComposeCatalogReadsRejectOfflineAndChangedCapturedTargetWithoutCallingService() async throws {
+        let (store, service, request) = try await connected()
+        store.networkAvailable = false
+        do { _ = try await store.composeTemplateCatalog(request); XCTFail("Offline catalog cannot read") } catch {}
+        store.networkAvailable = true; await store.probeReachability().value
+        let other = try XCTUnwrap(store.boards.first { $0.id != request.target.boardID })
+        await store.selectBoard(other.id).value
+        do { _ = try await store.composeFormulaFunctions(request); XCTFail("Old target cannot read functions") } catch {}
+        do { _ = try await store.validateComposeFormula("1+2", request: request); XCTFail("Old target cannot validate") } catch {}
+        let reads = await service.catalogReads; XCTAssertEqual(reads, 0)
+    }
+    func testDelayedComposeCatalogCannotPublishAfterSelectedTargetChanges() async throws {
+        let (store, service, request) = try await connected()
+        await service.blockSend()
+        let reading = Task { try await store.composeTemplateCatalog(request) }
+        await service.waitForSend()
+        let other = try XCTUnwrap(store.boards.first { $0.id != request.target.boardID })
+        await store.selectBoard(other.id).value
+        await service.releaseSend()
+        do { _ = try await reading.value; XCTFail("Late catalog belongs to old target") } catch {}
+        let reads = await service.catalogReads; XCTAssertEqual(reads, 1)
+        let current = await service.request(target: try BoardTarget(deployment: service.deployment, boardID: other.id), text: "")
+        let functions = try await store.composeFormulaFunctions(current)
+        let check = try await store.validateComposeFormula("1+2", request: current)
+        XCTAssertTrue(functions.names.isEmpty); XCTAssertTrue(check.valid)
     }
 }
