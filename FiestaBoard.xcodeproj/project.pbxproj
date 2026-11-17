@@ -116,6 +116,7 @@
 		78C410B9A2A2B444B993B0EB /* FiestaBoardKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */; };
 		7BC267E2CBE0C7B7D912FFBB /* EditorRemoteActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3E7BE5F69B8B5D28D44AE0E /* EditorRemoteActions.swift */; };
 		7D39F4CA94AB1625A2194152 /* VoiceOverLabelDumpTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F390E5BDD0C4E31270C8A045 /* VoiceOverLabelDumpTests.swift */; };
+		7D75424B562E2FDC5ACF05B2 /* ComposePresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D3C31CA97BDB99CB7210BB7 /* ComposePresentationTests.swift */; };
 		7DBA4232691B74518CE13653 /* FiestaBoardApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8F61E1D6DA7D9178AE932E5 /* FiestaBoardApp.swift */; };
 		7DF5867A76C387AA1C58930E /* CanvasEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93B36F688F58E798D2EB8384 /* CanvasEditing.swift */; };
 		7E3327DD48E9020CF4B0E3A2 /* CanvasAreaPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88FC48CA3F91EB260F3FD8F8 /* CanvasAreaPicker.swift */; };
@@ -385,6 +386,7 @@
 		0CE51B6E8E630F1CA0FAFFB0 /* FiestaBoardEditorState.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FiestaBoardEditorState.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		0CF8A0D71245FFA302EDD63D /* BoardTables.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardTables.swift; sourceTree = "<group>"; };
 		0D155B6CED8ADFAC77D0F0E6 /* NativeTemplateTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTemplateTextView.swift; sourceTree = "<group>"; };
+		0D3C31CA97BDB99CB7210BB7 /* ComposePresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposePresentationTests.swift; sourceTree = "<group>"; };
 		0F379EE8104D0AF1F1BA7473 /* BoardCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardCanvas.swift; sourceTree = "<group>"; };
 		10140A34F5ECD86154D7E82A /* TacoLoader */ = {isa = PBXFileReference; lastKnownFileType = folder; name = TacoLoader; path = App/Resources/TacoLoader; sourceTree = SOURCE_ROOT; };
 		10B4ECDC3AC96A79FEB3E9B8 /* TemplateSyntax.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateSyntax.swift; sourceTree = "<group>"; };
@@ -699,6 +701,7 @@
 			children = (
 				CBAA32A7BB31C756C4A9E5E4 /* CharsetIssuesFormattingTests.swift */,
 				5D70B40B31DF074F1A8B3ACD /* ComposeAuthoringTests.swift */,
+				0D3C31CA97BDB99CB7210BB7 /* ComposePresentationTests.swift */,
 				A15186CD53DB16F4D6F5CBDA /* ComposeTextViewTests.swift */,
 				1FEF31B8E11F52CFE1BCB7B8 /* DrawModeTests.swift */,
 				A5846B98CDA945180CC7B8F3 /* GlassProbeTests.swift */,
@@ -1477,6 +1480,7 @@
 			files = (
 				50258095D519E0441BC24C31 /* CharsetIssuesFormattingTests.swift in Sources */,
 				87A7E1F909B9C9A3F025425F /* ComposeAuthoringTests.swift in Sources */,
+				7D75424B562E2FDC5ACF05B2 /* ComposePresentationTests.swift in Sources */,
 				C3DC59AEB442F33A510EAB33 /* ComposeTextViewTests.swift in Sources */,
 				DBD4590104B773E8C67435CB /* DrawModeTests.swift in Sources */,
 				E196A0F1550B27C0AA0B9E10 /* GlassProbe.swift in Sources */,
