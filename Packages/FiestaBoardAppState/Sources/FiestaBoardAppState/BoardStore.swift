@@ -101,6 +101,7 @@ fileprivate struct HomeUndoContext: Sendable {
     let expiresAt: Date
     let target: BoardTarget
     let generation: UInt64
+    var presentedUntil: Date?
 }
 /// A confirmation binds the exact payload to the deployment, board and current UI generation.
 public struct PreparedAction: Identifiable, Sendable {
@@ -192,7 +193,8 @@ public struct PreparedAction: Identifiable, Sendable {
     @Published private var homeUndoContext: HomeUndoContext?
     public var canUndoHomeOverride: Bool {
         guard canPerformHomeControl(.undoOverride), let context = homeUndoContext else { return false }
-        return context.target == target && context.generation == generation && context.expiresAt > now()
+        guard let deadline = context.presentedUntil else { return false }
+        return context.target == target && context.generation == generation && min(context.expiresAt,deadline) > now()
     }
     public var commandBusy: Bool { target.map { inFlight.contains($0) } ?? false }
     /// Common authenticated/readback barrier for the separately audited Home
@@ -455,6 +457,8 @@ public struct PreparedAction: Identifiable, Sendable {
                 guard valid(token) else { return }
                 acceptSnapshot(detail); readbackTargets.remove(target); recordHubResponse(pathToken: pathToken)
                 await loadDefaultContext(service, target: target, token: token)
+                guard valid(token) else { return }
+                presentHomeUndoIfNeeded()
             } catch {
                 guard valid(token) else { return }
                 if !handleAuthenticationLoss(error) {
@@ -734,7 +738,7 @@ public struct PreparedAction: Identifiable, Sendable {
                         let result = try await writer.cancelHomeOverride(boardID: action.target.boardID, requestingUndo: requestingUndo)
                         guard valid(token) else { return }
                         if requestingUndo, let value = result.undoToken, let expiry = HomeTiming.instant(result.undoExpiresAt), expiry > now() {
-                            homeUndoContext = HomeUndoContext(token: value, expiresAt: min(expiry,now().addingTimeInterval(5)), target: action.target, generation: token)
+                            homeUndoContext = HomeUndoContext(token: value, expiresAt: min(expiry,now().addingTimeInterval(30)), target: action.target, generation: token)
                         }
                     } else {
                         guard let writer = service as? any TemporaryOverrideClearing else { throw FiestaBoardError.writesDisabled }
@@ -769,6 +773,7 @@ public struct PreparedAction: Identifiable, Sendable {
                     let detail = try await service.board(action.target)
                     guard valid(token) else { return }
                     acceptSnapshot(detail); readbackTargets.remove(action.target)
+                    presentHomeUndoIfNeeded()
                 } catch {
                     guard valid(token) else { return }
                     readbackTargets.insert(action.target)
@@ -799,6 +804,14 @@ public struct PreparedAction: Identifiable, Sendable {
         }
         commandTask = task
         return task
+    }
+    private func presentHomeUndoIfNeeded() {
+        guard var context = homeUndoContext, context.presentedUntil == nil,
+              context.target == target, context.generation == generation, context.expiresAt > now() else { return }
+        // Verification must finish before the designed five-second interaction
+        // begins. The server deadline still bounds it; refresh cannot renew it.
+        context.presentedUntil = min(context.expiresAt,now().addingTimeInterval(5))
+        homeUndoContext = context
     }
     private func acceptSnapshot(_ detail: BoardDetail) {
         boardSnapshotEpoch &+= 1

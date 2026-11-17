@@ -393,7 +393,10 @@ public enum BoardPolling {
         let token = epoch, previousSnapshot = store.boardSnapshotEpoch, mutation = store.boardMutationEpoch
         await store.refresh().value
         guard valid(token), currentHomeTarget == key, mutation == store.boardMutationEpoch else { return }
-        if store.boardSnapshotEpoch > previousSnapshot, !store.needsReadback { homeOutcomes[key] = nil; pollActive() }
+        if store.boardSnapshotEpoch > previousSnapshot, !store.needsReadback {
+            homeOutcomes[key] = store.canUndoHomeOverride ? .overrideCanceled : nil
+            pollActive()
+        }
         else { homeOutcomes[key] = .failed }
     }
 
