@@ -229,9 +229,9 @@ import XCTest
         XCTAssertTrue(pageCard(app, named: "Typing test").waitForExistence(timeout: 5))
     }
 
-    // MARK: Against the fixture server (`FIXTURE_PORT=18442 python3 Tests/UITests/fixture_server.py`)
+    // MARK: Against the fixture server (native in-process loopback)
 
-    private var fixturePort: Int { Int(ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "") ?? 18442 }
+    private var fixturePort: Int { Int(FixtureHTTPServer.shared.port) }
     private func reveal(_ element: XCUIElement, _ app: XCUIApplication) {
         for _ in 0..<8 { if element.exists && element.isHittable { break }; app.swipeUp() }
         for _ in 0..<8 { if element.exists && element.isHittable { break }; app.swipeDown() }

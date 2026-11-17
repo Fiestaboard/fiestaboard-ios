@@ -31,26 +31,24 @@ final class SessionPersistenceTests: XCTestCase {
     func transport(_ vault: MemorySessionVault, deployment: DeploymentURL? = nil) -> URLSessionTransport {
         URLSessionTransport(deployment: deployment ?? self.deployment, protocolClasses: [FixtureURLProtocol.self], vault: vault)
     }
-    func fixture(cookie: String? = "fiestaboard_session=remembered; Path=/; Secure; Max-Age=3600") {
+    func fixture(tokenName name: String = "remembered") {
         FixtureURLProtocol.handler = { request in
-            (200, request.url!.lastPathComponent == "login" ? cookie.map { ["Set-Cookie": $0] } ?? [:] : [:], Data("{}".utf8))
+            (200, [:], request.url!.lastPathComponent == "login" ? MobileFixture.reply(name) : Data("{}".utf8))
         }
     }
     func login(_ transport: URLSessionTransport) async throws {
-        _ = try await transport.send(APIRequest(.post, path: ["auth", "login"]))
+        _ = try await transport.send(APIRequest(.post, path: ["auth", "device", "login"]))
     }
-    // Removing the consent or persistent-expiry guard must fail this test.
-    func testNoConsentOrSessionCookieNeverPersists() async throws {
-        for remember in [false, true] {
-            let vault = MemorySessionVault(); let t = transport(vault)
-            fixture(cookie: "fiestaboard_session=session; Path=/; Secure")
-            await t.configureSessionPersistence(rememberMe: remember, installationID: "id-1")
-            try await login(t)
-            let stored = try await vault.load(for: deployment)
-            XCTAssertNil(stored)
-        }
+    // Removing the consent guard must fail this test.
+    func testWithoutRememberConsentMobileTokenStaysInMemoryOnly() async throws {
+        let vault = MemorySessionVault(); let t = transport(vault)
+        fixture()
+        await t.configureSessionPersistence(rememberMe: false, installationID: "id-1")
+        try await login(t)
+        let stored = try await vault.load(for: deployment)
+        XCTAssertNil(stored)
     }
-    func testPersistentCookieRoundTripsOnlyForExactDeploymentAndInstallation() async throws {
+    func testMobileCredentialRoundTripsOnlyForExactDeploymentAndInstallation() async throws {
         let vault = MemorySessionVault(); let t = transport(vault); fixture()
         await t.configureSessionPersistence(rememberMe: true, installationID: "id-1")
         try await login(t)
@@ -68,7 +66,7 @@ final class SessionPersistenceTests: XCTestCase {
         let log = RequestLog()
         FixtureURLProtocol.handler = { request in log.append(request); return (200, [:], Data("{}".utf8)) }
         _ = try await reopened.send(APIRequest(path: ["auth", "status"]))
-        XCTAssertEqual(log.requests.last?.value(forHTTPHeaderField: "Cookie"), "fiestaboard_session=remembered")
+        XCTAssertEqual(log.requests.last?.value(forHTTPHeaderField: "Authorization"), "Bearer fb_mob_remembered")
         for address in ["https://board.test/other", "https://board.test:8443/prefix", "https://other.test/prefix", "http://board.local/prefix"] {
             let wrong = try DeploymentURL(address, allowLocalHTTP: true)
             try await vault.save(blob!, for: wrong)
@@ -76,7 +74,7 @@ final class SessionPersistenceTests: XCTestCase {
             XCTAssertFalse(restored)
         }
     }
-    func testCorruptionExpiryForeignAndSecureCookiesAreRejected() async throws {
+    func testCorruptionExpiryAndForeignMobileEnvelopesAreRejected() async throws {
         let vault = MemorySessionVault(); let t = transport(vault); fixture()
         await t.configureSessionPersistence(rememberMe: true, installationID: "id-1"); try await login(t)
         let loaded = try await vault.load(for: deployment)
@@ -86,9 +84,9 @@ final class SessionPersistenceTests: XCTestCase {
         for (key, value) in [("version", 99 as Any), ("installationID", "different" as Any)] {
             var changed = json; changed[key] = value; variants.append(try JSONSerialization.data(withJSONObject: changed))
         }
-        for (key, value) in [("domain", "foreign.test" as Any), ("expires", 0 as Any), ("name", "other" as Any), ("path", "relative" as Any)] {
-            var changed = json; var cookies = changed["cookies"] as! [[String: Any]]
-            cookies[0][key] = value; changed["cookies"] = cookies
+        for (key, value) in [("accessToken", "fb_tv_foreign" as Any), ("expiresAt", 0 as Any), ("sessionID", "" as Any)] {
+            var changed = json; var session = changed["session"] as! [String: Any]
+            session[key] = value; changed["session"] = session
             variants.append(try JSONSerialization.data(withJSONObject: changed))
         }
         for bad in variants {
@@ -125,7 +123,7 @@ final class SessionPersistenceTests: XCTestCase {
         let state = await t.sessionPersistenceState()
         XCTAssertFalse(state.rememberMe)
     }
-    func testUnavailableStorageDoesNotRejectAcknowledgedLoginAndKeepsMemoryCookie() async throws {
+    func testUnavailableStorageDoesNotRejectAcknowledgedLoginAndKeepsMemoryToken() async throws {
         let vault = MemorySessionVault(); let t = transport(vault); fixture()
         await t.configureSessionPersistence(rememberMe: true, installationID: "id-1")
         await vault.setFailure(true)
@@ -135,12 +133,12 @@ final class SessionPersistenceTests: XCTestCase {
         let log = RequestLog()
         FixtureURLProtocol.handler = { request in log.append(request); return (200, [:], Data("{}".utf8)) }
         _ = try await t.send(APIRequest(path: ["auth", "status"]))
-        XCTAssertEqual(log.requests.last?.value(forHTTPHeaderField: "Cookie"), "fiestaboard_session=remembered")
+        XCTAssertEqual(log.requests.last?.value(forHTTPHeaderField: "Authorization"), "Bearer fb_mob_remembered")
     }
 }
 
 extension SessionPersistenceTests {
-    func testServiceRestoreRevalidatesAndRevokedAccountLosesCookieAndWriteAccess() async throws {
+    func testServiceRestoreRevalidatesAndRevokedAccountLosesCredentialAndWriteAccess() async throws {
         for revoked in [false, true] {
             let vault = MemorySessionVault(); let seeded = transport(vault); fixture()
             await seeded.configureSessionPersistence(rememberMe: true, installationID: "id-1"); try await login(seeded)
@@ -151,7 +149,7 @@ extension SessionPersistenceTests {
                 case "health": return (200, [:], try BootstrapTests.body("health"))
                 case "discover": return (200, [:], try BootstrapTests.body("discover_disabled"))
                 case "status":
-                    let authenticated = !revoked && request.value(forHTTPHeaderField: "Cookie") != nil
+                    let authenticated = !revoked && request.value(forHTTPHeaderField: "Authorization") != nil
                     let body = authenticated ? "auth_authenticated" : "auth_enabled"
                     return (200, [:], try BootstrapTests.body(body))
                 default: throw URLError(.badURL)
@@ -161,7 +159,7 @@ extension SessionPersistenceTests {
             let restored = try await service.restoreRememberedSession(observedInstallationID: "id-1")
             XCTAssertEqual(restored, !revoked)
             XCTAssertEqual(log.requests.filter { $0.url!.lastPathComponent == "discover" }.count, 2)
-            XCTAssertNil(log.requests.first?.value(forHTTPHeaderField: "Cookie"))
+            XCTAssertNil(log.requests.first?.value(forHTTPHeaderField: "Authorization"))
             if revoked {
                 let stored = try await vault.load(for: deployment)
                 XCTAssertNil(stored)
@@ -178,7 +176,7 @@ extension SessionPersistenceTests {
             case "health": return (200, [:], try BootstrapTests.body("health"))
             case "discover": return (200, [:], try BootstrapTests.body("discover_disabled"))
             case "status": return (200, [:], try BootstrapTests.body("auth_authenticated"))
-            case "login": return (200, ["Set-Cookie": "fiestaboard_session=private; Max-Age=3600; Path=/; Secure"], Data(#"{"status":"ok"}"#.utf8))
+            case "login": return (200, [:], MobileFixture.reply("private"))
             default: throw URLError(.badURL)
             }
         }
@@ -202,9 +200,9 @@ extension SessionPersistenceTests {
         let log = RequestLog()
         FixtureURLProtocol.handler = { request in log.append(request); return (200, [:], Data("{}".utf8)) }
         _ = try await t.send(APIRequest(path: ["auth", "status"]))
-        XCTAssertNil(log.requests.last?.value(forHTTPHeaderField: "Cookie"))
+        XCTAssertNil(log.requests.last?.value(forHTTPHeaderField: "Authorization"))
     }
-    func testLocalDisconnectRetainsRememberedMaterialButClearsActiveCookies() async throws {
+    func testLocalDisconnectRetainsRememberedMaterialButClearsActiveCredential() async throws {
         let vault = MemorySessionVault(); let t = transport(vault); fixture()
         await t.configureSessionPersistence(rememberMe: true, installationID: "id-1"); try await login(t)
         let service = LiveFiestaBoardService(deployment: deployment, transport: t)
@@ -213,7 +211,7 @@ extension SessionPersistenceTests {
         let log = RequestLog()
         FixtureURLProtocol.handler = { request in log.append(request); return (200, [:], Data("{}".utf8)) }
         _ = try await t.send(APIRequest(path: ["auth", "status"]))
-        XCTAssertNil(log.requests.last?.value(forHTTPHeaderField: "Cookie"))
+        XCTAssertNil(log.requests.last?.value(forHTTPHeaderField: "Authorization"))
     }
 }
 
@@ -236,7 +234,7 @@ private final class PersistenceResponseGate: @unchecked Sendable {
         if shouldPause { waiting?.resume(); return }
         let path = value.request.url!.lastPathComponent
         if path == "login" {
-            value.respond(headers: ["Set-Cookie": "fiestaboard_session=new; Path=/; Secure; Max-Age=3600"], data: Data(#"{"status":"ok"}"#.utf8))
+            value.respond(headers: [:], data: MobileFixture.reply("new"))
         } else {
             let name = path == "health" ? "health" : path == "discover" ? "discover_disabled" : "auth_authenticated"
             value.respond(headers: [:], data: try! BootstrapTests.body(name))
@@ -248,9 +246,9 @@ private final class PersistenceResponseGate: @unchecked Sendable {
             if ready { continuation.resume() }
         }
     }
-    func release(cookie: String, data: Data = Data(#"{"status":"ok"}"#.utf8)) {
+    func release(tokenName: String, data: Data = Data(#"{"status":"ok"}"#.utf8)) {
         let value = lock.withLock { let result = pending; pending = nil; return result }
-        value?.respond(headers: ["Set-Cookie": cookie], data: data)
+        value?.respond(headers: [:], data: endpoint == "login" ? MobileFixture.reply(tokenName) : data)
     }
 }
 private final class PersistenceURLProtocol: URLProtocol, @unchecked Sendable {
@@ -276,12 +274,13 @@ extension SessionPersistenceTests {
         await gate.wait()
         await t.configureSessionPersistence(rememberMe: false, installationID: "id-1")
         await t.configureSessionPersistence(rememberMe: true, installationID: "id-1")
-        gate.release(cookie: "fiestaboard_session=old; Path=/; Secure; Max-Age=3600")
-        try await pending.value
+        gate.release(tokenName: "old")
+        do { try await pending.value; XCTFail("Old consent must not install a token") }
+        catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
         let stored = try await vault.load(for: deployment); XCTAssertNil(stored)
     }
     func testLateOldLogoutCannotEraseNewRememberedLogin() async throws {
-        let vault = MemorySessionVault(); let gate = PersistenceResponseGate(endpoint: "logout")
+        let vault = MemorySessionVault(); let gate = PersistenceResponseGate(endpoint: "session")
         PersistenceURLProtocol.gate = gate
         let t = URLSessionTransport(deployment: deployment, protocolClasses: [PersistenceURLProtocol.self], vault: vault)
         let service = LiveFiestaBoardService(deployment: deployment, transport: t)
@@ -290,12 +289,12 @@ extension SessionPersistenceTests {
         let pending = Task { try await service.logout() }
         await gate.wait()
         _ = try await service.login(username: "contract_admin", password: "fixture-password", rememberMe: true)
-        gate.release(cookie: "fiestaboard_session=; Path=/; Max-Age=0")
+        gate.release(tokenName: "retired")
         do { try await pending.value; XCTFail("Expected stale logout") }
         catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
         let stored = try await vault.load(for: deployment); XCTAssertNotNil(stored)
         _ = try await service.authStatus()
-        XCTAssertEqual(gate.requests.last?.value(forHTTPHeaderField: "Cookie"), "fiestaboard_session=new")
+        XCTAssertEqual(gate.requests.last?.value(forHTTPHeaderField: "Authorization"), "Bearer fb_mob_new")
     }
 }
 
@@ -326,7 +325,7 @@ extension SessionPersistenceTests {
         let add = recorder.queries.first { $0[kSecValueData as String] != nil }!
         XCTAssertEqual(add[kSecAttrAccessible as String] as? String, kSecAttrAccessibleWhenUnlockedThisDeviceOnly as String)
     }
-    func testLockedKeychainIsBoundedFailureAndRestoreNeverUsesCookie() async throws {
+    func testLockedKeychainIsBoundedFailureAndRestoreNeverUsesCredential() async throws {
         let boundary = SessionSecurity(copy: { _ in (errSecInteractionNotAllowed, nil) },
             add: { _ in errSecInteractionNotAllowed }, update: { _, _ in errSecInteractionNotAllowed },
             delete: { _ in errSecInteractionNotAllowed })
@@ -338,19 +337,19 @@ extension SessionPersistenceTests {
         let log = RequestLog()
         FixtureURLProtocol.handler = { request in log.append(request); return (200, [:], Data("{}".utf8)) }
         _ = try await t.send(APIRequest(path: ["auth", "status"]))
-        XCTAssertNil(log.requests.last?.value(forHTTPHeaderField: "Cookie"))
+        XCTAssertNil(log.requests.last?.value(forHTTPHeaderField: "Authorization"))
     }
-    func testReplacedPersistentCookieIsWhatRestartRestores() async throws {
+    func testReplacedPersistentMobileTokenIsWhatRestartRestores() async throws {
         let vault = MemorySessionVault(); let t = transport(vault); fixture()
         await t.configureSessionPersistence(rememberMe: true, installationID: "id-1"); try await login(t)
-        FixtureURLProtocol.handler = { _ in (200, ["Set-Cookie": "fiestaboard_session=rotated; Path=/; Secure; Max-Age=3600"], Data("{}".utf8)) }
-        _ = try await t.send(APIRequest(path: ["auth", "status"]))
+        FixtureURLProtocol.handler = { _ in (200, [:], MobileFixture.reply("rotated")) }
+        try await login(t)
         let fresh = transport(vault)
         let restored = await fresh.restoreRememberedSession(observedInstallationID: "id-1"); XCTAssertTrue(restored)
         let log = RequestLog()
         FixtureURLProtocol.handler = { request in log.append(request); return (200, [:], Data("{}".utf8)) }
         _ = try await fresh.send(APIRequest(path: ["auth", "status"]))
-        XCTAssertEqual(log.requests.last?.value(forHTTPHeaderField: "Cookie"), "fiestaboard_session=rotated")
+        XCTAssertEqual(log.requests.last?.value(forHTTPHeaderField: "Authorization"), "Bearer fb_mob_rotated")
     }
 }
 
@@ -371,7 +370,7 @@ extension SessionPersistenceTests {
         XCTAssertFalse(retried.cleanupPending)
         let stored = try await vault.load(for: deployment); XCTAssertNil(stored)
     }
-    func testRevokedCookieWith401IsRemovedAfterFreshRestoreCheck() async throws {
+    func testRevokedMobileTokenWith401IsRemovedAfterFreshRestoreCheck() async throws {
         let vault = MemorySessionVault(); let t = transport(vault); fixture()
         await t.configureSessionPersistence(rememberMe: true, installationID: "id-1"); try await login(t)
         FixtureURLProtocol.handler = { request in
@@ -379,7 +378,7 @@ extension SessionPersistenceTests {
             case "health": return (200, [:], try BootstrapTests.body("health"))
             case "discover": return (200, [:], try BootstrapTests.body("discover_disabled"))
             default:
-                if request.value(forHTTPHeaderField: "Cookie") != nil { return (401, [:], Data("{}".utf8)) }
+                if request.value(forHTTPHeaderField: "Authorization") != nil { return (401, [:], Data("{}".utf8)) }
                 return (200, [:], try BootstrapTests.body("auth_enabled"))
             }
         }
@@ -402,7 +401,7 @@ extension SessionPersistenceTests {
         while !(await new.sessionPersistenceState().rememberMe) { await Task.yield() }
         await vault.resumeSave()
         try await oldLogin.value; await replacement.value
-        fixture(cookie: "fiestaboard_session=new-window; Path=/; Secure; Max-Age=3600")
+        fixture(tokenName: "new-window")
         try await login(new)
         await old.forgetRememberedSession()
         let fresh = transport(vault)
@@ -410,16 +409,16 @@ extension SessionPersistenceTests {
         let log = RequestLog()
         FixtureURLProtocol.handler = { request in log.append(request); return (200, [:], Data("{}".utf8)) }
         _ = try await fresh.send(APIRequest(path: ["auth", "status"]))
-        XCTAssertEqual(log.requests.last?.value(forHTTPHeaderField: "Cookie"), "fiestaboard_session=new-window")
+        XCTAssertEqual(log.requests.last?.value(forHTTPHeaderField: "Authorization"), "Bearer fb_mob_new-window")
     }
 }
 
 extension SessionPersistenceTests {
-    func testSchemeBindingDoesNotDependOnSecureCookieOrDifferentHost() async throws {
+    func testMobileCredentialEnvelopeBindsSchemeEvenOnTheSameHost() async throws {
         let https = try DeploymentURL("https://board.local/prefix")
         let http = try DeploymentURL("http://board.local/prefix", allowLocalHTTP: true)
         let vault = MemorySessionVault(); let t = transport(vault, deployment: https)
-        fixture(cookie: "fiestaboard_session=remembered; Path=/; Max-Age=3600")
+        fixture(tokenName: "remembered")
         await t.configureSessionPersistence(rememberMe: true, installationID: "id-1"); try await login(t)
         let loaded = try await vault.load(for: https); let blob = try XCTUnwrap(loaded)
         try await vault.save(blob, for: http)
@@ -461,7 +460,7 @@ private actor RestoreOwnershipGate: SessionVaultCoordinating {
     func releaseOwnershipResult() { blocked?.resume(); blocked = nil }
 }
 
-/// All requests, cookies, and storage remain real; only return from rejected
+/// All requests, tokens, and storage remain real; only return from rejected
 /// restore's local cleanup is held while a new authentication transition runs.
 private actor RejectedRestoreCleanupTransport: APITransport {
     let base: URLSessionTransport
@@ -514,7 +513,7 @@ extension SessionPersistenceTests {
             let log = RequestLog()
             FixtureURLProtocol.handler = { request in log.append(request); return (200, [:], Data("{}".utf8)) }
             _ = try await t.send(APIRequest(path: ["auth", "status"]))
-            XCTAssertNil(log.requests.last?.value(forHTTPHeaderField: "Cookie"), action)
+            XCTAssertNil(log.requests.last?.value(forHTTPHeaderField: "Authorization"), action)
         }
     }
 
@@ -528,7 +527,7 @@ extension SessionPersistenceTests {
                 let path = request.url!.lastPathComponent
                 if path == "health" { return (200, [:], try BootstrapTests.body("health")) }
                 if path == "login" {
-                    return (200, ["Set-Cookie": "fiestaboard_session=new; Path=/; Secure; Max-Age=3600"], Data(#"{"status":"ok"}"#.utf8))
+                    return (200, [:], MobileFixture.reply("new"))
                 }
                 if path == "discover" {
                     var identity = try JSONSerialization.jsonObject(with: BootstrapTests.body("discover_disabled")) as! [String: Any]
@@ -537,7 +536,7 @@ extension SessionPersistenceTests {
                     }
                     return (200, [:], try JSONSerialization.data(withJSONObject: identity))
                 }
-                let replacement = request.value(forHTTPHeaderField: "Cookie") == "fiestaboard_session=new"
+                let replacement = request.value(forHTTPHeaderField: "Authorization") == "Bearer fb_mob_new"
                 if replacement { return (200, [:], try BootstrapTests.body("auth_authenticated")) }
                 if reason == "identityMismatch" { return (200, [:], try BootstrapTests.body("auth_authenticated")) }
                 if reason == "notReady" {
@@ -559,7 +558,7 @@ extension SessionPersistenceTests {
             catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession, reason) }
             let current = try await service.authStatus()
             XCTAssertTrue(current.authenticated, reason)
-            XCTAssertEqual(log.requests.last?.value(forHTTPHeaderField: "Cookie"), "fiestaboard_session=new", reason)
+            XCTAssertEqual(log.requests.last?.value(forHTTPHeaderField: "Authorization"), "Bearer fb_mob_new", reason)
             let stored = try await vault.load(for: deployment); XCTAssertNotNil(stored, reason)
         }
     }
@@ -579,8 +578,8 @@ extension SessionPersistenceTests {
                 var auth = try JSONSerialization.jsonObject(with: BootstrapTests.body("auth_authenticated")) as! [String: Any]
                 auth["username"] = username
                 return (200, [:], try JSONSerialization.data(withJSONObject: auth))
-            case "login": return (200, ["Set-Cookie": "fiestaboard_session=identity; Path=/; Secure; Max-Age=3600"], Data(#"{"status":"ok"}"#.utf8))
-            case "logout": return (200, [:], Data(#"{"status":"ok"}"#.utf8))
+            case "login": return (200, [:], MobileFixture.reply("identity"))
+            case "session": return (200, [:], Data(#"{"status":"ok"}"#.utf8))
             case "version": return (200, [:], Data(#"{"package_version":"10.1.20","build_version":"test","running_version":"10.1.20","is_dev":false}"#.utf8))
             case "boards": return (200, [:], Data(#"{"boards":[],"total":0}"#.utf8))
             case "collection:00000000-0000-4000-8000-000000000022": return (200, [:], Data(#"{"id":"collection:00000000-0000-4000-8000-000000000022","name":"Scoped","page_ids":["p"],"selection_mode":"time","time":{"interval_seconds":30},"revision":"original","edit_protocol":"collection-revision-v1"}"#.utf8))
@@ -616,28 +615,17 @@ extension SessionPersistenceTests {
         XCTAssertNotEqual(changed.scope.connectionID, third.scope.connectionID)
     }
 
-    func testV1VaultMigratesAfterVerificationWithoutNewCookieAndKeepsUUID() async throws {
-        let vault = MemorySessionVault(); let seed = transport(vault); fixture()
-        await seed.configureSessionPersistence(rememberMe: true, installationID: "id-1"); try await login(seed)
-        let seeded = try await vault.load(for: deployment)
-        var legacy = try JSONSerialization.jsonObject(with: XCTUnwrap(seeded)) as! [String: Any]
-        legacy["version"] = 1; legacy.removeValue(forKey: "connectionID")
-        try await vault.save(JSONSerialization.data(withJSONObject: legacy), for: deployment)
-        identityFixture()
-        let service = LiveFiestaBoardService(deployment: deployment, transport: transport(vault))
-        let restored = try await service.restoreRememberedSession(observedInstallationID: "id-1")
-        XCTAssertTrue(restored)
-        let first = try await service.scopedPageDocument(id: "p")
-        let stored = try await vault.load(for: deployment)
-        let blob = try XCTUnwrap(stored)
-        let migrated = try JSONSerialization.jsonObject(with: blob) as! [String: Any]
-        XCTAssertEqual(migrated["version"] as? Int, 2)
-        XCTAssertEqual(migrated["connectionID"] as? String, first.scope.connectionID.uuidString)
-        let next = LiveFiestaBoardService(deployment: deployment, transport: transport(vault))
-        _ = try await next.restoreRememberedSession(observedInstallationID: "id-1")
-        let second = try await next.scopedPageDocument(id: "p")
-        XCTAssertEqual(first.scope, second.scope)
+    func testLegacyCookieVaultIsRejectedWithoutMigratingBrowserCredentials() async throws {
+        let vault = MemorySessionVault()
+        let legacy = Data(#"{"version":2,"deployment":"https://board.test/prefix","installationID":"id-1","cookies":[]}"#.utf8)
+        try await vault.save(legacy, for: deployment)
+        let t = transport(vault)
+        let restored = await t.restoreRememberedSession(observedInstallationID: "id-1")
+        XCTAssertFalse(restored)
+        let state = await t.sessionPersistenceState()
+        XCTAssertEqual(state.warning, .invalidStoredSession)
     }
+
 }
 
 extension SessionPersistenceTests {
@@ -685,7 +673,7 @@ extension SessionPersistenceTests {
         let pending = Task { try await service.scopedPageDocument(id: "p") }
         await gate.wait()
         _ = try await service.login(username: "contract_admin", password: "fixture", rememberMe: false)
-        gate.release(cookie: "fiestaboard_session=old; Path=/; Secure", data: Data(#"{"id":"p","name":"Old","type":"template","device_type":"panel","template":[]}"#.utf8))
+        gate.release(tokenName: "old", data: Data(#"{"id":"p","name":"Old","type":"template","device_type":"panel","template":[]}"#.utf8))
         do { _ = try await pending.value; XCTFail("Late page must not acquire the replacement identity") }
         catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
     }
@@ -767,7 +755,7 @@ extension SessionPersistenceTests {
         let pending = Task { try await service.scopedCollectionDocument(id: "collection:00000000-0000-4000-8000-000000000022") }
         await gate.wait()
         _ = try await service.login(username: "contract_admin", password: "fixture", rememberMe: false)
-        gate.release(cookie: "fiestaboard_session=old; Path=/; Secure", data: Data(#"{"id":"collection:00000000-0000-4000-8000-000000000022","name":"Old","page_ids":["p"],"selection_mode":"time","time":{"interval_seconds":30},"revision":"original","edit_protocol":"collection-revision-v1"}"#.utf8))
+        gate.release(tokenName: "old", data: Data(#"{"id":"collection:00000000-0000-4000-8000-000000000022","name":"Old","page_ids":["p"],"selection_mode":"time","time":{"interval_seconds":30},"revision":"original","edit_protocol":"collection-revision-v1"}"#.utf8))
         do { _ = try await pending.value; XCTFail("Late content cannot inherit a new login identity") }
         catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
     }

@@ -1,0 +1,48 @@
+{
+  "about": "Mirrors of /Volumes/ExtHD/fiestaboard-mobile-handoff/fixtures (PLAN §4.0). Never edit a mirror; copy the canonical file and record its sha256 here.",
+  "files": {
+    "render-cases.json": {
+      "sha256": "8fcb0022ca313efa20433a2bfb742abba100f7f421abbd8727102e1c48bff5df",
+      "writer": "iOS-P4",
+      "date": "2026-11-02",
+      "note": "W4: page_hello/page_morning removed (null line_metadata entries are a 422 on 10.3.2); page_wide, page_lower, b21_bogus corrected to the real server (WEB-P4)"
+    },
+    "led-golden.json": {
+      "sha256": "3bd2560b7fc7b3b9c6baeaac206a3a7b1bad6a28d19b861160ca53d3022d1521",
+      "writer": "iOS-R1",
+      "date": "2026-10-31"
+    },
+    "charset-golden.json": {
+      "sha256": "dc38aed4091f5a276ae28fd679fb9b7b229d0dbda012c872b7ed11c97ae348f9",
+      "writer": "iOS-R1",
+      "date": "2026-10-31"
+    },
+    "template-syntax-cases.json": {
+      "sha256": "cdf93d36f769d43bf5878c99955034550b2377ae98a542c7f22b7a032a2ac720",
+      "writer": "iOS-E1",
+      "date": "2026-10-31"
+    },
+    "render-cases.e1.json": {
+      "sha256": "6a81d90e6b755440ad813c43ef2e5b18a5b5666a92b5e401fb55745a560d2880",
+      "writer": "iOS-E1",
+      "date": "2026-10-31"
+    },
+    "terminology.json": {
+      "sha256": "c1acbd1b5598373056f98649ce9105078f4b8b8ccf921ee9b3322b6f4dd2a527",
+      "writer": "iOS-E2",
+      "date": "2026-11-01"
+    },
+    "render-cases.r2.json": {
+      "sha256": "25913e83586c30f03858d26a4a6767aa284e8e0b6c77149d23025bbeb958176d",
+      "writer": "iOS-P1",
+      "date": "2026-11-02",
+      "note": "page_morning row 2 corrected to the server pad:3 (ljust): \"72 ° SUNNY\""
+    },
+    "render-cases.f1.json": {
+      "sha256": "8d82ba4dc8e01a8c7c13e52852434635e6faaf381b618db0c57f7c048675ad92",
+      "writer": "iOS-P4",
+      "date": "2026-11-02",
+      "note": "W4: f1_formula_mismatched_parentheses corrected to the real #SYNTAX message, column 0; WOBBLE case labelled mock-only (WEB-P4)"
+    }
+  }
+}

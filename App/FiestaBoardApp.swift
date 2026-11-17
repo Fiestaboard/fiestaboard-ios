@@ -77,7 +77,7 @@ struct DraftScene: View {
         _connection = StateObject(wrappedValue: ConnectionModel(
             store: store, catalog: persistence.catalog, discovery: BonjourServerDiscovery(),
             preferences: AppPersistence.preferences, serviceFactory: {
-                let service = LiveFiestaBoardService(deployment: $0, vault: KeychainSessionVault())
+                let service = LiveFiestaBoardService(deployment: $0, vault: KeychainSessionVault(), clientMetadata: .init(deviceName: UIDevice.current.name))
                 StatusReaderRegistry.shared.register(service)
                 return service
             }))

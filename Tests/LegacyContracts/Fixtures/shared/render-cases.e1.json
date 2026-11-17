@@ -1,0 +1,91 @@
+{
+  "about": "iOS-E1 render cases (PLAN §4.4): appended to render-cases.json by both fixture servers.",
+  "version": 1,
+  "cases": [
+    {
+      "id": "e1_b19_lobby_typing_hello",
+      "route": "/templates/render",
+      "request": {
+        "template": [
+          "WELCOME TO THE LOBBY",
+          "{{blue}}{{blue}}{{blue}}",
+          "HELLO",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "board_id": "kitchen",
+        "device_type": "panel",
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "grid_rows": 12,
+        "grid_cols": 29
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "WELCOME TO THE LOBBY         \n{67}{67}{67}                          \nHELLO                        \n                             \n                             \n                             \n                             \n                             \n                             \n                             \n                             \n                             ",
+          "lines": [
+            "WELCOME TO THE LOBBY         ",
+            "{67}{67}{67}                          ",
+            "HELLO                        ",
+            "                             ",
+            "                             ",
+            "                             ",
+            "                             ",
+            "                             ",
+            "                             ",
+            "                             ",
+            "                             ",
+            "                             "
+          ],
+          "line_count": 12,
+          "charset": "vestaboard_v1",
+          "charset_issues": []
+        }
+      },
+      "source": "iOS-E1 B19: the exact request the editor sends after typing HELLO into row 3 of the fixture Lobby page (display rows padded to 12); response = the toy fallback, pinned"
+    },
+    {
+      "id": "e1_b16_flagship_seven_rows",
+      "route": "/templates/render",
+      "request": {
+        "template": [
+          "ONE",
+          "TWO",
+          "THREE",
+          "FOUR",
+          "FIVE",
+          "SIX",
+          "SEVEN"
+        ],
+        "board_id": "kitchen",
+        "device_type": "flagship"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "ONE                   \nTWO                   \nTHREE                 \nFOUR                  \nFIVE                  \nSIX                   ",
+          "lines": [
+            "ONE                   ",
+            "TWO                   ",
+            "THREE                 ",
+            "FOUR                  ",
+            "FIVE                  ",
+            "SIX                   "
+          ],
+          "line_count": 6,
+          "charset": "vestaboard_v1",
+          "charset_issues": []
+        }
+      },
+      "source": "iOS-E1 B16: seven rows on a 6-row board; the render shows six"
+    }
+  ]
+}

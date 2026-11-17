@@ -1,13 +1,13 @@
 import XCTest
 
 /// Wave-2 integration checks (iOS-E2 editor × iOS-R2 shell), against the mock fixture
-/// (`FIXTURE_PORT=<port> python3 Tests/UITests/fixture_server.py`) or the in-app demo service.
+/// (the native in-process loopback fixture) or the in-app demo service.
 /// No real server, no hardware. Screenshots go to SHOT_DIR when set (always attached too).
 @MainActor final class IntegrationUITests: XCTestCase {
     override func setUp() { super.setUp(); continueAfterFailure = false }
     override func tearDown() { XCUIDevice.shared.orientation = .portrait; super.tearDown() }
 
-    private var port: String { ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "18442" }
+    private var port: String { String(FixtureHTTPServer.shared.port) }
     private var device: String { UIDevice.current.userInterfaceIdiom == .pad ? "ipadair11m4" : "iphone17promax" }
 
     // MARK: B29 on iPad: the sidebar gives way to the editor and comes back

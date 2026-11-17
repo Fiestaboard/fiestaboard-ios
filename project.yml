@@ -113,9 +113,15 @@ targets:
     type: bundle.ui-testing
     platform: iOS
     sources:
+      - path: Tests/Fixtures
+        type: folder
+        buildPhase: resources
       - path: Tests/Support/GlassProbe.swift
       - path: Tests/UITests
-        excludes: ["*.py", "__pycache__"]
+        excludes: ["*.py", "__pycache__", FixtureResources]
+      - path: Tests/UITests/FixtureResources
+        type: folder
+        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fiestaboard.ios.draft.uitests

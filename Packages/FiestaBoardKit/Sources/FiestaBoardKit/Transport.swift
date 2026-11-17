@@ -35,6 +35,7 @@ public struct APIResponse: Sendable {
 public protocol APITransport: Sendable {
     func send(_ request: APIRequest) async throws -> APIResponse
     func resetSession() async
+    func beginSessionRevocation() async
     func configureSessionPersistence(rememberMe: Bool, installationID: String?) async
     func restoreRememberedSession(observedInstallationID: String) async -> Bool
     func forgetRememberedSession() async
@@ -44,6 +45,8 @@ public protocol APITransport: Sendable {
     func ownsConnectionID(_ id: UUID) async -> Bool
 }
 public extension APITransport {
+    /// Custom transports without queued work need no retirement action.
+    func beginSessionRevocation() async {}
     func provisionalConnectionID() async -> UUID? { nil }
     func verifyConnectionID(_ proposed: UUID, installationID: String) async -> UUID? { proposed }
     func ownsConnectionID(_ id: UUID) async -> Bool { true }
@@ -54,9 +57,12 @@ public extension APITransport {
 }
 /// Memory-only by default, isolated to one full deployment identity; never uses a shared cookie or credential store.
 public actor URLSessionTransport: APITransport {
+    private let requestBudget: HubRequestBudget?
     private let deployment: DeploymentURL
     private let session: URLSession
-    private var cookies = SessionCookieJar()
+    private var mobileSession: MobileSession?
+    public private(set) var lastServerDate: Date?
+    private var revoking = false
     private var generation: UInt64 = 0
     private let vault: (any SessionVault)?
     private let coordinator: any SessionVaultCoordinating
@@ -66,8 +72,9 @@ public actor URLSessionTransport: APITransport {
     private var installationID: String?
     private var connectionID: UUID?
 
-    public init(deployment: DeploymentURL, protocolClasses: [AnyClass] = [], vault: (any SessionVault)? = nil) {
+    public init(deployment: DeploymentURL, protocolClasses: [AnyClass] = [], vault: (any SessionVault)? = nil, requestBudget: HubRequestBudget? = nil) {
         self.deployment = deployment
+        self.requestBudget = requestBudget
         self.vault = vault
         coordinator = SessionVaultCoordinator.shared
         session = Self.makeSession(protocolClasses: protocolClasses)
@@ -76,6 +83,7 @@ public actor URLSessionTransport: APITransport {
     init(deployment: DeploymentURL, protocolClasses: [AnyClass], vault: any SessionVault, coordinator: any SessionVaultCoordinating) {
         self.deployment = deployment
         self.vault = vault
+        requestBudget = nil
         self.coordinator = coordinator
         session = Self.makeSession(protocolClasses: protocolClasses)
     }
@@ -96,10 +104,18 @@ public actor URLSessionTransport: APITransport {
     deinit { session.invalidateAndCancel() }
 
     public func resetSession() {
+        revoking = false
         generation &+= 1
-        cookies = SessionCookieJar()
+        mobileSession = nil
         connectionID = nil
         persistence.restored = false
+    }
+
+    /// Retire already queued work before self-revoke waits for a budget slot.
+    /// Keep the bearer available exclusively for DELETE /auth/device/session.
+    public func beginSessionRevocation() {
+        generation &+= 1
+        revoking = true
     }
 
     /// Consent is a new ownership transition; even a memory-only replacement clears old material.
@@ -141,11 +157,11 @@ public actor URLSessionTransport: APITransport {
             // run after its result is computed and before this actor resumes.
             guard token == generation, epoch == persistenceEpoch, currentOwner else { return false }
             guard let data else { return false }
-            guard let restored = SessionCookieJar.restore(data, deployment: deployment, installationID: identity) else {
+            guard let restored = MobileSession.restore(data, deployment: deployment, installationID: identity) else {
                 persistence.warning = .invalidStoredSession; return false
             }
-            cookies = restored
-            connectionID = SessionCookieJar.storedConnectionID(data)
+            mobileSession = restored
+            connectionID = MobileSession.storedConnectionID(data)
             installationID = identity
             persistence = .init(rememberMe: true, restored: true)
             return true
@@ -185,17 +201,17 @@ public actor URLSessionTransport: APITransport {
         if migrating, let installationID, let vault, let lease {
             // Serialize migration with other windows. A second verified importer uses
             // the UUID already committed by the first, rather than minting another identity.
-            let candidate = cookies.persisted(deployment: deployment, installationID: installationID, connectionID: proposed)
+            let candidate = mobileSession?.persisted(deployment: deployment, installationID: installationID, connectionID: proposed)
             do {
                 let committed = try await coordinator.perform(lease) {
                     if let existing = try await vault.load(for: self.deployment),
-                       SessionCookieJar.restore(existing, deployment: self.deployment, installationID: installationID) != nil,
-                       SessionCookieJar.storedConnectionID(existing) != nil { return existing }
+                       MobileSession.restore(existing, deployment: self.deployment, installationID: installationID) != nil,
+                       MobileSession.storedConnectionID(existing) != nil { return existing }
                     if let candidate { try await vault.save(candidate, for: self.deployment) }
                     return candidate
                 }
                 guard token == generation, epoch == persistenceEpoch else { return nil }
-                if let committed, let existingID = SessionCookieJar.storedConnectionID(committed) { confirmed = existingID }
+                if let committed, let existingID = MobileSession.storedConnectionID(committed) { confirmed = existingID }
             } catch {
                 guard token == generation, epoch == persistenceEpoch else { return nil }
                 persistence.warning = .unavailable
@@ -203,7 +219,7 @@ public actor URLSessionTransport: APITransport {
         }
         guard token == generation, epoch == persistenceEpoch else { return nil }
         connectionID = confirmed
-        if !migrating { await persistCookies(generation: token, epoch: epoch) }
+        if !migrating { await persistCredential(generation: token, epoch: epoch) }
         guard token == generation, epoch == persistenceEpoch, connectionID == confirmed else { return nil }
         if let lease {
             let current = await coordinator.isCurrent(lease)
@@ -222,20 +238,28 @@ public actor URLSessionTransport: APITransport {
         return true
     }
 
+    private static func httpDate(_ value: String) -> Date? {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        formatter.dateFormat = "EEE, dd MMM yyyy HH:mm:ss zzz"
+        return formatter.date(from: value)
+    }
+
     private static func validIdentity(_ value: String?) -> String? {
         guard let value, !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               value.utf8.count <= 256, !value.unicodeScalars.contains(where: { $0.value < 32 || $0.value == 127 }) else { return nil }
         return value
     }
 
-    private func persistCookies(generation token: UInt64, epoch: UInt64) async {
+    private func persistCredential(generation token: UInt64, epoch: UInt64) async {
         guard epoch == persistenceEpoch, persistence.rememberMe else { return }
         guard let installationID else { persistence.warning = .identityRequired; return }
         guard let vault, let lease else { persistence.warning = .unavailable; return }
         // A v1 import is not migrated until the service verifies it.
         guard let connectionID else { return }
-        guard let data = cookies.persisted(deployment: deployment, installationID: installationID, connectionID: connectionID) else {
-            persistence.warning = .noPersistentCookie
+        guard let data = mobileSession?.persisted(deployment: deployment, installationID: installationID, connectionID: connectionID) else {
+            persistence.warning = .noCredential
             do { _ = try await coordinator.perform(lease) { try await vault.remove(for: self.deployment); return nil } }
             catch { if token == generation && epoch == persistenceEpoch { persistence.warning = .unavailable; persistence.cleanupPending = true } }
             return
@@ -251,6 +275,13 @@ public actor URLSessionTransport: APITransport {
     }
 
     public func send(_ request: APIRequest) async throws -> APIResponse {
+        let queuedGeneration = generation
+        let budget = if let requestBudget { requestBudget } else { await HubRequestBudgets.shared.budget(for: deployment) }
+        return try await budget.run { try await self.performSend(request, expectedGeneration: queuedGeneration) }
+    }
+
+    private func performSend(_ request: APIRequest, expectedGeneration: UInt64) async throws -> APIResponse {
+        guard expectedGeneration == generation, !revoking || (request.method == .delete && request.path == ["auth", "device", "session"]) else { throw FiestaBoardError.staleSession }
         try Task.checkCancellation()
         let headers = try request.boundedHeaders()
         let currentGeneration = generation
@@ -275,7 +306,9 @@ public actor URLSessionTransport: APITransport {
         }
         wire.setValue("application/json", forHTTPHeaderField: "Accept")
         if request.body != nil { wire.setValue("application/json", forHTTPHeaderField: "Content-Type") }
-        wire.setValue(cookies.header(for: url), forHTTPHeaderField: "Cookie")
+        if case .standard = request.context {
+            wire.setValue(mobileSession?.authorization, forHTTPHeaderField: "Authorization")
+        }
         let data: Data
         let response: URLResponse
         do {
@@ -290,9 +323,22 @@ public actor URLSessionTransport: APITransport {
         guard let http = response as? HTTPURLResponse else {
             throw request.isMutation ? FiestaBoardError.unknownMutationOutcome : .invalidResponse
         }
-        if let header = http.value(forHTTPHeaderField: "Set-Cookie") {
-            cookies.receive(header, from: url)
-            if (200..<300).contains(http.statusCode) { await persistCookies(generation: currentGeneration, epoch: currentPersistenceEpoch) }
+        lastServerDate = http.value(forHTTPHeaderField: "Date").flatMap(Self.httpDate)
+        if (200..<300).contains(http.statusCode), request.method == .post,
+           [ ["auth", "device", "login"], ["auth", "pairing", "claim"] ].contains(request.path) {
+            guard let reply = try? JSONDecoder().decode(MobileTokenReply.self, from: data),
+                  let credential = try? MobileSession(reply: reply) else { throw FiestaBoardError.unknownMutationOutcome }
+            guard currentPersistenceEpoch == persistenceEpoch else { throw FiestaBoardError.staleSession }
+            mobileSession = credential
+            await persistCredential(generation: currentGeneration, epoch: currentPersistenceEpoch)
+        }
+        if http.statusCode == 401 && mobileSession != nil {
+            mobileSession = nil
+            generation &+= 1
+            let signedOutGeneration = generation
+            await forgetRememberedSession()
+            guard signedOutGeneration == generation else { throw FiestaBoardError.staleSession }
+            throw FiestaBoardError.unauthenticated
         }
         guard currentGeneration == generation else { throw FiestaBoardError.staleSession }
         let canBeGateway = (200..<300).contains(http.statusCode) || (500..<600).contains(http.statusCode)
@@ -308,7 +354,11 @@ public actor URLSessionTransport: APITransport {
         case 412: throw request.path.starts(with: ["v1", "collections"]) ? FiestaBoardError.collectionConflict : .pageConflict
         case 409: throw request.method == .delete && request.path.starts(with: ["v1", "collections"]) ? FiestaBoardError.collectionInUse : .conflict
         case 429:
-            let seconds = http.value(forHTTPHeaderField: "Retry-After").flatMap(Int.init).flatMap { $0 >= 0 ? $0 : nil }
+            let seconds = http.value(forHTTPHeaderField: "Retry-After").flatMap { value -> Int? in
+                if let seconds = Int(value), seconds >= 0 { return seconds }
+                guard let target = Self.httpDate(value) else { return nil }
+                return max(0, Int(ceil(target.timeIntervalSince(lastServerDate ?? Date()))))
+            }
             throw FiestaBoardError.rateLimited(retryAfterSeconds: seconds)
         case 502:
             struct Partial: Decodable {
@@ -343,116 +393,6 @@ final class RefuseRedirectDelegate: NSObject, URLSessionTaskDelegate, Sendable {
     }
 }
 
-struct SessionCookieJar: Sendable {
-    private struct Cookie: Sendable, Codable {
-        let name: String
-        let value: String
-        let domain: String
-        let hostOnly: Bool
-        let path: String
-        let secure: Bool
-        let expires: Date?
-    }
-    private var entries: [Cookie] = []
-
-    mutating func receive(_ header: String, from url: URL, now: Date = Date()) {
-        // Split combined Set-Cookie fields only at the next cookie name, not an Expires comma.
-        let pattern = ",(?=\\s*[^;,=\\s]+\\s*=)"
-        let fields = header.replacingOccurrences(of: pattern, with: "\n", options: .regularExpression).split(separator: "\n")
-        guard let host = url.host?.lowercased() else { return }
-        for field in fields {
-            let attributes = field.split(separator: ";").map { $0.trimmingCharacters(in: .whitespaces) }
-            guard let first = attributes.first, let equals = first.firstIndex(of: "="),
-                  first[..<equals] == "fiestaboard_session" else { continue }
-            let value = String(first[first.index(after: equals)...])
-            guard value.utf8.allSatisfy({ $0 >= 33 && $0 <= 126 && $0 != 59 && $0 != 44 }) else { continue }
-            var domain = host
-            var hostOnly = true
-            var path = String(url.path.prefix(through: url.path.lastIndex(of: "/") ?? url.path.startIndex).dropLast())
-            if path.isEmpty { path = "/" }
-            var secure = false
-            var expiry: Date?
-            var maxAge: Int?
-            for attribute in attributes.dropFirst() {
-                let pair = attribute.split(separator: "=", maxSplits: 1, omittingEmptySubsequences: false)
-                let key = pair[0].lowercased()
-                let val = pair.count == 2 ? String(pair[1]) : ""
-                switch key {
-                case "domain": domain = val.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: ".")); hostOnly = false
-                case "path": if val.hasPrefix("/") { path = val }
-                case "secure": secure = true
-                case "max-age": maxAge = Int(val)
-                default: break
-                }
-            }
-            // This draft accepts explicit domains only equal to the deployment host.
-            // It intentionally refuses parent-domain cookies, avoiding public-suffix ambiguity.
-            guard domain == host else { continue }
-            if let maxAge { expiry = now.addingTimeInterval(TimeInterval(maxAge)) }
-            else {
-                expiry = HTTPCookie.cookies(withResponseHeaderFields: ["Set-Cookie": String(field)], for: url).first?.expiresDate
-            }
-            entries.removeAll { $0.domain == domain && $0.path == path }
-            if expiry.map({ $0 <= now }) ?? false { continue }
-            entries.append(Cookie(name: "fiestaboard_session", value: value, domain: domain, hostOnly: hostOnly, path: path, secure: secure, expires: expiry))
-        }
-    }
-
-    private struct StoredSession: Codable {
-        let version: Int
-        let deployment: String
-        let installationID: String
-        let cookies: [Cookie]
-        let connectionID: UUID?
-    }
-    func persisted(deployment: DeploymentURL, installationID: String, connectionID: UUID, now: Date = Date()) -> Data? {
-        let persistent = entries.filter { $0.expires.map { $0 > now } ?? false }
-        guard !persistent.isEmpty, persistent.count <= 16 else { return nil }
-        return try? JSONEncoder().encode(StoredSession(version: 2, deployment: deployment.description,
-            installationID: installationID, cookies: persistent, connectionID: connectionID))
-    }
-    static func storedConnectionID(_ data: Data) -> UUID? {
-        guard let stored = try? JSONDecoder().decode(StoredSession.self, from: data), stored.version == 2 else { return nil }
-        return stored.connectionID
-    }
-    static func restore(_ data: Data, deployment: DeploymentURL, installationID: String, now: Date = Date()) -> Self? {
-        guard data.count <= 65_536,
-              let stored = try? JSONDecoder().decode(StoredSession.self, from: data), [1, 2].contains(stored.version),
-              (stored.version == 1 || stored.connectionID != nil),
-              stored.deployment == deployment.description, stored.installationID == installationID,
-              !stored.cookies.isEmpty, stored.cookies.count <= 16,
-              let url = try? deployment.apiURL(["auth", "status"]), let host = url.host?.lowercased() else { return nil }
-        var keys = Set<String>()
-        for cookie in stored.cookies {
-            guard cookie.name == "fiestaboard_session", cookie.domain == host,
-                  cookie.path.hasPrefix("/"), cookie.path.utf8.count <= 2048,
-                  cookie.path.utf8.allSatisfy({ $0 >= 33 && $0 <= 126 && $0 != 59 && $0 != 44 }),
-                  !cookie.value.isEmpty, cookie.value.utf8.count <= 8192,
-                  cookie.value.utf8.allSatisfy({ $0 >= 33 && $0 <= 126 && $0 != 59 && $0 != 44 }),
-                  cookie.expires.map({ $0.timeIntervalSinceReferenceDate.isFinite && $0 > now }) == true,
-                  !cookie.secure || url.scheme == "https",
-                  keys.insert(cookie.domain + "\n" + cookie.path).inserted else { return nil }
-        }
-        var jar = Self(); jar.entries = stored.cookies
-        guard jar.header(for: url, now: now) != nil else { return nil }
-        return jar
-    }
-
-    func header(for url: URL, now: Date = Date()) -> String? {
-        guard let host = url.host?.lowercased() else { return nil }
-        let matching = entries.filter { cookie in
-            let domainMatches = host == cookie.domain || (!cookie.hostOnly && host.hasSuffix("." + cookie.domain))
-            let path = url.path.isEmpty ? "/" : url.path
-            let pathMatches = path == cookie.path || (path.hasPrefix(cookie.path) &&
-                (cookie.path.hasSuffix("/") || path.dropFirst(cookie.path.count).hasPrefix("/")))
-            return domainMatches && pathMatches && (!cookie.secure || url.scheme == "https") &&
-                (cookie.expires.map { $0 > now } ?? true)
-        }.sorted { $0.path.count > $1.path.count }
-        return matching.isEmpty ? nil : matching.map { "fiestaboard_session=" + $0.value }.joined(separator: "; ")
-    }
-}
-
-
 extension APIRequest {
     private func headerValueIsSafe(_ value: String) -> Bool {
         !value.isEmpty && value.utf8.allSatisfy { $0 >= 33 && $0 <= 126 }
@@ -480,7 +420,7 @@ extension APIRequest {
         let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
         let detail = object?["detail"] as? String
         let authEndpoint = path.count == 2 && path.first == "auth"
-        if status == 401 && path == ["auth", "login"] && detail == "Invalid username or password" { return .invalidCredentials }
+        if status == 401 && ([ ["auth", "login"], ["auth", "device", "login"] ].contains(path)) && (detail == "Invalid username or password" || object?["error"] as? String == "invalid_credentials") { return .invalidCredentials }
         if status == 403 {
             if [ ["auth", "setup"], ["auth", "preference"] ].contains(path),
                detail == "This install has a stored MCP token. Present it as a Bearer token to enable login, or clear the token first." { return .setupProofRequired }

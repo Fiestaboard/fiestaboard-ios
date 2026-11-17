@@ -53,8 +53,6 @@ class CIShardTests(unittest.TestCase):
         self.assertEqual(runner_source.count(original), 1)
         runner.write_text(runner_source.replace(
             original, 'ios_build_root=' + shlex.quote(str(self.root / 'build'))))
-        (self.root / 'Tests/UITests/fixture_server.py').write_text(
-            'import time\nwhile True: time.sleep(1)\n')
         stub = '''#!/usr/bin/env python3
 import json, os, pathlib, sys
 name = pathlib.Path(sys.argv[0]).name

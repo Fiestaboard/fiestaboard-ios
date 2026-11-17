@@ -1,0 +1,421 @@
+{
+  "about": "Request → exact response pairs for POST /templates/render, /templates/validate and /pages/preview/batch, shared by the iOS and Android fixture servers (PLAN §4.4). Writer: iOS-R1. Other packages append render-cases.<pkg>.json. A request matches when its JSON body is equal (canonical, key order ignored). Wire shapes as verified at FiestaBoard v10.3.2; content is mock unless `source` says captured. W4 (iOS-P4, 2026-11-02): page_hello and page_morning removed (their null line_metadata entries are a 422 on 10.3.2; see render-cases.r2.json *_full_metadata); page_wide, page_lower and b21_bogus corrected to the real server (reports/W4-WEB.md).",
+  "version": 2,
+  "cases": [
+    {
+      "id": "corpus_render_flagship",
+      "route": "/templates/render",
+      "request": {
+        "template": [
+          "HELLO"
+        ],
+        "board_id": "unknown-contract",
+        "device_type": "flagship"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "HELLO                 \n                      \n                      \n                      \n                      \n                      ",
+          "lines": [
+            "HELLO                 ",
+            "                      ",
+            "                      ",
+            "                      ",
+            "                      ",
+            "                      "
+          ],
+          "line_count": 6,
+          "charset": null,
+          "charset_issues": null
+        }
+      },
+      "source": "Fixtures/contracts/10.1.20/bootstrap-control.json (captured server response)"
+    },
+    {
+      "id": "corpus_render_note_array",
+      "route": "/templates/render",
+      "request": {
+        "template": [
+          "HELLO"
+        ],
+        "board_id": "unknown-contract",
+        "device_type": "note_array",
+        "notes_wide": 2,
+        "notes_tall": 2
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "HELLO                         \n                              \n                              \n                              \n                              \n                              ",
+          "lines": [
+            "HELLO                         ",
+            "                              ",
+            "                              ",
+            "                              ",
+            "                              ",
+            "                              "
+          ],
+          "line_count": 6,
+          "charset": null,
+          "charset_issues": null
+        }
+      },
+      "source": "Fixtures/contracts/10.1.20/bootstrap-control.json (captured server response)"
+    },
+    {
+      "id": "corpus_render_panel",
+      "route": "/templates/render",
+      "request": {
+        "template": [
+          "HELLO"
+        ],
+        "board_id": "unknown-contract",
+        "device_type": "panel",
+        "grid_rows": 8,
+        "grid_cols": 16
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "HELLO           \n                \n                \n                \n                \n                \n                \n                ",
+          "lines": [
+            "HELLO           ",
+            "                ",
+            "                ",
+            "                ",
+            "                ",
+            "                ",
+            "                ",
+            "                "
+          ],
+          "line_count": 8,
+          "charset": null,
+          "charset_issues": null
+        }
+      },
+      "source": "Fixtures/contracts/10.1.20/bootstrap-control.json (captured server response)"
+    },
+    {
+      "id": "corpus_render_filled_71",
+      "route": "/templates/render",
+      "request": {
+        "template": [
+          "{{filled}}"
+        ],
+        "device_type": "flagship",
+        "board_id": "unknown-contract"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "{71}                     \n                      \n                      \n                      \n                      \n                      ",
+          "lines": [
+            "{71}                     ",
+            "                      ",
+            "                      ",
+            "                      ",
+            "                      ",
+            "                      "
+          ],
+          "line_count": 6,
+          "charset": null,
+          "charset_issues": null
+        }
+      },
+      "source": "Fixtures/contracts/10.1.20/bootstrap-control.json (captured server response)"
+    },
+    {
+      "id": "page_note",
+      "route": "/templates/render",
+      "request": {
+        "template": [
+          "HELLO",
+          "{{date_time.time}}",
+          "{{red}} LOVE {{red}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "center",
+            "wrap": false
+          },
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "device_type": "note",
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "grid_rows": null,
+        "grid_cols": null
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "     HELLO     \n     08:15     \n{63} LOVE {63}       ",
+          "lines": [
+            "     HELLO     ",
+            "     08:15     ",
+            "{63} LOVE {63}       "
+          ],
+          "line_count": 3
+        }
+      },
+      "source": "mock: fixture_boards.PAGES \"note\" as the server would evaluate it (weather 72 SUNNY, time 08:15)"
+    },
+    {
+      "id": "page_wide",
+      "route": "/templates/render",
+      "request": {
+        "template": [
+          "THE BEST WAY TO PREDICT THE FUTURE IS TO CREATE IT"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "center",
+            "wrap": true
+          }
+        ],
+        "device_type": "note_array",
+        "notes_wide": 2,
+        "notes_tall": 2,
+        "grid_rows": null,
+        "grid_cols": null
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": " THE BEST WAY TO PREDICT THE  \n    FUTURE IS TO CREATE IT    \n                              \n                              \n                              \n                              ",
+          "lines": [
+            " THE BEST WAY TO PREDICT THE  ",
+            "    FUTURE IS TO CREATE IT    ",
+            "                              ",
+            "                              ",
+            "                              ",
+            "                              "
+          ],
+          "line_count": 6
+        }
+      },
+      "source": "verified against FiestaBoard v10.3.2 (3669e6086) by WEB-P4, 2026-11-02; applied by iOS-P4 (W4): greedy wrap fills the 30-col row"
+    },
+    {
+      "id": "page_lobby",
+      "route": "/templates/render",
+      "request": {
+        "template": [
+          "WELCOME TO THE LOBBY",
+          "{{blue}}{{blue}}{{blue}}"
+        ],
+        "line_metadata": null,
+        "device_type": "panel",
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "grid_rows": 12,
+        "grid_cols": 29
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "WELCOME TO THE LOBBY         \n{67}{67}{67}                          \n                             \n                             \n                             \n                             \n                             \n                             \n                             \n                             \n                             \n                             ",
+          "lines": [
+            "WELCOME TO THE LOBBY         ",
+            "{67}{67}{67}                          ",
+            "                             ",
+            "                             ",
+            "                             ",
+            "                             ",
+            "                             ",
+            "                             ",
+            "                             ",
+            "                             ",
+            "                             ",
+            "                             "
+          ],
+          "line_count": 12
+        }
+      },
+      "source": "mock: fixture_boards.PAGES \"lobby\" as the server would evaluate it (weather 72 SUNNY, time 08:15)"
+    },
+    {
+      "id": "page_pixel",
+      "route": "/templates/render",
+      "request": {
+        "template": [
+          "{{date_time.time}}"
+        ],
+        "line_metadata": null,
+        "device_type": "panel",
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "grid_rows": 10,
+        "grid_cols": 16
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "08:15           \n                \n                \n                \n                \n                \n                \n                \n                \n                ",
+          "lines": [
+            "08:15           ",
+            "                ",
+            "                ",
+            "                ",
+            "                ",
+            "                ",
+            "                ",
+            "                ",
+            "                ",
+            "                "
+          ],
+          "line_count": 10
+        }
+      },
+      "source": "mock: fixture_boards.PAGES \"pixel\" as the server would evaluate it (weather 72 SUNNY, time 08:15)"
+    },
+    {
+      "id": "page_lower",
+      "route": "/templates/render",
+      "request": {
+        "template": [
+          "UPPER ROW",
+          "lower row kept",
+          "THIRD"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "device_type": "flagship",
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "grid_rows": null,
+        "grid_cols": null
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "      UPPER ROW       \nlower row kept        \nTHIRD                 \n                      \n                      \n                      ",
+          "lines": [
+            "      UPPER ROW       ",
+            "lower row kept        ",
+            "THIRD                 ",
+            "                      ",
+            "                      ",
+            "                      "
+          ],
+          "line_count": 6
+        }
+      },
+      "source": "verified against FiestaBoard v10.3.2 (3669e6086) by WEB-P4, 2026-11-02; applied by iOS-P4 (W4): render keeps lowercase; with a board_id the server reports it in charset_issues (reason \"case\")"
+    },
+    {
+      "id": "b19_hello_6",
+      "route": "/templates/render",
+      "request": {
+        "template": [
+          "HELLO",
+          "",
+          "",
+          "",
+          "",
+          ""
+        ],
+        "line_metadata": null,
+        "device_type": "flagship",
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "grid_rows": null,
+        "grid_cols": null
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "HELLO                 \n                      \n                      \n                      \n                      \n                      ",
+          "lines": [
+            "HELLO                 ",
+            "                      ",
+            "                      ",
+            "                      ",
+            "                      ",
+            "                      "
+          ],
+          "line_count": 6
+        }
+      },
+      "source": "mock: toy renderer output, pinned"
+    },
+    {
+      "id": "b19_hello_1",
+      "route": "/templates/render",
+      "request": {
+        "template": [
+          "HELLO"
+        ],
+        "line_metadata": null,
+        "device_type": "flagship",
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "grid_rows": null,
+        "grid_cols": null
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "rendered": "HELLO                 \n                      \n                      \n                      \n                      \n                      ",
+          "lines": [
+            "HELLO                 ",
+            "                      ",
+            "                      ",
+            "                      ",
+            "                      ",
+            "                      "
+          ],
+          "line_count": 6
+        }
+      },
+      "source": "mock: toy renderer output, pinned"
+    },
+    {
+      "id": "b21_valid",
+      "route": "/templates/validate",
+      "request": {
+        "template": [
+          "{{= IF(1>0,\"A\",\"B\") }}"
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "valid": true,
+          "errors": []
+        }
+      },
+      "source": "mock: validate fallback, pinned (server message shape S:src/templates/engine.py:2066)"
+    },
+    {
+      "id": "b21_bogus",
+      "route": "/templates/validate",
+      "request": {
+        "template": [
+          "{{= BOGUS(1) }}"
+        ]
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "valid": false,
+          "errors": [
+            {
+              "line": 1,
+              "column": 0,
+              "message": "Formula #NAME?: Unknown function: BOGUS"
+            }
+          ]
+        }
+      },
+      "source": "verified against FiestaBoard v10.3.2 (3669e6086) by WEB-P4, 2026-11-02; applied by iOS-P4 (W4): errors[0].column is 0"
+    }
+  ]
+}

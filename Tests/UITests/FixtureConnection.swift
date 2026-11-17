@@ -78,7 +78,7 @@ extension XCTestCase {
         do {
             try FixtureReadiness.require(URL(string: "http://127.0.0.1:\(port)/ready")!)
         } catch {
-            XCTFail("Required fixture unavailable or invalid (\(error)): FIXTURE_PORT=\(port) python3 Tests/UITests/fixture_server.py",
+            XCTFail("Required native fixture unavailable or invalid (\(error)); loopback port \(port)",
                     file: file, line: line)
             throw error
         }
@@ -147,7 +147,7 @@ extension XCTestCase {
         // At accessibility sizes the form may not instantiate this off-screen row yet.
         reveal(address)
         XCTAssertTrue(address.waitForExistence(timeout: 10))
-        let port = ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "18442"
+        let port = String(FixtureHTTPServer.shared.port)
         allowFixtureHTTP(app)
         reveal(address)
         typeConnectionAddress("http://127.0.0.1:\(port)/board-manual-\(UUID().uuidString.lowercased())", into: address, in: app)

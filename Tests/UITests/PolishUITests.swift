@@ -7,7 +7,7 @@ import XCTest
     override func setUp() { super.setUp(); continueAfterFailure = false }
 
     private var device: String { UIDevice.current.userInterfaceIdiom == .pad ? "ipadair11m4" : "iphone17promax" }
-    private var fixturePort: Int { Int(ProcessInfo.processInfo.environment["FIXTURE_PORT"] ?? "") ?? 18442 }
+    private var fixturePort: Int { Int(FixtureHTTPServer.shared.port) }
 
     /// B16 (P5): charset issues grouped per row and per reason, at most three lines collapsed,
     /// "Show all" for the rest; the board stays the largest element either way.

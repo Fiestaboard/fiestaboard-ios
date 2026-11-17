@@ -111,7 +111,7 @@ private actor BootstrapPauseTransport: APITransport {
                 health = continuation; waiter?.resume(); waiter = nil
             }
         }
-        if request.path == ["auth", "logout"] { return APIResponse(status: 200, data: Data(#"{"status":"ok"}"#.utf8)) }
+        if request.path == ["auth", "device", "session"] { return APIResponse(status: 200, data: Data(#"{"status":"ok"}"#.utf8)) }
         throw FiestaBoardError.invalidPath
     }
     func waitForHealth() async {
@@ -174,6 +174,7 @@ private actor OnboardingTransitionTransport: APITransport {
             }
             return APIResponse(status: 200, data: try BootstrapTests.body(setup ? "auth_authenticated" : "auth_disabled"))
         }
+        if request.path == ["auth", "device", "login"] { return APIResponse(status: 200, data: MobileFixture.reply()) }
         if request.path == ["auth", "setup"] || request.path == ["auth", "preference"] {
             return APIResponse(status: setup ? 201 : 200, data: Data(#"{"status":"ok"}"#.utf8))
         }
