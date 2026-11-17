@@ -44,11 +44,7 @@ import XCTest
 
     /// Sign in to the fixture's board prefix and open "Good Morning" in the document editor.
     private func openGoodMorning(scenario: String = "manual") throws -> (XCUIApplication, XCUIElement) {
-        var request = URLRequest(url: URL(string: "http://127.0.0.1:\(fixturePort)/ready")!); request.timeoutInterval = 3
-        let semaphore = DispatchSemaphore(value: 0); var ready = false
-        URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
-        semaphore.wait()
-        try requireReadyFixture(ready, port: String(fixturePort))
+        try requireReadyFixture(port: String(fixturePort))
         let app = isolatedApplication()
         app.launchArguments = []; app.launch()
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
@@ -156,7 +152,7 @@ import XCTest
         expression.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 12))
         element(app, "formulaFunction_IF").tap()
         XCTAssertTrue(waitFor(3) { (expression.value as? String) == "IF(\n  \n)" }, "\(expression.value ?? "")")
-        element(app, "formulaTabs").buttons["Variables"].tap()
+        try selectFixtureSegment("Variables", in: app.segmentedControls["formulaTabs"])
         let search = app.textFields["variableSearch"]
         XCTAssertTrue(search.waitForExistence(timeout: 3))
         search.tap(); search.typeText("temp")

@@ -305,12 +305,7 @@ final class BoardVisualsUITests: XCTestCase {
     }
 
     @MainActor private func choose(_ display: String, in app: XCUIApplication) {
-        let picker = app.descendants(matching: .any)["homeDisplayPicker"]
-        XCTAssertTrue(picker.waitForExistence(timeout: 5))
-        picker.tap()
-        let item = app.buttons[display].firstMatch
-        XCTAssertTrue(item.waitForExistence(timeout: 5), app.debugDescription)
-        item.tap()
+        selectFixtureDisplay(display, in: app)
     }
 
     @MainActor private func enableChanges(_ app: XCUIApplication) {
@@ -374,10 +369,6 @@ final class BoardVisualsUITests: XCTestCase {
     }
 
     @MainActor private func requireFixture() async throws {
-        var request = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/ready")!)
-        request.timeoutInterval = 3
-        let (data, response) = try await URLSession.shared.data(for: request)
-        XCTAssertEqual((response as? HTTPURLResponse)?.statusCode, 200)
-        XCTAssertTrue(String(decoding: data, as: UTF8.self).contains("native-onboarding"))
+        try requireReadyFixture(port: port)
     }
 }

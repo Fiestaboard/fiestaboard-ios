@@ -1,0 +1,308 @@
+#!/usr/bin/env node
+/**
+ * Native (iOS) Figma parity report — REPORT-ONLY (PHASE-5-IOS-PLAN §2.1).
+ *
+ *   node scripts/parity/native-parity.mjs [--refs <local dir>] [--shots build/parity]
+ *        [--manifest scripts/parity/figma-refs.json] [--out build/parity/report]
+ *
+ * Inputs:
+ *   --refs      a local refs directory (refs.json + PNGs): a checkout of
+ *               locally saved Figma exports (no separate reference repo required).
+ *               Never a URL. Optional: without it the report lists the shots
+ *               and probes it found and says no refs were given.
+ *   --shots     where the tests wrote `<ref>.png` (native pixels, scale 3 for iPhone / 2 for iPad) and
+ *               `<ref>.probes.json` (FigmaGeometryRegistry frames, points,
+ *               relative to the Screen slot; see Tests/Support/ParityProbe.swift).
+ *   --manifest  per ref id: kind, and which Figma ids to probe for geometry/text.
+ *
+ * The checks are FiestaUI's, vendored verbatim in ./parity.mjs and pinned
+ * below; this file only adapts native inputs to them:
+ *   - the shot is box-downscaled to the ref's scale (a 1x MCP ref gets a 1x
+ *     shot; a REST @2x ref is compared as is);
+ *   - probes are joined to ref nodes by Figma id, not by DOM selector.
+ *
+ * Findings never change the exit code. Exit 2 only for bad input.
+ */
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { PNG } from "pngjs";
+
+import { evaluateEntry, loadRefs, renderMarkdown, resolveRefsDir, pixelDiff } from "./parity.mjs";
+
+/**
+ * FiestaUI scripts/vrt/parity.mjs on `alpha` at the #378 merge. The file is
+ * byte-identical to the PR head A0 vendored (same sha256). Bump
+ * deliberately; the test checks the hash.
+ */
+export const PINNED = {
+  repo: "Fiestaboard/FiestaUI",
+  ref: "alpha",
+  path: "scripts/vrt/parity.mjs",
+  commit: "a84531f5ad3e88095ca001b03aa6d1afe54601f6",
+  sha256: "94cd0bb7f918ccdf92d7cbea3ed8868e5c42ef75b16a7d23b12e09479e12dc22",
+};
+
+/** `<shots>/runtime.json` written by the snapshot tests, or null. */
+export function readRuntime(shotsDir) {
+  const file = path.join(shotsDir, "runtime.json");
+  return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : null;
+}
+
+function runtimeLine(runtime) {
+  if (!runtime) return "Simulator runtime: not recorded.";
+  return `Simulator: iOS ${runtime.osVersion} (${runtime.runtimeBuild}) · ${runtime.deviceModel} · scale ${runtime.scale} · goldens \`${runtime.goldenDirectory}\``;
+}
+
+/** @param {string} file */
+export function loadNativeManifest(file) {
+  const raw = JSON.parse(readFileSync(file, "utf8"));
+  if (!Array.isArray(raw.entries)) throw new Error(`${file}: expected { entries: [...] }`);
+  for (const entry of raw.entries) {
+    if (!entry.id) throw new Error(`${file}: an entry has no "id"`);
+    entry.probes = { geometry: [], text: [], ...(entry.probes ?? {}) };
+  }
+  return raw;
+}
+
+/**
+ * Box-filter `png` down by an integer factor (2 → a scale-2 shot onto a 1x ref).
+ * @param {PNG} png
+ * @param {number} factor
+ */
+export function downscale(png, factor) {
+  if (factor === 1) return png;
+  if (!Number.isInteger(factor) || factor < 1) throw new Error(`downscale factor must be a positive integer, got ${factor}`);
+  if (png.width % factor || png.height % factor)
+    throw new Error(`image dimensions must be divisible by downscale factor ${factor}`);
+  const width = png.width / factor;
+  const height = png.height / factor;
+  const out = new PNG({ width, height });
+  const n = factor * factor;
+  for (let y = 0; y < height; y++)
+    for (let x = 0; x < width; x++) {
+      const sum = [0, 0, 0, 0];
+      for (let dy = 0; dy < factor; dy++)
+        for (let dx = 0; dx < factor; dx++) {
+          const o = ((y * factor + dy) * png.width + (x * factor + dx)) * 4;
+          for (let c = 0; c < 4; c++) sum[c] += png.data[o + c];
+        }
+      const o = (y * width + x) * 4;
+      for (let c = 0; c < 4; c++) out.data[o + c] = Math.round(sum[c] / n);
+    }
+  return out;
+}
+
+/**
+ * The `dom` argument of evaluateEntry, from native probes. A probed id that
+ * the shot never registered is reported with a null rect / text.
+ */
+export function buildDom(ref, entry, probes) {
+  const byFigma = new Map((probes?.nodes ?? []).map((n) => [n.figma, n]));
+  const nameOf = (id) => ref.nodes.find((n) => n.id === id)?.name ?? id;
+  return {
+    geometry: entry.probes.geometry.map((id) => ({ node: nameOf(id), rect: byFigma.get(id)?.rect ?? null })),
+    text: entry.probes.text.map((id) => ({ node: nameOf(id), text: byFigma.get(id)?.text ?? null })),
+    tokens: [],
+    board: null,
+  };
+}
+
+/** Explicit reference artifacts only. Never mutate the original images or relax thresholds.
+ * Rectangles are points; rounded-screen-exterior excludes only pixels outside the
+ * documented device clip. Reasons and the visible denominator travel with results.
+ */
+export function compareWithArtifactMasks(refPng, shotPng, masks, scale) {
+  if (refPng.width !== shotPng.width || refPng.height !== shotPng.height)
+    throw new Error('artifact masks require equal image dimensions');
+  const a = PNG.sync.read(PNG.sync.write(refPng));
+  const b = PNG.sync.read(PNG.sync.write(shotPng));
+  const width = a.width / scale, height = a.height / scale;
+  for (const mask of masks) {
+    if (!mask.id || !mask.reason) throw new Error('artifact mask needs id and reason');
+    if (mask.kind === 'rounded-screen-exterior') {
+      if (!(mask.radius > 0 && mask.radius <= Math.min(width, height) / 2)) throw new Error('invalid corner radius');
+    } else {
+      const r = mask.rect;
+      if (!r || ![r.x, r.y, r.width, r.height].every(Number.isFinite) || r.x < 0 || r.y < 0 || r.width <= 0 || r.height <= 0 || r.x + r.width > width || r.y + r.height > height)
+        throw new Error('artifact mask outside image bounds');
+    }
+  }
+  let excludedPixels = 0;
+  for (let y = 0; y < a.height; y++) for (let x = 0; x < a.width; x++) {
+    const px = (x + 0.5) / scale, py = (y + 0.5) / scale;
+    const excluded = masks.some(mask => {
+      if (mask.kind === 'rounded-screen-exterior') {
+        const r = mask.radius;
+        const dx = px - Math.max(r, Math.min(width - r, px));
+        const dy = py - Math.max(r, Math.min(height - r, py));
+        return dx * dx + dy * dy > r * r;
+      }
+      const r = mask.rect;
+      return px >= r.x && px < r.x + r.width && py >= r.y && py < r.y + r.height;
+    });
+    if (excluded) {
+      excludedPixels++;
+      const offset = (y * a.width + x) * 4;
+      a.data.set([255, 255, 255, 255], offset);
+      b.data.set([255, 255, 255, 255], offset);
+    }
+  }
+  const result = pixelDiff(a, b, { scale });
+  const comparedPixels = a.width * a.height - excludedPixels;
+  if (!comparedPixels) throw new Error('artifact masks exclude the entire image');
+  return { ...result, ratio: result.diffPixels / comparedPixels, excludedPixels, comparedPixels, masks };
+}
+
+function parseArgs(argv) {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const args = {
+    refs: null,
+    shots: "build/parity",
+    manifest: path.join(here, "figma-refs.json"),
+    out: "build/parity/report",
+  };
+  for (let i = 0; i < argv.length; i++) {
+    const flag = argv[i];
+    const key = flag.replace(/^--/, "");
+    if (!flag.startsWith("--") || !(key in args)) throw new Error(`unknown argument: ${flag}`);
+    const value = argv[++i];
+    if (value === undefined) throw new Error(`${flag} needs a value`);
+    args[key] = value;
+  }
+  return args;
+}
+
+function main(argv) {
+  const args = parseArgs(argv);
+  const refsDir = args.refs ? resolveRefsDir(args.refs) : null;
+  const manifest = loadNativeManifest(args.manifest);
+  mkdirSync(args.out, { recursive: true });
+
+  const runtime = readRuntime(args.shots);
+  const report = {
+    gating: false,
+    pinned: PINNED,
+    runtime,
+    refsDir: refsDir ?? "(none)",
+    refsTag: null,
+    manifest: args.manifest,
+    missingRefs: [],
+    unmanifested: [],
+    entries: [],
+  };
+
+  if (!refsDir) {
+    report.missingRefs = manifest.entries.map((entry) => entry.id);
+    const lines = [
+      "# Figma parity report (iOS)",
+      "",
+      "**Report-only.** No refs: `--refs` was not given. Saved Figma reference unavailable; no visual match claimed.",
+      runtimeLine(runtime),
+      "",
+      "Shots and probes found, for a local run with `--refs <dir>`:",
+      "",
+    ];
+    for (const entry of manifest.entries) {
+      const shot = path.join(args.shots, `${entry.id}.png`);
+      const probes = path.join(args.shots, `${entry.id}.probes.json`);
+      lines.push(`- \`${entry.id}\`: shot ${existsSync(shot) ? "yes" : "no"}, probes ${existsSync(probes) ? "yes" : "no"}`);
+      report.entries.push({ id: entry.id, figmaNode: entry.figmaNode, status: entry.referenceStatus === "no-reference" ? "no-reference" : "missing-reference",
+        wouldPass: null, error: entry.referenceNote ?? "no refs", shotAvailable: existsSync(shot), probesAvailable: existsSync(probes) });
+    }
+    writeFileSync(path.join(args.out, "report.json"), JSON.stringify(report, null, 2));
+    writeFileSync(path.join(args.out, "report.md"), `${lines.join("\n")}\n`);
+    process.stdout.write(`${lines.join("\n")}\n`);
+    return 0;
+  }
+
+  const refs = loadRefs(refsDir);
+  const refIds = new Set(refs.map((r) => r.id));
+  report.missingRefs = manifest.entries.filter((e) => !refIds.has(e.id)).map((e) => e.id);
+  report.unmanifested = refs.filter((r) => !manifest.entries.some((e) => e.id === r.id)).map((r) => r.id);
+
+  for (const entry of manifest.entries) {
+    if (entry.referenceStatus === "no-reference") {
+      report.entries.push({ id: entry.id, figmaNode: entry.figmaNode, mode: entry.mode,
+        status: "no-reference", wouldPass: null, error: entry.referenceNote ?? "no reference exported for this appearance" });
+      continue;
+    }
+    const ref = refs.find((r) => r.id === entry.id);
+    if (!ref || !existsSync(ref.pngPath)) {
+      if (!report.missingRefs.includes(entry.id)) report.missingRefs.push(entry.id);
+      report.entries.push({ id: entry.id, figmaNode: ref?.figmaNode ?? entry.figmaNode,
+        status: "missing-reference", wouldPass: null, error: "saved Figma reference unavailable" });
+      continue;
+    }
+    const shotPath = path.join(args.shots, `${entry.id}.png`);
+    const probesPath = path.join(args.shots, `${entry.id}.probes.json`);
+    if (!existsSync(shotPath)) {
+      report.entries.push({ id: entry.id, figmaNode: ref.figmaNode, status: "missing-shot", wouldPass: null, error: `no shot at ${shotPath}` });
+      continue;
+    }
+    const probes = existsSync(probesPath) ? JSON.parse(readFileSync(probesPath, "utf8")) : null;
+    const shotScale = probes?.scale;
+    if (shotScale === undefined) {
+      report.entries.push({ id: entry.id, figmaNode: ref.figmaNode,
+        status: "missing-scale", wouldPass: null, error: "shot scale metadata unavailable" });
+      continue;
+    }
+    if (!Number.isFinite(shotScale) || shotScale <= 0 || !Number.isFinite(ref.scale) || ref.scale <= 0)
+      throw new Error(`${entry.id}: scales must be positive finite numbers`);
+    const factor = shotScale / ref.scale;
+    if (!Number.isInteger(factor) || factor < 1) {
+      report.entries.push({ id: entry.id, figmaNode: ref.figmaNode,
+        status: "unsupported-scale", wouldPass: null,
+        error: `unsupported scale ratio ${shotScale}/${ref.scale}; export a 1x reference` });
+      continue;
+    }
+    const nativePng = PNG.sync.read(readFileSync(shotPath));
+    if (nativePng.width % factor || nativePng.height % factor) {
+      report.entries.push({ id: entry.id, figmaNode: ref.figmaNode,
+        status: "unsupported-dimensions", wouldPass: null,
+        error: `shot dimensions ${nativePng.width}×${nativePng.height} are not divisible by scale ratio ${factor}` });
+      continue;
+    }
+    const shotPng = downscale(nativePng, factor);
+    writeFileSync(path.join(args.out, `${entry.id}.png`), PNG.sync.write(shotPng));
+    const refPng = PNG.sync.read(readFileSync(ref.pngPath));
+    writeFileSync(path.join(args.out, `${entry.id}.ref.png`), PNG.sync.write(refPng));
+    const result = evaluateEntry({ ref, entry, refPng, shotPng, dom: buildDom(ref, entry, probes) });
+    writeFileSync(path.join(args.out, `${entry.id}.diff.png`), PNG.sync.write(result.diffPng));
+    if (entry.artifactMasks?.length && result.checks.pixel.sizeMatch) {
+      const adjusted = compareWithArtifactMasks(refPng, shotPng, entry.artifactMasks, ref.scale);
+      writeFileSync(path.join(args.out, `${entry.id}.artifact-adjusted.diff.png`), PNG.sync.write(adjusted.diffPng));
+      delete adjusted.diffPng;
+      const limit = result.checks.pixel.limit;
+      result.artifactAdjustedPixel = { ...adjusted, limit,
+        pass: adjusted.ratio <= limit && adjusted.flaggedBlobs.length === 0 };
+    }
+    delete result.diffPng;
+    result.shotScale = shotScale;
+    result.comparedAtScale = ref.scale;
+    report.entries.push(result);
+  }
+
+  const md = renderMarkdown(report).replace(
+    /\*\*Report-only \(slice 1\.0b\)\.\*\*[^\n]*/,
+    `**Report-only (iOS).** Nothing here fails CI; pixel and Figma geometry comparisons are report-only (PHASE-5-IOS-PLAN §2.1).\n\n${runtimeLine(runtime)}`,
+  ).replaceAll("would fail: ", "unavailable: ");
+  const maskNotes = report.entries.filter(e => e.artifactAdjustedPixel).map(e => {
+    const p = e.artifactAdjustedPixel;
+    return `\n### Explicit artifact comparison: ${e.id}\n\nRaw pixel result above is unchanged. Artifact-adjusted: ${(p.ratio * 100).toFixed(3)}%, ${p.diffPixels}/${p.comparedPixels} visible pixels; ${p.excludedPixels} excluded. Pixel limit and blob rule unchanged. Adjusted pixel pass: ${p.pass}.\n\n${p.masks.map(m => `- ${m.id}: ${m.reason} (${JSON.stringify(m.rect ?? {radius:m.radius})})`).join('\n')}\n`;
+  }).join('');
+  writeFileSync(path.join(args.out, "report.json"), JSON.stringify(report, null, 2));
+  writeFileSync(path.join(args.out, "report.md"), md + maskNotes);
+  process.stdout.write(md);
+  return 0;
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  try {
+    process.exitCode = main(process.argv.slice(2));
+  } catch (error) {
+    process.stderr.write(`native-parity: ${error.message}\n`);
+    process.exitCode = 2;
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "entries": [
+    {
+      "id": "ios-connecting",
+      "figmaNode": "362:20090",
+      "mode": "Light",
+      "kind": "screen",
+      "tolerance": {
+        "geometryPx": 1
+      },
+      "probes": {
+        "geometry": [
+          "362:20090",
+          "seed:connecting",
+          "seed:board",
+          "seed:line-1",
+          "seed:line-2",
+          "seed:action",
+          "seed:row-1",
+          "seed:row-2",
+          "seed:row-3"
+        ],
+        "text": []
+      },
+      "artifactMasks": [
+        {
+          "id": "status-bar",
+          "reason": "Static UIHosting capture excludes system status bar and Dynamic Island; Figma draws 9:41 and icons in the documented 402x62pt region.",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 62
+          }
+        },
+        {
+          "id": "bezel-corners",
+          "kind": "rounded-screen-exterior",
+          "radius": 55,
+          "reason": "Reference crop includes the outside black bezel beyond the documented 55pt screen corner radius; the app canvas is rectangular."
+        },
+        {
+          "id": "home-indicator",
+          "reason": "System home indicator is absent from static UIHosting capture; Figma documents its exact 129,861,144,5pt frame.",
+          "rect": {
+            "x": 129,
+            "y": 861,
+            "width": 144,
+            "height": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "ios-connecting-dark",
+      "figmaNode": "362:20090",
+      "mode": "Dark",
+      "kind": "screen",
+      "referenceStatus": "no-reference",
+      "referenceNote": "Design-agent exported Light only; no Dark Figma reference exists.",
+      "probes": {
+        "geometry": [],
+        "text": []
+      }
+    }
+  ]
+}

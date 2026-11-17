@@ -207,11 +207,7 @@ import XCTest
     }
 
     private func connectToFixture(_ app: XCUIApplication, scenario: String) throws {
-        var request = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/ready")!); request.timeoutInterval = 3
-        let semaphore = DispatchSemaphore(value: 0); var ready = false
-        URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
-        semaphore.wait()
-        try requireReadyFixture(ready, port: port)
+        try requireReadyFixture(port: port)
         app.launchArguments = []; app.launch()
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
         func revealForm(_ element: XCUIElement) {

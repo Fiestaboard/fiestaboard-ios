@@ -12,7 +12,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 SHARDS = {
-    'ui-a': ['BoardVisualsUITests', 'LaunchUITests'],
+    'ui-a': ['BoardVisualsUITests', 'LaunchUITests', 'ParityFoundationUITests'],
     'ui-b': [f'EditorUITests/{method}' for method in [
         'testAlignAndWrapFollowCaretRow', 'testBoardStaysBigAndAllRowsShow',
         'testCompactChipCalloutShowsTheFullName', 'testDisabledSaveSaysWhy',

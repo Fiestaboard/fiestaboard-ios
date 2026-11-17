@@ -5,7 +5,19 @@ import FiestaBoardAppState
 @main struct FiestaBoardApp: App {
     private let connectionPersistence = ConnectionPersistence(
         directory: AppPersistence.directory.appendingPathComponent("FiestaBoard/Servers", isDirectory: true))
-    var body: some Scene { WindowGroup { DraftScene(persistence: connectionPersistence) } }
+    var body: some Scene {
+        WindowGroup {
+            #if DEBUG
+            if let kind = ParityFixtureView.Kind.fromLaunchArguments() {
+                ParityFixtureView(kind: kind)
+            } else {
+                DraftScene(persistence: connectionPersistence)
+            }
+            #else
+            DraftScene(persistence: connectionPersistence)
+            #endif
+        }
+    }
 }
 
 /// UI tests use real services with isolated storage. Release ignores the test environment.

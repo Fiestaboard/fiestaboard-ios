@@ -13,13 +13,66 @@ extension XCTestCase {
             .containing(.staticText, identifier: name).firstMatch
     }
 
+    /// Selecting a native segment may need a second tap; never replay the surrounding journey.
+    @MainActor func selectFixtureSegment(_ title: String, in control: XCUIElement,
+                                         file: StaticString = #filePath, line: UInt = #line) throws {
+        let segment = control.buttons[title]
+        do {
+            try FixtureSelection.requireSelected(isSelected: { segment.exists && segment.isSelected },
+                waitUntilActionable: {
+                    let predicate = NSPredicate(format: "exists == true AND enabled == true AND hittable == true")
+                    return XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: segment)], timeout: 3) == .completed
+                }, tap: { segment.tap() }, waitUntilSelected: {
+                    let predicate = NSPredicate(format: "selected == true")
+                    return XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: segment)], timeout: 3) == .completed
+                })
+        } catch {
+            let state = XCTAttachment(string: control.debugDescription)
+            state.name = "native-segment-selection-failed"
+            state.lifetime = .keepAlways
+            add(state)
+            XCTFail("Native segment must select \(title): \(error)", file: file, line: line)
+            throw error
+        }
+    }
+
+    /// A delivered menu tap is not evidence that the requested display became selected.
+    @MainActor func selectFixtureDisplay(_ display: String, in app: XCUIApplication,
+                                         file: StaticString = #filePath, line: UInt = #line) {
+        let picker = app.buttons["homeDisplayPicker"]
+        let actionable = NSPredicate(format: "exists == true AND enabled == true AND hittable == true")
+        // A board can appear before its refresh finishes. Opening this menu
+        // while the picker is disabled exposes rows that exist but cannot tap.
+        guard XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: actionable, object: picker)], timeout: 5) == .completed else {
+            XCTFail("Display picker must be enabled and visible", file: file, line: line)
+            return
+        }
+        if picker.label.contains(display) { return }
+        picker.tap()
+        let item = app.buttons[display].firstMatch
+        for _ in 0..<3 {
+            if picker.label.contains(display) { return }
+            guard XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: actionable, object: item)], timeout: 5) == .completed else {
+                XCTFail("Display menu row must be enabled and visible: \(display)", file: file, line: line)
+                return
+            }
+            item.tap()
+            let selected = XCTNSPredicateExpectation(
+                predicate: NSPredicate(format: "label CONTAINS %@", display), object: picker)
+            if XCTWaiter.wait(for: [selected], timeout: 3) == .completed { return }
+        }
+        XCTFail("Display menu must select \(display); selected label: \(picker.label)", file: file, line: line)
+    }
+
     /// Missing loopback infrastructure must fail a required journey, never skip it.
-    @MainActor func requireReadyFixture(_ ready: Bool, port: String,
+    @MainActor func requireReadyFixture(port: String,
                                        file: StaticString = #filePath, line: UInt = #line) throws {
-        guard ready else {
-            XCTFail("Required fixture unavailable: FIXTURE_PORT=\(port) python3 Tests/UITests/fixture_server.py",
+        do {
+            try FixtureReadiness.require(URL(string: "http://127.0.0.1:\(port)/ready")!)
+        } catch {
+            XCTFail("Required fixture unavailable or invalid (\(error)): FIXTURE_PORT=\(port) python3 Tests/UITests/fixture_server.py",
                     file: file, line: line)
-            throw URLError(.cannotConnectToHost)
+            throw error
         }
     }
 

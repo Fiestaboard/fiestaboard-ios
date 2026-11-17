@@ -41,6 +41,13 @@ jobs:
           python3 scripts/check-project.py
           node scripts/vocabulary/test-vocabulary.mjs
           node scripts/vocabulary/check-vocabulary.mjs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Parity reporter tests
+        run: |
+          npm ci --prefix scripts/parity
+          npm test --prefix scripts/parity
       - name: Host package suites
         run: scripts/test.sh packages
       - name: Release archive and probe guard
@@ -52,7 +59,8 @@ jobs:
         if: always()
         run: |
           mkdir -p build/parity
-          echo '{"slice":"I0b","goldens":"I0b renderer seed; XCTest result is authoritative","osMajor":"iOS27","figmaComparison":"not run"}' > build/parity/foundation-status.json
+          echo '{"slice":"I2","goldens":"XCTest result is authoritative; missing golden fails","osMajor":"iOS27","figmaComparison":"Light seed reference available; Dark has no reference"}' > build/parity/foundation-status.json
+          node scripts/parity/native-parity.mjs --refs scripts/parity/figma --shots build/parity --out build/parity/report
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -89,11 +97,22 @@ jobs:
         run: |
           xcodebuild -version
           scripts/test.sh simulators
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Seed parity report (report-only)
+        if: always()
+        run: |
+          npm ci --prefix scripts/parity
+          node scripts/parity/native-parity.mjs --refs scripts/parity/figma --shots build/parity --out build/parity/report
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: native-units-${{ matrix.device }}
-          path: ~/Library/Developer/FiestaBoard/ios/results/${{ env.IOS_SLICE }}
+          path: |
+            ~/Library/Developer/FiestaBoard/ios/results/${{ env.IOS_SLICE }}
+            build/parity
+            Tests/__Snapshots__/iOS27
           retention-days: 14
 
   device-ui:

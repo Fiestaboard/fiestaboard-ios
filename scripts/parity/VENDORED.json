@@ -1,0 +1,22 @@
+{
+  "repo": "Fiestaboard/fiestaboard-tvos",
+  "ref": "origin/universal-tv",
+  "commit": "f1fc67d8e94b4075d8075ca0a2ac8f0ecf2f5b6c",
+  "files": [
+    {
+      "path": "scripts/parity/native-parity.mjs",
+      "upstreamSHA256": "5720cd8c4db0c20f97196ebf89753629e37dfeb7aa4f0f6d9131d1f810648fc4",
+      "mode": "adapted for iOS"
+    },
+    {
+      "path": "scripts/parity/parity.mjs",
+      "upstreamSHA256": "94cd0bb7f918ccdf92d7cbea3ed8868e5c42ef75b16a7d23b12e09479e12dc22",
+      "mode": "verbatim"
+    },
+    {
+      "path": "scripts/parity/tests/native-parity.test.mjs",
+      "upstreamSHA256": "521b0273e45a2d230bdf016d18c908c8ef1ba5354766f66e42c953dfee91fc1b",
+      "mode": "adapted for iOS"
+    }
+  ]
+}

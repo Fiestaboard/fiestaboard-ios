@@ -1,7 +1,8 @@
 {
   "ui-a": [
     "BoardVisualsUITests",
-    "LaunchUITests"
+    "LaunchUITests",
+    "ParityFoundationUITests"
   ],
   "ui-b": [
     "EditorUITests/testAlignAndWrapFollowCaretRow",
