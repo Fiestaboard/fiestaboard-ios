@@ -40,4 +40,38 @@ import XCTest
         XCTAssertTrue(app.buttons["sun"].waitForExistence(timeout: 3))
         XCTAssertFalse(app.buttons["cake"].exists)
     }
+
+    func testUnconfirmedSendKeepsSourceAndBlocksRetargetAndReplay() {
+        let app = isolatedApplication()
+        launchFixture(app, scenario: "i8-compose-unknown")
+        app.buttons["homeCompose"].tap()
+        let source = app.textViews["composeSource"]
+        XCTAssertTrue(source.waitForExistence(timeout: 5))
+        source.tap(); source.typeText("Keep this draft")
+        app.buttons["composeShowNow"].tap()
+        XCTAssertTrue(app.staticTexts["composeOutcome"].waitForExistence(timeout: 8))
+        XCTAssertEqual(source.value as? String, "Keep this draft")
+        XCTAssertFalse(app.buttons["composeDisplayPicker"].isEnabled)
+        XCTAssertFalse(app.buttons["composeShowNow"].isEnabled)
+        app.buttons["composeCancel"].tap()
+        app.buttons["homeCompose"].tap()
+        XCTAssertTrue(source.waitForExistence(timeout: 5))
+        XCTAssertEqual(source.value as? String, "Keep this draft")
+        XCTAssertFalse(app.buttons["composeShowNow"].isEnabled)
+    }
+
+    func testSaveAsPageKeepsTheUnsentComposeSource() {
+        let app = isolatedApplication()
+        launchFixture(app, scenario: "i8-compose")
+        app.buttons["homeCompose"].tap()
+        let source = app.textViews["composeSource"]
+        XCTAssertTrue(source.waitForExistence(timeout: 5))
+        source.tap(); source.typeText("Dinner at seven")
+        app.buttons["composeMore"].tap()
+        app.buttons["Save as Page"].tap()
+        XCTAssertTrue(app.textFields["composePageName"].waitForExistence(timeout: 5))
+        app.buttons["composeSavePage"].tap()
+        XCTAssertTrue(source.waitForExistence(timeout: 8))
+        XCTAssertEqual(source.value as? String, "Dinner at seven")
+    }
 }

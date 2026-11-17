@@ -19,7 +19,7 @@ struct ComposeSheet: View {
     var body: some View {
         Group {
             if let session {
-                ComposeEditor(session: session, store: store, status: status, buffers: buffers,
+                ComposeEditor(session: session, store: store, status: status,
                     verifyTarget: verifyTarget)
             } else {
                 NavigationStack {
@@ -62,7 +62,8 @@ struct ComposeSheet: View {
             let saved = try await buffers.load(proof.identity)
             guard connection.composePrincipal == proof else { return }
             let desiredID = saved?.targetID ?? store.selectedBoardID
-            if online, let desiredID, desiredID != store.selectedBoardID,
+            if online, !store.commandBusy, !store.needsReadback, store.pageLibrary?.needsReview != true,
+               let desiredID, desiredID != store.selectedBoardID,
                store.boards.contains(where: { $0.id == desiredID }) {
                 await store.selectBoard(desiredID).value
             }

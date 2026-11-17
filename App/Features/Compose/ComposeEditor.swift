@@ -9,7 +9,6 @@ struct ComposeEditor: View {
     @ObservedObject var session: ComposeSession
     @ObservedObject var store: BoardStore
     @ObservedObject var status: BoardStatus
-    let buffers: ComposeBufferStore
     let verifyTarget: (String, ComposeSession) async -> Void
     @State private var preparing = false
     @State private var notice: String?
@@ -323,6 +322,7 @@ private extension ComposeEditor {
                     if tools.tiles && tools.textColor { Button("Color tiles") { picker = .tiles } }
                     if let font = drawing?.font { Text("Font: \(font) · Display setting") }
                 } label: { Label("More", systemImage: "ellipsis") }
+                .accessibilityIdentifier("composeMore")
             }
             .font(.caption).labelStyle(.titleAndIcon).padding(.horizontal, 18).padding(.vertical, 14)
         }
