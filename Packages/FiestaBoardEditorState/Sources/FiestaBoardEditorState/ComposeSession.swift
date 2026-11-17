@@ -11,12 +11,16 @@ public struct ComposeScope: Equatable, Sendable {
     public let target: BoardTarget
     public let rows: Int
     public let cols: Int
-    public init(identity: ComposeBufferIdentity, connectionID: UUID, target: BoardTarget, rows: Int, cols: Int) {
+    public let verifiedOnline: Bool
+    public let presentation: ComposeBufferTarget?
+    public init(identity: ComposeBufferIdentity, connectionID: UUID, target: BoardTarget, rows: Int, cols: Int,
+                verifiedOnline: Bool = true, presentation: ComposeBufferTarget? = nil) {
         self.identity = identity; self.connectionID = connectionID; self.target = target
         self.rows = rows; self.cols = cols
+        self.verifiedOnline = verifiedOnline; self.presentation = presentation
     }
     fileprivate var valid: Bool {
-        identity.deploymentID == target.deployment.description
+        verifiedOnline && identity.deploymentID == target.deployment.description
             && !identity.installationID.isEmpty && !identity.principalID.isEmpty
             && rows > 0 && cols > 0
     }
@@ -85,6 +89,7 @@ public struct PreparedComposeIntent: Sendable {
     @Published public private(set) var previewFailure: String?
     @Published public private(set) var online: Bool
     @Published public private(set) var unavailableBufferedTargetID: String?
+    @Published public private(set) var bufferedTargetPresentation: ComposeBufferTarget?
     public private(set) var inputToPreviewSeconds: TimeInterval?
     public private(set) var postDebouncePreviewSeconds: TimeInterval?
     private let sleep: Sleeper
@@ -123,7 +128,9 @@ public struct PreparedComposeIntent: Sendable {
     public func changeScope(_ scope: ComposeScope) {
         guard !closed else { return }
         if scope == self.scope {
-            if unavailableBufferedTargetID != nil { revision &+= 1 }
+            if unavailableBufferedTargetID != nil {
+                revision &+= 1; bufferedTargetPresentation = scope.presentation
+            }
             unavailableBufferedTargetID = nil; preparedID = nil
             return
         }
@@ -135,6 +142,7 @@ public struct PreparedComposeIntent: Sendable {
         // never be presented under the new display or authenticated identity.
         preview = nil; previewInputDigest = nil; self.scope = scope
         unavailableBufferedTargetID = nil
+        bufferedTargetPresentation = scope.presentation
         lastInputAt = monotonicNow()
         schedulePreview()
     }
@@ -171,6 +179,7 @@ public struct PreparedComposeIntent: Sendable {
                 changeScope(resolved)
             } else { unavailableBufferedTargetID = target }
         }
+        bufferedTargetPresentation = unavailableBufferedTargetID == nil ? (scope.presentation ?? saved.targetPresentation) : saved.targetPresentation
         revision &+= 1
         input = .init(text: saved.text, lineMetadata: saved.lineMetadata, selection: saved.selection,
                       duration: saved.duration, silence: saved.silence)
@@ -193,7 +202,9 @@ public struct PreparedComposeIntent: Sendable {
         } }
         let snapshot = ComposeBufferSnapshot(identity: scope.identity, revision: savedRevision, text: input.text,
             targetID: unavailableBufferedTargetID ?? scope.target.boardID, selection: input.selection, lineMetadata: input.lineMetadata,
-            duration: input.duration, silence: input.silence, preview: evidence)
+            duration: input.duration, silence: input.silence,
+            targetPresentation: unavailableBufferedTargetID == nil ? (scope.presentation ?? bufferedTargetPresentation) : bufferedTargetPresentation,
+            preview: evidence)
         let accepted = try await store.save(snapshot, using: lease)
         guard accepted, !closed, token == bufferEpoch else { return nil }
         if savedRevision >= (persistedRevision?.durable ?? 0) { persistedRevision = (savedRevision, inputRevision) }
