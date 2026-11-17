@@ -15,6 +15,7 @@ struct ConnectionView: View {
     @ConnectionState private var showWelcome = true
     @ConnectionState private var manualPresented = false
     @ConnectionState private var formPresented = true
+    @ConnectionState private var formIntent: UUID?
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.colorScheme) private var appearance
     @Environment(\.scenePhase) private var scenePhase
@@ -38,10 +39,19 @@ struct ConnectionView: View {
                     palette.color("background").ignoresSafeArea()
                     OnboardingBackdrop(tiled: true).ignoresSafeArea()
                     if !formPresented {
-                        OnboardingAction(title: "Choose your hub") { formPresented = true }.padding().frame(maxWidth: 360)
+                        OnboardingAction(title: "Choose your hub") {
+                            formIntent = model.onboardingPresentationIntent; formPresented = true
+                        }.padding().frame(maxWidth: 360).accessibilityIdentifier("reopenOnboarding")
                     }
                 }
-                .sheet(isPresented: $formPresented) { navigation.presentationSizing(.form) }
+                .sheet(isPresented: $formPresented, onDismiss: {
+                    let dismissedIntent = formIntent; formIntent = nil
+                    if let dismissedIntent { model.dismissOnboardingPresentation(dismissedIntent) }
+                }) {
+                    navigation.presentationSizing(.form).presentationDragIndicator(.visible)
+                        .interactiveDismissDisabled(model.busy)
+                        .onAppear { if formIntent == nil { formIntent = model.onboardingPresentationIntent } }
+                }
             } else {
                 navigation
             }

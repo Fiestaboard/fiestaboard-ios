@@ -65,6 +65,12 @@ public enum WebSetupReturn: Sendable, Equatable {
     private var selected: SavedServer?
     public var selectedSavedHub: SavedServer? { selected }
     private var generation = UUID()
+    /// Captured by one native presentation; it carries no credential or session authority.
+    public var onboardingPresentationIntent: UUID { generation }
+    public func dismissOnboardingPresentation(_ intent: UUID) {
+        guard generation == intent, phase != .connected else { return }
+        cancel()
+    }
     private var operation: Task<Void, Never>?
     private var discoveryTask: Task<Void, Never>?
     private var cleanupTask: Task<Void, Never>?
