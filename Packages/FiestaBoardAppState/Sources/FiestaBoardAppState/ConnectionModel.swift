@@ -286,7 +286,7 @@ public enum ConnectionPhase: Sendable, Equatable {
         service = nil; handedToStore = false; snapshot = nil; phase = .picker
         busy = false; password = ""; setupToken = ""; rememberMe = false; persistence = .init()
         let logout = store.logout()
-        return Task { await logout.value; await removeSnapshot(for: hub) }
+        return Task { await removeSnapshot(for: hub); await logout.value }
     }
     public func forgetSignIn() async {
         guard let service else { return }
