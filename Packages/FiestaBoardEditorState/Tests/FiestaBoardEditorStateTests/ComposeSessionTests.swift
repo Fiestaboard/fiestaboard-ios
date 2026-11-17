@@ -193,6 +193,9 @@ extension ComposeSessionTests {
         XCTAssertEqual(session.input.text, "KEPT"); XCTAssertEqual(session.scope, target)
         XCTAssertEqual(session.unavailableBufferedTargetID, "removed")
         XCTAssertNil(session.prepare(), "An unavailable saved target must not silently send to the default display")
+        _ = try await session.persistBuffer()
+        let retained = try await buffer.load(target.identity)
+        XCTAssertEqual(retained?.targetID, "removed", "Saving must retain an unresolved target until an explicit display choice")
         session.changeScope(target) // Explicitly choosing the current display resolves the missing target.
         XCTAssertNotNil(session.prepare())
     }
@@ -240,5 +243,45 @@ extension ComposeSessionTests {
         XCTAssertTrue(cleared)
         let late = try await session.persistBuffer(), restored = try await buffer.load(target.identity)
         XCTAssertNil(late); XCTAssertNil(restored)
+    }
+}
+
+private actor DelayedComposeRemoval: ComposeBufferPersisting {
+    let store: ComposeBufferStore
+    private var removed = false
+    private var waiter: CheckedContinuation<Void, Never>?
+    private var paused: CheckedContinuation<Void, Never>?
+    init(directory: URL) { store = ComposeBufferStore(directory: directory) }
+    func open(_ identity: ComposeBufferIdentity) async throws -> ComposeBufferLease { try await store.open(identity) }
+    func load(_ identity: ComposeBufferIdentity) async throws -> ComposeBufferSnapshot? { try await store.load(identity) }
+    func save(_ snapshot: ComposeBufferSnapshot, using lease: ComposeBufferLease) async throws -> Bool { try await store.save(snapshot, using: lease) }
+    func revoke(_ lease: ComposeBufferLease) async throws { try await store.revoke(lease) }
+    func remove(using lease: ComposeBufferLease, matchingRevision: UInt64?) async throws -> Bool {
+        let result = try await store.remove(using: lease, matchingRevision: matchingRevision)
+        removed = true; waiter?.resume(); waiter = nil
+        await withCheckedContinuation { paused = $0 }
+        return result
+    }
+    func waitForRemoval() async { if removed { return }; await withCheckedContinuation { waiter = $0 } }
+    func resume() { paused?.resume(); paused = nil }
+}
+
+extension ComposeSessionTests {
+    func testTypingWhileAcknowledgedClearReturnsStillPersistsTheNewDraft() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let buffer = DelayedComposeRemoval(directory: directory), target = try scope()
+        let session = ComposeSession(scope: target, online: false, render: { _ in throw FiestaBoardError.networkUnavailable })
+        _ = try await session.bindBuffer(buffer); session.update(.init(text: "SENT"))
+        let observed = try await session.persistBuffer(), revision = try XCTUnwrap(observed)
+        let clearing = Task { try await session.clearBuffer(matchingRevision: revision) }
+        await buffer.waitForRemoval()
+        session.update(.init(text: "TYPED DURING READBACK"))
+        await buffer.resume(); let clearedCurrent = try await clearing.value
+        XCTAssertFalse(clearedCurrent)
+        let persisted = try await session.persistBuffer()
+        XCTAssertNotNil(persisted)
+        let restored = try await buffer.load(target.identity)
+        XCTAssertEqual(restored?.text, "TYPED DURING READBACK")
     }
 }
