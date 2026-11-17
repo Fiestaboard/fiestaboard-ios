@@ -5,6 +5,20 @@ import XCTest
 @testable import FiestaBoardRender
 
 @MainActor final class StaticPaintBatchTests: XCTestCase {
+    func testLargeBoardMatchesIndependentPaintIncludingMonochromeAtEveryScale() throws {
+        let cycle: [BoardCell] = [.character("A"), .character("B"), .character("♥"), .blank, .color(.red)]
+        let cells = (0..<12).map { row in (0..<29).map { col in cycle[(row * 29 + col) % cycle.count] } }
+        let layout = BoardLayout.make(rows: 12, cols: 29, cells: cells, tileHeight: 13)
+        XCTAssertTrue(BoardCanvas.canBatchStatic(layout))
+        for palette in [FlapPalette.black, .white, .black.monochrome(0x66cc33)] {
+            for scale in [1.0, 2.0, 3.0] {
+                XCTAssertEqual(try pixels(layout, palette: palette, scale: scale, batch: true),
+                               try pixels(layout, palette: palette, scale: scale, batch: false),
+                               "large board, scale=\(scale), palette=\(palette)")
+            }
+        }
+    }
+
     func testStaticBatchMatchesIndependentPerTilePaintAtEveryScaleAndPalette() throws {
         let cycle: [BoardCell] = [.character("A"), .character("B"), .character("♥"), .blank]
             + (63...71).map { BoardTables.cell(forCode: $0, code62: .degree) }
