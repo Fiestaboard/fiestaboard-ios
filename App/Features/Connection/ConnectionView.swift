@@ -56,10 +56,13 @@ struct ConnectionView: View {
         .onChange(of: scenePhase) { _, phase in if phase == .active { model.returnFromWebSetup() } }
         .onChange(of: model.snapshot != nil) { _, verified in if verified { manualPresented = false } }
         .onAppear {
-            if sizeClass == .regular && !presentedInitialForm {
+            if !presentedInitialForm {
                 presentedInitialForm = true
-                if model.snapshot == nil { showWelcome = false }
-                presentForm()
+                let intent = model.attachOnboardingPresentation()
+                if sizeClass == .regular {
+                    if model.snapshot == nil { showWelcome = false }
+                    formPresentation = FormPresentation(id: intent)
+                }
             }
         }
     }
@@ -165,7 +168,7 @@ struct ConnectionView: View {
             Text("Let’s get you set up in just a few steps. First, we’ll find the FiestaBoard hub on your home network.")
                 .foregroundStyle(.secondary)
             OnboardingPrivacyNote()
-            OnboardingAction(title: "Find my hub", leadingImage: "OnboardingFind") { showWelcome = false; model.findServers() }
+            OnboardingAction(title: "Find my hub", leadingImage: "OnboardingFind") { showWelcome = false; model.attachOnboardingPresentation(); model.findServers() }
                 .accessibilityIdentifier("findFiestaBoard")
             OnboardingAction(title: "Enter address", primary: false, action: enterAddress)
                 .accessibilityIdentifier("enterHubAddress")
@@ -198,7 +201,7 @@ struct ConnectionView: View {
                 Text("SAVED HUBS").font(.caption).foregroundStyle(.secondary)
                 ForEach(model.savedServers) { hub in
                     VStack(alignment: .leading, spacing: 4) {
-                        Button { model.selectSaved(hub) } label: {
+                        Button { model.attachOnboardingPresentation(); model.selectSaved(hub) } label: {
                             OnboardingHubCard(name: hub.alias.isEmpty ? "FiestaBoard" : hub.alias, address: hub.deployment.description)
                         }.buttonStyle(.plain)
                         HStack {
@@ -282,7 +285,10 @@ struct ConnectionView: View {
                 }
         }.presentationDetents([.medium, .large]).presentationDragIndicator(.visible)
     }
-    private func enterAddress() { showWelcome = false; model.enterManualAddress(); manualPresented = true }
+    private func enterAddress() {
+        model.attachOnboardingPresentation()
+        showWelcome = false; model.enterManualAddress(); manualPresented = true
+    }
 }
 
 private struct ManualHubAddressView: View {

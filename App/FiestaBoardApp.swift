@@ -84,12 +84,15 @@ struct DraftScene: View {
     /// The sidebar hides while a page editor is open so the board gets the full width (B29).
     @DraftState private var composing = false
     @DraftState private var started = false
+    @DraftState private var initialConnectionChosen = false
     @Environment(\.colorScheme) private var appearance
     private var palette: ShellPalette { ShellPalette(appearance: appearance) }
 
     var body: some View {
         Group {
-            if store.status == nil && connection.phase != .checking && connection.phase != .unreachable {
+            if !initialConnectionChosen {
+                Color.clear
+            } else if connection.shouldPresentOnboarding {
                 ConnectionView(model: connection, store: store)
             } else {
                 ShellContainer(selection: $tab, editorOpen: editorOpen, destination: shellDestination,
@@ -157,7 +160,10 @@ struct DraftScene: View {
             guard !started else { return }; started = true
             store.networkAvailable = network.available
             await connection.start().value
-            if let saved = connection.savedServers.first { await connection.selectSaved(saved).value }
+            // Choose cold restoration before mounting enrollment and acquiring its owner.
+            let restoration = connection.savedServers.first.map { connection.selectSaved($0) }
+            initialConnectionChosen = true
+            await restoration?.value
         }
     }
 

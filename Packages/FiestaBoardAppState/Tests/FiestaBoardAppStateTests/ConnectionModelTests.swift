@@ -864,3 +864,25 @@ extension ConnectionModelTests {
         XCTAssertNotEqual(model.attachOnboardingPresentation(), replacement, "A dismissed scope cannot be reattached")
     }
 }
+
+
+extension ConnectionModelTests {
+    // Phone handoff has no sheet dismissal callback; the completed owner must retire in the model.
+    func testCompletedOnboardingCannotOwnLaterShellHubSwitch() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        let completed = model.attachOnboardingPresentation()
+        model.address = service.deployment.description; await model.connectAddress().value
+        XCTAssertEqual(model.phase, .connected)
+        let hub = try XCTUnwrap(model.selectedSavedHub)
+        await service.blockBootstrap()
+        let switching = model.selectSaved(hub); await service.waitForBootstrap()
+        let enrollmentVisible = model.shouldPresentOnboarding
+        model.dismissOnboardingPresentation(completed)
+        let phaseAfterStaleCallback = model.phase
+        await service.releaseBootstrap(); await switching.value
+        XCTAssertFalse(enrollmentVisible, "A completed phone enrollment must not change a later shell hub switch into enrollment")
+        XCTAssertEqual(phaseAfterStaleCallback, .checking, "A completed presentation callback cannot cancel the shell's switch")
+        XCTAssertEqual(model.phase, .connected); XCTAssertNotNil(model.snapshot)
+    }
+}

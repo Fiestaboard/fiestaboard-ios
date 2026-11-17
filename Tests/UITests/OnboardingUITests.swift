@@ -136,6 +136,15 @@ import XCTest
         XCTAssertTrue(app.navigationBars["Home"].firstMatch.waitForExistence(timeout: 10))
         XCTAssertFalse(app.textFields["Username"].exists, "Connected handoff must retire the form while keeping the live session")
         let connected = XCTAttachment(screenshot: app.screenshot()); connected.name = "i9-root-connected-handoff"; add(connected)
+        // Relaunch the same namespace: catalog restoration has no user presentation owner.
+        app.terminate(); server.holdOnboardingBootstrap(true); app.launch()
+        let restoring = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in server.onboardingBootstrapWaiting }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [restoring], timeout: 4), .completed)
+        XCTAssertTrue(app.navigationBars["Home"].firstMatch.waitForExistence(timeout: 1), "Cold saved-hub checking retains the shell")
+        XCTAssertFalse(app.textFields["connectionAddress"].exists)
+        server.holdOnboardingBootstrap(false)
+        XCTAssertTrue(app.textFields["Username"].waitForExistence(timeout: 10), "Unsigned cold restore must reach sign-in without a remount cancelling its hub")
+        XCTAssertTrue(app.staticTexts["UI Test Server"].exists)
     }
 
     private func reveal(_ element: XCUIElement, in app: XCUIApplication) {

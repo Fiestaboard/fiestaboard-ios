@@ -69,7 +69,17 @@ public enum WebSetupReturn: Sendable, Equatable {
     public var selectedSavedHub: SavedServer? { selected }
     private var generation = UUID()
     // Presentation ownership survives hub selection, independently of request generation.
-    private var onboardingPresentationID: UUID?
+    @Published private var onboardingPresentationID: UUID?
+    /// The root keeps user enrollment mounted while its own bootstrap runs.
+    /// A cold saved-hub restore has no presentation owner and retains the shell.
+    public var shouldPresentOnboarding: Bool {
+        guard store.status == nil, phase != .connected else { return false }
+        return onboardingPresentationID != nil || (phase != .checking && phase != .unreachable)
+    }
+    /// Reattach the current host without replacing its intent or clearing its hub.
+    @discardableResult public func attachOnboardingPresentation() -> UUID {
+        onboardingPresentationID ?? beginOnboardingPresentation()
+    }
     /// Start one native presentation; replacing an unfinished form clears its secrets.
     @discardableResult public func beginOnboardingPresentation() -> UUID {
         if onboardingPresentationID != nil, phase != .connected { cancel() }
@@ -377,6 +387,7 @@ public enum WebSetupReturn: Sendable, Equatable {
         guard valid(token) else { return }
         if store.status != nil {
             phase = .connected
+            onboardingPresentationID = nil
             await publishComposePrincipal(next, token: token, offline: false)
             guard valid(token) else { return }
             await beginSnapshotSession(token: token)
