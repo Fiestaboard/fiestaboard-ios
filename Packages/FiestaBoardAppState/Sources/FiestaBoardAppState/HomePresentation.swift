@@ -14,7 +14,7 @@ public enum HomeTiming {
     /// The write API accepts whole minutes; keep that granularity explicit.
     public static func durationMinutes(until end: Date, now: Date) -> Int? {
         let seconds = end.timeIntervalSince(now)
-        guard seconds > 0, seconds <= 86400 else { return nil }
+        guard seconds > 0, seconds <= 28800 else { return nil }
         return Int(ceil(seconds / 60))
     }
     public static func remainingLabel(expiresAt: String?, now: Date) -> String {
@@ -84,11 +84,12 @@ public struct HomePresentation: Equatable, Sendable {
 }
 
 public enum HomeControlOutcome: Hashable, Sendable {
-    case pageSelected, overrideCanceled, unconfirmed, signInRequired, failed
+    case pageSelected, overrideCanceled, unconfirmed, readbackRequired, signInRequired, failed
     public var message: String {
         switch self {
         case .pageSelected: "Page selected"
         case .overrideCanceled: "Override canceled"
+        case .readbackRequired: "The change was accepted. Refresh the display before another action."
         case .unconfirmed: "The result couldn't be confirmed. Refresh before trying again."
         case .signInRequired: "Sign in again to control this display."
         case .failed: "Couldn't read the display. Refresh and try again."

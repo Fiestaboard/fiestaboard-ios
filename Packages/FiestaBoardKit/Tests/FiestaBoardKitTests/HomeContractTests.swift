@@ -149,3 +149,18 @@ extension HomeContractTests {
         XCTAssertEqual(body["revert_mode"] as? String,"schedule")
     }
 }
+
+extension HomeContractTests {
+    func testDurationBeyondActualEightHourContractFailsBeforeDispatch() async throws {
+        let log = RequestLog()
+        let response = try read("override-timed")
+        let source = try JSONSerialization.jsonObject(with: read("SOURCE")) as! [String: Any]
+        let page = (source["scenario"] as! [String: String])["pageID"]!
+        FixtureURLProtocol.handler = { request in log.append(request); return (200, [:], response) }
+        let deployment = try DeploymentURL("https://hub.test")
+        let service = LiveFiestaBoardService(deployment: deployment, transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self]))
+        do { _ = try await service.holdHomePage(pageID: page, boardID: "cx-kitchen", durationMinutes: 481); XCTFail("The actual hub supports at most480minutes") }
+        catch { XCTAssertEqual(error as? FiestaBoardError,.invalidTarget) }
+        XCTAssertTrue(log.requests.isEmpty)
+    }
+}

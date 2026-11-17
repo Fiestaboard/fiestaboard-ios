@@ -9,9 +9,23 @@ public actor FixtureFiestaBoardService: FiestaBoardService {
     public nonisolated let isDemo = true
     private let simulation: FixtureTransport
     private let service: LiveFiestaBoardService
+    private let homeAudit: Bool
+    var canceledBoards: [String] = []
+    private var homeFailure: FiestaBoardError?
+    private var homeDelayed = false
+    private var homeStarted = false
+    private var homeStartWaiter: CheckedContinuation<Void, Never>?
+    private var homeRelease: CheckedContinuation<Void, Never>?
+    private var homeFailReadback: FiestaBoardError?
+    private var nextHomeReadFailure: FiestaBoardError?
+    private var delayAnyHomeRead = false
+    private var homeReadStarted = false
+    private var homeReadStart: CheckedContinuation<Void, Never>?
+    private var homeReadRelease: CheckedContinuation<Void, Never>?
 
-    public init() throws {
-        deployment = try DeploymentURL("https://demo.fiestaboard.invalid")
+    public init(homeAudit: Bool = false, deploymentString: String = "https://demo.fiestaboard.invalid") throws {
+        self.homeAudit = homeAudit
+        deployment = try DeploymentURL(deploymentString)
         simulation = try FixtureTransport()
         service = LiveFiestaBoardService(demoDeployment: deployment, transport: simulation)
     }
@@ -28,10 +42,20 @@ public actor FixtureFiestaBoardService: FiestaBoardService {
     public func logout() async throws { try await service.logout() }
     public func connect(allowCandidateWrites: Bool = false) async throws -> ConnectionStatus {
         let status = try await service.connect(allowCandidateWrites: true)
-        return ConnectionStatus(version: status.version, access: .simulated, isDemo: true, sessionPersistence: "Simulated; memory only")
+        let version = homeAudit ? VersionInfo(packageVersion: "11.0.0-alpha.2", buildVersion: "fixture", runningVersion: "11.0.0-alpha.2", isDev: false) : status.version
+        return ConnectionStatus(version: version, access: .simulated, isDemo: true, sessionPersistence: "Simulated; memory only")
     }
     public func boards() async throws -> [BoardSummary] { try await service.boards() }
-    public func board(_ target: BoardTarget) async throws -> BoardDetail { try await service.board(target) }
+    public func board(_ target: BoardTarget) async throws -> BoardDetail {
+        if let failure = nextHomeReadFailure { nextHomeReadFailure = nil; throw failure }
+        let detail = try await service.board(target)
+        await blockHomeReadIfNeeded()
+        guard homeAudit else { return detail }
+        var json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(detail)) as! [String: Any]
+        for key in ["override_started_at", "override_expires_at", "next_change_at", "next_change_reason"] { json[key] = NSNull() }
+        json["health"] = ["reachable":NSNull(), "breaker_open":false] as [String:Any]
+        return try JSONDecoder().decode(BoardDetail.self, from: JSONSerialization.data(withJSONObject: json))
+    }
     public func collectionAccess() async -> CollectionWriteAccess {
         let access = await service.collectionAccess()
         return .init(writesOptedIn: access.writesOptedIn, canCreate: access.canCreate, isSimulated: true)
@@ -334,4 +358,50 @@ private actor FixtureTransport: APITransport {
         return APIResponse(status: request.method == .post ? 201 : 200, data: try encoder.encode(value))
     }
     private func reply(_ json: String) -> APIResponse { APIResponse(status: 200, data: Data(json.utf8)) }
+}
+
+// Explicit synthetic Home behavior controls. Actual wire bodies stay in Tests/Fixtures/Home.
+extension FixtureFiestaBoardService: TemporaryOverrideClearing, HomePageSelecting, HomePageHolding, BoardStatusReading {
+    func configureHome(failure: FiestaBoardError? = nil, delayed: Bool = false, readbackFailure: FiestaBoardError? = nil) {
+        homeFailure = failure; homeDelayed = delayed; homeFailReadback = readbackFailure
+    }
+    func configureNextHomeRead(failure: FiestaBoardError? = nil, delayed: Bool = false) {
+        nextHomeReadFailure = failure; delayAnyHomeRead = delayed
+    }
+    func waitForHomeRead() async { if !homeReadStarted { await withCheckedContinuation { homeReadStart = $0 } } }
+    func releaseHomeRead() { homeReadRelease?.resume(); homeReadRelease = nil }
+    private func blockHomeReadIfNeeded() async {
+        guard delayAnyHomeRead else { return }
+        delayAnyHomeRead = false; homeReadStarted = true; homeReadStart?.resume(); homeReadStart = nil
+        await withCheckedContinuation { homeReadRelease = $0 }
+    }
+    func waitForHomeMutation() async {
+        if !homeStarted { await withCheckedContinuation { homeStartWaiter = $0 } }
+    }
+    func releaseHomeMutation() { homeRelease?.resume(); homeRelease = nil }
+    private func homeMutation() async throws {
+        homeStarted = true; homeStartWaiter?.resume(); homeStartWaiter = nil
+        if homeDelayed { await withCheckedContinuation { homeRelease = $0 } }
+        if let error = homeFailure { homeFailure = nil; throw error }
+        nextHomeReadFailure = homeFailReadback; homeFailReadback = nil
+    }
+    public func clearTemporaryOverride(boardID: String) async throws {
+        canceledBoards.append(boardID); try await homeMutation()
+    }
+    public func selectHomePage(pageID: String, boardID: String, durationMinutes: Int?) async throws -> HomeControlReceipt {
+        try await homeMutation()
+        return try JSONDecoder().decode(HomeControlReceipt.self, from: JSONSerialization.data(withJSONObject:
+            ["board_id":boardID,"page_id":pageID,"sent":false,"active":true]))
+    }
+    public func holdHomePage(pageID: String, boardID: String, durationMinutes: Int?) async throws -> HomeControlReceipt {
+        try await selectHomePage(pageID: pageID, boardID: boardID, durationMinutes: durationMinutes)
+    }
+    public func boardSettings() async throws -> [StoredBoardEntry] { [] }
+    public func serviceStatus() async throws -> ServiceStatusReport { try JSONDecoder().decode(ServiceStatusReport.self, from: Data("{\"boards\":{}}".utf8)) }
+    public func currentMessage(boardID: String) async throws -> CurrentBoardMessage { try JSONDecoder().decode(CurrentBoardMessage.self, from: Data("{}".utf8)) }
+    public func activeSchedulePage(boardID: String) async throws -> ActivePageStatus { await blockHomeReadIfNeeded(); return .init(pageID: nil) }
+    public func activePage(boardID: String) async throws -> ActivePageStatus { .init(pageID: nil) }
+    public func silenceStatus(boardID: String) async throws -> SilenceStatus { .init(active: false) }
+    public func displaySettings() async throws -> BoardDisplaySettings { .init() }
+    public func collectionNames() async throws -> [String: String] { [:] }
 }

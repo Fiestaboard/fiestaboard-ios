@@ -3,7 +3,7 @@ import FiestaBoardKit
 import FiestaBoardAppState
 import FiestaBoardRender
 
-struct HomeView<ChangePage: View, Controls: View>: View {
+struct HomeView<Controls: View>: View {
     @ObservedObject var store: BoardStore
     @ObservedObject var status: BoardStatus
     @ObservedObject var thumbnails: PageThumbnails
@@ -12,7 +12,6 @@ struct HomeView<ChangePage: View, Controls: View>: View {
     let prepareRestore: () -> Void
     let openSettings: () -> Void
     let openSchedule: () -> Void
-    @ViewBuilder let changePage: () -> ChangePage
     @ViewBuilder let controls: () -> Controls
     @Environment(\.colorScheme) private var appearance
     @State private var changingPage = false
@@ -86,8 +85,7 @@ struct HomeView<ChangePage: View, Controls: View>: View {
         }
         .sheet(isPresented: $changingPage, onDismiss: { previewedPageID = nil }) {
             NavigationStack {
-                if status.canSelectHomePage(timed: false) { HomeChangePageSheet(store: store, status: status, selected: $previewedPageID) }
-                else { changePage() }
+                HomeChangePageSheet(store: store, status: status, selected: $previewedPageID)
             }.presentationDetents([.medium, .large])
         }
         .overlay(alignment: .top) {

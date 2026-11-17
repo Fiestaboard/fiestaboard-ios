@@ -53,19 +53,19 @@ import FiestaBoardKit
     }
     func testOldOverrideFailureCannotSetNewHubError() async throws {
         let store = BoardStore()
-        await store.connect(try FixtureFiestaBoardService()).value
-        let old = try DelayedStatusReader(marker: "old", blocked: true)
+        let service = try FixtureFiestaBoardService(homeAudit: true)
+        await store.connect(service).value
+        await service.configureHome(failure: .unknownMutationOutcome, delayed: true)
         let fresh = try DelayedStatusReader(marker: "fresh", blocked: false)
-        var reader: any BoardStatusReading = old
+        var reader: any BoardStatusReading = service
         let status = BoardStatus(store: store, reader: { reader })
         defer { status.stop() }
         let cancel = Task { await status.clearTemporaryOverride() }
-        await old.gate.waitUntilCalled(["clear"])
-        reader = fresh
-        status.start()
+        await service.waitForHomeMutation()
+        await store.connect(try FixtureFiestaBoardService(homeAudit: true, deploymentString: "https://fresh.test")).value
+        reader = fresh; status.start()
         await waitForFresh(status)
-        await old.gate.release()
-        await cancel.value
+        await service.releaseHomeMutation(); await cancel.value
         XCTAssertFalse(status.overrideClearFailed, "A failed old-hub mutation cannot annotate the new hub")
         XCTAssertEqual(status.runtime["board-2"]?.error, "fresh")
     }

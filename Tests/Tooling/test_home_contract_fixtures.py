@@ -16,7 +16,7 @@ class HomeContractFixtureTests(unittest.TestCase):
     def test_host_supplements_are_real_responses_with_distinct_provenance(self):
         for directory, commit in [('HostSupplement','f47da6e4e764fc2826f396210f013e45dc1a7fd8'),
                                   ('HostV11','e8306aca0df3ee26a693afe57760d83b1ec3c772')]:
-            self.verify(HOME/directory, HOME/'requests-host.json', 17, commit)
+            self.verify(HOME/directory, HOME/'requests-host.json', 19, commit)
             source = json.loads((HOME/directory/'SOURCE.json').read_text())
             self.assertTrue(source['method'].startswith('Host isolated'))
             self.assertIn('not Docker C5 proof', source['method'])

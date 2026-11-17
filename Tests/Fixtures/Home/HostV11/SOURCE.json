@@ -1,14 +1,14 @@
 {
   "hubRepository": "Fiestaboard/FiestaBoard",
   "hubCommit": "e8306aca0df3ee26a693afe57760d83b1ec3c772",
-  "requestManifestSHA256": "c116a3c5c35c02092378ad71604c60146b90e4b6075eb91c81da27ff0b0c1bd6",
+  "requestManifestSHA256": "8b6e3f35ad99bede52cecd3e9d83cd2e161c1718ea443c6e8e8ac89c65c69609",
   "recorder": "scripts/record-home-fixtures.py",
   "method": "Host isolated uv environment; immutable runtime source git archive; real FastAPI HTTP boundary; supplemental not Docker C5 proof",
   "credentialSafety": "Synthetic account; mobile token never recorded and revoked before process exit",
   "scenario": {
     "kitchen": "cx-kitchen",
     "desk": "cx-desk",
-    "pageID": "9085c522-a40f-469c-bba2-32bbdefd6ebe"
+    "pageID": "0f27eeba-5911-4068-83a4-8f09ac3cb9dd"
   },
   "responses": [
     {
@@ -29,7 +29,7 @@
       "headers": {
         "content-type": "application/json"
       },
-      "sha256": "faf61a2953bda14be53acb26c13450ceb1758721c528178d7cde399dbeaea693"
+      "sha256": "57e0d6d6c1130092ea25314e055d92a393259d8da5d89f8afd2ce24cf8825ddc"
     },
     {
       "file": "page-select-unauthorized.json",
@@ -69,7 +69,7 @@
       "headers": {
         "content-type": "application/json"
       },
-      "sha256": "3e7dfe1991035e5b8d3ca96882a1fc44dab4dad1c614eebe8f3f953c3f34e923"
+      "sha256": "970e0d0aa88246fc5e296388f0ac3f3ca49a68af0567d85491ba6acf0566dcab"
     },
     {
       "file": "override-timed.json",
@@ -79,7 +79,7 @@
       "headers": {
         "content-type": "application/json"
       },
-      "sha256": "5c016eab9a46bfcf4fbc9c680decfe7ae19059663d40f2e2a6104ac0f8e8eab0"
+      "sha256": "9a1f6a87d9f6b52782f6850464c7efeea28fdcaf722a98bbd6eda85d0be6bad3"
     },
     {
       "file": "home-override.json",
@@ -89,7 +89,7 @@
       "headers": {
         "content-type": "application/json"
       },
-      "sha256": "4b385a77653b7ff3dc476f218034c83778b3a854091f7687830c5f807700f4cc"
+      "sha256": "343fb198bb3989066cfb30cc0e8206ac2c0637971709ded071c5f182016e92e3"
     },
     {
       "file": "active-override.json",
@@ -99,7 +99,7 @@
       "headers": {
         "content-type": "application/json"
       },
-      "sha256": "e94e3f1367bc53f07776be759d37d837c737a1d63a9770458742cfb74dee8580"
+      "sha256": "c165d0eac19e84e2453a955a03c9866f619f744705fcd10105eb15091d96bce6"
     },
     {
       "file": "override-detail.json",
@@ -109,7 +109,7 @@
       "headers": {
         "content-type": "application/json"
       },
-      "sha256": "5c016eab9a46bfcf4fbc9c680decfe7ae19059663d40f2e2a6104ac0f8e8eab0"
+      "sha256": "9a1f6a87d9f6b52782f6850464c7efeea28fdcaf722a98bbd6eda85d0be6bad3"
     },
     {
       "file": "other-display.json",
@@ -149,7 +149,7 @@
       "headers": {
         "content-type": "application/json"
       },
-      "sha256": "15f897567b5323680de8fe4f6217496052190d2bd1cc2656d1387206b34b1166"
+      "sha256": "3a3c10e966f5b91a7a72acb0975fd3d238618b93a60568bc7ecfe9ad7e4b7101"
     },
     {
       "file": "home-indefinite.json",
@@ -159,7 +159,7 @@
       "headers": {
         "content-type": "application/json"
       },
-      "sha256": "a022cf6c8b29333dc99089a5ffd1a205b517a33dc61e1661738b9d2439cd030d"
+      "sha256": "4d54061d27c5a25bca7d5feaebcd9f0ff46ad5fb0b30d399a1d5880ea904e910"
     },
     {
       "file": "home-silence.json",
@@ -169,7 +169,7 @@
       "headers": {
         "content-type": "application/json"
       },
-      "sha256": "aa74f3bebcef8492e02fcb8bfd8b078e236a36c4f261811f21a8cd73fd6cb718"
+      "sha256": "b75a5e8e23c750d5b74120fa24fd4c3ffa4decf888a652e7e577c270b1e5e5ed"
     },
     {
       "file": "home-runtime.json",
@@ -179,7 +179,27 @@
       "headers": {
         "content-type": "application/json"
       },
-      "sha256": "6037421b35a38816293fc561dfdbb97274f828cac127ac99bc1185f0055bbc07"
+      "sha256": "c1513d86c2580ce8a9992465793a3590d0b02b0238efd7e6a37e607326720434"
+    },
+    {
+      "file": "override-duration-max.json",
+      "method": "POST",
+      "path": "/settings/temporary-override",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "c2bf87bc1a957999d54dcc359a5c2203b4ad0c781cd2fda6793e63814082d586"
+    },
+    {
+      "file": "override-duration-too-long.json",
+      "method": "POST",
+      "path": "/settings/temporary-override",
+      "status": 422,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "08fcbaf7a76c821fd57d6760b3bda4398cb71890e7d8c42542f137ac3ec8f33f"
     }
   ]
 }

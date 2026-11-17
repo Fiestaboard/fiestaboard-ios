@@ -113,6 +113,46 @@ final class BoardVisualsUITests: XCTestCase {
         app.terminate()
     }
 
+    @MainActor
+    func testChangePageRetainsSheetAndSelectionWhilePending() async throws {
+        try await requireFixture()
+        FixtureHTTPServer.shared.holdHomeMutations(true)
+        defer { FixtureHTTPServer.shared.holdHomeMutations(false) }
+        let app = launchSignedIn(scenario: "home-delayed")
+        let change = app.buttons["changePage"]
+        waitFor(change, NSPredicate(format: "isEnabled == true"), 10, "audited Home controls")
+        change.tap(); app.buttons["Good Morning"].tap()
+        app.buttons["homeShowPage"].tap()
+        XCTAssertTrue(FixtureHTTPServer.shared.homeMutationWaiting)
+        XCTAssertTrue(app.navigationBars["Change Page"].exists)
+        XCTAssertEqual(app.buttons["Good Morning"].value as? String,"Selected")
+        XCTAssertFalse(app.buttons["homeShowPage"].isEnabled)
+        XCTAssertTrue(app.buttons["homePageDuration-15"].exists)
+        XCTAssertFalse(app.buttons["homePageDuration-15"].isEnabled)
+        XCTAssertTrue(FixtureHTTPServer.shared.homeMutationWaiting, "The dependency must still be held during the pending-state assertions")
+        FixtureHTTPServer.shared.holdHomeMutations(false)
+        waitFor(app.navigationBars["Change Page"], NSPredicate(format: "exists == false"), 10, "acknowledged sheet dismissal")
+        XCTAssertTrue(app.navigationBars["Home"].exists)
+        app.terminate()
+    }
+    @MainActor
+    func testChangePageRetainsSheetAndSelectionForUnknownResult() async throws {
+        try await requireFixture()
+        let app = launchSignedIn(scenario: "home-unknown")
+        let change = app.buttons["changePage"]
+        waitFor(change, NSPredicate(format: "isEnabled == true"), 10, "audited Home controls")
+        change.tap(); app.buttons["Good Morning"].tap(); app.buttons["homeShowPage"].tap()
+        let outcome = app.staticTexts["homePageOutcome"]
+        XCTAssertTrue(outcome.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.navigationBars["Change Page"].exists)
+        XCTAssertEqual(app.buttons["Good Morning"].value as? String,"Selected")
+        XCTAssertFalse(app.buttons["homeShowPage"].isEnabled)
+        XCTAssertTrue(app.buttons["Refresh display"].exists)
+        XCTAssertTrue(app.buttons["homePageDuration-15"].exists)
+        XCTAssertFalse(app.buttons["homePageDuration-15"].isEnabled)
+        app.terminate()
+    }
+
     // MARK: helpers
 
     @MainActor private func settle(_ seconds: TimeInterval) { RunLoop.current.run(until: Date().addingTimeInterval(seconds)) }

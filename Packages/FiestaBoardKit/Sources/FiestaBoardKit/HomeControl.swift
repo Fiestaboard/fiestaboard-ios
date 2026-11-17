@@ -35,7 +35,7 @@ extension LiveFiestaBoardService: HomePageSelecting, HomePageHolding {
     }
     public func holdHomePage(pageID: String, boardID: String, durationMinutes: Int?) async throws -> HomeControlReceipt {
         guard DeploymentURL.validSegment(boardID), DeploymentURL.validSegment(pageID),
-              durationMinutes.map({ (1...1440).contains($0) }) ?? true else { throw FiestaBoardError.invalidTarget }
+              durationMinutes.map({ (1...480).contains($0) }) ?? true else { throw FiestaBoardError.invalidTarget }
         struct Override: Encodable {
             let board_id: String; let page_id: String; let duration_minutes: Int?; let revert_mode = "schedule"
         }

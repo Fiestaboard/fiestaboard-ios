@@ -84,13 +84,17 @@ extension FixtureRouter {
         }
         let segments = route.split(separator: "/").map(String.init)
         let selected = boards.first { ($0["summary"] as! [String: Any])["id"] as? String == boardID }
-        if method == "GET", route == "version" { return reply(200, ["package_version": "10.1.20", "build_version": "10.1.20", "running_version": "10.1.20", "is_dev": false, "hardware_model": null]) }
+        if method == "GET", route == "version" { let version = state.homeContract ? "11.0.0-alpha.2" : "10.1.20"; return reply(200, ["package_version": version, "build_version": version, "running_version": version, "is_dev": false, "hardware_model": null]) }
         if method == "GET", route == "v1/boards" { let entries = state.scenario == "no-boards" ? [] : boards.map { boardSummary($0, state) }; return reply(200, ["boards": entries, "total": entries.count]) }
         if segments.count >= 3, segments[0] == "v1", segments[1] == "boards" {
             guard let entry = boards.first(where: { ($0["summary"] as! [String: Any])["id"] as? String == segments[2] }) else { return reply(404, ["detail": "Board not found"]) }
             let s = entry["summary"] as! [String: Any], id = s["id"] as! String
             if method == "GET", segments.count == 3 { return reply(200, boardDetail(entry, state)) }
             if method == "PUT", segments.last == "active-page" {
+                if state.homeContract && state.scenario == "home-unknown" { return reply(503, ["detail":"Synthetic unconfirmed Home mutation"]) }
+                if state.homeContract && state.scenario == "home-delayed", !homeMutationGate.waitForRelease() {
+                    return reply(503, ["detail":"Synthetic Home mutation gate timed out"])
+                }
                 let page = body["page_id"] as? String; state.boards[id]!["active_page_id"] = page as Any? ?? null
                 let sent = state.boards[id]!["paused"] as? Bool != true
                 if sent, let page { state.boards[id]!["characters"] = pageFrame(page, s["rows"] as! Int, s["cols"] as! Int) }
@@ -102,7 +106,9 @@ extension FixtureRouter {
                 return reply(200, ["board_id": id, "page_id": state.boards[id]!["active_page_id"]!, "sent": sent, "reason": sent ? null : "paused" as Any, "device_observed": false])
             }
         }
-        if method == "DELETE", route == "settings/temporary-override" { let was = state.scenario == "override" && !state.overrideCleared; state.overrideCleared = true; return reply(200, ["revert_mode": was ? "schedule" as Any : null]) }
+        if method == "DELETE", route == "settings/temporary-override" {
+            if state.homeContract && boardID != "kitchen" { return reply(200, ["revert_mode": null]) }
+            let was = state.scenario == "override" && !state.overrideCleared; state.overrideCleared = true; return reply(200, ["revert_mode": was ? "schedule" as Any : null]) }
         if method == "DELETE", route == "board/external-frame" { if boardID == "kitchen" { state.sync["kept"] = false }; return reply(204) }
         if method == "POST", route == "v1/pages" {
             var page = seed["pageCommon"] as! [String: Any]

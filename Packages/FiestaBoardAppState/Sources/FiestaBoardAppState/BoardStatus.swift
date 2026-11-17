@@ -190,8 +190,6 @@ public enum BoardPolling {
     public func stop() {
         epoch = UUID()
         running = false
-        homeReadbacks.formUnion(homeMutations)
-        homeMutations = []
         tasks.forEach { $0.cancel() }; tasks = []
         postSendTask?.cancel(); postSendTask = nil
     }
@@ -201,7 +199,7 @@ public enum BoardPolling {
         stored = [:]; models = [:]; runtime = [:]; frames = [:]
         schedule = nil; manual = nil; silence = nil; collectionNames = [:]
         selectedMessage = nil; outOfSync = nil; nowShowing = nil
-        display = BoardDisplaySettings(); homeOutcomes = [:]; homeMutations = []
+        display = BoardDisplaySettings(); homeOutcomes = [:]
         lastBoardID = nil; wasBusy = false
     }
 
@@ -355,90 +353,44 @@ public enum BoardPolling {
 
     private struct HomeTarget: Hashable { let hub: String; let display: String }
     private var currentHomeTarget: HomeTarget? { store.selectedBoardID.map { HomeTarget(hub: store.connectionLabel, display: $0) } }
-    @Published private var homeMutations: Set<HomeTarget> = []
-    @Published private var homeReadbacks: Set<HomeTarget> = []
     @Published private var homeOutcomes: [HomeTarget: HomeControlOutcome] = [:]
-    public var homeControlBusy: Bool { currentHomeTarget.map { homeMutations.contains($0) } ?? false }
-    public var homeControlNeedsReadback: Bool { currentHomeTarget.map { homeReadbacks.contains($0) } ?? false }
+    public var homeControlBusy: Bool { store.commandBusy }
+    public var homeControlNeedsReadback: Bool { store.needsReadback }
     public var homeControlOutcome: HomeControlOutcome? { currentHomeTarget.flatMap { homeOutcomes[$0] } }
     public var overrideClearFailed: Bool { homeControlOutcome == .unconfirmed || homeControlOutcome == .failed }
-    public var canClearOverride: Bool { reader() is any TemporaryOverrideClearing && canPerformHome(.cancelOverride) }
-    public func canSelectHomePage(timed: Bool) -> Bool {
-        reader() is any HomePageSelecting && canPerformHome(timed ? .timedOverride : .selectPage)
-    }
-    public var canHoldHomePage: Bool { reader() is any HomePageHolding && canPerformHome(.timedOverride) }
-    public func holdHomePage(pageID: String) async {
-        guard canHoldHomePage, let id = store.selectedBoardID,
-              let writer = reader() as? any HomePageHolding else { return }
-        await performHomeControl(boardID: id, success: .pageSelected) {
-            _ = try await writer.holdHomePage(pageID: pageID, boardID: id, durationMinutes: nil)
-        }
-    }
-    private func canPerformHome(_ operation: HomeControlOperation) -> Bool {
-        guard store.canPerformScopedHomeControl, !homeControlBusy, !homeControlNeedsReadback else { return false }
-        if operation != .timedOverride, store.canWrite { return true }
-        return CapabilityPolicy.allowsHomeControl(operation, version: store.status?.version.runningVersion,
-            hasScopedStatus: store.board?.hasScopedHomeStatus == true)
-    }
-
-    /// Explicit user action; the display is captured before suspension.
-    public func clearTemporaryOverride() async {
-        guard canClearOverride, let id = store.selectedBoardID,
-              let writer = reader() as? any TemporaryOverrideClearing else { return }
-        await performHomeControl(boardID: id, success: .overrideCanceled) {
-            try await writer.clearTemporaryOverride(boardID: id)
-        }
-    }
+    public var canClearOverride: Bool { store.canPerformHomeControl(.cancelOverride) }
+    public func canSelectHomePage(timed: Bool) -> Bool { store.canPerformHomeControl(timed ? .timedOverride : .selectPage) }
+    public var canHoldHomePage: Bool { store.canPerformHomeControl(.timedOverride) }
+    public func clearTemporaryOverride() async { await performHomeControl(.homeCancelOverride, success: .overrideCanceled) }
     public func selectHomePage(pageID: String, durationMinutes: Int?) async {
-        guard canSelectHomePage(timed: durationMinutes != nil), let id = store.selectedBoardID,
-              let writer = reader() as? any HomePageSelecting else { return }
-        await performHomeControl(boardID: id, success: .pageSelected) {
-            _ = try await writer.selectHomePage(pageID: pageID, boardID: id, durationMinutes: durationMinutes)
-        }
+        await performHomeControl(.homePage(id: pageID, durationMinutes: durationMinutes, untilCanceled: false), success: .pageSelected)
     }
-    private func performHomeControl(boardID: String, success: HomeControlOutcome,
-                                    action: @Sendable () async throws -> Void) async {
-        let token = epoch, pathToken = store.reachabilityEpoch
-        let key = HomeTarget(hub: store.connectionLabel, display: boardID)
-        homeMutations.insert(key); homeOutcomes[key] = nil
-        do {
-            try await action()
-            guard valid(token) else { return }
-            homeMutations.remove(key); homeOutcomes[key] = success
-            store.recordHubResponse(pathToken: pathToken)
-            if store.selectedBoardID == boardID { pollActive(); noteSend() }
-        } catch {
-            guard valid(token) else { return }
-            homeMutations.remove(key)
-            store.recordHubReadFailure(error, pathToken: pathToken)
-            if (error as? FiestaBoardError) == .unauthenticated {
-                homeOutcomes[key] = .signInRequired
-                await store.refresh().value
-            } else {
-                // Keep ambiguous writes blocked until the explicit refresh below.
-                // Passive polling and app restart of this owner cannot unlock it.
-                homeReadbacks.insert(key); homeOutcomes[key] = .unconfirmed
-            }
-        }
+    public func holdHomePage(pageID: String) async {
+        await performHomeControl(.homePage(id: pageID, durationMinutes: nil, untilCanceled: true), success: .pageSelected)
     }
-    /// Called only by the user's Refresh action. No automatic poll clears this barrier.
-    public func refreshHomeControlState() async {
-        guard let id = store.selectedBoardID, let reader = reader(), store.networkAvailable else { return }
+    private func performHomeControl(_ payload: ActionPayload, success: HomeControlOutcome) async {
+        guard let action = store.prepare(payload), let key = currentHomeTarget else { return }
         let token = epoch
-        let key = HomeTarget(hub: store.connectionLabel, display: id)
-        do {
-            let active = try await reader.activeSchedulePage(boardID: id)
-            let previousSnapshot = store.boardSnapshotEpoch
-            await store.refresh().value
-            guard valid(token), store.selectedBoardID == id, store.board?.summary.id == id, !store.refreshing,
-                  store.status != nil, !store.needsReadback, store.hubReachable != false,
-                  store.boardSnapshotEpoch > previousSnapshot else { return }
-            schedule = active; recompute()
-            homeReadbacks.remove(key); homeOutcomes[key] = nil
-        } catch {
-            guard valid(token) else { return }
-            homeOutcomes[key] = .failed
-        }
+        homeOutcomes[key] = nil
+        // prepare/confirm is the single owner of captured targets, busy state,
+        // authentication and mutation/readback barriers for every board action.
+        let task = store.confirm(action)
+        let mutation = store.boardMutationEpoch
+        await task.value
+        guard valid(token), currentHomeTarget == key, mutation == store.boardMutationEpoch else { return }
+        if store.needsReadback { homeOutcomes[key] = store.homeActionWasAcknowledged(action) ? .readbackRequired : .unconfirmed }
+        else if store.homeActionWasAcknowledged(action) { homeOutcomes[key] = success; pollActive(); noteSend() }
+        else { homeOutcomes[key] = .failed }
+    }
+    /// Explicit refresh enters the shared Store immediately, before any await.
+    /// Its captured generation/target prevents a stale caller from refreshing a new hub.
+    public func refreshHomeControlState() async {
+        guard store.selectedBoardID != nil, let key = currentHomeTarget, store.networkAvailable else { return }
+        let token = epoch, previousSnapshot = store.boardSnapshotEpoch, mutation = store.boardMutationEpoch
+        await store.refresh().value
+        guard valid(token), currentHomeTarget == key, mutation == store.boardMutationEpoch else { return }
+        if store.boardSnapshotEpoch > previousSnapshot, !store.needsReadback { homeOutcomes[key] = nil; pollActive() }
+        else { homeOutcomes[key] = .failed }
     }
 
     private func pollOtherFrames() {

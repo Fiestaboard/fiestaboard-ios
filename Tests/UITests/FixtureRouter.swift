@@ -33,6 +33,7 @@ final class FixtureRouter {
             sync = ["foreign": scenario == "out-of-sync", "overwritten": scenario == "overwritten", "kept": scenario == "kept"]
         }
     }
+    let homeMutationGate = FixtureHomeMutationGate()
     let seed: [String: Any]
     var recorded: [String: (method: String, path: String, response: Response)] = [:]
     var states: [String: State] = [:]
@@ -153,5 +154,22 @@ final class FixtureRouter {
         for y in 2..<14 { for x in 3..<29 { pixels.replaceSubrange(((y*32+x)*4)..<((y*32+x)*4+4), with: [255, x < 16 ? 128 : 255, 64,255]) } }
         let text = blocks.filter { $0["kind"] as? String == "text" }.map { $0["text"] as? String ?? "" }.joined(separator: "\n")
         return reply(200, ["available": true, "page_id": "unsaved", "message": text, "lines": text.components(separatedBy: "\n"), "display_type": "panel", "raw": [String: Any](), "layout_issues": [["path": ["blocks", "retained"], "code": "block_kind_unsupported", "severity": "warning", "message": "Synthetic fixture: retained unknown block is not drawn."]], "canvas_issues": [], "layers": [["x": 0, "y": 0, "width": 32, "height": 16, "physical_frame_version": 1, "rgba": Data(pixels).base64EncodedString()]]])
+    }
+}
+
+/// Only the I7 delayed UI scenario uses this thread-safe gate. Timeout is a
+/// failed test dependency, not a successful write; every test releases it.
+final class FixtureHomeMutationGate: @unchecked Sendable {
+    private let condition = NSCondition()
+    private var held = false
+    private var waiting = false
+    var isWaiting: Bool { condition.lock(); defer { condition.unlock() }; return waiting }
+    func setHeld(_ value: Bool) { condition.lock(); held = value; if !value { condition.broadcast() }; condition.unlock() }
+    func waitForRelease() -> Bool {
+        condition.lock(); defer { condition.unlock() }
+        waiting = true; defer { waiting = false }
+        let deadline = Date().addingTimeInterval(8)
+        while held { if !condition.wait(until: deadline) { return false } }
+        return true
     }
 }

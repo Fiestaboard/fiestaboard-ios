@@ -11,7 +11,7 @@ Docker's VM became read-only after the shared host disk filled. These are actual
 FastAPI boundary responses from immutable runtime source archives in an isolated
 host uv environment. They are **not Docker/C5 proof**. Their SOURCE files identify
 respectively the old pin and v11 `e8306aca0df3ee26a693afe57760d83b1ec3c772`, and
-`environment.txt` records installed versions. `requests-host.json` includes actual
+`environment.txt` records installed versions. The current supplemental sets contain 19 responses each, including real 480-minute acceptance and 481-minute rejection. `requests-host.json` includes actual
 mobile-authenticated page selection and actual 401 refusals for selection/cancel.
 The original Docker recordings and manifest were preserved.
 

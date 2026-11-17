@@ -55,3 +55,11 @@ extension HomePresentationTests {
         XCTAssertNil(HomeTiming.durationMinutes(until: now.addingTimeInterval(86401), now: now))
     }
 }
+
+extension HomePresentationTests {
+    func testUntilScheduleBoundaryRespectsEightHourCreateContract() {
+        let now = Date(timeIntervalSince1970: 0)
+        XCTAssertEqual(HomeTiming.durationMinutes(until: now.addingTimeInterval(28800), now: now),480)
+        XCTAssertNil(HomeTiming.durationMinutes(until: now.addingTimeInterval(28801), now: now))
+    }
+}

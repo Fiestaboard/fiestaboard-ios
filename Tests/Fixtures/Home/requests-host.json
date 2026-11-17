@@ -101,6 +101,18 @@
       "method": "DELETE",
       "path": "/settings/temporary-override?board_id={kitchen}",
       "status": 401
+    },
+    {
+      "id": "override-duration-max",
+      "method": "POST",
+      "path": "/settings/temporary-override",
+      "status": 200
+    },
+    {
+      "id": "override-duration-too-long",
+      "method": "POST",
+      "path": "/settings/temporary-override",
+      "status": 422
     }
   ]
 }

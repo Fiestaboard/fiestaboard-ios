@@ -83,7 +83,17 @@ public struct LogoutNotice: Identifiable, Sendable, Equatable {
         }
     }
 }
-public enum ActionPayload: Sendable { case text(String), page(String), configuration(BoardPatch), restore }
+public enum ActionPayload: Sendable {
+    case text(String), page(String), configuration(BoardPatch), restore
+    case homeCancelOverride, homePage(id: String, durationMinutes: Int?, untilCanceled: Bool)
+    fileprivate var homeOperation: HomeControlOperation? {
+        switch self {
+        case .homeCancelOverride: .cancelOverride
+        case .homePage(_, let minutes, let indefinite): minutes != nil || indefinite ? .timedOverride : .selectPage
+        default: nil
+        }
+    }
+}
 /// A confirmation binds the exact payload to the deployment, board and current UI generation.
 public struct PreparedAction: Identifiable, Sendable {
     public let id = UUID()
@@ -135,6 +145,7 @@ public struct PreparedAction: Identifiable, Sendable {
         }
     }
     private(set) var boardSnapshotEpoch: UInt64 = 0
+    private(set) var boardMutationEpoch: UInt64 = 0
     @Published public private(set) var board: BoardDetail?
     @Published public private(set) var selectedBoardID: String?
     @Published public private(set) var message: String?
@@ -167,6 +178,7 @@ public struct PreparedAction: Identifiable, Sendable {
     private var commandTask: Task<Void, Never>?
     @Published private var inFlight: Set<BoardTarget> = []
     private var usedActions: Set<UUID> = []
+    private var acknowledgedHomeActions: [BoardTarget: UUID] = [:]
     public var commandBusy: Bool { target.map { inFlight.contains($0) } ?? false }
     /// Common authenticated/readback barrier for the separately audited Home
     /// operations. The caller must additionally prove its operation capability.
@@ -176,7 +188,7 @@ public struct PreparedAction: Identifiable, Sendable {
             && pageLibrary?.busy != true && pageLibrary?.needsReview != true
     }
     public var canWrite: Bool {
-        networkAvailable && hubReachable != false && board != nil && status != nil && status?.access != .readOnly && target != nil && !connecting && !refreshing && !commandBusy && !needsReadback && pageLibrary?.busy != true && pageLibrary?.needsReview != true
+        canProbeReachability && hubReachable != false && board != nil && status != nil && status?.access != .readOnly && target != nil && !connecting && !refreshing && !commandBusy && !needsReadback && pageLibrary?.busy != true && pageLibrary?.needsReview != true
     }
     public var boardActionDisabledReason: ActionDisabledReason? {
         guard let status else { return .disconnected }
@@ -428,8 +440,10 @@ public struct PreparedAction: Identifiable, Sendable {
                 await loadDefaultContext(service, target: target, token: token)
             } catch {
                 guard valid(token) else { return }
-                if pathToken == reachabilityEpoch, (error as? FiestaBoardError) == .networkUnavailable { hubReachable = false }
-                if !handleAuthenticationLoss(error) { message = safeDescription(error) }
+                if !handleAuthenticationLoss(error) {
+                    recordHubReadFailure(error, pathToken: pathToken)
+                    message = safeDescription(error)
+                }
             }
             if valid(token) { refreshing = false }
         }
@@ -597,8 +611,27 @@ public struct PreparedAction: Identifiable, Sendable {
         return PageDocumentSnapshot(scope: scope, id: id, deployment: deployment, data: data, context: context, editingAccess: pageEditingAccess(context: context), incompatibleReferenceCount: incompatibleReferenceCount)
     }
 
+    public func supportsHomeControl(_ operation: HomeControlOperation) -> Bool {
+        guard let service,
+              CapabilityPolicy.allowsHomeControl(operation, version: status?.version.runningVersion,
+                  hasScopedStatus: board?.hasScopedHomeStatus == true) else { return false }
+        switch operation {
+        case .cancelOverride: return service is any TemporaryOverrideClearing
+        case .selectPage: return service is any HomePageSelecting
+        case .timedOverride: return service is any HomePageHolding
+        }
+    }
+    public func canPerformHomeControl(_ operation: HomeControlOperation) -> Bool {
+        canPerformScopedHomeControl && supportsHomeControl(operation)
+    }
+    private func canPrepare(_ payload: ActionPayload) -> Bool {
+        payload.homeOperation.map { canPerformHomeControl($0) } ?? canWrite
+    }
+    func homeActionWasAcknowledged(_ action: PreparedAction) -> Bool {
+        action.generation == generation && acknowledgedHomeActions[action.target] == action.id
+    }
     public func prepare(_ payload: ActionPayload) -> PreparedAction? {
-        guard canWrite, let target, let summary = boards.first(where: { $0.id == target.boardID }) else { return nil }
+        guard canPrepare(payload), let target, let summary = boards.first(where: { $0.id == target.boardID }) else { return nil }
         switch payload {
         case .text(let value): guard !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
         case .page(let id): guard pages.contains(where: { $0.id == id }) else { return nil }
@@ -608,6 +641,10 @@ public struct PreparedAction: Identifiable, Sendable {
                 guard canChangeDefaultPage, patch.paused == nil, patch.scheduleEnabled == nil, patch.autoRestore == nil else { return nil }
             }
             if case .set(let id) = patch.defaultPage, !pages.contains(where: { $0.id == id }) { return nil }
+        case .homeCancelOverride: break
+        case .homePage(let id, let minutes, let indefinite):
+            guard pages.contains(where: { $0.id == id }), minutes.map({ (1...480).contains($0) }) ?? true,
+                  !indefinite || minutes == nil else { return nil }
         case .restore: break
         }
         return PreparedAction(target: target, payload: payload, boardName: summary.name,
@@ -615,12 +652,13 @@ public struct PreparedAction: Identifiable, Sendable {
     }
 
     @discardableResult public func confirm(_ action: PreparedAction) -> Task<Void, Never> {
-        guard canWrite, action.generation == generation, action.target == target,
+        guard canPrepare(action.payload), action.generation == generation, action.target == target,
               !usedActions.contains(action.id), let service else { return Task {} }
+        boardMutationEpoch &+= 1
         usedActions.insert(action.id)
         inFlight.insert(action.target)
         readbackTargets.insert(action.target)
-        let token = generation
+        let token = generation, pathToken = reachabilityEpoch
         let task = Task { [weak self] in
             guard let self else { return }
             defer { inFlight.remove(action.target) }
@@ -644,6 +682,19 @@ public struct PreparedAction: Identifiable, Sendable {
                         _ = try await service.updateBoard(patch, on: action.target)
                     }
                     receipt = (action.isDemo ? "Simulated — " : "") + "Board settings updated. Physical output is not verified."
+                case .homeCancelOverride:
+                    guard let writer = service as? any TemporaryOverrideClearing else { throw FiestaBoardError.writesDisabled }
+                    try await writer.clearTemporaryOverride(boardID: action.target.boardID)
+                    receipt = "Override canceled."
+                case .homePage(let id, let minutes, let indefinite):
+                    if indefinite {
+                        guard let writer = service as? any HomePageHolding else { throw FiestaBoardError.writesDisabled }
+                        _ = try await writer.holdHomePage(pageID: id, boardID: action.target.boardID, durationMinutes: nil)
+                    } else {
+                        guard let writer = service as? any HomePageSelecting else { throw FiestaBoardError.writesDisabled }
+                        _ = try await writer.selectHomePage(pageID: id, boardID: action.target.boardID, durationMinutes: minutes)
+                    }
+                    receipt = "Page selected."
                 case .restore:
                     let result = try await service.restoreBoard(action.target)
                     receipt = (action.isDemo ? "Simulated — " : "") + (result.sent
@@ -651,7 +702,9 @@ public struct PreparedAction: Identifiable, Sendable {
                         : "Restore did not send content. The pinned selection was retained.")
                 }
                 guard valid(token) else { return }
+                if action.payload.homeOperation != nil { acknowledgedHomeActions[action.target] = action.id }
                 message = receipt
+                recordHubResponse(pathToken: pathToken)
                 // Keep the receipt separate from readback; a failed refresh never upgrades the receipt.
                 do {
                     let detail = try await service.board(action.target)
@@ -661,12 +714,14 @@ public struct PreparedAction: Identifiable, Sendable {
                     guard valid(token) else { return }
                     readbackTargets.insert(action.target)
                     if !handleAuthenticationLoss(error, preservingReceipt: message) {
+                        recordHubReadFailure(error, pathToken: pathToken)
                         message = (message ?? "") + " Readback unavailable. Refresh before another action."
                     }
                 }
             } catch {
                 guard valid(token) else { return }
                 if handleAuthenticationLoss(error) { return }
+                recordHubReadFailure(error, pathToken: pathToken)
                 message = (action.isDemo ? "Simulated — " : "") + safeDescription(error)
                 // PATCH setters run in sequence. Even a 400/404/503 can follow an applied field.
                 if case .configuration = action.payload {

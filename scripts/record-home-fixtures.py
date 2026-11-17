@@ -66,6 +66,9 @@ capture('override-indefinite','POST','/settings/temporary-override',200,json={'b
 capture('home-indefinite','GET',f'/v1/boards/{kitchen}',200)
 capture('home-silence','GET',f'/silence-status?board_id={kitchen}',200)
 capture('home-runtime','GET','/v1/status',200)
+if 'override-duration-max' in requests:
+    capture('override-duration-max','POST','/settings/temporary-override',200,json={'board_id':kitchen,'page_id':page_id,'duration_minutes':480,'revert_mode':'schedule'})
+    capture('override-duration-too-long','POST','/settings/temporary-override',422,json={'board_id':kitchen,'page_id':page_id,'duration_minutes':481,'revert_mode':'schedule'})
 revoke=client.delete('/auth/device/session',headers=headers)
 assert revoke.status_code == 200, revoke.text
 source={'hubRepository':'Fiestaboard/FiestaBoard','hubCommit':os.environ['CX_HUB_COMMIT'],

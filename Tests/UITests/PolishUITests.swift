@@ -268,7 +268,7 @@ import XCTest
         try FixtureHTTPServer.shared.requireReady()
         let app = isolatedApplication()
         app.launchArguments = []; app.launch()
-        connect(app, path: "board-\(scenario)-" + UUID().uuidString.prefix(8).lowercased())
+        connect(app, path: "board-\(scenario == "override" ? "i7-" : "")\(scenario)-" + UUID().uuidString.prefix(8).lowercased())
         authenticate(app, remember: remember)
         return app
     }

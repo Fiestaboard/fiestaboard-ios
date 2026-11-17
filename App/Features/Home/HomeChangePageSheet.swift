@@ -46,13 +46,13 @@ struct HomeChangePageSheet: View {
                             if selected == page.id { Image(systemName: "checkmark").accessibilityHidden(true) }
                         }
                     }
-                    .disabled(!fits(page))
+                    .disabled(!fits(page) || status.homeControlBusy || status.homeControlNeedsReadback)
                     .accessibilityHint(fits(page) ? "" : "This page uses a different display size")
                     .accessibilityLabel(page.name)
                     .accessibilityValue(selected == page.id ? "Selected" : "")
                 }
             }
-            if status.canSelectHomePage(timed: true) {
+            if store.supportsHomeControl(.timedOverride) {
                 Section("Duration") {
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                         ForEach(choices, id: \.self) { duration in
@@ -61,6 +61,7 @@ struct HomeChangePageSheet: View {
                                     .frame(maxWidth: .infinity, minHeight: 44).padding(.horizontal, 4)
                             }
                             .buttonStyle(.bordered).buttonBorderShape(.capsule)
+                            .disabled(status.homeControlBusy || status.homeControlNeedsReadback)
                             .accessibilityValue(minutes == duration ? "Selected" : "")
                             .accessibilityIdentifier("homePageDuration-\(duration)")
                         }
