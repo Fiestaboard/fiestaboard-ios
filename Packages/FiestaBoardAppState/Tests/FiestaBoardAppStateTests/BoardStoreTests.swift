@@ -1232,3 +1232,20 @@ extension BoardStoreTests {
         } catch { XCTAssertEqual(error as? FiestaBoardError, .previewUnsupported) }
     }
 }
+
+extension BoardStoreTests {
+    func testHubReachabilityTracksReadsAndDisablesWritesAfterNetworkFailure() async throws {
+        let service = try SessionFaultService(), store = BoardStore()
+        await store.connect(service, allowCandidateWrites: true).value
+        XCTAssertEqual(store.hubReachable, true)
+        await service.failDetail(.networkUnavailable)
+        await store.refresh().value
+        XCTAssertEqual(store.hubReachable, false)
+        XCTAssertFalse(store.canWrite)
+        await service.failDetail(nil)
+        await store.refresh().value
+        XCTAssertEqual(store.hubReachable, true)
+        store.disconnect()
+        XCTAssertNil(store.hubReachable)
+    }
+}
