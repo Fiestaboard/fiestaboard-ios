@@ -167,6 +167,9 @@ public struct PreparedAction: Identifiable, Sendable {
     @Published private var inFlight: Set<BoardTarget> = []
     private var usedActions: Set<UUID> = []
     public var commandBusy: Bool { target.map { inFlight.contains($0) } ?? false }
+    /// Target changes cancel the prior read and reject its late result by generation.
+    /// A background poll must not disable a menu that the user has already opened.
+    public var canSelectBoard: Bool { !connecting && !commandBusy && boards.count > 1 }
     public var canWrite: Bool {
         networkAvailable && hubReachable != false && board != nil && status != nil && status?.access != .readOnly && target != nil && !connecting && !refreshing && !commandBusy && !needsReadback && pageLibrary?.busy != true && pageLibrary?.needsReview != true
     }
@@ -356,6 +359,11 @@ public struct PreparedAction: Identifiable, Sendable {
     }
 
     @discardableResult public func selectBoard(_ id: String) -> Task<Void, Never> {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["FIESTABOARD_TEST_NAMESPACE"] != nil {
+            print("DisplaySelectionTrace select same=\(id == selectedBoardID) generation=\(generation) refreshing=\(refreshing) connecting=\(connecting)")
+        }
+        #endif
         guard boards.contains(where: { $0.id == id }), !connecting else { return Task {} }
         generation &+= 1
         clearSchedules()
@@ -406,6 +414,11 @@ public struct PreparedAction: Identifiable, Sendable {
     }
 
     @discardableResult public func refresh() -> Task<Void, Never> {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["FIESTABOARD_TEST_NAMESPACE"] != nil {
+            print("DisplaySelectionTrace refresh generation=\(generation) refreshing=\(refreshing) commandBusy=\(commandBusy) stack=\(Thread.callStackSymbols.prefix(12).joined(separator: ";"))")
+        }
+        #endif
         guard let service, status != nil, let target, !commandBusy else { return Task {} }
         refreshTask?.cancel()
         let token = generation, pathToken = reachabilityEpoch

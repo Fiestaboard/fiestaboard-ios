@@ -28,6 +28,7 @@ pattern='FigmaGeometryRegistry|FigmaNodeModifier|figmaNode|ParityFixture|fiestab
 pattern+='|previewInputLatency|inputToPreviewSeconds|FIESTABOARD_TEST_NAMESPACE|PanelNavigationProbe|RenderPacingProbe|MatrixPreparationProbe|FocusChangeProbe|DrawnPreviewMarker'
 pattern+='|ShellPlacementProbe|shellTabPlacement|shellTabAccessoryPlacement|shellAccessoryEnvironment|cache:(offline|updating|board|page-)|shell:connecting-label'
 pattern+='|FIESTABOARD_CLOSE_TRACE|traceClose|inputToPreviewPhases|markInputPhase'
+pattern+='|DisplaySelectionTrace'
 pattern+='|ConnectReviewDiscovery|fiestaboard\.(panelProfile|renderProfile|viewerMaterial)'
 pattern+='|I[0-9]+:[0-9]+;[0-9]+:[0-9]+|(^|[^0-9])[0-9]{2,4}:[0-9]{3,7}([^0-9]|$)|parity:[a-z]+'
 found=0

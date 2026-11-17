@@ -69,7 +69,7 @@ struct HomeView<ChangePage: View, Controls: View>: View {
             }
             .foregroundStyle(.primary)
         }
-        .disabled(store.commandBusy || store.refreshing || store.boards.count < 2)
+        .disabled(!store.canSelectBoard)
         .accessibilityIdentifier("homeDisplayPicker")
     }
 
