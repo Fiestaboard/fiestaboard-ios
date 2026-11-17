@@ -794,3 +794,73 @@ extension ConnectionModelTests {
         XCTAssertEqual(model.phase, .picker); XCTAssertNil(model.composePrincipal)
     }
 }
+
+
+extension ConnectionModelTests {
+    // DraftScene must consume this route so a user-owned form is not removed during bootstrap.
+    func testActiveOnboardingRootRouteSurvivesCheckingAndAuthRequired() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.blockBootstrap()
+        let presentation = model.attachOnboardingPresentation()
+        model.address = service.deployment.description
+        let selecting = model.connectAddress(); await service.waitForBootstrap()
+        let visibleWhileChecking = model.shouldPresentOnboarding
+        await service.releaseBootstrap(); await selecting.value
+        XCTAssertTrue(visibleWhileChecking, "The actual root must retain enrollment's presenter while checking")
+        XCTAssertEqual(model.phase, .authentication(.signIn)); XCTAssertNotNil(model.snapshot)
+        XCTAssertTrue(model.shouldPresentOnboarding)
+        // A legitimate host reattachment is distinct from explicitly replacing the presentation.
+        model.password = "still-current-secret"
+        let reattached = model.attachOnboardingPresentation()
+        XCTAssertEqual(reattached, presentation)
+        XCTAssertEqual(model.phase, .authentication(.signIn)); XCTAssertNotNil(model.snapshot)
+        XCTAssertEqual(model.password, "still-current-secret")
+        model.dismissOnboardingPresentation(presentation)
+        XCTAssertEqual(model.phase, .picker); XCTAssertNil(model.snapshot); XCTAssertEqual(model.password, "")
+    }
+
+    func testColdSavedHubRootRouteKeepsCheckingAndUnreachableShell() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.blockBootstrap()
+        let hub = SavedServer(deployment: service.deployment, alias: "Restoring hub", installationID: "installation")
+        let restoring = model.selectSaved(hub); await service.waitForBootstrap()
+        let visibleWhileChecking = model.shouldPresentOnboarding
+        await service.releaseBootstrap(); await restoring.value
+        XCTAssertFalse(visibleWhileChecking, "Cold restoration retains the connecting/cached shell")
+        await service.failBootstrap(.networkUnavailable)
+        await model.selectSaved(hub).value
+        XCTAssertEqual(model.phase, .unreachable); XCTAssertFalse(model.shouldPresentOnboarding)
+        XCTAssertEqual(model.selectedSavedHub?.id, hub.id)
+    }
+
+    func testOnboardingRootRouteHandsConnectedHubToShell() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        let presentation = model.attachOnboardingPresentation()
+        model.address = service.deployment.description; await model.connectAddress().value
+        XCTAssertEqual(model.phase, .connected); XCTAssertFalse(model.shouldPresentOnboarding)
+        let before = await service.events.filter { $0 == "disconnect" }.count
+        model.dismissOnboardingPresentation(presentation)
+        XCTAssertEqual(model.phase, .connected); XCTAssertNotNil(model.snapshot)
+        let after = await service.events.filter { $0 == "disconnect" }.count
+        XCTAssertEqual(after, before)
+    }
+
+    func testAttachDoesNotReplaceButExplicitBeginStillRetiresTheOldForm() async throws {
+        let service = try OnboardingService(), model = model(service)
+        let first = model.attachOnboardingPresentation()
+        model.address = service.deployment.description; await model.connectAddress().value
+        model.password = "retired-secret"; model.setupToken = "retired-proof"
+        let replacement = model.beginOnboardingPresentation()
+        XCTAssertNotEqual(first, replacement)
+        XCTAssertEqual(model.password, ""); XCTAssertEqual(model.setupToken, ""); XCTAssertNil(model.snapshot)
+        XCTAssertEqual(model.attachOnboardingPresentation(), replacement)
+        await model.connectAddress().value
+        model.password = "replacement-secret"
+        model.dismissOnboardingPresentation(first)
+        XCTAssertEqual(model.phase, .authentication(.signIn)); XCTAssertEqual(model.password, "replacement-secret")
+        model.dismissOnboardingPresentation(replacement)
+        XCTAssertEqual(model.phase, .picker); XCTAssertEqual(model.password, "")
+        XCTAssertNotEqual(model.attachOnboardingPresentation(), replacement, "A dismissed scope cannot be reattached")
+    }
+}

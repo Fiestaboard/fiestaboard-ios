@@ -45,6 +45,8 @@ final class FixtureRouter {
         }
     }
     let homeMutationGate = FixtureHomeMutationGate()
+    // Synthetic scheduling control for the real root enrollment journey only.
+    let onboardingBootstrapGate = FixtureHomeMutationGate()
     let seed: [String: Any]
     var recorded: [String: (method: String, path: String, response: Response)] = [:]
     var states: [String: State] = [:]
@@ -102,6 +104,9 @@ final class FixtureRouter {
         if method == "GET", route == "health" { return reply(200, cases["health"]!) }
         if method == "GET", route == "discover" { return reply(200, ["product": "FiestaBoard", "version": prefix.hasPrefix("/board-i8-compose-") ? "11.0.0-alpha.3" : "11.0.0", "id": String(prefix.dropFirst()), "name": "UI Test Server"]) }
         if method == "GET", route == "auth/status" {
+            if prefix.hasPrefix("/signin-i9-root-"), !onboardingBootstrapGate.waitForRelease() {
+                return reply(503, ["detail": "Required onboarding fixture hold timed out"])
+            }
             var status = cases[authenticated ? "auth_authenticated" : "auth_enabled"] as! [String: Any]
             status.merge(["mode": state.mode, "first_run": state.mode == "undecided", "enabled": state.mode != "disabled", "setup_required": state.setup && state.mode != "disabled", "username": authenticated ? "fixture_admin" as Any : null, "authenticated": authenticated, "auth_kind": authenticated ? "mobile" as Any : null]) { _, new in new }
             return reply(200, status)
@@ -178,8 +183,8 @@ final class FixtureRouter {
     }
 }
 
-/// Only the I7 delayed UI scenario uses this thread-safe gate. Timeout is a
-/// failed test dependency, not a successful write; every test releases it.
+/// Thread-safe hold for the I7 mutation and I9 auth bootstrap scenarios.
+/// Timeout is a failed fixture dependency; every test releases its own hold.
 final class FixtureHomeMutationGate: @unchecked Sendable {
     private let condition = NSCondition()
     private var held = false

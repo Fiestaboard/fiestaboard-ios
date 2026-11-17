@@ -1,0 +1,14 @@
+{
+  "status": "Advisory direction and UNRUN test preparation only; production unchanged",
+  "reviewed_head": "ac26ebe3f204a0b26571689729bac66a56a54551",
+  "finding": "Actual DraftScene host switches away during checking; native remount begins a replacement and clears reached auth snapshot. Model-only dismissal controls missed the parent host.",
+  "response": {
+    "content": [
+      {
+        "type": "text",
+        "text": "{\n  \"tool\": \"jev_decide\",\n  \"model\": \"typesafe/jev-1.14-20261014\",\n  \"provider\": \"openrouter\",\n  \"recommendation\": {\n    \"selected\": \"retain_active_onboarding_root\",\n    \"escaped\": false,\n    \"confidence\": 0.96,\n    \"probabilities\": {\n      \"retain_active_onboarding_root\": 0.97,\n      \"persistent_root_presentation_host\": 0.01,\n      \"route_all_disconnected_to_connection\": 0,\n      \"ask_user\": 0,\n      \"investigate\": 0.01,\n      \"none\": 0.01\n    },\n    \"contradicted_requirements\": []\n  },\n  \"requirements_checked\": 3,\n  \"checks\": [\n    {\n      \"candidate\": \"retain_active_onboarding_root\",\n      \"requirement\": 0,\n      \"answer\": \"supported\"\n    },\n    {\n      \"candidate\": \"retain_active_onboarding_root\",\n      \"requirement\": 1,\n      \"answer\": \"supported\"\n    },\n    {\n      \"candidate\": \"retain_active_onboarding_root\",\n      \"requirement\": 2,\n      \"answer\": \"supported\"\n    },\n    {\n      \"candidate\": \"persistent_root_presentation_host\",\n      \"requirement\": 0,\n      \"answer\": \"supported\"\n    },\n    {\n      \"candidate\": \"persistent_root_presentation_host\",\n      \"requirement\": 1,\n      \"answer\": \"unknown\"\n    },\n    {\n      \"candidate\": \"persistent_root_presentation_host\",\n      \"requirement\": 2,\n      \"answer\": \"unknown\"\n    },\n    {\n      \"candidate\": \"route_all_disconnected_to_connection\",\n      \"requirement\": 0,\n      \"answer\": \"contradicted\"\n    },\n    {\n      \"candidate\": \"route_all_disconnected_to_connection\",\n      \"requirement\": 1,\n      \"answer\": \"contradicted\"\n    },\n    {\n      \"candidate\": \"route_all_disconnected_to_connection\",\n      \"requirement\": 2,\n      \"answer\": \"unknown\"\n    }\n  ],\n  \"warnings\": [],\n  \"usage\": {\n    \"input_tokens\": 2675,\n    \"output_tokens\": 458\n  }\n}"
+      }
+    ]
+  },
+  "verification": "No compiler/tests/native run in this preparation. Actual RED required before implementation. Final R3 remains same review round; no fourth review or READY claim."
+}

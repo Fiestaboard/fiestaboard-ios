@@ -7,6 +7,8 @@ import socket
 import select
 import time
 import base64
+import concurrent.futures
+import urllib.request
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -26,6 +28,9 @@ if CommandLine.arguments.count > 3 {
     while let command = readLine() {
         if command == "probe" {
             do { try server.requireReady(); print("ready") } catch { print("failed") }
+        } else if command == "hold-onboarding" { server.holdOnboardingBootstrap(true); print("ok")
+        } else if command == "release-onboarding" { server.holdOnboardingBootstrap(false); print("ok")
+        } else if command == "onboarding-waiting" { print(server.onboardingBootstrapWaiting ? "waiting" : "idle")
         } else { server.setDropped(command == "drop"); print("ok") }
         fflush(nil)
     }
@@ -248,6 +253,36 @@ while let line = readLine() {
                 self.assertEqual(result['status'],r['status'])
                 self.assertEqual(base64.b64decode(result['raw']),(ROOT/'Tests/Fixtures'/r['file']).read_bytes())
                 self.assertEqual(result['headers'],r['headers'])
+
+    def test_onboarding_auth_hold_releases_real_http_response_without_changing_auth_contract(self):
+        process=subprocess.Popen([str(self.binary),str(ROOT/'Tests/UITests/FixtureResources/retained-ui.json'),str(ROOT/'Tests/Fixtures'),'listen'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
+        def command(value):
+            process.stdin.write(value+'\n');process.stdin.flush()
+            self.assertTrue(select.select([process.stdout],[],[],3)[0], 'Fixture control must respond')
+            return process.stdout.readline().strip()
+        try:
+            self.assertTrue(select.select([process.stdout],[],[],8)[0], 'Native listener must become ready')
+            port=int(process.stdout.readline())
+            baseline=urllib.request.urlopen(f'http://127.0.0.1:{port}/signin-unheld/api/auth/status',timeout=3)
+            self.assertEqual(baseline.status,200)
+            expected=json.load(baseline)
+            self.assertEqual(command('hold-onboarding'),'ok')
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as worker:
+                pending=worker.submit(urllib.request.urlopen,f'http://127.0.0.1:{port}/signin-i9-root-control/api/auth/status',timeout=6)
+                try:
+                    deadline=time.monotonic()+3
+                    while command('onboarding-waiting') != 'waiting':
+                        self.assertLess(time.monotonic(),deadline,'Auth HTTP request must reach hold')
+                        time.sleep(0.01)
+                    self.assertFalse(pending.done(),'Held auth/status must not complete before release')
+                finally:
+                    self.assertEqual(command('release-onboarding'),'ok')
+                response=pending.result(timeout=3)
+                self.assertEqual(response.status,200)
+                self.assertEqual(json.load(response),expected)
+        finally:
+            process.stdin.write('release-onboarding\n');process.stdin.flush()
+            process.stdin.close();process.wait(timeout=5);process.stdout.close();process.stderr.close()
 
     def test_socket_fragmented_body_and_connection_drop(self):
         process=subprocess.Popen([str(self.binary),str(ROOT/'Tests/UITests/FixtureResources/retained-ui.json'),str(ROOT/'Tests/Fixtures'),'listen'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)

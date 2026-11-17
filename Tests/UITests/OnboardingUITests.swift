@@ -108,6 +108,36 @@ import XCTest
         }
     }
 
+    // Exercises DraftScene's real conditional host, not an isolated ConnectionView preview.
+    func testActualRootKeepsEnrollmentMountedThroughHeldAuthAndConnectedHandoff() throws {
+        let app = isolatedApplication(), server = FixtureHTTPServer.shared
+        try server.requireReady(); app.launch(); openManualHubEntry(app); allowFixtureHTTP(app)
+        let address = app.textFields["connectionAddress"]
+        let deployment = "http://127.0.0.1:\(server.port)/signin-i9-root-\(UUID().uuidString.lowercased())"
+        typeConnectionAddress(deployment, into: address, in: app)
+        server.holdOnboardingBootstrap(true)
+        defer { server.holdOnboardingBootstrap(false) }
+        let connect = app.buttons["connectionConnect"]; reveal(connect, in: app); connect.tap()
+        let held = XCTNSPredicateExpectation(predicate: NSPredicate { _, _ in server.onboardingBootstrapWaiting }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [held], timeout: 4), .completed, "The actual app must reach held auth/status")
+        // A root switch to ShellContainer removes the address sheet during checking.
+        XCTAssertFalse(address.waitForNonExistence(timeout: 1), "Enrollment's actual presenter must survive bootstrap")
+        XCTAssertFalse(app.navigationBars["Home"].exists, "User enrollment is not cold saved-hub shell restoration")
+        let checking = XCTAttachment(screenshot: app.screenshot()); checking.name = "i9-root-held-auth-presenter"; add(checking)
+        server.holdOnboardingBootstrap(false)
+        let username = app.textFields["Username"]
+        XCTAssertTrue(username.waitForExistence(timeout: 10), "Auth-required return must retain the verified hub instead of restarting chooser")
+        XCTAssertFalse(app.buttons["reopenOnboarding"].exists)
+        XCTAssertTrue(app.staticTexts["UI Test Server"].exists)
+        reveal(username, in: app); username.tap(); username.typeText("fixture_admin")
+        let password = app.secureTextFields["connectionPassword"]
+        reveal(password, in: app); password.tap(); password.typeText("fixture-password")
+        app.keyboards.buttons["Go"].tap()
+        XCTAssertTrue(app.navigationBars["Home"].firstMatch.waitForExistence(timeout: 10))
+        XCTAssertFalse(app.textFields["Username"].exists, "Connected handoff must retire the form while keeping the live session")
+        let connected = XCTAttachment(screenshot: app.screenshot()); connected.name = "i9-root-connected-handoff"; add(connected)
+    }
+
     private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
         for _ in 0..<10 {
             if element.exists && element.isHittable {
