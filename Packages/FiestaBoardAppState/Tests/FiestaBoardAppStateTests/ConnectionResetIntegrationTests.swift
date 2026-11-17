@@ -261,3 +261,18 @@ extension ConnectionResetIntegrationTests {
         XCTAssertEqual(model.resetCode, ""); XCTAssertEqual(model.resetNewPassword, ""); XCTAssertEqual(model.resetConfirmation, "")
     }
 }
+
+extension ConnectionResetIntegrationTests {
+    func testPresentationDismissalClearsUnsubmittedLoginPasswordAndSetupProof() async throws {
+        let fixture = try ResetConnectionHTTP(reply: "reset-code-after-weak")
+        let model = try await connected(fixture)
+        let presentation = model.onboardingPresentationIntent
+        model.username = "retained-owner"; model.password = "unsubmitted-login-secret"
+        model.setupToken = "unsubmitted-setup-proof"
+        model.dismissOnboardingPresentation(presentation)
+        XCTAssertEqual(model.password, ""); XCTAssertEqual(model.setupToken, "")
+        XCTAssertEqual(model.phase, .picker)
+        XCTAssertEqual(model.username, "retained-owner")
+        XCTAssertEqual(fixture.resetCount, 0)
+    }
+}
