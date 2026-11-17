@@ -5,6 +5,55 @@ import FiestaBoardRender
 import FiestaBoardDocuments
 @testable import FiestaBoard
 
+/// Runs before the other app test classes so the candidate does not inherit a prior tile render.
+/// This is a diagnostic of one fresh ImageRenderer, not a production fallback or retry.
+@MainActor final class ATemplateTileColdCaptureTests: XCTestCase {
+    func testFirstCGImageCopyPreservesOriginalTilePixels() throws {
+        let scale: CGFloat = 2
+        let font = UIFont.monospacedSystemFont(ofSize: 17, weight: .regular)
+        let height = (font.capHeight * 1.55).rounded()
+        let width = (height * 0.72).rounded()
+        let renderer = ImageRenderer(content: Canvas { context, size in
+            FlapTilePainter.paint(code: BoardTables.code(for: .color(.red)),
+                model: .flap(rows: 1, cols: 1), in: CGRect(origin: .zero, size: size), context: &context)
+        }.frame(width: width, height: height))
+        renderer.scale = scale
+        let first = try XCTUnwrap(renderer.cgImage, "first candidate render has backing pixels")
+        let owned = try XCTUnwrap(CGContext(data: nil, width: Int(width * scale), height: Int(height * scale),
+            bitsPerComponent: 8, bytesPerRow: 0, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        owned.draw(first, in: CGRect(x: 0, y: 0, width: first.width, height: first.height))
+        let tile = UIImage(cgImage: try XCTUnwrap(owned.makeImage()), scale: scale, orientation: .up)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = scale
+        format.opaque = true
+        let actual = UIGraphicsImageRenderer(size: CGSize(width: 240, height: 48), format: format).image { context in
+            UIColor.white.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 240, height: 48))
+            tile.draw(at: CGPoint(x: 8, y: 12))
+        }
+        let attachment = XCTAttachment(image: actual)
+        attachment.name = "template-tile-cold-cgimage-owned"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+        let url = try XCTUnwrap(Bundle(for: Self.self).url(forResource: "template-chip", withExtension: "png", subdirectory: "iOS27"))
+        let crop = CGRect(x: 16, y: 24, width: width * scale, height: height * scale)
+        let expected = try XCTUnwrap(UIImage(contentsOfFile: url.path)?.cgImage?.cropping(to: crop))
+        let captured = try XCTUnwrap(actual.cgImage?.cropping(to: crop))
+        func pixels(_ image: CGImage) throws -> Data {
+            let context = try XCTUnwrap(CGContext(data: nil, width: image.width, height: image.height,
+                bitsPerComponent: 8, bytesPerRow: image.width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+            context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+            return Data(bytes: try XCTUnwrap(context.data), count: image.width * image.height * 4)
+        }
+        let actualPixels = try pixels(captured)
+        let expectedPixels = try pixels(expected)
+        print("ColdTemplateTileBackendProbe cgimage-owned exactMatch=\(actualPixels == expectedPixels)")
+        XCTAssertEqual(actualPixels, expectedPixels, "first candidate render must retain the original tile pixels")
+    }
+}
+
 /// PLAN B13/B31: each token kind draws as its chip, at text height, with its spoken label.
 @MainActor final class TemplateChipFactoryTests: XCTestCase {
     private let font = UIFont.monospacedSystemFont(ofSize: 17, weight: .regular)
