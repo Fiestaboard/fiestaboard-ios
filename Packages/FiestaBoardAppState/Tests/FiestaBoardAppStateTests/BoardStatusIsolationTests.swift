@@ -84,6 +84,26 @@ import FiestaBoardKit
         XCTAssertEqual(store.hubReachable, false)
     }
 
+    func testStatusReplyFromEarlierPathCannotConfirmReachability() async throws {
+        let store = BoardStore()
+        await store.connect(try FixtureFiestaBoardService()).value
+        let reader = try DelayedStatusReader(marker: "old", blocked: true)
+        let status = BoardStatus(store: store, reader: { reader })
+        defer { status.stop() }
+        let replied = expectation(description: "earlier-path status response completed")
+        let subscription = status.$runtime.filter { $0["board-2"]?.error == "old" }.first().sink { _ in replied.fulfill() }
+        status.start()
+        await reader.gate.waitUntilCalled(["runtime"])
+        store.networkAvailable = false
+        store.networkAvailable = true
+        await reader.gate.release()
+        await fulfillment(of: [replied], timeout: 3)
+        subscription.cancel()
+        XCTAssertEqual(store.hubReachable, false)
+        await store.probeReachability().value
+        XCTAssertEqual(store.hubReachable, true)
+    }
+
     private func waitForFresh(_ status: BoardStatus) async {
         let done = expectation(description: "new hub facts published")
         let token = Publishers.CombineLatest4(status.$runtime, status.$frames, status.$display, status.$nowShowing)

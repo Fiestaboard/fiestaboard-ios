@@ -224,6 +224,8 @@ private actor DelayedService: FiestaBoardService {
         if let scheduleFailure { throw scheduleFailure }
         return result
     }
+    private var delayAuth = false
+    func delayNextAuth() { delayAuth = true }
     private var delayRead = false
     private var delayMutation = false
     private var delayPage = false
@@ -242,7 +244,11 @@ private actor DelayedService: FiestaBoardService {
     init(delayConnection: Bool = true) throws { let d = try FixtureFiestaBoardService(); demo = d; deployment = d.deployment; self.delayConnection = delayConnection }
     func waitUntilBlocked() async { if gate != nil { return }; await withCheckedContinuation { observers.append($0) } }
     func release() { gate?.resume(); gate = nil }
-    func authStatus() async throws -> AuthStatus { try await demo.authStatus() }
+    func authStatus() async throws -> AuthStatus {
+        let value = try await demo.authStatus()
+        if delayAuth { delayAuth = false; await hold() }
+        return value
+    }
     func login(username: String, password: String) async throws -> AuthStatus { try await demo.login(username: username, password: password) }
     func logout() async throws { try await demo.logout() }
     func connect(allowCandidateWrites: Bool) async throws -> ConnectionStatus {
@@ -364,7 +370,16 @@ private actor SessionFaultService: FiestaBoardService {
         await withCheckedContinuation { logoutObservers.append($0) }
     }
     func releaseLogout() { logoutGate?.resume(); logoutGate = nil }
-    func authStatus() async throws -> AuthStatus { lifecycle.append("auth"); return try await demo.authStatus() }
+    private var authFailure: FiestaBoardError?
+    private var cancelledAuth = false
+    func cancelNextAuth() { cancelledAuth = true }
+    func failAuth(_ error: FiestaBoardError?) { authFailure = error }
+    func authStatus() async throws -> AuthStatus {
+        lifecycle.append("auth")
+        if cancelledAuth { cancelledAuth = false; throw CancellationError() }
+        if let authFailure { throw authFailure }
+        return try await demo.authStatus()
+    }
     func login(username: String, password: String) async throws -> AuthStatus { try await demo.login(username: username, password: password) }
     func logout() async throws {
         if delayLogout {
@@ -1294,5 +1309,59 @@ extension BoardStoreTests {
         XCTAssertEqual(store.hubReachable, true)
         XCTAssertNotNil(store.status)
         XCTAssertNil(store.selectedBoardID)
+    }
+}
+
+extension BoardStoreTests {
+    func testDelayedReadsCannotRestoreReachabilityAcrossPathLoss() async throws {
+        for restoredBeforeReply in [false, true] {
+            for kind in ["probe", "detail"] {
+                let service = try DelayedService(delayConnection: false), store = BoardStore()
+                await store.connect(service).value
+                if kind == "probe" { await service.delayNextAuth() } else { await service.delayNextRead() }
+                let request = kind == "probe" ? store.probeReachability() : store.refresh()
+                await service.waitUntilBlocked()
+                store.networkAvailable = false
+                if restoredBeforeReply { store.networkAvailable = true }
+                await service.release()
+                await request.value
+                store.networkAvailable = true
+                XCTAssertEqual(store.hubReachable, false, kind)
+                await store.probeReachability().value
+                XCTAssertEqual(store.hubReachable, true, kind)
+            }
+        }
+    }
+    func testProbePreservesRetryAfterDeadlineAndNonNetworkErrors() async throws {
+        var clock = Date(timeIntervalSince1970: 1000)
+        let service = try SessionFaultService(), store = BoardStore(now: { clock })
+        await store.connect(service, allowCandidateWrites: true).value
+        await service.failAuth(.rateLimited(retryAfterSeconds: 120))
+        await store.probeReachability().value
+        XCTAssertEqual(store.hubReachable, true)
+        XCTAssertEqual(store.reachabilityRetryAt, clock.addingTimeInterval(120))
+        let calls = await service.lifecycle.filter { $0 == "auth" }.count
+        await store.probeReachability().value
+        clock = clock.addingTimeInterval(119)
+        await store.probeReachability().value
+        let before = await service.lifecycle.filter { $0 == "auth" }.count
+        XCTAssertEqual(before, calls)
+        clock = clock.addingTimeInterval(1)
+        await service.failAuth(.invalidResponse)
+        await store.probeReachability().value
+        XCTAssertEqual(store.hubReachable, true)
+        let after = await service.lifecycle.filter { $0 == "auth" }.count
+        XCTAssertEqual(after, calls + 1)
+        await service.failAuth(.rejected(status: 400))
+        await store.probeReachability().value
+        XCTAssertEqual(store.hubReachable, true)
+        await service.failAuth(nil)
+        await service.cancelNextAuth()
+        await store.probeReachability().value
+        XCTAssertEqual(store.hubReachable, true)
+        await service.failAuth(.unauthenticated)
+        await store.probeReachability().value
+        XCTAssertNil(store.status)
+        XCTAssertNil(store.hubReachable)
     }
 }

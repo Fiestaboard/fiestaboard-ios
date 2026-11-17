@@ -307,17 +307,17 @@ public enum BoardPolling {
     }
 
     private func pollStatus() {
-        guard let reader = reader() else { return }
-        let token = epoch
+        guard store.canProbeReachability, let reader = reader() else { return }
+        let token = epoch, pathToken = store.reachabilityEpoch
         Task { [weak self] in
             do {
                 let report = try await reader.serviceStatus()
                 guard let self, self.valid(token) else { return }
                 self.runtime = report.boards
-                self.store.recordHubResponse()
+                self.store.recordHubResponse(pathToken: pathToken)
             } catch {
                 guard let self, self.valid(token) else { return }
-                self.store.recordHubReadFailure(error)
+                self.store.recordHubReadFailure(error, pathToken: pathToken)
             }
         }
     }

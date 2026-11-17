@@ -143,8 +143,12 @@ public struct PreparedAction: Identifiable, Sendable {
     @Published public private(set) var refreshing = false
     /// nil before a session read; a lost path invalidates the previous successful hub read.
     @Published public private(set) var hubReachable: Bool?
+    private(set) var reachabilityEpoch: UInt64 = 0
     @Published public var networkAvailable = true {
-        didSet { if !networkAvailable { hubReachable = false } }
+        didSet {
+            if oldValue != networkAvailable { reachabilityEpoch &+= 1 }
+            if !networkAvailable { hubReachable = false }
+        }
     }
     @Published private var readbackTargets: Set<BoardTarget> = []
     public var needsReadback: Bool { target.map { readbackTargets.contains($0) } ?? false }
@@ -205,7 +209,9 @@ public struct PreparedAction: Identifiable, Sendable {
         guard let service, let id = selectedBoardID else { return nil }
         return try? BoardTarget(deployment: service.deployment, boardID: id)
     }
-    public init() {}
+    private let now: @MainActor () -> Date
+    @Published public private(set) var reachabilityRetryAt: Date?
+    public init(now: @escaping @MainActor () -> Date = { Date() }) { self.now = now }
     var hasRetainedService: Bool { service != nil }
 
     @discardableResult public func connect(_ next: any FiestaBoardService, allowCandidateWrites: Bool = false,
@@ -215,7 +221,7 @@ public struct PreparedAction: Identifiable, Sendable {
         service = next
         connectionLabel = next.isDemo ? "Demo · simulated" : next.deployment.description
         connecting = true
-        let token = generation
+        let token = generation, pathToken = reachabilityEpoch
         let task = Task { [weak self] in
             guard let self else { return }
             await retirement?.value
@@ -234,7 +240,7 @@ public struct PreparedAction: Identifiable, Sendable {
                 let list = try await next.boards()
                 guard valid(token) else { return }
                 pageSessionOptedIn = allowCandidateWrites || result.isDemo
-                status = result; boards = list; hubReachable = true
+                status = result; boards = list; recordHubResponse(pathToken: pathToken)
                 let libraryState = pageLibraries[next.deployment] ?? PageLibraryState(deployment: next.deployment)
                 pageLibraries[next.deployment] = libraryState
                 pageLibrary = libraryState
@@ -263,14 +269,14 @@ public struct PreparedAction: Identifiable, Sendable {
                     } catch {
                         guard valid(token) else { return }
                         if handleAuthenticationLoss(error) { return }
-                        if (error as? FiestaBoardError) == .networkUnavailable { hubReachable = false }
+                        if pathToken == reachabilityEpoch, (error as? FiestaBoardError) == .networkUnavailable { hubReachable = false }
                         readbackTargets.insert(target)
                         message = "Display details could not be loaded. Refresh before using controls. " + safeDescription(error)
                     }
                 }
             } catch {
                 guard valid(token) else { return }
-                if (error as? FiestaBoardError) == .networkUnavailable { hubReachable = false }
+                if pathToken == reachabilityEpoch, (error as? FiestaBoardError) == .networkUnavailable { hubReachable = false }
                 if !handleAuthenticationLoss(error) { message = safeDescription(error) }
             }
             if valid(token) { connecting = false }
@@ -305,7 +311,7 @@ public struct PreparedAction: Identifiable, Sendable {
         pageLibraryObservation = nil; pageLibrary = nil; pageLibraryEpoch &+= 1
         connectionTask?.cancel(); refreshTask?.cancel(); commandTask?.cancel(); collectionListTask?.cancel()
         connectionTask = nil; refreshTask = nil; commandTask = nil
-        service = nil; status = nil; hubReachable = nil; boards = []; pages = []; board = nil; defaultPageContext = nil; defaultPageCapability = .unavailable; selectedBoardID = nil
+        service = nil; status = nil; hubReachable = nil; reachabilityRetryAt = nil; boards = []; pages = []; board = nil; defaultPageContext = nil; defaultPageCapability = .unavailable; selectedBoardID = nil
         connecting = false; refreshing = false; message = nil; remoteLogoutState = nil
         connectionLabel = "Disconnected"; usedActions = []; pageContexts = [:]; pageSessionOptedIn = false
         collections = []; collectionMessage = nil; collectionsLoading = false
@@ -359,15 +365,28 @@ public struct PreparedAction: Identifiable, Sendable {
     }
 
     /// Called only by epoch-checked status polling within this package.
-    func recordHubResponse() { if status != nil && networkAvailable { hubReachable = true } }
-    func recordHubReadFailure(_ error: any Error) {
-        if !handleAuthenticationLoss(error), (error as? FiestaBoardError) == .networkUnavailable { hubReachable = false }
+    func recordHubResponse(pathToken: UInt64) {
+        guard status != nil, networkAvailable, pathToken == reachabilityEpoch else { return }
+        hubReachable = true; reachabilityRetryAt = nil
+    }
+    func recordHubReadFailure(_ error: any Error, pathToken: UInt64) {
+        if error is CancellationError { return }
+        if handleAuthenticationLoss(error) { return }
+        guard pathToken == reachabilityEpoch else { return }
+        if (error as? FiestaBoardError) == .networkUnavailable { hubReachable = false }
+        if case .rateLimited(let seconds) = error as? FiestaBoardError {
+            let deadline = now().addingTimeInterval(TimeInterval(max(0, seconds ?? 30)))
+            reachabilityRetryAt = max(reachabilityRetryAt ?? deadline, deadline)
+        }
+    }
+    public var canProbeReachability: Bool {
+        networkAvailable && status != nil && (reachabilityRetryAt.map { now() >= $0 } ?? true)
     }
 
     /// A hub-level read independent of display selection and explicit mutation readback barriers.
     @discardableResult public func probeReachability() -> Task<Void, Never> {
-        guard networkAvailable, let service, status != nil else { return Task {} }
-        let token = generation
+        guard canProbeReachability, let service else { return Task {} }
+        let token = generation, pathToken = reachabilityEpoch
         return Task { [weak self] in
             guard let self else { return }
             do {
@@ -377,10 +396,10 @@ public struct PreparedAction: Identifiable, Sendable {
                     _ = handleAuthenticationLoss(FiestaBoardError.unauthenticated)
                     return
                 }
-                hubReachable = true
+                recordHubResponse(pathToken: pathToken)
             } catch {
                 guard valid(token) else { return }
-                if !handleAuthenticationLoss(error) { hubReachable = false }
+                recordHubReadFailure(error, pathToken: pathToken)
             }
         }
     }
@@ -388,7 +407,7 @@ public struct PreparedAction: Identifiable, Sendable {
     @discardableResult public func refresh() -> Task<Void, Never> {
         guard let service, status != nil, let target, !commandBusy else { return Task {} }
         refreshTask?.cancel()
-        let token = generation
+        let token = generation, pathToken = reachabilityEpoch
         refreshing = true
         defaultPageContext = nil
         let task = Task { [weak self] in
@@ -396,11 +415,11 @@ public struct PreparedAction: Identifiable, Sendable {
             do {
                 let detail = try await service.board(target)
                 guard valid(token) else { return }
-                acceptSnapshot(detail); readbackTargets.remove(target); hubReachable = true
+                acceptSnapshot(detail); readbackTargets.remove(target); recordHubResponse(pathToken: pathToken)
                 await loadDefaultContext(service, target: target, token: token)
             } catch {
                 guard valid(token) else { return }
-                if (error as? FiestaBoardError) == .networkUnavailable { hubReachable = false }
+                if pathToken == reachabilityEpoch, (error as? FiestaBoardError) == .networkUnavailable { hubReachable = false }
                 if !handleAuthenticationLoss(error) { message = safeDescription(error) }
             }
             if valid(token) { refreshing = false }

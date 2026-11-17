@@ -20,6 +20,19 @@ import FiestaBoardKit
         await model.retrySavedHub().value
         XCTAssertEqual(model.phase, .connected)
     }
+    func testKnownHubRateLimitIsNotNetworkFailureAndDoesNotAutomaticallyRetry() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.failBootstrap(.rateLimited(retryAfterSeconds: 120))
+        let saved = SavedServer(deployment: service.deployment, alias: "Known hub", installationID: "installation")
+        await model.selectSaved(saved).value
+        XCTAssertEqual(model.phase, .picker)
+        XCTAssertEqual(model.selectedSavedHub?.id, saved.id)
+        XCTAssertTrue(model.message?.contains("120") == true)
+        let before = await service.bootstrapAttempts
+        await model.retrySavedHub().value
+        let after = await service.bootstrapAttempts
+        XCTAssertEqual(after, before)
+    }
     func testUnknownHubBootstrapFailureReturnsEnrollment() async throws {
         let service = try OnboardingService()
         await service.failBootstrap(.networkUnavailable)
@@ -209,9 +222,11 @@ private actor OnboardingService: FiestaBoardService {
     func blockBootstrap() { blocked = true }
     func waitForBootstrap() async { if gate != nil { return }; await withCheckedContinuation { observers.append($0) } }
     func releaseBootstrap() { gate?.resume(); gate = nil }
+    var bootstrapAttempts = 0
     var bootstrapFailure: FiestaBoardError?
     func failBootstrap(_ error: FiestaBoardError?) { bootstrapFailure = error }
     func bootstrap() async throws -> BootstrapSnapshot {
+        bootstrapAttempts += 1
         if let bootstrapFailure { throw bootstrapFailure }
         events.append("bootstrap")
         if blocked { await withCheckedContinuation { gate = $0; observers.forEach { $0.resume() }; observers = [] } }
