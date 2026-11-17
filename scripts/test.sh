@@ -20,10 +20,12 @@ esac
 for model in 'iPhone 17' 'iPad Air 11-inch (M4)'; do
   udid=$(xcrun simctl list devices available --json | python3 scripts/select-ios-simulator.py "$model")
   xcrun simctl bootstatus "$udid" -b
+  result="$ios_build_root/results/$ios_slice/$(date +%s)-$udid.xcresult"
   xcodebuild -project FiestaBoard.xcodeproj -scheme FiestaBoard \
     -destination "platform=iOS Simulator,id=$udid" \
     -derivedDataPath "$ios_build_root/dd-$ios_slice" \
     -clonedSourcePackagesDirPath "$ios_build_root/spm" \
+    -resultBundlePath "$result" \
     -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1 \
     -only-testing:FiestaBoardAppTests -only-testing:FiestaBoardRenderTests \
     -only-testing:FiestaBoardUITests/LaunchUITests \

@@ -39,6 +39,8 @@ jobs:
         run: |
           python3 -m unittest discover -s Tests/Tooling -v
           python3 scripts/check-project.py
+          node scripts/vocabulary/test-vocabulary.mjs
+          node scripts/vocabulary/check-vocabulary.mjs
       - name: Host package suites
         run: scripts/test.sh packages
       - name: App-hosted and launch UI suites on both tier-1 devices
@@ -47,3 +49,18 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           scripts/build-draft.sh archive
+          bash scripts/check-release-probes.sh "$HOME/Library/Developer/FiestaBoard/ios/FiestaBoard.xcarchive"
+      - name: Record parity foundation status
+        if: always()
+        run: |
+          mkdir -p build/parity
+          echo '{"slice":"I0b","goldens":"I0b renderer seed; XCTest result is authoritative","osMajor":"iOS27","figmaComparison":"not run"}' > build/parity/foundation-status.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-results-and-parity
+          path: |
+            ~/Library/Developer/FiestaBoard/ios/results/ci
+            build/parity
+            Tests/__Snapshots__/iOS27
+          retention-days: 14
