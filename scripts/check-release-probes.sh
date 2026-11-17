@@ -27,6 +27,7 @@ pattern='FigmaGeometryRegistry|FigmaNodeModifier|figmaNode|ParityFixture|fiestab
 # keys. Each is compiled out with `#if DEBUG`.
 pattern+='|previewInputLatency|inputToPreviewSeconds|FIESTABOARD_TEST_NAMESPACE|PanelNavigationProbe|RenderPacingProbe|MatrixPreparationProbe|FocusChangeProbe|DrawnPreviewMarker'
 pattern+='|FIESTABOARD_CLOSE_TRACE|traceClose|inputToPreviewPhases|markInputPhase'
+pattern+='|DisplaySelectionTrace'
 pattern+='|ConnectReviewDiscovery|fiestaboard\.(panelProfile|renderProfile|viewerMaterial)'
 pattern+='|I[0-9]+:[0-9]+;[0-9]+:[0-9]+|(^|[^0-9])[0-9]{2,4}:[0-9]{3,7}([^0-9]|$)|parity:[a-z]+'
 found=0

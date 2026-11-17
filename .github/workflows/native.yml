@@ -44,6 +44,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Token generation and drift guard
+        run: |
+          node --test scripts/tokens/tests/*.test.mjs
+          node scripts/tokens/generate-swift.mjs --check
       - name: Parity reporter tests
         run: |
           npm ci --prefix scripts/parity

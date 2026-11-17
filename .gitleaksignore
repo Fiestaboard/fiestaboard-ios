@@ -1,0 +1,5 @@
+# Figma document/collection identifiers in the byte-exact MG4 export are public
+# design provenance, not authentication credentials. Keep suppression line-scoped.
+Tokens/platform-ios.json:generic-api-key:5
+Tokens/platform-ios.json:generic-api-key:8
+Tokens/platform-ios.json:generic-api-key:27
