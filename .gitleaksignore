@@ -22,3 +22,10 @@ Tests/Fixtures/Home/DockerUndo/undo-indefinite-cancel.json:generic-api-key:1
 Tests/Fixtures/Home/DockerBanners/undo-cancel.json:generic-api-key:1
 Tests/Fixtures/Home/DockerBanners/undo-stale-cancel.json:generic-api-key:1
 Tests/Fixtures/Home/DockerBanners/undo-indefinite-cancel.json:generic-api-key:1
+# I8 exact source lines below contain only the immutable corpus filename and
+# drawing case selector (operations-authenticated / drawing-tc001-fixture).
+# Independently inspected and scanned; there are no credentials in these calls.
+Packages/FiestaBoardAppState/Tests/FiestaBoardAppStateTests/ComposePreviewProjectionTests.swift:generic-api-key:16
+Packages/FiestaBoardAppState/Tests/FiestaBoardAppStateTests/ComposePreviewProjectionTests.swift:generic-api-key:27
+Packages/FiestaBoardKit/Tests/FiestaBoardKitTests/ComposeDrawingTests.swift:generic-api-key:14
+Packages/FiestaBoardKit/Tests/FiestaBoardKitTests/ComposeDrawingTests.swift:generic-api-key:27
