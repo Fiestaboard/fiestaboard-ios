@@ -80,6 +80,7 @@
 		494DCAC12BE541FDE6FECA67 /* FiestaBoardDocuments.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 49BC2ED373F21B24BB1720FB /* FiestaBoardDocuments.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		49AFCC7FD323933933E9346F /* TokenSentinelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D917890812D1A23DDD0D8CA1 /* TokenSentinelTests.swift */; };
 		49E708075662259F856409E2 /* MatrixRaster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81B84E148F0E840D85457DD5 /* MatrixRaster.swift */; };
+		4B1107F96C50D35B5A233465 /* ComposeRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87E98738D08E8454662B8BB9 /* ComposeRequest.swift */; };
 		4B3B5898033C48E6BA706A80 /* BoardLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0148624436D9E73C46C262C2 /* BoardLayout.swift */; };
 		4CCE1A467748B7125D96F759 /* FlexibleEditing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34371FDA1872CA71EDAA3256 /* FlexibleEditing.swift */; };
 		50258095D519E0441BC24C31 /* CharsetIssuesFormattingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBAA32A7BB31C756C4A9E5E4 /* CharsetIssuesFormattingTests.swift */; };
@@ -110,6 +111,8 @@
 		7211511DBAD9BF4731019BCC /* CanvasEditorState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF9F10108415B0B82A438E3E /* CanvasEditorState.swift */; };
 		724F7BA0C78D59519E626372 /* LedMarkup.swift in Sources */ = {isa = PBXBuildFile; fileRef = C035AA6946E7B9F0C3244872 /* LedMarkup.swift */; };
 		759447EBBA7619627DABB4D0 /* SchedulesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 971BC95938B395BCAF17CC76 /* SchedulesView.swift */; };
+		75AF608DB84EBC2536B0A69B /* ComposePrincipalProof.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F335D6B126930ADB46C6C11 /* ComposePrincipalProof.swift */; };
+		785B1396594CD40A8BC9BBAE /* ComposeReceipt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E0F9D9D01ECF48C285F84BD /* ComposeReceipt.swift */; };
 		78C410B9A2A2B444B993B0EB /* FiestaBoardKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */; };
 		7BC267E2CBE0C7B7D912FFBB /* EditorRemoteActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3E7BE5F69B8B5D28D44AE0E /* EditorRemoteActions.swift */; };
 		7D39F4CA94AB1625A2194152 /* VoiceOverLabelDumpTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F390E5BDD0C4E31270C8A045 /* VoiceOverLabelDumpTests.swift */; };
@@ -141,6 +144,7 @@
 		959C749DFE9F4E7AB741C703 /* CollectionDraft.swift in Sources */ = {isa = PBXBuildFile; fileRef = D933B63826F1D92E72A16357 /* CollectionDraft.swift */; };
 		97487A82619335454365F088 /* BoardCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F379EE8104D0AF1F1BA7473 /* BoardCanvas.swift */; };
 		9975FD001CF05E47D0BAABE2 /* RenderAssets in Resources */ = {isa = PBXBuildFile; fileRef = 393B993DA75AE7F6FBE2F623 /* RenderAssets */; };
+		9A4ACAC65126CEF1AE2AC070 /* ComposePreviewProjection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 781D366195455050A6E35C17 /* ComposePreviewProjection.swift */; };
 		9AFDDB28F53DFAB5386DEB95 /* LocalPageEditorModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8086EA8450423EC1F62DCF79 /* LocalPageEditorModel.swift */; };
 		9B1E2D43FAD06722244202F0 /* BarEvidenceUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 896FA249037A06136453B330 /* BarEvidenceUITests.swift */; };
 		9B786BFDEC21DEDBED9459A3 /* PreviewStage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0889FC6B6D55878B12953F10 /* PreviewStage.swift */; };
@@ -156,6 +160,7 @@
 		A56CD42ED14B0E6D6C3FF1B6 /* BoardOffset.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DDC280AD26E72F5627BC62B /* BoardOffset.swift */; };
 		A5E1DD38233D7DB7E30F085D /* BoardTablesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC609C72CB7F40E61999B7DD /* BoardTablesTests.swift */; };
 		A70E31D28B677D7806B4D473 /* DrawMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = C038325A589937ADD54B59BD /* DrawMode.swift */; };
+		A793A45EFE9FA2386715EA99 /* ComposeBufferStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 084EE3F855C36BFA38FABEA2 /* ComposeBufferStore.swift */; };
 		A97CAF91E95BBCD69379B79D /* MatrixPixelFrames.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD24039968B9260446818E7F /* MatrixPixelFrames.swift */; };
 		AA75BA9E4BB5C1C0CD278CA8 /* ShellDisplayAccessory.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2C74B35AFA538F804893482 /* ShellDisplayAccessory.swift */; };
 		AF24CF32AF3C33C9B63055CF /* FlapAtlasTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A04568998109174FE6CF424 /* FlapAtlasTests.swift */; };
@@ -178,6 +183,7 @@
 		C46722FA41E6A76CE9DFCA28 /* FiestaBoardAppState.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2E21A61E3064CBB07099A3E1 /* FiestaBoardAppState.framework */; };
 		C60C83F52F1EDEF3766EED47 /* FiestaBoardKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C68E60195CC592B0A15AC6F0 /* Service+Catalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10EF04B4678A93E1C933C71B /* Service+Catalog.swift */; };
+		C8F01D9240660909B3C3B4C3 /* ComposeSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE42977532F5B32FB22E8478 /* ComposeSession.swift */; };
 		CA6FD807D34FDEC5985723C4 /* HomeStatusSummary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 081E72D8041CB8B8299EB35F /* HomeStatusSummary.swift */; };
 		CBB1D95B44199F7EFB45BD39 /* BoardSeamsAndModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DD2B3159501C8F2330E6630 /* BoardSeamsAndModelTests.swift */; };
 		CBC14CF8FFA847CEDCDD4184 /* TemplateChipRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53140029485A055AD658A255 /* TemplateChipRenderer.swift */; };
@@ -213,6 +219,7 @@
 		ECCD8C8DE3D983B4431AFAAE /* DeploymentURL.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DD4D3175C0AE6D2D868EC75 /* DeploymentURL.swift */; };
 		ED325716E54DC6479A75F103 /* VariablePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAB69A54A41CFEB488033456 /* VariablePickerView.swift */; };
 		EE460C80F84745804F7080C4 /* Snapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2512A0EBAC2A895F58C8C2B /* Snapshot.swift */; };
+		F06B37F6657C44F8FBC13261 /* ComposeDrawing.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD21908F31AC89AFAD17CE50 /* ComposeDrawing.swift */; };
 		F0E438AE948797DB1BBE1634 /* BoardLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 243B601AF6228C1D6B5AC497 /* BoardLayoutTests.swift */; };
 		F18D73674B88F338AC475D79 /* GlassProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 289D38D82453F9F4D390146B /* GlassProbe.swift */; };
 		F218BBC6F20AA71BCE632754 /* TerminologyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 161D8A798461B87445FF0872 /* TerminologyTests.swift */; };
@@ -221,6 +228,7 @@
 		F631808CB73FF331EBEBE437 /* BoardCanvasTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48001C341291CD87E52A402 /* BoardCanvasTests.swift */; };
 		F66DFB38BD206FA969D31AF3 /* FiestaBoardRender.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FBC75D21814880B62B94594 /* FiestaBoardRender.framework */; };
 		F76A3FEC4B084A1BC996FC8A /* TacoLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8142EE8F6466519C5DE63C2B /* TacoLoader.swift */; };
+		F832F946A604D1B7D474233B /* ComposePageReceipt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43234759506FED6282380C14 /* ComposePageReceipt.swift */; };
 		F848C039BD1C062E2F58429F /* ConnectingSeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56B7BAC4377D0D37819D561E /* ConnectingSeedView.swift */; };
 		F8BF5AA50FF2360BC2C4333D /* ConnectionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40AB705E1DB7F29BE21009EE /* ConnectionModel.swift */; };
 		FA23AFA5B9424ABD9CED10B4 /* FixtureReadiness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E6E8776A0D8982BD60EE299 /* FixtureReadiness.swift */; };
@@ -360,6 +368,7 @@
 		07D53EC08F3E7E113C2035CD /* TacoMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TacoMark.swift; sourceTree = "<group>"; };
 		07FC5948A1A2BF18D9D2F81A /* LocalDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDraftStore.swift; sourceTree = "<group>"; };
 		081E72D8041CB8B8299EB35F /* HomeStatusSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeStatusSummary.swift; sourceTree = "<group>"; };
+		084EE3F855C36BFA38FABEA2 /* ComposeBufferStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeBufferStore.swift; sourceTree = "<group>"; };
 		0889FC6B6D55878B12953F10 /* PreviewStage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewStage.swift; sourceTree = "<group>"; };
 		08A7CF83290AB187BA76D6AE /* Service+Status.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Service+Status.swift"; sourceTree = "<group>"; };
 		08CD0DA7C751195DD5C9810F /* FlapPhysics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlapPhysics.swift; sourceTree = "<group>"; };
@@ -403,6 +412,7 @@
 		2CBC4260FBD8BBA41BFBF327 /* FixtureConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureConnection.swift; sourceTree = "<group>"; };
 		2E21A61E3064CBB07099A3E1 /* FiestaBoardAppState.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FiestaBoardAppState.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		2E9C4AE6308D1C7CD19D6872 /* InsertMenus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsertMenus.swift; sourceTree = "<group>"; };
+		2F335D6B126930ADB46C6C11 /* ComposePrincipalProof.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposePrincipalProof.swift; sourceTree = "<group>"; };
 		303AB3F8B1E5C7F725129E4B /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		30E4C281A2D552E333616B91 /* Fixtures */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Fixtures; path = Tests/Fixtures; sourceTree = SOURCE_ROOT; };
 		325C5B5CD67DA69702635A29 /* InsertPickerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InsertPickerSheet.swift; sourceTree = "<group>"; };
@@ -424,6 +434,7 @@
 		3DD4D3175C0AE6D2D868EC75 /* DeploymentURL.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeploymentURL.swift; sourceTree = "<group>"; };
 		3DDC280AD26E72F5627BC62B /* BoardOffset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardOffset.swift; sourceTree = "<group>"; };
 		40AB705E1DB7F29BE21009EE /* ConnectionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionModel.swift; sourceTree = "<group>"; };
+		43234759506FED6282380C14 /* ComposePageReceipt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposePageReceipt.swift; sourceTree = "<group>"; };
 		4368DB1EAAF6F199DC1CCAAA /* BoardMessageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardMessageParser.swift; sourceTree = "<group>"; };
 		43E15996708A4A5B2F939B0C /* Bootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bootstrap.swift; sourceTree = "<group>"; };
 		460657FBB5DCDA5016DF814D /* ConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionView.swift; sourceTree = "<group>"; };
@@ -462,10 +473,12 @@
 		738025F2DFCF52B724839E1D /* ShellConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellConnectionView.swift; sourceTree = "<group>"; };
 		7387870A8F4C81B3ED477AB0 /* SaveUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveUITests.swift; sourceTree = "<group>"; };
 		77577AB0B30128910FEC564A /* ParityFixtureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParityFixtureView.swift; sourceTree = "<group>"; };
+		781D366195455050A6E35C17 /* ComposePreviewProjection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposePreviewProjection.swift; sourceTree = "<group>"; };
 		78BA57525989C1533ACFDBD0 /* HomeSummary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeSummary.swift; sourceTree = "<group>"; };
 		7AD9A30C4F8E872D7431FC6E /* FlapTilePainter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlapTilePainter.swift; sourceTree = "<group>"; };
 		7C08D403E41B47F96C35871B /* LedRasterizerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedRasterizerTests.swift; sourceTree = "<group>"; };
 		7C53D8997F3544E68E18B8EF /* MobileSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileSession.swift; sourceTree = "<group>"; };
+		7E0F9D9D01ECF48C285F84BD /* ComposeReceipt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeReceipt.swift; sourceTree = "<group>"; };
 		8086EA8450423EC1F62DCF79 /* LocalPageEditorModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalPageEditorModel.swift; sourceTree = "<group>"; };
 		80B7025A77DB33DB399EC12D /* FiestaBoard.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FiestaBoard.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8142EE8F6466519C5DE63C2B /* TacoLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TacoLoader.swift; sourceTree = "<group>"; };
@@ -473,6 +486,7 @@
 		81E90191BA9A1E89316C89FC /* FigmaNode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FigmaNode.swift; sourceTree = "<group>"; };
 		82112BD5D96C1972DCA845D8 /* CanvasRevealGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasRevealGeometry.swift; sourceTree = "<group>"; };
 		8624ABBD546279E8133D9396 /* FiestaBoardUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FiestaBoardUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		87E98738D08E8454662B8BB9 /* ComposeRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeRequest.swift; sourceTree = "<group>"; };
 		88D20A64E911A3536D1F434B /* FlexibleWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlexibleWorkspaceView.swift; sourceTree = "<group>"; };
 		88FC48CA3F91EB260F3FD8F8 /* CanvasAreaPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasAreaPicker.swift; sourceTree = "<group>"; };
 		896FA249037A06136453B330 /* BarEvidenceUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BarEvidenceUITests.swift; sourceTree = "<group>"; };
@@ -519,6 +533,7 @@
 		B98F6E2DDC8EAE51732AB38A /* BoardFlipTransition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardFlipTransition.swift; sourceTree = "<group>"; };
 		BA413B675A8CABCA5E05C047 /* Schedules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Schedules.swift; sourceTree = "<group>"; };
 		BD6BE9A9CDCA742A1B397022 /* TemplateChipFactoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateChipFactoryTests.swift; sourceTree = "<group>"; };
+		BE42977532F5B32FB22E8478 /* ComposeSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeSession.swift; sourceTree = "<group>"; };
 		BECB0B3DC31A74CE977E8FDF /* PolishUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolishUITests.swift; sourceTree = "<group>"; };
 		BF16DDCF129380FBA1D99C7A /* StrokeTransaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokeTransaction.swift; sourceTree = "<group>"; };
 		BF43E217AEABB9DA88887736 /* ShellPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellPalette.swift; sourceTree = "<group>"; };
@@ -530,6 +545,7 @@
 		C48001C341291CD87E52A402 /* BoardCanvasTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardCanvasTests.swift; sourceTree = "<group>"; };
 		CBAA32A7BB31C756C4A9E5E4 /* CharsetIssuesFormattingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharsetIssuesFormattingTests.swift; sourceTree = "<group>"; };
 		CC9E37508A49A342F1029CB6 /* BoardFrameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardFrameView.swift; sourceTree = "<group>"; };
+		CD21908F31AC89AFAD17CE50 /* ComposeDrawing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeDrawing.swift; sourceTree = "<group>"; };
 		CFB2DF849651A564FCE1F486 /* LosslessJSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LosslessJSON.swift; sourceTree = "<group>"; };
 		D06071FB71DF8B9AC66B106C /* BitmapCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitmapCaptureTests.swift; sourceTree = "<group>"; };
 		D7E01E3327C65040C61DF652 /* PageEditorLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageEditorLoader.swift; sourceTree = "<group>"; };
@@ -714,6 +730,11 @@
 				3772403D0456CA285BF0FBC5 /* CapabilityPolicy.swift */,
 				614D7369EFE17A7F0CB19B83 /* Catalog.swift */,
 				507EEDE849D0C019D6F42A7E /* CollectionEditing.swift */,
+				CD21908F31AC89AFAD17CE50 /* ComposeDrawing.swift */,
+				43234759506FED6282380C14 /* ComposePageReceipt.swift */,
+				2F335D6B126930ADB46C6C11 /* ComposePrincipalProof.swift */,
+				7E0F9D9D01ECF48C285F84BD /* ComposeReceipt.swift */,
+				87E98738D08E8454662B8BB9 /* ComposeRequest.swift */,
 				3DD4D3175C0AE6D2D868EC75 /* DeploymentURL.swift */,
 				39295C71C5ED93F6ABEFB0B4 /* FiestaBoardError.swift */,
 				2662195EBC75B32C6C4D1F53 /* Formula.swift */,
@@ -747,6 +768,7 @@
 				E77DDDA784DC2225F283D808 /* BoardStatus.swift */,
 				678A2B4C279B5B863E7FB900 /* BoardStore.swift */,
 				F4490F7035D0FAA8FEDE9402 /* CollectionContext.swift */,
+				781D366195455050A6E35C17 /* ComposePreviewProjection.swift */,
 				40AB705E1DB7F29BE21009EE /* ConnectionModel.swift */,
 				B91E5864EFCBE5AEB441B033 /* DisplayBadges.swift */,
 				8F3ED2E4566FB29FD9D32688 /* HomePresentation.swift */,
@@ -1027,6 +1049,7 @@
 				93B36F688F58E798D2EB8384 /* CanvasEditing.swift */,
 				0983A5BFD3803290BA5F0FC4 /* CanvasRaster.swift */,
 				AC2DA00E01FB82B30F9EA303 /* CanvasShapes.swift */,
+				084EE3F855C36BFA38FABEA2 /* ComposeBufferStore.swift */,
 				5DC63171EF43451C07069156 /* DocumentEditingSession.swift */,
 				34371FDA1872CA71EDAA3256 /* FlexibleEditing.swift */,
 				D8C962887306A8D9C4B15B87 /* LineMetadataSplice.swift */,
@@ -1070,6 +1093,7 @@
 			children = (
 				D933B63826F1D92E72A16357 /* CollectionDraft.swift */,
 				5028E15ABB1CBC95D7E77C44 /* CollectionEditorModel.swift */,
+				BE42977532F5B32FB22E8478 /* ComposeSession.swift */,
 				A3E7BE5F69B8B5D28D44AE0E /* EditorRemoteActions.swift */,
 				53A1896783BB5D32A4807559 /* LocalPageEditorModel.swift */,
 				6F6CAAB627C155DC2D02DE3B /* PreviewPipeline.swift */,
@@ -1384,6 +1408,7 @@
 			files = (
 				959C749DFE9F4E7AB741C703 /* CollectionDraft.swift in Sources */,
 				2ED7D4EA037EABFE8750B7F0 /* CollectionEditorModel.swift in Sources */,
+				C8F01D9240660909B3C3B4C3 /* ComposeSession.swift in Sources */,
 				7BC267E2CBE0C7B7D912FFBB /* EditorRemoteActions.swift in Sources */,
 				B5B8A2C81696B22A127C8265 /* LocalPageEditorModel.swift in Sources */,
 				9D0E87037C910EBEE0EBF9F9 /* PreviewPipeline.swift in Sources */,
@@ -1397,6 +1422,7 @@
 				0C8F0910473C7DC09895B39F /* BoardStatus.swift in Sources */,
 				452E97E77640C8CA6CA6B32C /* BoardStore.swift in Sources */,
 				078026B7E4D421E7148C5185 /* CollectionContext.swift in Sources */,
+				9A4ACAC65126CEF1AE2AC070 /* ComposePreviewProjection.swift in Sources */,
 				F8BF5AA50FF2360BC2C4333D /* ConnectionModel.swift in Sources */,
 				B20EF81EF154A2EA107EBA12 /* DisplayBadges.swift in Sources */,
 				1F91B39BD390D142CF6B4F5D /* HomePresentation.swift in Sources */,
@@ -1467,6 +1493,11 @@
 				EA8C26DACBAA907A2F8B24C8 /* CapabilityPolicy.swift in Sources */,
 				B014F51E5F039C0FDD1CCF5F /* Catalog.swift in Sources */,
 				4297D9B53557AC20F3AB0E4E /* CollectionEditing.swift in Sources */,
+				F06B37F6657C44F8FBC13261 /* ComposeDrawing.swift in Sources */,
+				F832F946A604D1B7D474233B /* ComposePageReceipt.swift in Sources */,
+				75AF608DB84EBC2536B0A69B /* ComposePrincipalProof.swift in Sources */,
+				785B1396594CD40A8BC9BBAE /* ComposeReceipt.swift in Sources */,
+				4B1107F96C50D35B5A233465 /* ComposeRequest.swift in Sources */,
 				ECCD8C8DE3D983B4431AFAAE /* DeploymentURL.swift in Sources */,
 				B87FD124C751FC4DA14916E3 /* FiestaBoardError.swift in Sources */,
 				14943782D8BF8AC90A9F5255 /* Formula.swift in Sources */,
@@ -1561,6 +1592,7 @@
 				7DF5867A76C387AA1C58930E /* CanvasEditing.swift in Sources */,
 				D082E1D796CFA35851B0D46C /* CanvasRaster.swift in Sources */,
 				4415951F7FE1CB24D69A3CC3 /* CanvasShapes.swift in Sources */,
+				A793A45EFE9FA2386715EA99 /* ComposeBufferStore.swift in Sources */,
 				5D5E488450B7AD9EC48F2A06 /* DocumentEditingSession.swift in Sources */,
 				4CCE1A467748B7125D96F759 /* FlexibleEditing.swift in Sources */,
 				6AA09D1220D1BD62BEE46095 /* LineMetadataSplice.swift in Sources */,
