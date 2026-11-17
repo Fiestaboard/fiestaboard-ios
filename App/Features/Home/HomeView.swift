@@ -151,7 +151,7 @@ struct HomeView<Controls: View>: View {
                 Text(URL(string: store.connectionLabel)?.host ?? store.connectionLabel).font(.caption2).foregroundStyle(.secondary)
             }
         }
-        .disabled(store.commandBusy || store.refreshing || store.boards.count < 2)
+        .disabled(!store.canSelectBoard)
         .accessibilityIdentifier("homeDisplayPicker")
     }
     @ViewBuilder private func board(_ summary: BoardSummary, height: CGFloat) -> some View {
