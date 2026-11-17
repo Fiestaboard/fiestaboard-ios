@@ -901,9 +901,15 @@ public struct PreparedAction: Identifiable, Sendable {
         if let index = boards.firstIndex(where: { $0.id == detail.summary.id }) { boards[index] = detail.summary }
         if let operation = composeOperation, operation.generation == generation,
            operation.request.target.boardID == detail.summary.id, operation.request.principal == composePrincipal {
-            let accepted = [.sent, .unchanged].contains(operation.receipt.state) && detail.composeRequestID == operation.request.requestID
+            // Once this exact UUID was acknowledged and read back, later
+            // expiry or deliberate display replacement cannot undo that fact.
+            let accepted = operation.acceptedReadback || ([.sent, .unchanged].contains(operation.receipt.state)
+                && detail.composeRequestID == operation.request.requestID)
             composeOperation = .init(actionID: operation.actionID, request: operation.request, receipt: operation.receipt,
                                      acceptedReadback: accepted, generation: operation.generation)
+            if accepted, composeOutcomeContext?.actionID == operation.actionID {
+                composeOutcomeContext = nil
+            }
         }
     }
     /// A normal board GET proves display state, not the outcome of a captured
