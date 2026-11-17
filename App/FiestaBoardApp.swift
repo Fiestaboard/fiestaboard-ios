@@ -331,10 +331,16 @@ struct DraftScene: View {
         let saved = connection.selectedSavedHub ?? connection.savedServers.first { $0.deployment.description == store.connectionLabel }
         return saved?.alias.isEmpty == false ? saved!.alias : "FiestaBoard hub"
     }
-    private var displayAccessory: some View {
-        ShellDisplayAccessory(displays: store.boards, selectedID: store.selectedBoardID, nowShowing: boardStatus.nowShowing?.name,
-                              hubName: activeHubName, host: shellHub, disabled: store.connecting || store.commandBusy,
-                              select: { store.selectBoard($0) })
+    @ViewBuilder private var displayAccessory: some View {
+        if store.selectedBoardID != nil {
+            ShellDisplayAccessory(displays: store.boards, selectedID: store.selectedBoardID, nowShowing: boardStatus.nowShowing?.name,
+                                  hubName: activeHubName, host: shellHub, disabled: store.connecting || store.commandBusy,
+                                  select: { store.selectBoard($0) })
+        } else if let cached = cache.value(for: shellHub, at: now), let board = cached.board {
+            ShellDisplayAccessory(displays: [board.summary], selectedID: board.summary.id,
+                                  nowShowing: cached.pages.first { $0.id == board.activePageID }?.name,
+                                  hubName: activeHubName, host: shellHub, disabled: true, select: { _ in })
+        }
     }
     private var more: some View {
         NavigationStack {

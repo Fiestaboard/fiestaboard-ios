@@ -37,8 +37,10 @@ import FiestaBoardAppState
                                 }
                             }
                         } accessory: {
-                            ShellDisplayAccessory(displays: boards, selectedID: "kitchen", nowShowing: "Hello World",
-                                                  hubName: saved[0].alias, host: saved[0].deployment.description, disabled: false, select: { _ in })
+                            if route == .more {
+                                ShellDisplayAccessory(displays: boards, selectedID: "kitchen", nowShowing: "Hello World",
+                                                      hubName: saved[0].alias, host: saved[0].deployment.description, disabled: false, select: { _ in })
+                            }
                         }, device: device, size: bounds, appearance: appearance, dynamicType: type)
                         XCTAssertEqual(image.size, bounds)
                         XCTAssertEqual(image.scale, device.scale)
