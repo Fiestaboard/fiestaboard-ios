@@ -166,3 +166,76 @@ extension ComposeSessionTests {
         session.close(); await settle()
     }
 }
+
+extension ComposeSessionTests {
+    func testDurableBufferRestoresExactInputAndVerifiedTargetOfflineWithoutRendering() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let firstScope = try scope(board: "led-two"), buffer = ComposeBufferStore(directory: directory)
+        let first = ComposeSession(scope: firstScope, render: { _ in XCTFail("No render before idle"); throw FiestaBoardError.previewUnsupported })
+        _ = try await first.bindBuffer(buffer)
+        first.update(.init(text: "Hi {{weather.temp}}", lineMetadata: [.init(alignment: "right", wrap: true)],
+            selection: .init(lowerUTF16: 3, upperUTF16: 3), duration: .untilCancel, silence: .override))
+        _ = try await first.persistBuffer(); first.close()
+        let current = try scope(), led = try scope(board: "led-two", connection: current.connectionID)
+        let restored = ComposeSession(scope: current, online: false, render: { _ in XCTFail("Offline restore must not render or send"); throw FiestaBoardError.networkUnavailable })
+        let didRestore = try await restored.bindBuffer(ComposeBufferStore(directory: directory), resolveTarget: { $0 == "led-two" ? led : nil })
+        XCTAssertTrue(didRestore); XCTAssertEqual(restored.input, first.input)
+        XCTAssertEqual(restored.scope, led); XCTAssertNil(restored.prepare()); XCTAssertTrue(restored.previewIsStale)
+    }
+    func testUnknownSavedTargetDoesNotTrustOrInventCachedGeometry() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let target = try scope(), buffer = ComposeBufferStore(directory: directory), lease = try await buffer.open(target.identity)
+        _ = try await buffer.save(.init(identity: target.identity, revision: 9, text: "KEPT", targetID: "removed"), using: lease)
+        let session = ComposeSession(scope: target, online: false, render: { _ in throw FiestaBoardError.networkUnavailable })
+        _ = try await session.bindBuffer(buffer, resolveTarget: { _ in nil })
+        XCTAssertEqual(session.input.text, "KEPT"); XCTAssertEqual(session.scope, target)
+        XCTAssertEqual(session.unavailableBufferedTargetID, "removed")
+    }
+    func testAcknowledgedBufferRevisionCannotClearNewerUnsavedTyping() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let buffer = ComposeBufferStore(directory: directory), target = try scope()
+        let session = ComposeSession(scope: target, online: false, render: { _ in throw FiestaBoardError.networkUnavailable })
+        _ = try await session.bindBuffer(buffer); session.update(.init(text: "SENDING"))
+        let observed = try await session.persistBuffer(), saved = try XCTUnwrap(observed)
+        session.update(.init(text: "NEW TYPING"))
+        let cleared = try await session.clearBuffer(matchingRevision: saved)
+        XCTAssertFalse(cleared)
+        _ = try await session.persistBuffer()
+        let restored = try await buffer.load(target.identity)
+        XCTAssertEqual(restored?.text, "NEW TYPING")
+    }
+    func testRevokedOrChangedPrincipalSessionCannotSaveButDraftIsRetained() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let buffer = ComposeBufferStore(directory: directory), target = try scope()
+        let session = ComposeSession(scope: target, online: false, render: { _ in throw FiestaBoardError.networkUnavailable })
+        _ = try await session.bindBuffer(buffer); session.update(.init(text: "PRIVATE")); _ = try await session.persistBuffer()
+        await session.revokeBuffer(); session.update(.init(text: "AFTER REVOCATION"))
+        let rejected = try await session.persistBuffer()
+        XCTAssertNil(rejected)
+        let retained = try await buffer.load(target.identity)
+        XCTAssertEqual(retained?.text, "PRIVATE")
+        let other = try scope(hub: "https://other.test")
+        session.changeScope(other)
+        XCTAssertEqual(session.input.text, "")
+        let rejectedAgain = try await session.persistBuffer()
+        XCTAssertNil(rejectedAgain)
+    }
+    func testFreshWriterContinuesDurableRevisionAfterRelaunchAndClearCannotResurrect() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let buffer = ComposeBufferStore(directory: directory), target = try scope(), lease = try await buffer.open(target.identity)
+        _ = try await buffer.save(.init(identity: target.identity, revision: 50, text: "OLD"), using: lease)
+        let session = ComposeSession(scope: target, online: false, render: { _ in throw FiestaBoardError.networkUnavailable })
+        _ = try await session.bindBuffer(buffer); session.update(.init(text: "NEW"))
+        let observed = try await session.persistBuffer(), saved = try XCTUnwrap(observed)
+        XCTAssertGreaterThan(saved, 50)
+        let cleared = try await session.clearBuffer(matchingRevision: saved)
+        XCTAssertTrue(cleared)
+        let late = try await session.persistBuffer(), restored = try await buffer.load(target.identity)
+        XCTAssertNil(late); XCTAssertNil(restored)
+    }
+}
