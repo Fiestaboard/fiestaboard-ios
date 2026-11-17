@@ -17,6 +17,10 @@ public enum ConnectionPhase: Sendable, Equatable {
     case picker, checking, unreachable, authentication(BootstrapPhase), connected
 }
 
+public enum WebSetupReturn: Sendable, Equatable {
+    case none, awaitingReturn, checking, incomplete, finished, unconfirmed
+}
+
 /// One window's onboarding intent. Secrets never enter the catalog or preferences.
 @MainActor public final class ConnectionModel: ObservableObject {
     @Published public private(set) var phase: ConnectionPhase = .picker
@@ -28,6 +32,8 @@ public enum ConnectionPhase: Sendable, Equatable {
     @Published public private(set) var hubDiscoveryFlow = HubDiscoveryFlow()
     @Published public private(set) var message: String?
     @Published public private(set) var loginRetryDeadline: LoginRetryDeadline?
+    @Published public private(set) var signInPasswordRejected = false
+    @Published public private(set) var setupWebReturn: WebSetupReturn = .none
     @Published public private(set) var busy = false
     @Published public private(set) var requiresStateCheck = false
     @Published public private(set) var requiresSetupProof = false
@@ -197,8 +203,23 @@ public enum ConnectionPhase: Sendable, Equatable {
                 return
             }
             snapshot = result; requiresStateCheck = false
+            if setupWebReturn == .checking {
+                setupWebReturn = result.phase == .ready || result.phase == .signIn ? .finished : .incomplete
+            }
             await route(service, token: token)
         }
+    }
+    public func beginWebSetup() -> URL? {
+        guard !busy, !requiresStateCheck,
+              phase == .authentication(.chooseAuthentication) || phase == .authentication(.setupAdministrator),
+              let snapshot, let url = URL(string: snapshot.deployment.description) else { return nil }
+        setupWebReturn = .awaitingReturn
+        return url
+    }
+    @discardableResult public func returnFromWebSetup() -> Task<Void, Never> {
+        guard setupWebReturn == .awaitingReturn, !busy, service != nil else { return Task {} }
+        setupWebReturn = .checking
+        return checkServerState()
     }
     @discardableResult public func signIn() -> Task<Void, Never> {
         let secret = password; password = ""; setupToken = ""
@@ -211,7 +232,7 @@ public enum ConnectionPhase: Sendable, Equatable {
     public func beginPasswordReset() {
         guard phase == .authentication(.signIn), !busy, !requiresStateCheck else { return }
         clearResetSecrets(); password = ""; setupToken = ""
-        resetIntent = UUID(); passwordResetFlow = PasswordResetFlow(); message = nil; validationFields = []
+        resetIntent = UUID(); passwordResetFlow = PasswordResetFlow(); message = nil; validationFields = []; signInPasswordRejected = false
     }
     public func enterPasswordResetCode() { passwordResetFlow?.enterCode() }
     @discardableResult public func submitPasswordReset() -> Task<Void, Never> {
@@ -284,7 +305,7 @@ public enum ConnectionPhase: Sendable, Equatable {
         }
     }
     private func run(_ action: @escaping @MainActor (UUID) async throws -> Void) -> Task<Void, Never> {
-        busy = true; message = nil; validationFields = []
+        busy = true; message = nil; validationFields = []; signInPasswordRejected = false
         let token = generation
         let task = Task { [weak self] in
             do {
@@ -295,8 +316,10 @@ public enum ConnectionPhase: Sendable, Equatable {
             catch {
                 guard let self, valid(token) else { return }
                 message = safe(error)
+                if setupWebReturn == .checking { setupWebReturn = .unconfirmed }
                 if (error as? FiestaBoardError) == .setupProofRequired { requiresSetupProof = true }
                 if let known = error as? FiestaBoardError {
+                    if known == .invalidCredentials { signInPasswordRejected = true }
                     if case .rateLimited(let seconds) = known,
                        let deployment = service?.deployment,
                        let deadline = LoginRetryDeadline(retryAfterSeconds: seconds, receivedAt: now()) {
@@ -358,6 +381,7 @@ public enum ConnectionPhase: Sendable, Equatable {
         if let old, !ownedByStore { cleanupTask = Task { await previous?.value; await old.disconnect() } }
         service = nil; handedToStore = false; snapshot = nil
         loginRetryDeadline = nil
+        signInPasswordRejected = false; setupWebReturn = .none
         busy = false; phase = .picker; password = ""; setupToken = ""; rememberMe = false
         requiresStateCheck = false; requiresSetupProof = false; validationFields = []; persistence = .init(); message = nil
     }
@@ -376,6 +400,7 @@ public enum ConnectionPhase: Sendable, Equatable {
         generation = UUID(); operation?.cancel(); operation = nil; stopDiscovery()
         service = nil; handedToStore = false; snapshot = nil; phase = .picker
         loginRetryDeadline = nil
+        signInPasswordRejected = false; setupWebReturn = .none
         busy = false; password = ""; setupToken = ""; rememberMe = false; persistence = .init()
         let logout = store.logout()
         return Task { await logout.value; await removeSnapshot(for: hub) }
