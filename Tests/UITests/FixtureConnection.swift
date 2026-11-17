@@ -30,6 +30,14 @@ extension XCTestCase {
         for _ in 0..<3 {
             if picker.label.contains(display) { return }
             guard XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: actionable, object: item)], timeout: 5) == .completed else {
+                let state = XCTAttachment(string: app.debugDescription)
+                state.name = "display-selection-disabled-menu-AX"
+                state.lifetime = .keepAlways
+                add(state)
+                let screen = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+                screen.name = "display-selection-disabled-menu-screen"
+                screen.lifetime = .keepAlways
+                add(screen)
                 XCTFail("Display menu row must be enabled and visible: \(display)", file: file, line: line)
                 return
             }
