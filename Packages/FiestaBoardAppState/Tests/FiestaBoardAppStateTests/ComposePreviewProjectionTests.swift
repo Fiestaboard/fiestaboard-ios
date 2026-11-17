@@ -20,7 +20,7 @@ final class ComposePreviewProjectionTests: XCTestCase {
         XCTAssertEqual(projection.frame.message, "{red:ABCDEFGH}")
         let raster = LedRasterizer.raster(projection.frame, model: projection.model)
         XCTAssertEqual(raster.width, 32); XCTAssertEqual(raster.height, 8)
-        XCTAssertTrue(raster.pixels.contains(0xff0000))
+        XCTAssertTrue(raster.pixels.contains(0xeb4034), "Named red uses the audited FiestaUI/backend palette")
         XCTAssertFalse(raster.pixels.contains(0xffffff), "Rich red markup must not become flattened white text")
     }
     func testActualLegacyOverlayIsProjectedIntoBoardViewportFrame() throws {
