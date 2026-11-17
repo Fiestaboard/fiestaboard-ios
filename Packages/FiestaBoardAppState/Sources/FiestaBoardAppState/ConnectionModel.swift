@@ -6,7 +6,11 @@ import FiestaBoardKit
 /// Constructing it performs no storage, network, or vault access.
 public struct ConnectionPersistence: Sendable {
     public let catalog: ServerCatalog
-    public init(directory: URL) { catalog = ServerCatalog(directory: directory) }
+    public let snapshots: ShellSnapshotStore
+    public init(directory: URL) {
+        catalog = ServerCatalog(directory: directory)
+        snapshots = ShellSnapshotStore(directory: directory.appendingPathComponent("Snapshots", isDirectory: true))
+    }
 }
 
 public enum ConnectionPhase: Sendable, Equatable {
@@ -27,6 +31,9 @@ public enum ConnectionPhase: Sendable, Equatable {
     @Published public private(set) var requiresSetupProof = false
     @Published public private(set) var validationFields: [ValidationField] = []
     @Published public private(set) var persistence = SessionPersistenceState()
+    @Published public private(set) var snapshotLease: ShellSnapshotLease?
+    private let snapshots: ShellSnapshotStore?
+    private var snapshotConsentEpoch: UInt64 = 0
     @Published public var address = ""
     @Published public var allowLocalHTTP = false
     @Published public var username = ""
@@ -50,9 +57,9 @@ public enum ConnectionPhase: Sendable, Equatable {
     private let selectedKey = "FiestaBoard.selectedServerID"
 
     public init(store: BoardStore, catalog: ServerCatalog, discovery: any ServerDiscovering,
-                preferences: UserDefaults, serviceFactory: @escaping @Sendable (DeploymentURL) -> any FiestaBoardService) {
+                preferences: UserDefaults, snapshots: ShellSnapshotStore? = nil, serviceFactory: @escaping @Sendable (DeploymentURL) -> any FiestaBoardService) {
         self.store = store; self.catalog = catalog; self.discovery = discovery
-        self.preferences = preferences; factory = serviceFactory
+        self.preferences = preferences; self.snapshots = snapshots; factory = serviceFactory
     }
     @discardableResult public func start() -> Task<Void, Never> {
         return Task { await reloadCatalog() }
@@ -127,6 +134,10 @@ public enum ConnectionPhase: Sendable, Equatable {
                 await route(next, token: token)
             } catch {
                 guard valid(token) else { return }
+                if case .identityChanged = error as? ServerCatalogError {
+                    invalidateSnapshotSession(); await removeSnapshot(for: selected)
+                    guard valid(token) else { return }
+                }
                 phase = knownRecordCanRetry(error) ? .unreachable : .picker
                 snapshot = nil; message = safe(error)
             }
@@ -148,6 +159,8 @@ public enum ConnectionPhase: Sendable, Equatable {
             let result = try await service.bootstrap()
             guard valid(token) else { return }
             if let known = selected?.installationID, known != result.identity.installationID {
+                invalidateSnapshotSession(); await removeSnapshot(for: selected)
+                guard valid(token) else { return }
                 cancel()
                 message = "This address identifies a different FiestaBoard installation. Remove the saved server and forget its sign-in before adding it again."
                 return
@@ -216,7 +229,11 @@ public enum ConnectionPhase: Sendable, Equatable {
     }
     private func route(_ next: any FiestaBoardService, token: UUID) async {
         guard valid(token), let snapshot else { return }
-        if snapshot.phase != .ready { phase = .authentication(snapshot.phase); return }
+        if snapshot.phase != .ready {
+            invalidateSnapshotSession(); await removeSnapshot(for: selected)
+            guard valid(token) else { return }
+            phase = .authentication(snapshot.phase); return
+        }
         if handedToStore && store.hasRetainedService {
             // A required shell read may fail after authentication succeeded. Retry that retained actor without retiring its cookie.
             await store.reconnect(allowCandidateWrites: true, preferredBoardID: selected?.preferredBoardID).value
@@ -225,10 +242,13 @@ public enum ConnectionPhase: Sendable, Equatable {
             await store.connect(next, allowCandidateWrites: true, preferredBoardID: selected?.preferredBoardID).value
         }
         guard valid(token) else { return }
-        if store.status != nil { phase = .connected }
-        else {
+        if store.status != nil {
+            phase = .connected
+            await beginSnapshotSession(token: token)
+        } else {
             message = store.message
             phase = selected != nil && store.hubReachable == false ? .unreachable : .authentication(.signIn)
+            if phase != .unreachable { invalidateSnapshotSession(); await removeSnapshot(for: selected) }
         }
     }
     private func associate(_ next: any FiestaBoardService, token: UUID) async throws {
@@ -241,6 +261,7 @@ public enum ConnectionPhase: Sendable, Equatable {
         await reloadCatalog()
     }
     public func cancel() {
+        invalidateSnapshotSession()
         generation = UUID(); operation?.cancel(); operation = nil; stopDiscovery()
         let old = service, ownedByStore = handedToStore, previous = cleanupTask
         store.disconnect()
@@ -250,24 +271,34 @@ public enum ConnectionPhase: Sendable, Equatable {
         requiresStateCheck = false; requiresSetupProof = false; validationFields = []; persistence = .init(); message = nil
     }
     public func disconnect() { cancel() }
-    public func storeConnectionChanged() {
-        guard phase == .connected, !store.connecting, store.status == nil else { return }
+    @discardableResult public func storeConnectionChanged() -> Task<Void, Never> {
+        guard phase == .connected, !store.connecting, store.status == nil else { return Task {} }
+        let hub = selected
+        invalidateSnapshotSession()
         phase = .authentication(.signIn); message = store.message
+        return Task { await removeSnapshot(for: hub) }
     }
     @discardableResult public func logout() -> Task<Void, Never> {
+        let hub = selected
+        invalidateSnapshotSession()
         generation = UUID(); operation?.cancel(); operation = nil; stopDiscovery()
         service = nil; handedToStore = false; snapshot = nil; phase = .picker
         busy = false; password = ""; setupToken = ""; rememberMe = false; persistence = .init()
-        return store.logout()
+        let logout = store.logout()
+        return Task { await logout.value; await removeSnapshot(for: hub) }
     }
     public func forgetSignIn() async {
         guard let service else { return }
-        let token = generation
+        let token = generation, hub = selected
+        invalidateSnapshotSession(); await removeSnapshot(for: hub)
+        guard valid(token) else { return }
         await service.forgetRememberedSession()
         let state = await service.sessionPersistenceState()
         guard valid(token) else { return }; persistence = state
     }
     public func removeServer(_ server: SavedServer) async {
+        if selected?.id == server.id { invalidateSnapshotSession() }
+        await removeSnapshot(for: server)
         // Prefer this window's captured lease. For an unselected server, confirmation starts a new forget intent.
         let next: any FiestaBoardService
         if let service, service.deployment == server.deployment { next = service }
@@ -293,6 +324,21 @@ public enum ConnectionPhase: Sendable, Equatable {
             let saved = try await catalog.upsert(record)
             guard valid(token) else { return }; selected = saved; await reloadCatalog()
         } catch { if valid(token) { message = safe(error) } }
+    }
+    private func invalidateSnapshotSession() { snapshotConsentEpoch &+= 1; snapshotLease = nil }
+    private func beginSnapshotSession(token: UUID) async {
+        guard let snapshots, let hub = selected else { return }
+        let consent = snapshotConsentEpoch
+        do {
+            let lease = try await snapshots.beginSession(for: hub)
+            guard valid(token), consent == snapshotConsentEpoch else { try? await snapshots.revoke(lease); return }
+            snapshotLease = lease
+        } catch { if valid(token) { snapshotLease = nil } }
+    }
+    private func removeSnapshot(for hub: SavedServer?) async {
+        guard let snapshots, let hub else { return }
+        do { try await snapshots.remove(hub) }
+        catch { if selected?.id == hub.id { message = "Cached content could not be cleared. Try again before leaving this device." } }
     }
     private func reloadCatalog() async {
         do {

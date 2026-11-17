@@ -1,11 +1,14 @@
-#if canImport(UIKit)
+#if canImport(UIKit) || canImport(AppKit)
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#endif
 import XCTest
 @testable import FiestaBoardRender
 
 @MainActor
 final class BoardViewportRenderTests: XCTestCase {
+    #if canImport(UIKit)
     func testBothTechnologiesAndWholeNotesRenderAtPhoneAndTabletWidths() throws {
         let models = [DisplayModel.flap(rows: 6, cols: 22),
             DisplayModel(summary: BoardSummaryFields(deviceType: "note_array", rows: 3, cols: 45), stored: nil),
@@ -36,6 +39,8 @@ final class BoardViewportRenderTests: XCTestCase {
         let image = RenderHarness.image(BoardCanvas(layout: layout), size: CGSize(width: 200, height: 100))
         XCTAssertNotNil(image.cgImage)
     }
+
+    #endif
 
     /// Draw cost is a frame budget check, not a physical display refresh measurement.
     /// The CI result remains authoritative; I26 measures actual hardware pacing.

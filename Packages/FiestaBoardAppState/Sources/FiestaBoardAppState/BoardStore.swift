@@ -375,7 +375,8 @@ public struct PreparedAction: Identifiable, Sendable {
     /// Called only by epoch-checked status polling within this package.
     func recordHubResponse(pathToken: UInt64) {
         guard status != nil, networkAvailable, pathToken == reachabilityEpoch else { return }
-        hubReachable = true; reachabilityRetryAt = nil
+        hubReachable = true
+        if reachabilityRetryAt.map({ now() >= $0 }) ?? true { reachabilityRetryAt = nil }
     }
     func recordHubReadFailure(_ error: any Error, pathToken: UInt64) {
         if error is CancellationError { return }

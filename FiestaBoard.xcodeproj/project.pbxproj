@@ -154,6 +154,7 @@
 		A5E1DD38233D7DB7E30F085D /* BoardTablesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC609C72CB7F40E61999B7DD /* BoardTablesTests.swift */; };
 		A70E31D28B677D7806B4D473 /* DrawMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = C038325A589937ADD54B59BD /* DrawMode.swift */; };
 		A97CAF91E95BBCD69379B79D /* MatrixPixelFrames.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD24039968B9260446818E7F /* MatrixPixelFrames.swift */; };
+		AA75BA9E4BB5C1C0CD278CA8 /* ShellDisplayAccessory.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2C74B35AFA538F804893482 /* ShellDisplayAccessory.swift */; };
 		AF24CF32AF3C33C9B63055CF /* FlapAtlasTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A04568998109174FE6CF424 /* FlapAtlasTests.swift */; };
 		B014F51E5F039C0FDD1CCF5F /* Catalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 614D7369EFE17A7F0CB19B83 /* Catalog.swift */; };
 		B0F8BE11DF65AC6C189F63DB /* BoardSpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 581F221F9A5F1033AD2FC07A /* BoardSpec.swift */; };
@@ -190,12 +191,14 @@
 		DE6EFCA3FA6FFDF71FDC8AB3 /* BoardFrame.swift in Sources */ = {isa = PBXBuildFile; fileRef = E749EBB3341BF783F8887540 /* BoardFrame.swift */; };
 		DEFC5055EE9E6A49BEB57D05 /* NativeTemplateTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D155B6CED8ADFAC77D0F0E6 /* NativeTemplateTextView.swift */; };
 		E05D4B423EE03A5812BAA09F /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3B380D9832C5FAA53AF1EDA /* SignInView.swift */; };
+		E0673BE54D2861B329A0BF65 /* ShellSnapshotStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5989BC20E04F5CF8DD4E4C07 /* ShellSnapshotStore.swift */; };
 		E196A0F1550B27C0AA0B9E10 /* GlassProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 289D38D82453F9F4D390146B /* GlassProbe.swift */; };
 		E1C6F0A591B4B27B2DF568B9 /* CanvasUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 329CB2667B0AF52C92B8C25F /* CanvasUITests.swift */; };
 		E25E72C83092855FF52C30D7 /* CanvasRevealGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82112BD5D96C1972DCA845D8 /* CanvasRevealGeometry.swift */; };
 		E30F7894CC2DE1EE719BFA9C /* FiestaBoardEditorState.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 0CE51B6E8E630F1CA0FAFFB0 /* FiestaBoardEditorState.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		E44ED4B01D237DB088168E47 /* FigmaNode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81E90191BA9A1E89316C89FC /* FigmaNode.swift */; };
 		E4E653C3C1172A9AF200939E /* ParityProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46C67A1E415B837C2FFE203D /* ParityProbe.swift */; };
+		E53B3752AC6D9CEAF06A8A80 /* ShellMoreRoot.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1412C3CA249ADAC6ED508BD /* ShellMoreRoot.swift */; };
 		E6BBBAB3BD99634882D9AAE5 /* Service.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F65FAC9659A00AF389AC325 /* Service.swift */; };
 		E72FF6F47E7D31900577B8CA /* BoardSpeech.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8E18FB72C4DF8369002FD5E /* BoardSpeech.swift */; };
 		E7E8ED86AAF5F1C711BE4712 /* FiestaTokens+Generated.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3651DAA2826C691CFBAD9F7 /* FiestaTokens+Generated.swift */; };
@@ -431,6 +434,7 @@
 		57E78CF28F4D305B7575EA9B /* CanvasShapesTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasShapesTab.swift; sourceTree = "<group>"; };
 		581F221F9A5F1033AD2FC07A /* BoardSpec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardSpec.swift; sourceTree = "<group>"; };
 		5893703E08C61625858B3AD5 /* iOS27 */ = {isa = PBXFileReference; lastKnownFileType = folder; name = iOS27; path = Tests/__Snapshots__/iOS27; sourceTree = SOURCE_ROOT; };
+		5989BC20E04F5CF8DD4E4C07 /* ShellSnapshotStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellSnapshotStore.swift; sourceTree = "<group>"; };
 		5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FiestaBoardKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		5A281EA3BF233973EA6278BB /* SavedHubsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SavedHubsStore.swift; sourceTree = "<group>"; };
 		5C4F0188E06EA6D06CB9C797 /* MatrixTransitionSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixTransitionSurface.swift; sourceTree = "<group>"; };
@@ -531,7 +535,9 @@
 		DD24039968B9260446818E7F /* MatrixPixelFrames.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MatrixPixelFrames.swift; sourceTree = "<group>"; };
 		DD6A6AC69EA2756D13DF6A50 /* BitmapCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitmapCapture.swift; sourceTree = "<group>"; };
 		E0EBDE35CC98E3503AD48784 /* LaunchUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchUITests.swift; sourceTree = "<group>"; };
+		E1412C3CA249ADAC6ED508BD /* ShellMoreRoot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellMoreRoot.swift; sourceTree = "<group>"; };
 		E27F4FC5A09E5E215D1C351A /* LedRasterizer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedRasterizer.swift; sourceTree = "<group>"; };
+		E2C74B35AFA538F804893482 /* ShellDisplayAccessory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellDisplayAccessory.swift; sourceTree = "<group>"; };
 		E560F163CC7CD3785EECA9FF /* FixtureRenderRoutes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureRenderRoutes.swift; sourceTree = "<group>"; };
 		E5F8903FDA40B3CA977BB2F9 /* BoardControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardControls.swift; sourceTree = "<group>"; };
 		E749EBB3341BF783F8887540 /* BoardFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardFrame.swift; sourceTree = "<group>"; };
@@ -719,6 +725,7 @@
 				25D509B9A9222E9426B8AD17 /* Service+Preview.swift */,
 				08A7CF83290AB187BA76D6AE /* Service+Status.swift */,
 				8D0769B4598394A149E221E8 /* SessionVault.swift */,
+				5989BC20E04F5CF8DD4E4C07 /* ShellSnapshotStore.swift */,
 				E86A00533E2B630F562A1AC0 /* Transport.swift */,
 			);
 			name = FiestaBoardKit;
@@ -994,6 +1001,8 @@
 			children = (
 				738025F2DFCF52B724839E1D /* ShellConnectionView.swift */,
 				0A41290E5CCF31930DEC8C2D /* ShellContainer.swift */,
+				E2C74B35AFA538F804893482 /* ShellDisplayAccessory.swift */,
+				E1412C3CA249ADAC6ED508BD /* ShellMoreRoot.swift */,
 				8EC4319060375B1C6504FA07 /* ShellNetwork.swift */,
 				BF43E217AEABB9DA88887736 /* ShellPalette.swift */,
 			);
@@ -1464,6 +1473,7 @@
 				00683140C3C4C853585275C3 /* Service+Status.swift in Sources */,
 				E6BBBAB3BD99634882D9AAE5 /* Service.swift in Sources */,
 				1DC85EC6AD31351DCF715362 /* SessionVault.swift in Sources */,
+				E0673BE54D2861B329A0BF65 /* ShellSnapshotStore.swift in Sources */,
 				2962C6835DC311B89804BF0E /* Transport.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1597,6 +1607,8 @@
 				759447EBBA7619627DABB4D0 /* SchedulesView.swift in Sources */,
 				A47924ACFEFBA3D71BF5F578 /* ShellConnectionView.swift in Sources */,
 				512F26AA466A4CDF30AD732B /* ShellContainer.swift in Sources */,
+				AA75BA9E4BB5C1C0CD278CA8 /* ShellDisplayAccessory.swift in Sources */,
+				E53B3752AC6D9CEAF06A8A80 /* ShellMoreRoot.swift in Sources */,
 				19217D9C712CBC19732C4674 /* ShellNetwork.swift in Sources */,
 				817EFCBD091002FE0C00C8EE /* ShellPalette.swift in Sources */,
 				E05D4B423EE03A5812BAA09F /* SignInView.swift in Sources */,

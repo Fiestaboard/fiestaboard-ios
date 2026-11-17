@@ -46,6 +46,7 @@ enum AppPersistence {
 private typealias DraftState<Value> = SwiftUI.State<Value>
 
 struct DraftScene: View {
+    private let snapshots: ShellSnapshotStore
     @StateObject private var store: BoardStore
     @StateObject private var connection: ConnectionModel
     @StateObject private var boardStatus: BoardStatus
@@ -54,9 +55,10 @@ struct DraftScene: View {
     @DraftState private var shellConnection = ShellConnection()
     @DraftState private var retryBackoff = ShellBackoff()
     @DraftState private var connectingSince: TimeInterval?
-    @DraftState private var cache = ShellCache<CachedShell>()
+    @DraftState private var cache = ShellCache<ShellSnapshot>()
     @DraftState private var now = Date().timeIntervalSince1970
     init(persistence: ConnectionPersistence) {
+        snapshots = persistence.snapshots
         let store = BoardStore()
         _store = StateObject(wrappedValue: store)
         _thumbnails = StateObject(wrappedValue: PageThumbnails(reader: {
@@ -67,7 +69,7 @@ struct DraftScene: View {
         }))
         _connection = StateObject(wrappedValue: ConnectionModel(
             store: store, catalog: persistence.catalog, discovery: BonjourServerDiscovery(),
-            preferences: AppPersistence.preferences, serviceFactory: {
+            preferences: AppPersistence.preferences, snapshots: persistence.snapshots, serviceFactory: {
                 let service = LiveFiestaBoardService(deployment: $0, vault: KeychainSessionVault(), clientMetadata: .init(deviceName: UIDevice.current.name))
                 StatusReaderRegistry.shared.register(service)
                 return service
@@ -105,10 +107,13 @@ struct DraftScene: View {
         }
         .onChange(of: shellHub) { _, _ in retryBackoff.reset(); observeConnection() }
         .onChange(of: connection.phase) { _, phase in
-            if phase == .checking { connectingSince = now }
+            if phase == .checking { connectingSince = now; restoreCache() }
             else { connectingSince = nil }
             if case .authentication = phase { cache.remove(for: connection.address); shellConnection = .init() }
-            if phase == .picker { shellConnection = .init() }
+            if phase == .picker { shellConnection = .init(); cache.remove(for: connection.address) }
+        }
+        .onChange(of: connection.snapshotLease) { _, lease in
+            if lease == nil { cache.remove(for: connection.address) } else { captureCache() }
         }
         .onChange(of: store.refreshing) { _, refreshing in
             if !refreshing && store.hubReachable == true { captureCache() }
@@ -169,11 +174,6 @@ struct DraftScene: View {
         }
     }
 
-    private struct CachedShell: Sendable {
-        let board: BoardDetail?
-        let display: String
-        let pages: [Page]
-    }
     private var shellHub: String { store.status == nil ? connection.address : store.connectionLabel }
     private var presentation: ShellConnection.Presentation {
         ShellConnection.presentation(pathAvailable: network.available, hubReachable: store.hubReachable == true,
@@ -183,9 +183,23 @@ struct DraftScene: View {
         shellConnection.observe(pathAvailable: network.available, hubReachable: store.hubReachable == true, hub: shellHub)
     }
     private func captureCache() {
-        guard store.status != nil else { return }
-        cache.store(CachedShell(board: store.board, display: store.boards.first { $0.id == store.selectedBoardID }?.name ?? "", pages: store.pages),
-                    for: store.connectionLabel, at: now)
+        guard store.status != nil, connection.phase == .connected, let hub = connection.selectedSavedHub,
+              let lease = connection.snapshotLease, hub.deployment.description == store.connectionLabel else { return }
+        let snapshot = ShellSnapshot(hub: hub, capturedAt: Date(timeIntervalSince1970: now), board: store.board,
+                                     displayName: store.boards.first { $0.id == store.selectedBoardID }?.name ?? "",
+                                     pages: store.pages.map { .init(id: $0.id, name: $0.name) })
+        cache.store(snapshot, for: store.connectionLabel, at: now)
+        Task { _ = try? await snapshots.write(snapshot, lease: lease) }
+    }
+    private func restoreCache() {
+        guard let hub = connection.selectedSavedHub else { return }
+        let date = Date(timeIntervalSince1970: now)
+        Task {
+            guard let snapshot = try? await snapshots.read(for: hub, at: date),
+                  connection.selectedSavedHub?.id == hub.id,
+                  connection.phase == .checking || connection.phase == .unreachable else { return }
+            cache.store(snapshot, for: hub.deployment.description, at: snapshot.capturedAt.timeIntervalSince1970)
+        }
     }
     @ViewBuilder private func shellDestination(_ route: ShellTab) -> some View {
         if (connection.phase == .checking || connection.phase == .unreachable) && route == .more {
@@ -199,7 +213,7 @@ struct DraftScene: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Updating…").font(.callout)
-                            Text(cached.display).font(.title)
+                            Text(cached.displayName).font(.title)
                             if let detail = cached.board {
                                 BoardViewport(frame: BoardFrame(detail), model: DisplayModel(summary: BoardSummaryFields(detail.summary), stored: nil))
                             }
@@ -296,6 +310,7 @@ struct DraftScene: View {
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
                         NavigationLink { CollectionsView(store: store) } label: { Label("Collections", systemImage: "rectangle.stack") }
+                            .accessibilityIdentifier("shellCollections")
                     }
                 }
         }
@@ -316,102 +331,38 @@ struct DraftScene: View {
         let saved = connection.selectedSavedHub ?? connection.savedServers.first { $0.deployment.description == store.connectionLabel }
         return saved?.alias.isEmpty == false ? saved!.alias : "FiestaBoard hub"
     }
-    private var displayAccessory: some View {
-        Menu {
-            Section {
-                Text(activeHubName)
-                Text(store.connectionLabel)
-            }
-            ForEach(store.boards) { display in
-                Button { store.selectBoard(display.id) } label: {
-                    if display.id == store.selectedBoardID { Label(display.name, systemImage: "checkmark") }
-                    else { Text(display.name) }
-                }
-                .disabled(store.connecting || store.commandBusy)
-            }
-        } label: {
-            HStack {
-                Image(systemName: "rectangle.on.rectangle")
-                VStack(alignment: .leading) {
-                    Text("Now showing · " + (boardStatus.nowShowing?.name ?? "No page selected"))
-                        .font(.subheadline)
-                    Text(store.boards.first { $0.id == store.selectedBoardID }?.name ?? "No display selected")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                Spacer()
-                Image(systemName: "chevron.up.chevron.down")
-            }.padding(.horizontal)
+    @ViewBuilder private var displayAccessory: some View {
+        if store.selectedBoardID != nil {
+            ShellDisplayAccessory(displays: store.boards, selectedID: store.selectedBoardID, nowShowing: boardStatus.nowShowing?.name,
+                                  hubName: activeHubName, host: shellHub, disabled: store.connecting || store.commandBusy,
+                                  select: { store.selectBoard($0) })
+        } else if let cached = cache.value(for: shellHub, at: now), let board = cached.board {
+            ShellDisplayAccessory(displays: [board.summary], selectedID: board.summary.id,
+                                  nowShowing: cached.pages.first { $0.id == board.activePageID }?.name,
+                                  hubName: activeHubName, host: shellHub, disabled: true, select: { _ in })
         }
-        .accessibilityIdentifier("shellDisplaySwitcher")
     }
     private var more: some View {
         NavigationStack {
-            List {
-                Section {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(activeHubName).font(.headline)
-                        Text(store.connectionLabel).font(.subheadline).foregroundStyle(.secondary)
-                    }
-                    NavigationLink { settings } label: {
-                        Label(connection.snapshot?.auth.username ?? "Account", systemImage: "person.crop.circle")
-                    }
-                    Button {} label: { Label("FiestaBot", systemImage: "sparkles") }.disabled(true)
-                }
-                Section("Hub") {
-                    Button {} label: { Label("Network", systemImage: "wifi") }.disabled(true)
-                    Button {} label: { Label("AI provider", systemImage: "sparkles") }.disabled(true)
-                    Button {} label: { Label("System & backups", systemImage: "externaldrive") }.disabled(true)
-                    Button {} label: { Label("Language & time", systemImage: "clock") }.disabled(true)
-                    NavigationLink { hubs } label: {
-                        LabeledContent { Text("\(connection.savedServers.count) saved") } label: { Label("Hubs", systemImage: "externaldrive.connected.to.line.below") }
-                    }.accessibilityIdentifier("shellHubs")
-                }
-                Section("Manage") {
-                    NavigationLink { displays } label: { Label("Displays", systemImage: "rectangle.on.rectangle") }
-                    Button {} label: { Label("Integrations", systemImage: "puzzlepiece.extension") }.disabled(true)
-                }
-                Section("Help") {
-                    NavigationLink("About") {
-                        ScrollView { Text(licenseText).font(.footnote.monospaced()).padding().textSelection(.enabled) }
-                            .navigationTitle("About")
-                    }
-                }
+            ShellMoreRoot(hubName: activeHubName, host: shellHub, username: connection.snapshot?.auth.username,
+                          savedCount: connection.savedServers.count, openDisplays: { tab = .displays },
+                          account: { settings }, hubs: { hubs }) {
+                ScrollView { Text(licenseText).font(.footnote.monospaced()).padding().textSelection(.enabled) }
+                    .navigationTitle("About")
             }
-            .scrollContentBackground(.hidden)
-            .background(palette.background)
-            .navigationTitle("More")
         }
     }
     private var hubs: some View {
-        List {
-            Section {
-                ForEach(connection.savedServers) { hub in
-                    Button { connection.selectSaved(hub) } label: {
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text(hub.alias.isEmpty ? hub.deployment.description : hub.alias)
-                                Text(hub.deployment.description).font(.caption).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            if hub.deployment.description == store.connectionLabel {
-                                Label("Active", systemImage: "checkmark").font(.caption)
-                            }
-                        }
-                    }
-                    .disabled(connection.busy)
-                }
-                Button("Add a hub") { connection.disconnect(); connection.address = ""; addingHub = true }.accessibilityIdentifier("shellAddHub")
-            } footer: {
-                Text("Each hub keeps its own sign-in and selected display.")
-            }
-        }
-        .navigationTitle("Hubs")
+        ShellHubsView(hubs: connection.savedServers, activeDeployment: store.connectionLabel, busy: connection.busy,
+                      select: { connection.selectSaved($0) }, add: {
+            connection.disconnect(); connection.address = ""; connection.alias = ""; connection.username = ""
+            connection.allowLocalHTTP = false; addingHub = true
+        })
         .sheet(isPresented: $addingHub) { ConnectionView(model: connection, store: store) }
         .onChange(of: connection.phase) { _, phase in if phase == .connected { addingHub = false } }
     }
     private var settings: some View {
-        NavigationStack {
-            Form {
+        Form {
                 Section("Connection") {
                     connectionBanner
                     LabeledContent("Version", value: store.status?.version.displayedVersion ?? "Unknown")
@@ -437,7 +388,6 @@ struct DraftScene: View {
                     }
                 }
             }.frame(maxWidth: 1000).frame(maxWidth: .infinity).navigationTitle("Settings")
-        }
     }
     private var licenseText: String {
         guard let url = Bundle.main.url(forResource: "FiestaBoardTV-MIT", withExtension: "txt"),

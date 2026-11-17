@@ -19,9 +19,10 @@ import XCTest
     static var osMajor: Int { ProcessInfo.processInfo.operatingSystemVersion.majorVersion }
 
     static func image<V: View>(_ view: V, device: Device = .current,
-                              appearance: ColorScheme = .light,
+                              size: CGSize? = nil, appearance: ColorScheme = .light,
                               dynamicType: DynamicTypeSize = .large,
                               inspect: ((UIWindow) -> Void)? = nil) -> UIImage {
+        let renderSize = size ?? device.size
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "America/Los_Angeles")!
         let host = UIHostingController(rootView: view
@@ -33,7 +34,7 @@ import XCTest
             .environment(\._accessibilityReduceMotion, true)
             .environment(\.parityDate, frozenDate)
             .transaction { $0.disablesAnimations = true })
-        host.view.frame = CGRect(origin: .zero, size: device.size)
+        host.view.frame = CGRect(origin: .zero, size: renderSize)
         let window = UIWindow(frame: host.view.frame)
         window.overrideUserInterfaceStyle = appearance == .dark ? .dark : .light
         window.rootViewController = host
@@ -48,7 +49,7 @@ import XCTest
         format.scale = device.scale
         format.opaque = true
         format.preferredRange = .standard
-        let image = UIGraphicsImageRenderer(size: device.size, format: format).image { _ in
+        let image = UIGraphicsImageRenderer(size: renderSize, format: format).image { _ in
             host.view.drawHierarchy(in: host.view.bounds, afterScreenUpdates: true)
         }
         window.isHidden = true
