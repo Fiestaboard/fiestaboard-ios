@@ -484,7 +484,7 @@ public actor LiveFiestaBoardService: FiestaBoardService, ComposePrincipalProvidi
         let body = try request.encoded()
         consumedComposeRequests.insert(request.requestID)
         let result = try await response(APIRequest(.post, path: ["v1", "boards", request.target.boardID, "compose"],
-            body: body, cachePolicy: .noStore))
+            body: body, cachePolicy: .noStore, composePrincipalProof: request.principal))
         guard token == generation else { throw FiestaBoardError.staleSession }
         _ = try await requireCompose(request, writing: true)
         return try ComposeReceipt(rawData: result.data, httpStatus: result.status, expectedBoardID: request.target.boardID,
@@ -493,7 +493,7 @@ public actor LiveFiestaBoardService: FiestaBoardService, ComposePrincipalProvidi
     public func previewCompose(_ request: ComposeRequest) async throws -> TemplatePreviewResult {
         let token = try await requireCompose(request, writing: false)
         let result = try await response(APIRequest(.post, path: ["templates", "render"],
-            body: try request.previewEncoded(), cachePolicy: .noStore))
+            body: try request.previewEncoded(), cachePolicy: .noStore, composePrincipalProof: request.principal))
         guard token == generation else { throw FiestaBoardError.staleSession }
         _ = try await requireCompose(request, writing: false)
         guard result.status == 200 else { throw FiestaBoardError.invalidResponse }

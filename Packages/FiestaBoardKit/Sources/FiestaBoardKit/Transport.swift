@@ -17,14 +17,18 @@ public struct APIRequest: Sendable {
     public let timeout: TimeInterval
     public let context: APIRequestContext
     public let cachePolicy: APIRequestCachePolicy
+    /// Nonsecret scope checked after the transport budget, immediately before
+    /// dispatching the separately audited Compose read/mutation.
+    public let composePrincipalProof: ComposePrincipalProof?
     /// The bounded evaluation POSTs (and the page-thumbnail batch render) never
     /// write a page or send to hardware.
     public var isMutation: Bool {
         method != .get && !(method == .post && (path == ["templates", "validate"] || path == ["templates", "render"] || path == ["pages", "preview", "flexible"] || path == ["pages", "preview", "batch"]))
     }
-    public init(_ method: Method = .get, path: [String], body: Data? = nil, timeout: TimeInterval = 20, queryItems: [URLQueryItem] = [], context: APIRequestContext = .standard, cachePolicy: APIRequestCachePolicy = .default) {
+    public init(_ method: Method = .get, path: [String], body: Data? = nil, timeout: TimeInterval = 20, queryItems: [URLQueryItem] = [], context: APIRequestContext = .standard, cachePolicy: APIRequestCachePolicy = .default, composePrincipalProof: ComposePrincipalProof? = nil) {
         self.method = method; self.path = path; self.body = body; self.timeout = timeout; self.queryItems = queryItems
         self.context = context; self.cachePolicy = cachePolicy
+        self.composePrincipalProof = composePrincipalProof
     }
 }
 public struct APIResponse: Sendable {
@@ -339,6 +343,11 @@ public actor URLSessionTransport: APITransport {
 
     private func performSend(_ request: APIRequest, expectedGeneration: UInt64) async throws -> APIResponse {
         guard expectedGeneration == generation, !revoking || (request.method == .delete && request.path == ["auth", "device", "session"]) else { throw FiestaBoardError.staleSession }
+        if let proof = request.composePrincipalProof {
+            let epoch = persistenceEpoch
+            guard await ownsComposePrincipal(proof), expectedGeneration == generation,
+                  epoch == persistenceEpoch else { throw FiestaBoardError.staleSession }
+        }
         try Task.checkCancellation()
         let headers = try request.boundedHeaders()
         let currentGeneration = generation
