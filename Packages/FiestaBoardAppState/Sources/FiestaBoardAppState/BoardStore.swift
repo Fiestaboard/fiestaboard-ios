@@ -158,6 +158,9 @@ public struct PreparedAction: Identifiable, Sendable {
     @Published private var inFlight: Set<BoardTarget> = []
     private var usedActions: Set<UUID> = []
     public var commandBusy: Bool { target.map { inFlight.contains($0) } ?? false }
+    /// Target changes cancel the prior read and reject its late result by generation.
+    /// A background poll must not disable a menu that the user has already opened.
+    public var canSelectBoard: Bool { !connecting && !commandBusy && boards.count > 1 }
     public var canWrite: Bool {
         board != nil && status != nil && status?.access != .readOnly && target != nil && !connecting && !refreshing && !commandBusy && !needsReadback && pageLibrary?.busy != true && pageLibrary?.needsReview != true
     }
