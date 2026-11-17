@@ -78,6 +78,38 @@ import FiestaBoardKit
 }
 
 extension HomeUndoStateTests {
+    func testSlowMandatoryReadbackStartsOneNonrenewableFiveSecondWindowAtPresentation() async throws {
+        var now = Date()
+        let service = try FixtureFiestaBoardService(homeAudit:true)
+        await service.configureUndo(supported:true,expiresAt:now.addingTimeInterval(30))
+        let store = BoardStore(now:{now}); await store.connect(service).value
+        await store.refreshHomeUndoCapability().value
+        await service.configureHome(delayedReadback:true)
+        let cancel = store.confirm(try XCTUnwrap(store.prepare(.homeCancelOverride)))
+        await service.waitForHomeRead()
+        XCTAssertFalse(store.canUndoHomeOverride)
+        now = now.addingTimeInterval(8)
+        await service.releaseHomeRead(); await cancel.value
+        XCTAssertTrue(store.canUndoHomeOverride,"The full UI window follows successful mandatory readback")
+        now = now.addingTimeInterval(4)
+        await store.refresh().value
+        XCTAssertTrue(store.canUndoHomeOverride)
+        now = now.addingTimeInterval(2)
+        XCTAssertFalse(store.canUndoHomeOverride,"Refreshing must not renew the presented window")
+    }
+    func testRecoveringFailedCancelReadbackPresentsStillValidUndoToast() async throws {
+        let now = Date(), service = try FixtureFiestaBoardService(homeAudit:true)
+        await service.configureUndo(supported:true,expiresAt:now.addingTimeInterval(30))
+        let store = BoardStore(now:{now}); await store.connect(service).value
+        await store.refreshHomeUndoCapability().value
+        let status = BoardStatus(store:store,reader:{service})
+        await service.configureHome(readbackFailure:.networkUnavailable)
+        await status.clearTemporaryOverride()
+        XCTAssertEqual(status.homeControlOutcome,.readbackRequired)
+        await status.refreshHomeControlState()
+        XCTAssertTrue(status.canUndoOverride)
+        XCTAssertEqual(status.homeControlOutcome,.overrideCanceled,"Recovery needs a fresh result toast with the still-valid receipt")
+    }
     func testCanceledCapabilityReadCannotGrantAuthorityAfterPollOwnerStops() async throws {
         let service = try FixtureFiestaBoardService(homeAudit:true)
         await service.configureUndo(supported:true,expiresAt:Date().addingTimeInterval(30))

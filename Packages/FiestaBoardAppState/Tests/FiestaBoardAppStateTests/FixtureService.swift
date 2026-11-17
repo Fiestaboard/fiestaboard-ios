@@ -17,6 +17,7 @@ public actor FixtureFiestaBoardService: FiestaBoardService {
     private var homeStartWaiter: CheckedContinuation<Void, Never>?
     private var homeRelease: CheckedContinuation<Void, Never>?
     private var homeFailReadback: FiestaBoardError?
+    private var homeDelayReadback = false
     private var nextHomeReadFailure: FiestaBoardError?
     private var delayAnyHomeRead = false
     private var homeReadStarted = false
@@ -386,8 +387,8 @@ extension FixtureFiestaBoardService: TemporaryOverrideClearing, HomePageSelectin
         return try JSONDecoder().decode(HomeOverrideStatus.self, from: JSONSerialization.data(withJSONObject:
             ["undo_supported":true,"active":true,"board_id":boardID]))
     }
-    func configureHome(failure: FiestaBoardError? = nil, delayed: Bool = false, readbackFailure: FiestaBoardError? = nil) {
-        homeFailure = failure; homeDelayed = delayed; homeFailReadback = readbackFailure; homeStarted = false
+    func configureHome(failure: FiestaBoardError? = nil, delayed: Bool = false, readbackFailure: FiestaBoardError? = nil, delayedReadback: Bool = false) {
+        homeFailure = failure; homeDelayed = delayed; homeFailReadback = readbackFailure; homeStarted = false; homeDelayReadback = delayedReadback
     }
     func configureNextHomeRead(failure: FiestaBoardError? = nil, delayed: Bool = false) {
         nextHomeReadFailure = failure; delayAnyHomeRead = delayed
@@ -408,6 +409,7 @@ extension FixtureFiestaBoardService: TemporaryOverrideClearing, HomePageSelectin
         if homeDelayed { await withCheckedContinuation { homeRelease = $0 } }
         if let error = homeFailure { homeFailure = nil; throw error }
         nextHomeReadFailure = homeFailReadback; homeFailReadback = nil
+        if homeDelayReadback { delayAnyHomeRead = true; homeDelayReadback = false }
     }
     public func clearTemporaryOverride(boardID: String) async throws {
         canceledBoards.append(boardID); try await homeMutation()
