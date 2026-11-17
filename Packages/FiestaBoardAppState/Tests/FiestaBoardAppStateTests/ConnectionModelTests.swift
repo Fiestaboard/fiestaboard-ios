@@ -1,5 +1,5 @@
 import XCTest
-import FiestaBoardKit
+@testable import FiestaBoardKit
 @testable import FiestaBoardAppState
 
 @MainActor final class ConnectionModelTests: XCTestCase {
@@ -251,11 +251,26 @@ private struct EmptyDiscovery: ServerDiscovering {
     func candidates() -> AsyncThrowingStream<DiscoveredServer, Error> { AsyncThrowingStream { $0.finish() } }
     func snapshots() -> AsyncThrowingStream<[DiscoveredServer], Error> { AsyncThrowingStream { $0.finish() } }
 }
-private actor OnboardingService: FiestaBoardService {
+private actor OnboardingService: FiestaBoardService, ComposePrincipalProviding {
     nonisolated let deployment: DeploymentURL
     nonisolated let isDemo = false
     let demo: FixtureFiestaBoardService
     var events: [String] = []
+    var suppliedComposePrincipal: ComposePrincipalProof?
+    func supplyComposePrincipal(_ proof: ComposePrincipalProof?) { suppliedComposePrincipal = proof }
+    func composePrincipal() -> ComposePrincipalProof? { suppliedComposePrincipal?.verifiedOnline == true ? suppliedComposePrincipal : nil }
+    private var composeProofBlocked = false
+    private var composeProofGate: CheckedContinuation<Void, Never>?
+    private var composeProofObserver: CheckedContinuation<Void, Never>?
+    func blockComposeProof() { composeProofBlocked = true }
+    func waitForComposeProof() async { if composeProofGate != nil { return }; await withCheckedContinuation { composeProofObserver = $0 } }
+    func releaseComposeProof() { composeProofGate?.resume(); composeProofGate = nil }
+    func rememberedComposePrincipal(installationID: String) async -> ComposePrincipalProof? {
+        if composeProofBlocked { await withCheckedContinuation { composeProofGate = $0; composeProofObserver?.resume(); composeProofObserver = nil } }
+        guard let proof = suppliedComposePrincipal, !proof.verifiedOnline,
+              Data(proof.identity.installationID.utf8) == Data(installationID.utf8) else { return nil }
+        return proof
+    }
     var installation = "installation"
     func changeInstallation(_ value: String) { installation = value }
     var auth = AuthStatus(enabled: true, setupRequired: false, authenticated: false)
@@ -445,5 +460,58 @@ extension ConnectionModelTests {
             do { _ = try await store.readbackCollection(context: collection.context); XCTFail("Durable scope must not revive an old live context") }
             catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
         }
+    }
+}
+
+
+extension ConnectionModelTests {
+    func testKnownOfflineHubPublishesOnlyProtectedRememberedComposeIdentity() async throws {
+        let service = try OnboardingService(), model = model(service)
+        let proof = ComposePrincipalProof(deployment: service.deployment, installationID: "installation",
+            principalID: "verified-user", connectionID: UUID(), verifiedOnline: false)
+        await service.supplyComposePrincipal(proof); await service.failBootstrap(.networkUnavailable)
+        await model.selectSaved(.init(deployment: service.deployment, alias: "Arbitrary alias", installationID: "installation")).value
+        XCTAssertEqual(model.phase, .unreachable)
+        XCTAssertEqual(model.composePrincipal, proof)
+        model.cancel(); XCTAssertNil(model.composePrincipal)
+    }
+    func testCatalogAliasAndUnauthenticatedUsernameNeverSelectComposeBuffer() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.failBootstrap(.networkUnavailable)
+        model.username = "admin"
+        await model.selectSaved(.init(deployment: service.deployment, alias: "admin", installationID: "installation")).value
+        XCTAssertNil(model.composePrincipal)
+    }
+    func testOnlineComposeProofPublicationAndForgetAreScopedToCurrentConnection() async throws {
+        let service = try OnboardingService(usingDemoDeployment: true), model = model(service)
+        await service.chooseAuth(.init(enabled: true, setupRequired: false, authenticated: true, authKind: "mobile"))
+        let proof = ComposePrincipalProof(deployment: service.deployment, installationID: "installation",
+            principalID: "verified-user", connectionID: UUID(), verifiedOnline: true)
+        await service.supplyComposePrincipal(proof)
+        await model.selectSaved(.init(deployment: service.deployment, alias: "Hub", installationID: "installation")).value
+        XCTAssertEqual(model.phase, .connected); XCTAssertEqual(model.composePrincipal, proof)
+        await model.forgetSignIn(); XCTAssertNil(model.composePrincipal)
+    }
+    func testWrongDeploymentProtectedProofCannotPublishUnderSelectedHub() async throws {
+        let service = try OnboardingService(), model = model(service)
+        let wrong = try DeploymentURL("https://other.example.com")
+        await service.supplyComposePrincipal(.init(deployment: wrong, installationID: "installation",
+            principalID: "verified-user", connectionID: UUID(), verifiedOnline: false))
+        await service.failBootstrap(.networkUnavailable)
+        await model.selectSaved(.init(deployment: service.deployment, alias: "Hub", installationID: "installation")).value
+        XCTAssertNil(model.composePrincipal)
+    }
+}
+
+
+extension ConnectionModelTests {
+    func testCancelledOfflineLookupCannotPublishPreviousHubProof() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.supplyComposePrincipal(.init(deployment: service.deployment, installationID: "installation",
+            principalID: "verified-user", connectionID: UUID(), verifiedOnline: false))
+        await service.failBootstrap(.networkUnavailable); await service.blockComposeProof()
+        let selecting = model.selectSaved(.init(deployment: service.deployment, alias: "Hub", installationID: "installation"))
+        await service.waitForComposeProof(); model.cancel(); await service.releaseComposeProof(); await selecting.value
+        XCTAssertEqual(model.phase, .picker); XCTAssertNil(model.composePrincipal)
     }
 }
