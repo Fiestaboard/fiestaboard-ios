@@ -152,7 +152,7 @@ import XCTest
         expression.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 12))
         element(app, "formulaFunction_IF").tap()
         XCTAssertTrue(waitFor(3) { (expression.value as? String) == "IF(\n  \n)" }, "\(expression.value ?? "")")
-        element(app, "formulaTabs").buttons["Variables"].tap()
+        try selectFixtureSegment("Variables", in: app.segmentedControls["formulaTabs"])
         let search = app.textFields["variableSearch"]
         XCTAssertTrue(search.waitForExistence(timeout: 3))
         search.tap(); search.typeText("temp")
