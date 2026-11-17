@@ -10,12 +10,15 @@ import FiestaBoardAppState
         let clock = try XCTUnwrap(HomeTiming.instant("2026-11-17T15:00:00Z"))
         let presentation = HomePresentation.make(detail: detail, showing: nil, silence: nil, pageNames: [:], now: clock)
         XCTAssertEqual(presentation.overrideRemaining, "2h 42m left")
+        XCTAssertEqual(presentation.overrideExpiresAt, clock.addingTimeInterval(9720))
+        XCTAssertEqual(presentation.overrideRemainingFraction, 1)
+        XCTAssertTrue(presentation.overrideResumesSchedule)
         for appearance in [ColorScheme.light, .dark] {
             for type in [DynamicTypeSize.large, .accessibility3] {
                 let device = IOSSnapshot.Device.current
                 let image = IOSSnapshot.image(NavigationStack {
                     HomeStatusSummary(presentation: presentation, displayName: "Kitchen board", pageName: "Back soon",
-                        canCancel: true, cancel: {}).padding().navigationTitle("Home")
+                        canChangePage: true, changePage: {}, canCancel: true, cancel: {}).padding().navigationTitle("Home")
                 }, device: device, appearance: appearance, dynamicType: type)
                 XCTAssertEqual(image.size, device.size)
                 XCTAssertEqual(image.scale, device.scale)

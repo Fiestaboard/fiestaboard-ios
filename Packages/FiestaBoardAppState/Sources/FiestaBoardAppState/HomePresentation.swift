@@ -46,6 +46,10 @@ public struct HomeNextChange: Equatable, Sendable {
 public struct HomePresentation: Equatable, Sendable {
     public let modeLabel: String
     public let overrideRemaining: String?
+    /// Only an active, ordered interval can describe expiry/progress truthfully.
+    public let overrideExpiresAt: Date?
+    public let overrideRemainingFraction: Double?
+    public let overrideResumesSchedule: Bool
     public let banner: HomeBanner?
     public let nextChange: HomeNextChange?
 
@@ -79,8 +83,22 @@ public struct HomePresentation: Equatable, Sendable {
             }
             next = HomeNextChange(at: at, title: title, pageName: detail?.nextPageID.flatMap { pageNames[$0] })
         }
+        var expiry: Date?
+        var fraction: Double?
+        if activeOverride, let start = HomeTiming.instant(detail?.overrideStartedAt),
+           let end = HomeTiming.instant(detail?.overrideExpiresAt) {
+            let duration = end.timeIntervalSince(start)
+            let remaining = end.timeIntervalSince(now)
+            if duration.isFinite, remaining.isFinite, duration > 0, start <= now, remaining > 0 {
+                expiry = end
+                fraction = min(1, max(0, remaining / duration))
+            }
+        }
         return HomePresentation(modeLabel: mode,
             overrideRemaining: activeOverride ? HomeTiming.remainingLabel(expiresAt: detail?.overrideExpiresAt, now: now) : nil,
+            overrideExpiresAt: expiry, overrideRemainingFraction: fraction,
+            overrideResumesSchedule: expiry != nil && detail?.summary.scheduleEnabled == true
+                && detail?.summary.paused == false && silence?.active != true,
             banner: banner, nextChange: next)
     }
 }
