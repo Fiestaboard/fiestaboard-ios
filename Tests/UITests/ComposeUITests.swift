@@ -237,7 +237,13 @@ import CryptoKit
         let data = Data(raw.utf8)
         let metadata = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
         metadata.name = "i8-capture-capability-actual-report"; metadata.lifetime = .keepAlways; add(metadata)
-        let result = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        guard let object = try? JSONSerialization.jsonObject(with: data), let result = object as? [String: Any] else {
+            missingCaptureEvidence(app, system: system, stage: "app_report_invalid",
+                expectedIdentifier: "composeCaptureProbeReport", elementObserved: true, valueObserved: true,
+                reason: "app_report_is_not_a_json_object")
+            XCTFail("Actual app report is malformed or non-object JSON; raw value and observed UI attached")
+            return
+        }
         if result["status"] as? String == "metadata_captured" {
             guard let planes = result["rawPlanes"] as? [[String: Any]], !planes.isEmpty else {
                 missingCaptureEvidence(app, system: system, stage: "raw_plane_manifest_missing",
