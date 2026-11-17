@@ -13,3 +13,7 @@ Tests/Fixtures/device-login.json:generic-api-key:1
 Tests/Fixtures/Home/HostUndo/undo-cancel.json:generic-api-key:1
 Tests/Fixtures/Home/HostUndo/undo-stale-cancel.json:generic-api-key:1
 Tests/Fixtures/Home/HostUndo/undo-indefinite-cancel.json:generic-api-key:1
+# Same expired/revoked synthetic authority in the final isolated Docker capture.
+Tests/Fixtures/Home/DockerUndo/undo-cancel.json:generic-api-key:1
+Tests/Fixtures/Home/DockerUndo/undo-stale-cancel.json:generic-api-key:1
+Tests/Fixtures/Home/DockerUndo/undo-indefinite-cancel.json:generic-api-key:1

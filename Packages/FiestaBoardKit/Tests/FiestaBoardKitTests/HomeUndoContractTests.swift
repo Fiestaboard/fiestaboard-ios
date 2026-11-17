@@ -5,7 +5,9 @@ import XCTest
     private func read(_ name: String) throws -> Data {
         var root = URL(fileURLWithPath: #filePath)
         for _ in 0..<5 { root.deleteLastPathComponent() }
-        return try Data(contentsOf: root.appendingPathComponent("Tests/Fixtures/Home/" + name + ".json"))
+        let source = ProcessInfo.processInfo.environment["CX_HOME_UNDO_SOURCE"] ?? "HostUndo"
+        let fixture = name.hasPrefix("HostUndo/") ? source + "/" + name.dropFirst(9) : name
+        return try Data(contentsOf: root.appendingPathComponent("Tests/Fixtures/Home/" + fixture + ".json"))
     }
     func testRecordedCapabilityIsExplicitAndTimedRestorePreservesOriginalInstants() throws {
         let before = try JSONDecoder().decode(HomeOverrideStatus.self, from: read("HostUndo/undo-capability"))

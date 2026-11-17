@@ -93,5 +93,14 @@ source={'hubRepository':'Fiestaboard/FiestaBoard','hubCommit':os.environ['CX_HUB
     'recorder':'scripts/record-home-fixtures.py','method':os.environ.get('CX_RECORDING_METHOD','Docker built from immutable git archive; real FastAPI HTTP boundary'),
     'credentialSafety':'Synthetic account; mobile token never recorded and revoked before process exit',
     'scenario':{'kitchen':kitchen,'desk':desk,'pageID':page_id},'responses':recorded}
+if os.environ.get('CX_DOCKER_IMAGE'):
+    import importlib.metadata
+    import platform
+    source['dockerImage'] = os.environ['CX_DOCKER_IMAGE']
+    source['dockerBase'] = json.loads(os.environ['CX_DOCKER_BASE'])
+    source['pythonVersion'] = platform.python_version()
+    source['dependencyManifestSHA256'] = hashlib.sha256(Path('/cx-dependencies.txt').read_bytes()).hexdigest()
+    packages = sorted(f'{d.metadata["Name"]}=={d.version}' for d in importlib.metadata.distributions())
+    (out/'environment.txt').write_text('\n'.join(packages)+'\n')
 (out/'SOURCE.json').write_text(json.dumps(source,indent=2)+'\n')
 print(f'Recorded {len(recorded)} unchanged Home HTTP responses')

@@ -8,6 +8,14 @@ ROOT = Path(__file__).resolve().parents[2]
 HOME = ROOT / 'Tests/Fixtures/Home'
 
 class HomeContractFixtureTests(unittest.TestCase):
+    def test_reviewed_atomic_undo_has_distinct_actual_docker_evidence(self):
+        self.verify(HOME/'DockerUndo', HOME/'requests-undo.json', 34, '6be367f4a76891d7b11a114a81a7d79f1b50534a')
+        source = json.loads((HOME/'DockerUndo/SOURCE.json').read_text())
+        self.assertTrue(source['method'].startswith('Docker'))
+        self.assertTrue(source['dockerImage'].startswith('sha256:'))
+        self.assertEqual(source['dockerBase'],['python@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90'])
+        self.assertEqual(source['dependencyManifestSHA256'],hashlib.sha256((HOME/'HostUndo/environment.txt').read_bytes()).hexdigest())
+
     def test_atomic_undo_responses_are_from_the_unmerged_immutable_backend(self):
         self.verify(HOME/'HostUndo', HOME/'requests-undo.json', 34, '6be367f4a76891d7b11a114a81a7d79f1b50534a')
         source = json.loads((HOME/'HostUndo/SOURCE.json').read_text())

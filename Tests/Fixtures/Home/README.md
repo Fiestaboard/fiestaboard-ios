@@ -36,3 +36,20 @@ tokens are expired and the issuing mobile session was revoked before exit.
 This supplemental host recording does not imply backend merge or deployment.
 Old hubs remain unsupported for Undo. The client never reconstructs a cancelled
 override or performs a GET followed by a content POST to emulate restoration.
+
+`DockerUndo/` adds the same 34 actual HTTP cases from the exact reviewed backend
+`6be367f4a76891d7b11a114a81a7d79f1b50534a`, after the local daemon recovered.
+It ran in a new `cx-` image/container, read-only with networking disabled. SOURCE
+records the image ID, immutable official Python base digest, actual Python
+version and dependency-lock hash. Its environment file preserves installed
+versions. This proves these authenticated API cases in Docker; it does not
+claim physical display output, all fault cases, or whole-Home visual parity.
+The original Docker13 and all host supplements remain unchanged.
+
+The Docker driver now uses that pinned official base and the frozen minimal
+runtime dependency lock instead of requiring the unavailable `fb21:local` image.
+Set `CX_HOME_MANIFEST=Tests/Fixtures/Home/requests-undo.json` and
+`CX_HOME_OUT=Tests/Fixtures/Home/DockerUndo` with the reviewed source pin to
+record the additive contract. It uses a temporary empty Docker credential
+configuration and preserves the selected daemon endpoint; it never logs in or
+alters other Docker resources.
