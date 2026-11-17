@@ -2,7 +2,7 @@ import XCTest
 @testable import FiestaBoardKit
 @testable import FiestaBoardAppState
 
-private actor ComposeStoreService: FiestaBoardService, ComposeServicing, ComposePrincipalProviding, ComposeCatalogReading {
+private actor ComposeStoreService: FiestaBoardService, ComposeServicing, ComposePrincipalProviding, ComposeCatalogReading, HomePageSelecting {
     nonisolated let deployment: DeploymentURL
     nonisolated let isDemo = false
     let base: FixtureFiestaBoardService
@@ -19,7 +19,10 @@ private actor ComposeStoreService: FiestaBoardService, ComposeServicing, Compose
     var createFails = false
     var sendError: FiestaBoardError?
     var readbackRequestID: UUID?
+    var omitReadbackRequestID = false
+    var homeSelections: [String] = []
     private var delayed = false
+    private var outcomeDelayed = false
     private var sendGate: CheckedContinuation<Void, Never>?
     private var sendObserver: CheckedContinuation<Void, Never>?
     init() throws {
@@ -43,10 +46,12 @@ private actor ComposeStoreService: FiestaBoardService, ComposeServicing, Compose
         self.state = state; retrySeconds = retry; self.readbackFails = readbackFails; self.createFails = createFails
     }
     func blockSend() { delayed = true }
+    func blockOutcome() { outcomeDelayed = true }
     func configureSendError(_ error: FiestaBoardError?) { sendError = error }
     func replaceReadbackRequestID(_ id: UUID?) { readbackRequestID = id }
+    func omitComposeReadback(_ omit: Bool) { omitReadbackRequestID = omit }
     func waitForSend() async { if sendGate == nil { await withCheckedContinuation { sendObserver = $0 } } }
-    func releaseSend() { sendGate?.resume(); sendGate = nil; delayed = false }
+    func releaseSend() { sendGate?.resume(); sendGate = nil; delayed = false; outcomeDelayed = false }
     func composePrincipal() -> ComposePrincipalProof? { active ? proof : nil }
     func rememberedComposePrincipal(installationID: String) -> ComposePrincipalProof? { nil }
     func sendCompose(_ request: ComposeRequest) async throws -> ComposeReceipt {
@@ -58,7 +63,7 @@ private actor ComposeStoreService: FiestaBoardService, ComposeServicing, Compose
     func composeOutcome(_ request: ComposeRequest) async throws -> ComposeReceipt {
         polls += 1
         let captured = try receipt(request, read: true)
-        if delayed { await withCheckedContinuation { sendGate = $0; sendObserver?.resume(); sendObserver = nil } }
+        if delayed || outcomeDelayed { await withCheckedContinuation { sendGate = $0; sendObserver?.resume(); sendObserver = nil } }
         return captured
     }
     func previewCompose(_ request: ComposeRequest) async throws -> TemplatePreviewResult {
@@ -121,7 +126,7 @@ private actor ComposeStoreService: FiestaBoardService, ComposeServicing, Compose
     func board(_ target: BoardTarget) throws -> BoardDetail {
         if readbackFails && (!sends.isEmpty || !creates.isEmpty) { throw FiestaBoardError.networkUnavailable }
         var object = try JSONSerialization.jsonObject(with: JSONEncoder().encode(details[target.boardID]!)) as! [String: Any]
-        if let last = sends.last, last.target == target, state == .sent || state == .unchanged {
+        if !omitReadbackRequestID, let last = sends.last, last.target == target, state == .sent || state == .unchanged {
             object["compose_receipt"] = ["request_id": (readbackRequestID ?? last.requestID).uuidString, "status": state.rawValue, "sent": state == .sent]
         }
         return try JSONDecoder().decode(BoardDetail.self, from: JSONSerialization.data(withJSONObject: object))
@@ -142,6 +147,11 @@ private actor ComposeStoreService: FiestaBoardService, ComposeServicing, Compose
     func restoreBoard(_ target: BoardTarget) async throws -> BoardRestoreReceipt { throw FiestaBoardError.writesDisabled }
     func sendText(_ text: String, to target: BoardTarget) async throws -> MutationResult { throw FiestaBoardError.writesDisabled }
     func selectPage(id: String, on target: BoardTarget) async throws -> MutationResult { throw FiestaBoardError.writesDisabled }
+    func selectHomePage(pageID: String, boardID: String, durationMinutes: Int?) throws -> HomeControlReceipt {
+        homeSelections.append(pageID); omitReadbackRequestID = true
+        return try JSONDecoder().decode(HomeControlReceipt.self, from: JSONSerialization.data(withJSONObject:
+            ["board_id": boardID, "page_id": pageID, "sent": true]))
+    }
     func login(username: String, password: String) throws -> AuthStatus { authStatus() }
 }
 
@@ -235,6 +245,93 @@ private actor ComposeStoreService: FiestaBoardService, ComposeServicing, Compose
 
 
 extension ComposeStoreTests {
+    func testDisplaySelectionProjectionRetainsUnresolvedComposeAuthorityBarrier() async throws {
+        for mode in ["unknown", "mismatched-accepted", "thrown"] {
+            let (store, service, request) = try await connected()
+            if mode == "unknown" { await service.configure(state: .unknown) }
+            if mode == "mismatched-accepted" { await service.replaceReadbackRequestID(UUID()) }
+            if mode == "thrown" { await service.configureSendError(.unknownMutationOutcome) }
+            await store.confirm(try XCTUnwrap(store.prepare(.compose(request)))).value
+            XCTAssertGreaterThan(store.boards.count, 1)
+            XCTAssertTrue(store.needsReadback)
+            XCTAssertFalse(store.canSelectBoard, "An available menu cannot offer a selection the authority rejects: \(mode)")
+            await store.refresh().value
+            XCTAssertFalse(store.canSelectBoard, "A background read cannot settle \(mode)")
+            await service.configure(state: .sent)
+            await service.configureSendError(nil); await service.replaceReadbackRequestID(nil)
+            await store.checkComposeOutcome().value
+            XCTAssertTrue(store.composeOperation?.acceptedReadback == true)
+            XCTAssertFalse(store.needsReadback); XCTAssertTrue(store.canSelectBoard)
+        }
+    }
+    func testCompletedComposeAcceptanceSurvivesExpiryAndReplacementBoardSnapshots() async throws {
+        for state in [ComposeReceipt.State.sent, .unchanged] {
+            let (store, service, request) = try await connected()
+            await service.configure(state: state)
+            await store.confirm(try XCTUnwrap(store.prepare(.compose(request)))).value
+            XCTAssertTrue(store.composeOperation?.acceptedReadback == true)
+            XCTAssertFalse(store.canCheckComposeOutcome, "Completed UUID reconciliation must be retired")
+            await service.omitComposeReadback(true); await store.refresh().value
+            XCTAssertNil(store.board?.composeRequestID)
+            XCTAssertTrue(store.composeOperation?.acceptedReadback == true, "Expiry cannot revoke historical acceptance")
+            XCTAssertFalse(store.needsReadback); XCTAssertTrue(store.canPerformCompose)
+            await service.omitComposeReadback(false); await service.replaceReadbackRequestID(UUID())
+            await store.refresh().value
+            XCTAssertNotEqual(store.board?.composeRequestID, request.requestID)
+            XCTAssertTrue(store.composeOperation?.acceptedReadback == true)
+            XCTAssertFalse(store.needsReadback); XCTAssertTrue(store.canPerformCompose)
+            await store.checkComposeOutcome().value
+            XCTAssertFalse(store.needsReadback)
+            let polls = await service.polls; XCTAssertEqual(polls, 0)
+            let other = try XCTUnwrap(store.boards.first { $0.id != request.target.boardID })
+            await store.selectBoard(other.id).value
+            XCTAssertEqual(store.selectedBoardID, other.id)
+        }
+    }
+    func testCompletedComposeCannotBlockLaterHomeWriteOrOwnNewComposeRecovery() async throws {
+        let (store, service, request) = try await connected()
+        let first = try XCTUnwrap(store.prepare(.compose(request)))
+        await store.confirm(first).value
+        XCTAssertTrue(store.composeOperation?.acceptedReadback == true)
+        let page = try XCTUnwrap(store.pages.first)
+        XCTAssertTrue(store.canPerformHomeControl(.selectPage))
+        await store.confirm(try XCTUnwrap(store.prepare(.homePage(id: page.id, durationMinutes: nil, untilCanceled: false)))).value
+        XCTAssertTrue(store.composeOperation?.acceptedReadback == true)
+        XCTAssertFalse(store.needsReadback); XCTAssertTrue(store.canPerformCompose)
+        XCTAssertFalse(store.canCheckComposeOutcome)
+        let selected = await service.homeSelections; XCTAssertEqual(selected, [page.id])
+        await service.configure(state: .unknown)
+        let newer = await service.request(target: request.target, text: "NEW INTENT")
+        let second = try XCTUnwrap(store.prepare(.compose(newer)))
+        await store.confirm(second).value
+        XCTAssertEqual(store.composeOperation?.actionID, second.id)
+        XCTAssertEqual(store.composeOperation?.request.requestID, newer.requestID)
+        XCTAssertFalse(store.composeOperation?.acceptedReadback ?? true)
+        XCTAssertTrue(store.needsReadback); XCTAssertTrue(store.canCheckComposeOutcome)
+        await store.confirm(first).value
+        let sends = await service.sends; XCTAssertEqual(sends.count, 2)
+    }
+    func testLateHeldOutcomeCannotReplaceNewTargetIntent() async throws {
+        let (store, service, request) = try await connected()
+        await service.configure(state: .held)
+        await store.confirm(try XCTUnwrap(store.prepare(.compose(request)))).value
+        await service.configure(state: .sent); await service.blockOutcome()
+        let oldCheck = store.checkComposeOutcome(); await service.waitForSend()
+        let other = try XCTUnwrap(store.boards.first { $0.id != request.target.boardID })
+        await store.selectBoard(other.id).value
+        await service.configure(state: .unknown)
+        let newer = await service.request(target: try BoardTarget(deployment: service.deployment, boardID: other.id), text: "OTHER TARGET")
+        let action = try XCTUnwrap(store.prepare(.compose(newer)))
+        await store.confirm(action).value
+        await service.releaseSend()
+        await oldCheck.value
+        XCTAssertEqual(store.selectedBoardID, other.id)
+        XCTAssertEqual(store.composeOperation?.actionID, action.id)
+        XCTAssertEqual(store.composeOperation?.request.requestID, newer.requestID)
+        XCTAssertTrue(store.needsReadback); XCTAssertTrue(store.canCheckComposeOutcome)
+        let sends = await service.sends, polls = await service.polls
+        XCTAssertEqual(sends.count, 2); XCTAssertEqual(polls, 1)
+    }
     func testUnresolvedComposeKeepsOutcomeReachableAcrossSuccessfulOrdinaryAndUUIDReads() async throws {
         for state in [ComposeReceipt.State.unknown, .preparing, .dispatching] {
             let (store, service, request) = try await connected()

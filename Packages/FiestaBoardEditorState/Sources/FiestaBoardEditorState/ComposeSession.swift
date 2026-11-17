@@ -76,6 +76,34 @@ public struct PreparedComposeIntent: Sendable {
     public let preparedAt: Date
 }
 
+#if DEBUG
+/// Identifies one accepted response under one live authoring owner. This is a
+/// candidate for capture correlation, never evidence of native presentation.
+public struct ComposePresentationTicket: Equatable, Sendable {
+    public let sessionID: UUID
+    public let renderID: UUID
+    public let epoch: UInt64
+    public let revision: UInt64
+    public let scope: ComposeScope
+    public let responseDigest: String
+    public let inputTicks: UInt64?
+    public let readyTicks: UInt64
+    public let adoptedTicks: UInt64
+}
+
+/// A matched observer callback. The observer must independently prove complete,
+/// visible captured pixels and the actual host display-time provenance. A first
+/// observed frame may follow dropped frames; these intervals are upper bounds.
+public struct ComposePresentationObservation: Equatable, Sendable {
+    public let ticket: ComposePresentationTicket
+    public let displayTicks: UInt64
+    public let pixelDigest: String
+    public let postDebounceUpperBoundSeconds: TimeInterval
+    public let inputToObservedUpperBoundSeconds: TimeInterval?
+    public let adoptionToObservedUpperBoundSeconds: TimeInterval
+}
+#endif
+
 /// Compose-only ownership. The retained editor pipeline has different stale-frame
 /// semantics and remains unchanged. The injected renderer is a read, never a send.
 @MainActor public final class ComposeSession: ObservableObject {
@@ -93,6 +121,13 @@ public struct PreparedComposeIntent: Sendable {
     #if DEBUG
     public private(set) var inputToPreviewSeconds: TimeInterval?
     public private(set) var postDebouncePreviewSeconds: TimeInterval?
+    @Published public private(set) var capturedPresentationTicket: ComposePresentationTicket?
+    @Published public private(set) var firstObservedPresentation: ComposePresentationObservation?
+    private var presentationSessionID = UUID()
+    private var presentationNowTicks: (@MainActor () -> UInt64)?
+    private var presentationSecondsPerTick: Double = 0
+    private var presentationInputTicks: UInt64?
+    private var presentationReadyTicks: UInt64?
     #endif
     private let sleep: Sleeper
     private let render: Renderer
@@ -120,12 +155,50 @@ public struct PreparedComposeIntent: Sendable {
         self.scope = scope; self.input = input; self.online = online
         self.sleep = sleep; self.monotonicNow = monotonicNow; self.render = render
     }
+    #if DEBUG
+    /// Opt-in only. The native observer supplies Mach absolute ticks and their
+    /// timebase; tests may inject synthetic ticks solely to verify this contract.
+    public func enableCapturedPresentationDiagnostics(nowTicks: @escaping @MainActor () -> UInt64, secondsPerTick: Double) {
+        presentationSessionID = UUID()
+        clearCapturedPresentation()
+        presentationInputTicks = nil; presentationReadyTicks = nil
+        guard !closed, secondsPerTick.isFinite, secondsPerTick > 0 else {
+            presentationNowTicks = nil; presentationSecondsPerTick = 0; return
+        }
+        presentationNowTicks = nowTicks; presentationSecondsPerTick = secondsPerTick
+    }
+    @discardableResult public func recordCapturedPresentation(ticket: ComposePresentationTicket, displayTicks: UInt64,
+        responseDigest: String, pixelDigest: String) -> Bool {
+        guard !closed, online, scope.valid, unavailableBufferedTargetID == nil, !previewIsStale,
+              capturedPresentationTicket == ticket, ticket.sessionID == presentationSessionID,
+              ticket.epoch == epoch, ticket.revision == revision, ticket.scope == scope,
+              responseDigest == ticket.responseDigest, firstObservedPresentation == nil,
+              Self.isSHA256(pixelDigest), let now = presentationNowTicks?(),
+              ticket.inputTicks.map({ $0 <= ticket.readyTicks }) ?? true,
+              ticket.readyTicks <= ticket.adoptedTicks, ticket.adoptedTicks <= displayTicks, displayTicks <= now else { return false }
+        let elapsed = Double(displayTicks - ticket.readyTicks) * presentationSecondsPerTick
+        let adoptionElapsed = Double(displayTicks - ticket.adoptedTicks) * presentationSecondsPerTick
+        let inputElapsed = ticket.inputTicks.map { Double(displayTicks - $0) * presentationSecondsPerTick }
+        guard elapsed.isFinite, adoptionElapsed.isFinite, inputElapsed?.isFinite ?? true else { return false }
+        firstObservedPresentation = .init(ticket: ticket, displayTicks: displayTicks, pixelDigest: pixelDigest,
+            postDebounceUpperBoundSeconds: elapsed, inputToObservedUpperBoundSeconds: inputElapsed,
+            adoptionToObservedUpperBoundSeconds: adoptionElapsed)
+        return true
+    }
+    private func clearCapturedPresentation() {
+        capturedPresentationTicket = nil; firstObservedPresentation = nil
+    }
+    private static func isSHA256(_ value: String) -> Bool {
+        value.utf8.count == 64 && value.utf8.allSatisfy { (48...57).contains($0) || (97...102).contains($0) }
+    }
+    #endif
     public func update(_ input: ComposeInput) {
         guard !closed else { return }
         preparedID = nil; revision &+= 1; self.input = input
         lastInputAt = monotonicNow()
         #if DEBUG
         inputToPreviewSeconds = nil; postDebouncePreviewSeconds = nil
+        presentationInputTicks = presentationNowTicks?()
         #endif
         previewIsStale = true; previewFailure = nil
         schedulePreview()
@@ -152,6 +225,9 @@ public struct PreparedComposeIntent: Sendable {
         unavailableBufferedTargetID = nil
         bufferedTargetPresentation = scope.presentation
         lastInputAt = monotonicNow()
+        #if DEBUG
+        presentationInputTicks = presentationNowTicks?()
+        #endif
         schedulePreview()
     }
     public func setOnline(_ online: Bool) {
@@ -260,6 +336,10 @@ public struct PreparedComposeIntent: Sendable {
               scope.valid, input.valid, previewIsStale || previewFailure != nil else { return }
         debounceTask?.cancel(); debounceTask = nil
         lastInputAt = monotonicNow(); readyAt = lastInputAt; readyRevision = revision
+        #if DEBUG
+        clearCapturedPresentation()
+        presentationInputTicks = presentationNowTicks?(); presentationReadyTicks = presentationInputTicks
+        #endif
         previewFailure = nil
         requestReadyPreview()
     }
@@ -281,10 +361,14 @@ public struct PreparedComposeIntent: Sendable {
         previewIsStale = true; previewFailure = nil
         #if DEBUG
         inputToPreviewSeconds = nil; postDebouncePreviewSeconds = nil
+        clearCapturedPresentation(); presentationReadyTicks = nil
         #endif
     }
     private func schedulePreview() {
         debounceTask?.cancel(); debounceTask = nil; readyRevision = nil; readyAt = nil
+        #if DEBUG
+        clearCapturedPresentation(); presentationReadyTicks = nil
+        #endif
         guard !closed, online, unavailableBufferedTargetID == nil, scope.valid, input.valid else { return }
         let capturedRevision = revision, capturedEpoch = epoch, sleep = self.sleep
         debounceTask = Task { [weak self] in
@@ -292,6 +376,9 @@ public struct PreparedComposeIntent: Sendable {
             guard !Task.isCancelled, let self, !closed, online,
                   capturedRevision == revision, capturedEpoch == epoch else { return }
             debounceTask = nil; readyRevision = capturedRevision; readyAt = monotonicNow()
+            #if DEBUG
+            presentationReadyTicks = presentationNowTicks?()
+            #endif
             requestReadyPreview()
         }
     }
@@ -303,6 +390,8 @@ public struct PreparedComposeIntent: Sendable {
         let capturedEpoch = epoch, render = self.render
         #if DEBUG
         let inputAt = lastInputAt, debounceAt = readyAt
+        let inputTicks = presentationInputTicks, readyTicks = presentationReadyTicks
+        let diagnosticSession = presentationSessionID
         #endif
         previewIsUpdating = true
         renderTask = Task { [weak self] in
@@ -319,6 +408,13 @@ public struct PreparedComposeIntent: Sendable {
                     let end = monotonicNow()
                     inputToPreviewSeconds = inputAt.map { max(0, end - $0) }
                     postDebouncePreviewSeconds = debounceAt.map { max(0, end - $0) }
+                    if diagnosticSession == presentationSessionID, let readyTicks, let adoptedTicks = presentationNowTicks?(),
+                       readyTicks <= adoptedTicks {
+                        capturedPresentationTicket = .init(sessionID: diagnosticSession, renderID: UUID(),
+                            epoch: capturedEpoch, revision: captured.revision, scope: captured.scope,
+                            responseDigest: SHA256.hash(data: result.rawData).map { String(format: "%02x", $0) }.joined(),
+                            inputTicks: inputTicks, readyTicks: readyTicks, adoptedTicks: adoptedTicks)
+                    }
                     #endif
                 case .failure(let error):
                     if !(error is CancellationError) { previewFailure = "Preview unavailable" }
