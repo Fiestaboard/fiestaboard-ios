@@ -136,3 +136,31 @@ extension ComposeBufferStoreTests {
         XCTAssertEqual(legacy?.silence, .hold, "Old drafts never invent silence override consent")
     }
 }
+
+extension ComposeBufferStoreTests {
+    func testColdOfflineBufferRetainsBoundedTargetPresentationBeyondShellCacheLifetime() async throws {
+        let directory = directory(); defer { try? FileManager.default.removeItem(at: directory) }
+        let store = ComposeBufferStore(directory: directory), scope = identity(), lease = try await store.open(scope)
+        let target = ComposeBufferTarget(id: "led-two", name: "Entry clock", deviceType: "panel", rows: 1, cols: 8,
+            deviceModel: "tc001", charset: "led_rgb", drawingData: Data(#"{"source":"device","technology":"led_matrix","pixel_width":32,"pixel_height":8,"font":"3x5"}"#.utf8))
+        _ = try await store.save(.init(identity: scope, revision: 1, text: "FULL UNTRUNCATED DRAFT", targetID: "led-two",
+            targetPresentation: target, preview: .init(targetID: "led-two", inputDigest: "captured", responseData: Data("last-known-result".utf8), capturedAt: Date(timeIntervalSince1970: 1))), using: lease)
+        let restored = try await ComposeBufferStore(directory: directory).load(scope)
+        XCTAssertEqual(restored?.text, "FULL UNTRUNCATED DRAFT")
+        XCTAssertEqual(restored?.targetPresentation, target)
+        XCTAssertEqual(restored?.preview?.capturedAt, Date(timeIntervalSince1970: 1), "Authoring context never inherits the shell's600s expiration")
+    }
+    func testMismatchedOrUnboundedTargetPresentationCannotReplaceSavedDraft() async throws {
+        let directory = directory(); defer { try? FileManager.default.removeItem(at: directory) }
+        let store = ComposeBufferStore(directory: directory), scope = identity(), lease = try await store.open(scope)
+        _ = try await store.save(.init(identity: scope, revision: 1, text: "PRESERVED", targetID: "known"), using: lease)
+        for target in [ComposeBufferTarget(id: "other", name: "Wrong", deviceType: "panel", rows: 1, cols: 8),
+                       ComposeBufferTarget(id: "known", name: "Bad", deviceType: "panel", rows: 0, cols: 8),
+                       ComposeBufferTarget(id: "known", name: "Huge", deviceType: "panel", rows: 1, cols: Int.max)] {
+            do { _ = try await store.save(.init(identity: scope, revision: 2, text: "INVALID", targetID: "known", targetPresentation: target), using: lease); XCTFail("Invalid target cannot replace the draft") }
+            catch { XCTAssertEqual(error as? ComposeBufferError, .invalidContent) }
+        }
+        let retained = try await store.load(scope)
+        XCTAssertEqual(retained?.text, "PRESERVED")
+    }
+}
