@@ -1,0 +1,26 @@
+{
+  "status": "Advisory decision and UNRUN regression preparation only; no implementation",
+  "reviewed_head": "376f5a345227181098bf5d1afb9e4c3291c7d92a",
+  "finding": "R2: formIntent is captured before hub selection; select calls cancel and rotates connection generation; the still-current form can retain a stale capture and fail secret cleanup.",
+  "tool": "jev_decide",
+  "model": "typesafe/jev-1.14-20261014",
+  "provider": "openrouter",
+  "selected": "stable_presentation_identity",
+  "selected_probability": 0.93,
+  "confidence": 0.91,
+  "probabilities": {
+    "stable_presentation_identity": 0.93,
+    "refresh_connection_capture": 0.06,
+    "ask_user": 0,
+    "investigate": 0.01,
+    "none": 0
+  },
+  "requirements_supported": [
+    "same active presentation can clear secrets after selection",
+    "obsolete presentation cannot cancel replacement",
+    "connected handoff keeps live service"
+  ],
+  "next_step": "First run the authored initial-presentation lifecycle regressions against376 for actual RED under a root slot. Then implement explicit stable presentation ownership independent of connection generation, with begin/retire/replacement handling and no reliance on SwiftUI teardown/onAppear timing; preserve stale callback and connected-handoff protection. Review exact lifecycle wiring with the reviewer before final fix.",
+  "verification": "No new tests or builds run after WRAPUP; 376 remains last positive package/native/probe checkpoint. Jev is advice, not proof or approval.",
+  "record_kind": "Summary of the actual single Jev response; full response remains in tool transcript"
+}
