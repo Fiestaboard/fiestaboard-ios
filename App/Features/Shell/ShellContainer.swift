@@ -13,8 +13,8 @@ struct ShellContainer<Destination: View, Accessory: View>: View {
                 ForEach(ShellTab.allCases) { route in
                     Tab(value: route) { destination(route) } label: {
                         Label(route.rawValue, systemImage: route.symbol)
-                            .accessibilityIdentifier("destination-" + route.rawValue)
                     }
+                    .accessibilityIdentifier("destination-" + route.rawValue)
                 }
             }
             .tabViewStyle(.sidebarAdaptable)
