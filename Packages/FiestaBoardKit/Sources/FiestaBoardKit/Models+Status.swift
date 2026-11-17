@@ -81,16 +81,39 @@ public struct ActivePageStatus: Codable, Sendable, Equatable {
 
 /// `/silence-status` (S:src/service_api/models.py:109-146).
 public struct SilenceStatus: Codable, Sendable, Equatable {
+    public struct Held: Codable, Sendable, Equatable {
+        public let kind: String
+        public let preview: String
+        public let queuedAt: String
+        enum CodingKeys: String, CodingKey { case kind, preview, queuedAt = "queued_at" }
+    }
     public let enabled: Bool?
     public let active: Bool
     public let mode: String?
     public let pageID: String?
     public let endsAtUTC: String?
+    public let boardID: String?
+    public let holdsBlockedSends: Bool
+    public let held: Held?
     enum CodingKeys: String, CodingKey {
         case enabled, active, mode, pageID = "page_id", endsAtUTC = "ends_at_utc"
+        case boardID = "board_id", holdsBlockedSends = "holds_blocked_sends", held
     }
-    public init(enabled: Bool? = nil, active: Bool, mode: String? = nil, pageID: String? = nil, endsAtUTC: String? = nil) {
+    public init(enabled: Bool? = nil, active: Bool, mode: String? = nil, pageID: String? = nil, endsAtUTC: String? = nil,
+                boardID: String? = nil, holdsBlockedSends: Bool = false, held: Held? = nil) {
         self.enabled = enabled; self.active = active; self.mode = mode; self.pageID = pageID; self.endsAtUTC = endsAtUTC
+        self.boardID = boardID; self.holdsBlockedSends = holdsBlockedSends; self.held = held
+    }
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        enabled = try values.decodeIfPresent(Bool.self, forKey: .enabled)
+        active = try values.decode(Bool.self, forKey: .active)
+        mode = try values.decodeIfPresent(String.self, forKey: .mode)
+        pageID = try values.decodeIfPresent(String.self, forKey: .pageID)
+        endsAtUTC = try values.decodeIfPresent(String.self, forKey: .endsAtUTC)
+        boardID = try values.decodeIfPresent(String.self, forKey: .boardID)
+        holdsBlockedSends = try values.decodeIfPresent(Bool.self, forKey: .holdsBlockedSends) ?? false
+        held = try values.decodeIfPresent(Held.self, forKey: .held)
     }
 }
 

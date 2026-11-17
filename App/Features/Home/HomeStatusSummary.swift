@@ -10,6 +10,7 @@ struct HomeStatusSummary: View {
     let canCancel: Bool
     let cancel: () -> Void
     @Environment(\.colorScheme) private var appearance
+    @Environment(\.dynamicTypeSize) private var textSize
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
@@ -25,10 +26,12 @@ struct HomeStatusSummary: View {
             Text(pageName).font(.title3.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("nowShowingName")
             if !previewing, let remaining = presentation.overrideRemaining {
-                HStack {
+                let layout = textSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout())
+                layout {
                     Label(remaining, systemImage: "timer").font(.subheadline)
+                        .fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("homeOverrideRemaining")
-                    Spacer()
+                    if !textSize.isAccessibilitySize { Spacer() }
                     Button("Cancel", action: cancel).buttonStyle(.bordered).controlSize(.large)
                         .disabled(!canCancel).accessibilityLabel("Cancel override")
                         .accessibilityValue(canCancel ? "" : "Unavailable")

@@ -63,3 +63,41 @@ extension HomePresentationTests {
         XCTAssertNil(HomeTiming.durationMinutes(until: now.addingTimeInterval(28801), now: now))
     }
 }
+
+extension HomePresentationTests {
+    func testPausedStatusUsesPausedModeInsteadOfManual() throws {
+        var root = URL(fileURLWithPath:#filePath)
+        for _ in 0..<5 { root.deleteLastPathComponent() }
+        let detail = try JSONDecoder().decode(BoardDetail.self,from:Data(contentsOf:
+            root.appendingPathComponent("Tests/Fixtures/Home/DockerBanners/home-paused.json")))
+        let result = HomePresentation.make(detail:detail,showing:nil,silence:nil,pageNames:[:],now:Date())
+        XCTAssertEqual(result.modeLabel,"Paused")
+    }
+}
+
+extension HomePresentationTests {
+    func testRecordedSilenceEmptyHeldAndHoldDisabledRemainDistinctAndDisplayScoped() throws {
+        var root = URL(fileURLWithPath:#filePath)
+        for _ in 0..<5 { root.deleteLastPathComponent() }
+        func read(_ name: String) throws -> SilenceStatus {
+            try JSONDecoder().decode(SilenceStatus.self,from:Data(contentsOf:
+                root.appendingPathComponent("Tests/Fixtures/Home/DockerBanners/" + name + ".json")))
+        }
+        let empty = HomeSilencePresentation.make(status:try read("silence-empty"),boardID:"cx-kitchen")
+        XCTAssertNotNil(empty); XCTAssertNil(empty?.heldPreview)
+        XCTAssertTrue(empty?.holdsBlockedSends == true); XCTAssertNotNil(empty?.endsAt)
+        let held = HomeSilencePresentation.make(status:try read("silence-held"),boardID:"cx-kitchen")
+        XCTAssertEqual(held?.heldPreview,"Package delivered"); XCTAssertNotNil(held?.queuedAt)
+        let replacement = HomeSilencePresentation.make(status:try read("silence-replacement"),boardID:"cx-kitchen")
+        XCTAssertEqual(replacement?.heldPreview,"New reminder")
+        let disabled = HomeSilencePresentation.make(status:try read("silence-without-hold"),boardID:"cx-kitchen")
+        XCTAssertEqual(disabled?.heldPreview,"New reminder"); XCTAssertFalse(disabled?.holdsBlockedSends ?? true)
+        XCTAssertNil(HomeSilencePresentation.make(status:try read("silence-held"),boardID:"cx-desk"))
+        XCTAssertNil(HomeSilencePresentation.make(status:.init(active:false),boardID:"cx-kitchen"))
+    }
+    func testSilencedModeRemainsVisibleWithoutInventingOverride() {
+        let p = HomePresentation.make(detail:nil,showing:nil,silence:.init(active:true),pageNames:[:],now:Date())
+        XCTAssertEqual(p.modeLabel,"Silenced"); XCTAssertEqual(p.banner,.silenced)
+        XCTAssertNil(p.overrideRemaining)
+    }
+}
