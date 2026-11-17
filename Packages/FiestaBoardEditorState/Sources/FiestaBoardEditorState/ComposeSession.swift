@@ -210,7 +210,13 @@ public struct PreparedComposeIntent: Sendable {
         }
         guard let replacement else { return false }
         bufferLease = replacement; persistedRevision = nil
-        guard inputRevision == revision else { return false }
+        guard inputRevision == revision else {
+            // An edit's normal autosave may already have reached the retired
+            // lease while clear was returning. Finish that save with the
+            // atomic replacement lease, retaining the latest captured input.
+            _ = try await persistBuffer()
+            return false
+        }
         detachBuffer()
         return true
     }
