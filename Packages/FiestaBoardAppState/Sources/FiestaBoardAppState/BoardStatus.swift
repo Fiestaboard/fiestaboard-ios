@@ -138,6 +138,7 @@ public enum BoardPolling {
     private var collectionNames: [String: String] = [:]
     private var tasks: [Task<Void, Never>] = []
     private var postSendTask: Task<Void, Never>?
+    private var homeUndoReadTask: Task<Void, Never>?
     private var observers: Set<AnyCancellable> = []
     private var wasBusy = false
     private var epoch = UUID()
@@ -192,6 +193,7 @@ public enum BoardPolling {
         running = false
         tasks.forEach { $0.cancel() }; tasks = []
         postSendTask?.cancel(); postSendTask = nil
+        homeUndoReadTask?.cancel(); homeUndoReadTask = nil
     }
 
     private func connectionChanged() {
@@ -362,6 +364,8 @@ public enum BoardPolling {
     public func canSelectHomePage(timed: Bool) -> Bool { store.canPerformHomeControl(timed ? .timedOverride : .selectPage) }
     public var canHoldHomePage: Bool { store.canPerformHomeControl(.timedOverride) }
     public func clearTemporaryOverride() async { await performHomeControl(.homeCancelOverride, success: .overrideCanceled) }
+    public var canUndoOverride: Bool { store.canUndoHomeOverride }
+    public func undoTemporaryOverride() async { await performHomeControl(.homeUndoOverride, success: .overrideRestored) }
     public func selectHomePage(pageID: String, durationMinutes: Int?) async {
         await performHomeControl(.homePage(id: pageID, durationMinutes: durationMinutes, untilCanceled: false), success: .pageSelected)
     }
@@ -426,6 +430,8 @@ public enum BoardPolling {
 
     private func pollActive() {
         guard let reader = reader(), let id = store.selectedBoardID else { recompute(); return }
+        homeUndoReadTask?.cancel()
+        homeUndoReadTask = store.refreshHomeUndoCapability()
         let token = epoch
         Task { [weak self] in
             async let schedule = try? reader.activeSchedulePage(boardID: id)

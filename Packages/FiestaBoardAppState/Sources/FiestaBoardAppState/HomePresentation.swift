@@ -84,11 +84,12 @@ public struct HomePresentation: Equatable, Sendable {
 }
 
 public enum HomeControlOutcome: Hashable, Sendable {
-    case pageSelected, overrideCanceled, unconfirmed, readbackRequired, signInRequired, failed
+    case pageSelected, overrideCanceled, overrideRestored, unconfirmed, readbackRequired, signInRequired, failed
     public var message: String {
         switch self {
         case .pageSelected: "Page selected"
         case .overrideCanceled: "Override canceled"
+        case .overrideRestored: "Override restored"
         case .readbackRequired: "The change was accepted. Refresh the display before another action."
         case .unconfirmed: "The result couldn't be confirmed. Refresh before trying again."
         case .signInRequired: "Sign in again to control this display."

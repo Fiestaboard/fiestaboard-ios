@@ -68,7 +68,7 @@ extension FixtureRouter {
         }
         return out
     }
-    func boardRoute(_ method: String, _ route: String, _ body: [String: Any], _ boardID: String, _ state: State) -> Response? {
+    func boardRoute(_ method: String, _ route: String, _ body: [String: Any], _ boardID: String, _ state: State, undoRequested: Bool = false) -> Response? {
         if state.boards.isEmpty {
             for entry in boards {
                 let s = entry["summary"] as! [String: Any], id = s["id"] as! String
@@ -108,7 +108,25 @@ extension FixtureRouter {
         }
         if method == "DELETE", route == "settings/temporary-override" {
             if state.homeContract && boardID != "kitchen" { return reply(200, ["revert_mode": null]) }
-            let was = state.scenario == "override" && !state.overrideCleared; state.overrideCleared = true; return reply(200, ["revert_mode": was ? "schedule" as Any : null]) }
+            let was = state.scenario == "override" && !state.overrideCleared; state.overrideCleared = true
+            var result: [String: Any] = ["revert_mode": was ? "schedule" as Any : null]
+            if state.homeContract && undoRequested {
+                state.undoToken = was ? "synthetic-ui-undo" : nil
+                state.undoDeadline = was ? Date().addingTimeInterval(30) : nil
+                result["undo_token"] = state.undoToken as Any? ?? null
+                result["undo_expires_at"] = state.undoDeadline.map { ISO8601DateFormatter().string(from:$0) } as Any? ?? null
+            }
+            return reply(200,result, noStore: state.homeContract)
+        }
+        if state.homeContract, method == "GET", route == "settings/temporary-override" {
+            return reply(200,["undo_supported":true,"active":boardID == "kitchen" && state.scenario == "override" && !state.overrideCleared,"board_id":boardID], noStore:true)
+        }
+        if state.homeContract, method == "POST", route == "settings/temporary-override/undo" {
+            guard body["board_id"] as? String == "kitchen", let value = state.undoToken,
+                  body["undo_token"] as? String == value, let end = state.undoDeadline, end > Date() else { return reply(409,["detail":"Undo unavailable"]) }
+            state.undoToken = nil; state.undoDeadline = nil; state.overrideCleared = false
+            return reply(200,["undo_supported":true,"active":true,"board_id":"kitchen","page_id":"note","started_at":"2026-10-31T09:00:00Z","expires_at":"2026-10-31T09:09:00Z"], noStore:true)
+        }
         if method == "DELETE", route == "board/external-frame" { if boardID == "kitchen" { state.sync["kept"] = false }; return reply(204) }
         if method == "POST", route == "v1/pages" {
             var page = seed["pageCommon"] as! [String: Any]

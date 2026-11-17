@@ -22,6 +22,8 @@ final class FixtureRouter {
         var flexibleRevision = 1
         var sync: [String: Bool]
         var overrideCleared = false
+        var undoToken: String?
+        var undoDeadline: Date?
         let started = Date()
         init(prefix: String, flexible: [String: Any]) {
             self.flexible = flexible
@@ -52,8 +54,8 @@ final class FixtureRouter {
             }
         }
     }
-    func reply(_ status: Int = 200, _ body: Any = [String: Any]()) -> Response {
-        Response(status: status, body: status == 204 ? Data() : (try! JSONSerialization.data(withJSONObject: body, options: [.sortedKeys, .fragmentsAllowed])))
+    func reply(_ status: Int = 200, _ body: Any = [String: Any](), noStore: Bool = false) -> Response {
+        Response(status: status, body: status == 204 ? Data() : (try! JSONSerialization.data(withJSONObject: body, options: [.sortedKeys, .fragmentsAllowed])), headers: noStore ? ["Cache-Control":"no-store"] : [:])
     }
     func respond(method: String, target: String, headers: [String: String], body raw: Data) -> Response {
         let parts = target.components(separatedBy: "?"); let path = parts[0]
@@ -99,7 +101,8 @@ final class FixtureRouter {
             guard authenticated else { return reply(401, cases["protected_unauthenticated"]!) }; state.token = nil; return reply(200, ["status": "ok"])
         }
         if state.mode != "disabled", !authenticated { return reply(401, cases["protected_unauthenticated"]!) }
-        if prefix.hasPrefix("/board-"), let result = boardRoute(method, route, body, boardID, state) { return result }
+        if prefix.hasPrefix("/board-"), let result = boardRoute(method, route, body, boardID, state,
+            undoRequested: query.first { $0.name == "undo" }?.value == "true") { return result }
         if !prefix.hasPrefix("/mixed-"), let result = renderRoute(method, route, body, prefix) { return result }
         if prefix.hasPrefix("/board-"), let result = catalogRoute(method, route, body, state) { return result }
         if method == "GET", route == "version" { var version = cases["version"] as! [String: Any]; version["build_version"] = "10.1.20"; version["is_dev"] = false; return reply(200, version) }

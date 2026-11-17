@@ -50,11 +50,23 @@ struct HomeView<Controls: View>: View {
                         if let face = status.outOfSync {
                             OutOfSyncBanner(face: face, summary: summary, store: store, status: status, restore: prepareRestore)
                         }
-                        if let outcome = status.homeControlOutcome, outcome != .pageSelected && outcome != .overrideCanceled {
+                        if let outcome = status.homeControlOutcome, outcome != .pageSelected && outcome != .overrideCanceled && outcome != .overrideRestored {
                             Label(outcome.message, systemImage: outcome == .pageSelected || outcome == .overrideCanceled ? "checkmark.circle" : "info.circle")
                                 .font(.callout).accessibilityIdentifier("homeControlOutcome")
                         }
-                        if let message = store.message { Text(message).font(.callout).accessibilityIdentifier("actionOutcome") }
+                        if let message = store.message {
+                            TimelineView(.periodic(from: .now, by: 1)) { _ in
+                                HStack {
+                                    Text(message).font(.callout).accessibilityIdentifier("actionOutcome")
+                                    if status.canUndoOverride {
+                                        Spacer()
+                                        Button("Undo") { Task { await status.undoTemporaryOverride() } }
+                                            .buttonStyle(.bordered).controlSize(.large)
+                                            .accessibilityLabel("Undo override cancellation").accessibilityIdentifier("homeUndoOverride")
+                                    }
+                                }
+                            }
+                        }
                         if status.homeControlNeedsReadback {
                             Button("Refresh display") { Task { await status.refreshHomeControlState() } }
                         }
@@ -96,7 +108,7 @@ struct HomeView<Controls: View>: View {
             }
         }
         .task(id: status.homeControlOutcome) {
-            guard status.homeControlOutcome == .pageSelected || status.homeControlOutcome == .overrideCanceled else { successToast = false; return }
+            guard status.homeControlOutcome == .pageSelected || status.homeControlOutcome == .overrideCanceled || status.homeControlOutcome == .overrideRestored else { successToast = false; return }
             successToast = true
             do { try await Task.sleep(for: .seconds(3)) } catch { return }
             successToast = false

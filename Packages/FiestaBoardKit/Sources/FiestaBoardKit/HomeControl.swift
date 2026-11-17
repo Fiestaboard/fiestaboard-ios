@@ -1,6 +1,6 @@
 import Foundation
 
-public enum HomeControlOperation: CaseIterable, Sendable { case cancelOverride, selectPage, timedOverride }
+public enum HomeControlOperation: CaseIterable, Sendable { case cancelOverride, selectPage, timedOverride, undoOverride }
 public extension CapabilityPolicy {
     /// Scoped I7 operations audited at immutable v11 e8306aca0. This grants no
     /// editor, scalar-setting, evaluation or page-storage write capability.

@@ -76,3 +76,55 @@ import FiestaBoardKit
         XCTAssertEqual(optIns,[false]); XCTAssertFalse(store.canUndoHomeOverride)
     }
 }
+
+extension HomeUndoStateTests {
+    func testCanceledCapabilityReadCannotGrantAuthorityAfterPollOwnerStops() async throws {
+        let service = try FixtureFiestaBoardService(homeAudit:true)
+        await service.configureUndo(supported:true,expiresAt:Date().addingTimeInterval(30))
+        let store = BoardStore(); await store.connect(service).value
+        await service.configureNextHomeRead(delayed:true)
+        let read = store.refreshHomeUndoCapability()
+        await service.waitForHomeRead()
+        read.cancel()
+        await service.releaseHomeRead(); await read.value
+        XCTAssertFalse(store.supportsHomeControl(.undoOverride))
+    }
+    func testReceiptCannotBypassFailedReadbackAndBecomesEligibleOnlyAfterExplicitRefresh() async throws {
+        let now = Date(), service = try FixtureFiestaBoardService(homeAudit:true)
+        await service.configureUndo(supported:true,expiresAt:now.addingTimeInterval(30))
+        let store = BoardStore(now:{now}); await store.connect(service).value
+        await store.refreshHomeUndoCapability().value
+        await service.configureHome(readbackFailure:.networkUnavailable)
+        await store.confirm(try XCTUnwrap(store.prepare(.homeCancelOverride))).value
+        XCTAssertTrue(store.needsReadback); XCTAssertFalse(store.canUndoHomeOverride)
+        await store.refresh().value
+        XCTAssertTrue(store.canUndoHomeOverride)
+    }
+    func testPendingUndoBlocksEveryBoardControlAndConflictRequiresExplicitReadback() async throws {
+        let (store,service) = try await prepared(now:Date())
+        await service.configureHome(failure:.rejected(status:409),delayed:true)
+        let undo = store.confirm(try XCTUnwrap(store.prepare(.homeUndoOverride)))
+        await service.waitForHomeMutation()
+        XCTAssertTrue(store.commandBusy); XCTAssertFalse(store.canWrite)
+        XCTAssertNil(store.prepare(.homeCancelOverride)); XCTAssertNil(store.prepare(.homeUndoOverride))
+        await service.releaseHomeMutation(); await undo.value
+        XCTAssertTrue(store.needsReadback); XCTAssertFalse(store.canUndoHomeOverride)
+    }
+    func testCapabilityAuthLossAndNetworkEpochUseSharedGuards() async throws {
+        let service = try FixtureFiestaBoardService(homeAudit:true)
+        await service.configureUndo(supported:true,expiresAt:Date().addingTimeInterval(30))
+        let store = BoardStore(); await store.connect(service).value
+        await service.configureNextHomeRead(delayed:true)
+        let old = store.refreshHomeUndoCapability()
+        await service.waitForHomeRead()
+        store.networkAvailable = false; store.networkAvailable = true
+        await service.releaseHomeRead(); await old.value
+        await store.probeReachability().value
+        await store.confirm(try XCTUnwrap(store.prepare(.homeCancelOverride))).value
+        let optIns = await service.undoOptIns
+        XCTAssertEqual(optIns,[false])
+        await service.configureNextHomeRead(failure:.unauthenticated)
+        await store.refreshHomeUndoCapability().value
+        XCTAssertNil(store.status); XCTAssertFalse(store.canUndoHomeOverride)
+    }
+}

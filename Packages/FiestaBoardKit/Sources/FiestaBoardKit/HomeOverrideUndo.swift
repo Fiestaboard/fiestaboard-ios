@@ -26,7 +26,16 @@ public struct HomeOverrideStatus: Decodable, Sendable {
 public struct HomeOverrideCancellation: Decodable, Sendable {
     public let undoToken: String?
     public let undoExpiresAt: String?
-    enum CodingKeys: String, CodingKey { case undoToken = "undo_token", undoExpiresAt = "undo_expires_at" }
+    enum CodingKeys: String, CodingKey { case revertMode = "revert_mode", undoToken = "undo_token", undoExpiresAt = "undo_expires_at" }
+    public init(from decoder: any Decoder) throws {
+        let values = try decoder.container(keyedBy:CodingKeys.self)
+        guard values.contains(.revertMode) else {
+            throw DecodingError.keyNotFound(CodingKeys.revertMode,.init(codingPath:decoder.codingPath,debugDescription:"Missing cancellation result"))
+        }
+        _ = try values.decodeIfPresent(String.self,forKey:.revertMode)
+        undoToken = try values.decodeIfPresent(String.self,forKey:.undoToken)
+        undoExpiresAt = try values.decodeIfPresent(String.self,forKey:.undoExpiresAt)
+    }
 }
 public protocol HomeOverrideUndoing: Sendable {
     func homeOverrideStatus(boardID: String) async throws -> HomeOverrideStatus

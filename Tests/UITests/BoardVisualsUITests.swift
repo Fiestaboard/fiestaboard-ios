@@ -114,6 +114,21 @@ final class BoardVisualsUITests: XCTestCase {
     }
 
     @MainActor
+    func testScopedCancelOffersAtomicSingleUseUndo() async throws {
+        try await requireFixture()
+        let app = launchSignedIn(scenario:"override")
+        let cancel = app.buttons["overrideCancel"]
+        waitFor(cancel, NSPredicate(format:"isEnabled == true"),10,"audited scoped cancel")
+        cancel.tap()
+        let undo = app.buttons["homeUndoOverride"]
+        XCTAssertTrue(undo.waitForExistence(timeout:10))
+        XCTAssertEqual(undo.label,"Undo override cancellation")
+        undo.tap()
+        XCTAssertTrue(app.buttons["overrideCancel"].waitForExistence(timeout:10))
+        XCTAssertFalse(app.buttons["homeUndoOverride"].exists)
+        app.terminate()
+    }
+    @MainActor
     func testChangePageRetainsSheetAndSelectionWhilePending() async throws {
         try await requireFixture()
         FixtureHTTPServer.shared.holdHomeMutations(true)
@@ -123,6 +138,8 @@ final class BoardVisualsUITests: XCTestCase {
         waitFor(change, NSPredicate(format: "isEnabled == true"), 10, "audited Home controls")
         change.tap(); app.buttons["Good Morning"].tap()
         app.buttons["homeShowPage"].tap()
+        let waiting = XCTNSPredicateExpectation(predicate:NSPredicate { _,_ in FixtureHTTPServer.shared.homeMutationWaiting },object:nil)
+        XCTAssertEqual(XCTWaiter.wait(for:[waiting],timeout:5),.completed)
         XCTAssertTrue(FixtureHTTPServer.shared.homeMutationWaiting)
         XCTAssertTrue(app.navigationBars["Change Page"].exists)
         XCTAssertEqual(app.buttons["Good Morning"].value as? String,"Selected")

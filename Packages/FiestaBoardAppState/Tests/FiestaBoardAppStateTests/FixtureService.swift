@@ -378,7 +378,7 @@ extension FixtureFiestaBoardService: TemporaryOverrideClearing, HomePageSelectin
         undoOptIns.append(requestingUndo)
         try await clearTemporaryOverride(boardID: boardID)
         let value: [String: String] = requestingUndo && undoSupported
-            ? ["undo_token":"synthetic-short-lived-receipt","undo_expires_at":ISO8601DateFormatter().string(from: undoExpiry)] : [:]
+            ? ["revert_mode":"schedule","undo_token":"synthetic-short-lived-receipt","undo_expires_at":ISO8601DateFormatter().string(from: undoExpiry)] : ["revert_mode":"schedule"]
         return try JSONDecoder().decode(HomeOverrideCancellation.self, from: JSONSerialization.data(withJSONObject:value))
     }
     public func undoHomeOverride(boardID: String, token: String) async throws -> HomeOverrideStatus {
@@ -387,7 +387,7 @@ extension FixtureFiestaBoardService: TemporaryOverrideClearing, HomePageSelectin
             ["undo_supported":true,"active":true,"board_id":boardID]))
     }
     func configureHome(failure: FiestaBoardError? = nil, delayed: Bool = false, readbackFailure: FiestaBoardError? = nil) {
-        homeFailure = failure; homeDelayed = delayed; homeFailReadback = readbackFailure
+        homeFailure = failure; homeDelayed = delayed; homeFailReadback = readbackFailure; homeStarted = false
     }
     func configureNextHomeRead(failure: FiestaBoardError? = nil, delayed: Bool = false) {
         nextHomeReadFailure = failure; delayAnyHomeRead = delayed

@@ -27,7 +27,12 @@ The native UI `board-i7-*` namespace is explicitly synthetic. It uses recorded
 H1/H2 field shapes without changing the retained legacy migration oracle. Its
 frames and dates are UI controls, not additional live-hub response recordings.
 
-The hub's cancel and restore interfaces have no conditional-create/restore
-operation. The client deliberately supplies no race-prone Undo. Completing the
-I7 Undo criterion needs an atomic restore receipt or create-if-no-current-override
-contract. A GET followed by POST can overwrite an intervening replacement.
+The original pinned hubs have no atomic restore. `HostUndo/` separately records
+34 responses from unmerged backend commit `c5480cab789b08441e15525b8c2ac3d8b28eaa8d`;
+`requests-undo.json` binds the additive capability, opt-in cancel receipt and
+atomic restore. It includes timed and indefinite restoration, unchanged original
+start/expiry, and stale/used/wrong-display/auth/body refusals. Synthetic receipt
+tokens are expired and the issuing mobile session was revoked before exit.
+This supplemental host recording does not imply backend merge or deployment.
+Old hubs remain unsupported for Undo. The client never reconstructs a cancelled
+override or performs a GET followed by a content POST to emulate restoration.

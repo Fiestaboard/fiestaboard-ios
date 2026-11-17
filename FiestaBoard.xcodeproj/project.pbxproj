@@ -46,6 +46,7 @@
 		22B9443A49503B0D0E88F817 /* FixtureBoardRoutes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17C9F199741FDCC7AED7601C /* FixtureBoardRoutes.swift */; };
 		22C678E84B3F53496673611E /* HomePresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E22D3B921378DC289C0EB91 /* HomePresentationTests.swift */; };
 		237CA8C9E997BD6399A1F7CA /* StrokeTransaction.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF16DDCF129380FBA1D99C7A /* StrokeTransaction.swift */; };
+		254C533D5D014A10DBFC4E60 /* HomeOverrideUndo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C847CFC694C7C645C8A5DD9 /* HomeOverrideUndo.swift */; };
 		263E243D442B2F1E402ADA91 /* HomeChangePageSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10D87E2255874FD2E4D1AC18 /* HomeChangePageSheet.swift */; };
 		26BDA27FD0C340D492E2AE57 /* LedRasterizer.swift in Sources */ = {isa = PBXBuildFile; fileRef = E27F4FC5A09E5E215D1C351A /* LedRasterizer.swift */; };
 		26F841521FDDF88C5793A83B /* NativeSeedChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20FA0715F7D33289D681DBF3 /* NativeSeedChrome.swift */; };
@@ -365,6 +366,7 @@
 		0A023CCB7F747A5D0CA52BA1 /* EditorCatalogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorCatalogStore.swift; sourceTree = "<group>"; };
 		0A41290E5CCF31930DEC8C2D /* ShellContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellContainer.swift; sourceTree = "<group>"; };
 		0C56E0D16CF0C891AEB50D6B /* PagePreviewFrame.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagePreviewFrame.swift; sourceTree = "<group>"; };
+		0C847CFC694C7C645C8A5DD9 /* HomeOverrideUndo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeOverrideUndo.swift; sourceTree = "<group>"; };
 		0CBB22E8805204F89D5AF659 /* BoardViewportRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardViewportRenderTests.swift; sourceTree = "<group>"; };
 		0CE51B6E8E630F1CA0FAFFB0 /* FiestaBoardEditorState.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = FiestaBoardEditorState.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		0CF8A0D71245FFA302EDD63D /* BoardTables.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardTables.swift; sourceTree = "<group>"; };
@@ -714,6 +716,7 @@
 				39295C71C5ED93F6ABEFB0B4 /* FiestaBoardError.swift */,
 				2662195EBC75B32C6C4D1F53 /* Formula.swift */,
 				3B953EB57C3AA01BAB89A2C2 /* HomeControl.swift */,
+				0C847CFC694C7C645C8A5DD9 /* HomeOverrideUndo.swift */,
 				7C53D8997F3544E68E18B8EF /* MobileSession.swift */,
 				B269490EAA2BC1900A3319B2 /* Models.swift */,
 				F72D5E21E5D6A566C8AF4873 /* Models+Status.swift */,
@@ -1464,6 +1467,7 @@
 				B87FD124C751FC4DA14916E3 /* FiestaBoardError.swift in Sources */,
 				14943782D8BF8AC90A9F5255 /* Formula.swift in Sources */,
 				61CCF60D3DFB359AF4318AF6 /* HomeControl.swift in Sources */,
+				254C533D5D014A10DBFC4E60 /* HomeOverrideUndo.swift in Sources */,
 				8388109738D8C3FA4CCA123A /* MobileSession.swift in Sources */,
 				2D955A909400BB75C265B044 /* Models+Status.swift in Sources */,
 				1F17B659C5A4800BBD4066C0 /* Models.swift in Sources */,

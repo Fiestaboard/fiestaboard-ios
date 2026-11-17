@@ -72,7 +72,7 @@ struct HomeChangePageSheet: View {
             if status.homeControlNeedsReadback {
                 Button("Refresh display") { Task { await status.refreshHomeControlState() } }.disabled(!store.networkAvailable)
             }
-            if let outcome = status.homeControlOutcome, outcome != .pageSelected && outcome != .overrideCanceled {
+            if let outcome = status.homeControlOutcome, outcome != .pageSelected && outcome != .overrideCanceled && outcome != .overrideRestored {
                 Section { Text(outcome.message).accessibilityIdentifier("homePageOutcome") }
             }
         }
