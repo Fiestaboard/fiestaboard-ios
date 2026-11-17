@@ -146,6 +146,7 @@
 		CFB504FE552730FAA589CF16 /* InsertPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 325C5B5CD67DA69702635A29 /* InsertPickerSheet.swift */; };
 		D04415239B53F363AD383EA2 /* FiestaBoardAppState.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 2E21A61E3064CBB07099A3E1 /* FiestaBoardAppState.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		D082E1D796CFA35851B0D46C /* CanvasRaster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0983A5BFD3803290BA5F0FC4 /* CanvasRaster.swift */; };
+		D2F0BA3F52C48A4A90C07BFA /* FixtureSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3A11B938EB837054388E37 /* FixtureSelection.swift */; };
 		D43899001FDA9127ACD55778 /* ParityFoundationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3562AE76EFEB035CD14EEEF0 /* ParityFoundationUITests.swift */; };
 		D4E2223DF64508E4FAD15563 /* SessionVaultRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F8958AD1F9D24DE397C6D7 /* SessionVaultRuntimeTests.swift */; };
 		D88BBA90133E35DC15BBD1E3 /* FlapPhysics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08CD0DA7C751195DD5C9810F /* FlapPhysics.swift */; };
@@ -429,6 +430,7 @@
 		AC609C72CB7F40E61999B7DD /* BoardTablesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardTablesTests.swift; sourceTree = "<group>"; };
 		ADD3E20169D98490321CE3F4 /* ServerDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerDiscovery.swift; sourceTree = "<group>"; };
 		AEEB8028464574196027DECB /* RenderHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderHarness.swift; sourceTree = "<group>"; };
+		AF3A11B938EB837054388E37 /* FixtureSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureSelection.swift; sourceTree = "<group>"; };
 		AF9F10108415B0B82A438E3E /* CanvasEditorState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasEditorState.swift; sourceTree = "<group>"; };
 		B111FC6C6933C9409006391C /* PageManagement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageManagement.swift; sourceTree = "<group>"; };
 		B2512A0EBAC2A895F58C8C2B /* Snapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snapshot.swift; sourceTree = "<group>"; };
@@ -795,6 +797,7 @@
 				6C3F1838186E744DA302ABA0 /* EditorUITests.swift */,
 				2CBC4260FBD8BBA41BFBF327 /* FixtureConnection.swift */,
 				8E6E8776A0D8982BD60EE299 /* FixtureReadiness.swift */,
+				AF3A11B938EB837054388E37 /* FixtureSelection.swift */,
 				6BBD25933907F3239D01D6CC /* FormulaUITests.swift */,
 				EFA6B31F1D4A49A278398FFE /* IntegrationUITests.swift */,
 				E0EBDE35CC98E3503AD48784 /* LaunchUITests.swift */,
@@ -1249,6 +1252,7 @@
 				2B60831683DA1544E9E5D5C4 /* EditorUITests.swift in Sources */,
 				3DF8E15C5CC8983509AE88F3 /* FixtureConnection.swift in Sources */,
 				FA23AFA5B9424ABD9CED10B4 /* FixtureReadiness.swift in Sources */,
+				D2F0BA3F52C48A4A90C07BFA /* FixtureSelection.swift in Sources */,
 				82C97A471315A3DDFFC9C514 /* FormulaUITests.swift in Sources */,
 				F18D73674B88F338AC475D79 /* GlassProbe.swift in Sources */,
 				3130713C85FE68151D21B7FA /* IntegrationUITests.swift in Sources */,

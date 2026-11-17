@@ -14,7 +14,7 @@ class FixtureSelectionTests(unittest.TestCase):
         main.write_text('''
 var selected = false, taps = 0, waits = 0, actionableCalls = 0
 func require(_ value: Bool, _ message: String) { precondition(value, message) }
-func run(actionable: () -> Bool = { true }, wait: () -> Bool) throws {
+@MainActor func run(actionable: () -> Bool = { true }, wait: () -> Bool) throws {
     try FixtureSelection.requireSelected(isSelected: { selected },
         waitUntilActionable: { actionableCalls += 1; return actionable() },
         tap: { taps += 1 }, waitUntilSelected: { waits += 1; return wait() })

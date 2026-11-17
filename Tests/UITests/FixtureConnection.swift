@@ -13,6 +13,29 @@ extension XCTestCase {
             .containing(.staticText, identifier: name).firstMatch
     }
 
+    /// Selecting a native segment may need a second tap; never replay the surrounding journey.
+    @MainActor func selectFixtureSegment(_ title: String, in control: XCUIElement,
+                                         file: StaticString = #filePath, line: UInt = #line) throws {
+        let segment = control.buttons[title]
+        do {
+            try FixtureSelection.requireSelected(isSelected: { segment.exists && segment.isSelected },
+                waitUntilActionable: {
+                    let predicate = NSPredicate(format: "exists == true AND enabled == true AND hittable == true")
+                    return XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: segment)], timeout: 3) == .completed
+                }, tap: { segment.tap() }, waitUntilSelected: {
+                    let predicate = NSPredicate(format: "selected == true")
+                    return XCTWaiter.wait(for: [XCTNSPredicateExpectation(predicate: predicate, object: segment)], timeout: 3) == .completed
+                })
+        } catch {
+            let state = XCTAttachment(string: control.debugDescription)
+            state.name = "native-segment-selection-failed"
+            state.lifetime = .keepAlways
+            add(state)
+            XCTFail("Native segment must select \(title): \(error)", file: file, line: line)
+            throw error
+        }
+    }
+
     /// A delivered menu tap is not evidence that the requested display became selected.
     @MainActor func selectFixtureDisplay(_ display: String, in app: XCUIApplication,
                                          file: StaticString = #filePath, line: UInt = #line) {
