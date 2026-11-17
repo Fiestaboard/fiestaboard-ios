@@ -1365,3 +1365,17 @@ extension BoardStoreTests {
         XCTAssertNil(store.hubReachable)
     }
 }
+
+extension BoardStoreTests {
+    func testInFlightSuccessDoesNotEraseNewerRateLimitDeadline() async throws {
+        let clock = Date(timeIntervalSince1970: 1000)
+        let service = try SessionFaultService(), store = BoardStore(now: { clock })
+        await store.connect(service, allowCandidateWrites: true).value
+        let earlierRequest = store.reachabilityEpoch
+        await service.failAuth(.rateLimited(retryAfterSeconds: 120))
+        await store.probeReachability().value
+        store.recordHubResponse(pathToken: earlierRequest)
+        XCTAssertEqual(store.reachabilityRetryAt, clock.addingTimeInterval(120))
+        XCTAssertFalse(store.canProbeReachability)
+    }
+}
