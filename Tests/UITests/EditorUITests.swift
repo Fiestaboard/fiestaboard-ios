@@ -549,16 +549,32 @@ import XCTest
         XCTAssertTrue(document.waitForExistence(timeout: 8))
         placeCaret(row: 3, app, document); document.typeText("HI")
         app.buttons["editorHideKeyboard"].tap()
+        XCTAssertTrue(source(document).components(separatedBy: "\n").dropFirst(2).first?.contains("HI") == true,
+                      "The row-three edit remains in the document")
         let save = app.buttons["savePageOnServer"]
-        XCTAssertTrue(waitForCondition(timeout: 3) { !save.isEnabled || save.isEnabled })
-        if !save.isEnabled {
-            let reason = app.descendants(matching: .any).matching(identifier: "saveDisabledReason").firstMatch
-            XCTAssertTrue(reason.waitForExistence(timeout: 3), "A disabled Save says why")
-            XCTAssertTrue(reason.label.hasPrefix("Can't save:"), reason.label)
-            XCTAssertLessThan(reason.frame.minY, document.frame.minY, "The reason is at the top, under Save")
+        let reason = app.descendants(matching: .any).matching(identifier: "saveDisabledReason").firstMatch
+        let state: SaveObservation.State
+        do {
+            state = try SaveObservation.requireConsistent(timeout: 3, observe: {
+                // Focus dismissal participates in the same observation deadline.
+                // A keyboard that remains present cannot produce an eligible sample.
+                let before: Bool? = !app.keyboards.firstMatch.exists && save.exists ? save.isEnabled : nil
+                let explanation: SaveObservation.Reason? = reason.exists
+                    ? .init(label: reason.label, minY: Double(reason.frame.minY),
+                            documentMinY: Double(document.frame.minY)) : nil
+                let after: Bool? = !app.keyboards.firstMatch.exists && save.exists ? save.isEnabled : nil
+                return .init(enabledBefore: before, enabledAfter: after, reason: explanation)
+            })
+        } catch {
+            let evidence = XCTAttachment(string: app.debugDescription)
+            evidence.name = "Save observation did not settle"; evidence.lifetime = .keepAlways; add(evidence)
+            XCTFail("After keyboard dismissal, Save must consistently be enabled without a reason, or disabled with a reason at the top")
+            throw error
+        }
+        if case let .disabled(explanation) = state {
+            XCTAssertTrue(explanation.label.hasPrefix("Can't save:"), explanation.label)
+            XCTAssertLessThan(explanation.minY, explanation.documentMinY, "The reason is at the top, under Save")
             attach(app, "W2-save-reason-\(device())")
-        } else {
-            XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "saveDisabledReason").firstMatch.exists)
         }
         app.navigationBars.buttons["Close"].tap(); app.buttons["Discard and leave"].tap()
     }
