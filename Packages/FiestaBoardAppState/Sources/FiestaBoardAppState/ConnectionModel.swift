@@ -42,6 +42,11 @@ public enum ConnectionPhase: Sendable, Equatable {
     @Published public var setupToken = ""
     @Published public var rememberMe = false
     @Published public var alias = ""
+    @Published public private(set) var passwordResetFlow: PasswordResetFlow?
+    @Published public var resetCode = ""
+    @Published public var resetNewPassword = ""
+    @Published public var resetConfirmation = ""
+    private var resetIntent = UUID()
     private let store: BoardStore
     private let catalog: ServerCatalog
     private let discovery: any ServerDiscovering
@@ -182,6 +187,54 @@ public enum ConnectionPhase: Sendable, Equatable {
         let user = username, remember = rememberMe
         return authenticate { try await service.login(username: user, password: secret, rememberMe: remember) }
     }
+    public func beginPasswordReset() {
+        guard phase == .authentication(.signIn), !busy, !requiresStateCheck else { return }
+        clearResetSecrets(); password = ""; setupToken = ""
+        resetIntent = UUID(); passwordResetFlow = PasswordResetFlow(); message = nil; validationFields = []
+    }
+    public func enterPasswordResetCode() { passwordResetFlow?.enterCode() }
+    @discardableResult public func submitPasswordReset() -> Task<Void, Never> {
+        let code = resetCode, secret = resetNewPassword, confirmation = resetConfirmation
+        clearResetSecrets(); password = ""; setupToken = ""
+        guard phase == .authentication(.signIn), let service, !busy, !requiresStateCheck,
+              (loginRetryDeadline?.remainingSeconds(at: now()) ?? 0) == 0,
+              let attempt = passwordResetFlow?.prepare(code: code, newPassword: secret, confirmation: confirmation) else { return Task {} }
+        let intent = resetIntent
+        return run { [weak self] token in
+            guard let self else { return }
+            do {
+                try await service.resetPassword(code: attempt.code, newPassword: attempt.newPassword)
+                guard valid(token), resetIntent == intent else { return }
+                invalidateSnapshotSession(); await removeSnapshot(for: selected)
+                guard valid(token), resetIntent == intent else { return }
+                persistence = await service.sessionPersistenceState()
+                guard valid(token), resetIntent == intent else { return }
+                passwordResetFlow?.receive(.changed, for: attempt.id)
+            } catch {
+                guard valid(token), resetIntent == intent else { return }
+                let result: PasswordResetFlow.Result
+                switch error as? FiestaBoardError {
+                case .invalidResetCode: result = .invalidCode
+                case .validation(let fields): result = .rejectedFields(fields.contains(.newPassword) ? [.newPassword] : [])
+                case .rateLimited: result = .rejectedFields([])
+                default: result = .unknownOutcome; requiresStateCheck = true
+                }
+                passwordResetFlow?.receive(result, for: attempt.id)
+                throw error
+            }
+        }
+    }
+    public func cancelPasswordReset() {
+        if passwordResetFlow?.phase == .submitting {
+            operation?.cancel(); operation = nil; busy = false; requiresStateCheck = true
+        }
+        resetIntent = UUID(); passwordResetFlow = nil; clearResetSecrets()
+    }
+    public func finishPasswordReset() {
+        guard passwordResetFlow?.phase == .passwordChanged else { return }
+        cancelPasswordReset()
+    }
+    private func clearResetSecrets() { resetCode = ""; resetNewPassword = ""; resetConfirmation = "" }
     @discardableResult public func setAuthentication(enabled: Bool) -> Task<Void, Never> {
         let proof = setupToken; setupToken = ""; password = ""
         guard let service, !busy, !requiresStateCheck else { return Task {} }
@@ -276,6 +329,7 @@ public enum ConnectionPhase: Sendable, Equatable {
         await reloadCatalog()
     }
     public func cancel() {
+        cancelPasswordReset()
         invalidateSnapshotSession()
         generation = UUID(); operation?.cancel(); operation = nil; stopDiscovery()
         let old = service, ownedByStore = handedToStore, previous = cleanupTask
@@ -295,6 +349,7 @@ public enum ConnectionPhase: Sendable, Equatable {
         return Task { await removeSnapshot(for: hub) }
     }
     @discardableResult public func logout() -> Task<Void, Never> {
+        cancelPasswordReset()
         let hub = selected
         invalidateSnapshotSession()
         generation = UUID(); operation?.cancel(); operation = nil; stopDiscovery()

@@ -10,7 +10,7 @@ public struct PasswordResetAttempt: Sendable {
 public struct PasswordResetFlow: Sendable, Equatable {
     public enum Phase: Sendable, Equatable { case instructions, enterCode, submitting, passwordChanged, uncertain }
     public enum Field: Sendable, Hashable { case code, newPassword, confirmation }
-    public enum Result: Sendable { case changed, invalidCode, unknownOutcome }
+    public enum Result: Sendable { case changed, invalidCode, rejectedFields(Set<Field>), unknownOutcome }
     public private(set) var phase: Phase = .instructions
     public private(set) var invalidFields: Set<Field> = []
     private var pending: UUID?
@@ -39,6 +39,7 @@ public struct PasswordResetFlow: Sendable, Equatable {
         switch result {
         case .changed: phase = .passwordChanged
         case .invalidCode: phase = .enterCode; invalidFields = [.code]
+        case .rejectedFields(let fields): phase = .enterCode; invalidFields = fields
         case .unknownOutcome: phase = .uncertain
         }
     }
