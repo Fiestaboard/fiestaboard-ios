@@ -52,7 +52,8 @@ struct HomeView<Controls: View>: View {
                         TimelineView(.periodic(from: .now, by: 1)) { timeline in
                             let presentation = homePresentation(now: timeline.date)
                             HomeStatusSummary(presentation: presentation, displayName: summary.name,
-                                pageName: previewReady ? (previewPage?.name ?? "") : (status.nowShowing?.name ?? "No page selected"), previewing: previewReady, canCancel: status.canClearOverride,
+                                pageName: previewReady ? (previewPage?.name ?? "") : (status.nowShowing?.name ?? "No page selected"), previewing: previewReady,
+                                canChangePage: status.canSelectHomePage(timed: false), changePage: { changingPage = true }, canCancel: status.canClearOverride,
                                 cancel: { Task { await status.clearTemporaryOverride() } })
                         }
                         if let face = status.outOfSync {
@@ -68,9 +69,6 @@ struct HomeView<Controls: View>: View {
                         if status.homeControlNeedsReadback {
                             Button("Refresh display") { Task { await status.refreshHomeControlState() } }
                         }
-                        Button { changingPage = true } label: { Text("Change Page").frame(maxWidth: .infinity) }
-                            .buttonStyle(.bordered).controlSize(.large).frame(maxWidth: .infinity)
-                            .disabled(!status.canSelectHomePage(timed: false)).accessibilityIdentifier("changePage")
                         HomeCards(store: store, status: status, wide: geometry.size.width > 760, openSchedule: openSchedule)
                         NavigationLink { controls() } label: { Label("Display controls", systemImage: "slider.horizontal.3") }
                             .accessibilityIdentifier("boardControlsEntry")
@@ -154,7 +152,7 @@ struct HomeView<Controls: View>: View {
                 Text(URL(string: store.connectionLabel)?.host ?? store.connectionLabel).font(.caption2).foregroundStyle(.secondary)
             }
         }
-        .disabled(store.commandBusy || store.refreshing || store.boards.count < 2)
+        .disabled(!store.canSelectBoard)
         .accessibilityIdentifier("homeDisplayPicker")
     }
     @ViewBuilder private func board(_ summary: BoardSummary, height: CGFloat) -> some View {

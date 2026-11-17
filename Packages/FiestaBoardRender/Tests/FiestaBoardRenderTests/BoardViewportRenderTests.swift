@@ -1,5 +1,6 @@
 #if canImport(UIKit) || canImport(AppKit)
 import SwiftUI
+import Darwin
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -67,6 +68,95 @@ final class BoardViewportRenderTests: XCTestCase {
         print("I4 draw wall samples \(rows)x\(cols): \(samples)")
         print("I4 draw p95 \(rows)x\(cols): \(p95)s, budget \(1 / fps)s")
         XCTAssertLessThanOrEqual(p95, 1 / fps)
+    }
+}
+
+/// Separate diagnostic workload: the original draw-budget test above is unchanged.
+/// Whole-process CPU includes every thread. Stage-only canvases isolate work but
+/// do not reproduce the full SwiftUI lifecycle and their times are not additive.
+/// Keep the Z prefix so these extra draws follow the existing renderer assertions.
+@MainActor
+final class ZBoardViewportDrawDiagnosticsTests: XCTestCase {
+    func testReportPairedWallAndProcessCPUForLargeBoardStages() throws {
+        for stage in Stage.allCases {
+            var pairs: [[String: Double]] = []
+            for index in 0..<12 {
+                let layout = BoardLayout.make(rows: 12, cols: 29,
+                    cells: Array(repeating: Array(repeating: .character(index.isMultiple(of: 2) ? "A" : "B"), count: 29), count: 12),
+                    tileHeight: 13)
+                let cpuStart = try processCPUSeconds()
+                let wallStart = CACurrentMediaTime()
+                let image: CGImage?
+                if stage == .complete {
+                    let renderer = ImageRenderer(content: BoardCanvas(layout: layout))
+                    renderer.scale = 3
+                    image = renderer.cgImage
+                } else {
+                    let renderer = ImageRenderer(content: StageCanvas(layout: layout, stage: stage))
+                    renderer.scale = 3
+                    image = renderer.cgImage
+                }
+                let wall = CACurrentMediaTime() - wallStart
+                let cpu = try processCPUSeconds() - cpuStart
+                XCTAssertNotNil(image)
+                pairs.append(["iteration": Double(index), "wall_ms": wall * 1000, "process_cpu_ms": cpu * 1000])
+            }
+            let data = try JSONSerialization.data(withJSONObject: pairs, options: [.sortedKeys])
+            print("I4 draw diagnostic \(stage.rawValue) paired samples: \(String(decoding: data, as: UTF8.self))")
+        }
+    }
+
+    private func processCPUSeconds() throws -> Double {
+        var usage = rusage()
+        guard getrusage(RUSAGE_SELF, &usage) == 0 else {
+            throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
+        }
+        return Double(usage.ru_utime.tv_sec) + Double(usage.ru_utime.tv_usec) / 1_000_000
+            + Double(usage.ru_stime.tv_sec) + Double(usage.ru_stime.tv_usec) / 1_000_000
+    }
+
+    private enum Stage: String, CaseIterable {
+        case complete, surfaces, content, seams
+    }
+
+    private struct StageCanvas: View {
+        let layout: BoardLayout
+        let stage: Stage
+
+        var body: some View {
+            Canvas(opaque: false, rendersAsynchronously: false) { context, _ in
+                let palette = FlapPalette.black
+                switch stage {
+                case .complete:
+                    break // The complete diagnostic uses production BoardCanvas above.
+                case .surfaces:
+                    for tile in layout.tiles {
+                        context.fill(Path(roundedRect: CGRect(x: tile.x, y: tile.y,
+                            width: tile.width, height: tile.height), cornerRadius: tile.radius),
+                            with: .color(Color(rgb: palette.surface)))
+                    }
+                case .content:
+                    let font = BoardFont.glyph(size: layout.fontSize)
+                    var resolved: [Character: GraphicsContext.ResolvedText] = [:]
+                    for tile in layout.tiles {
+                        FlapTilePainter.drawContent(tile: tile, cell: tile.cell, palette: palette,
+                            font: font, in: &context, resolved: &resolved)
+                    }
+                case .seams:
+                    let seam = FlapTilePainter.seam(forTileHeight: layout.tileHeight)
+                    var gaps = Path(), highlights = Path()
+                    for tile in layout.tiles {
+                        let top = (tile.y + tile.height / 2).rounded()
+                        gaps.addRect(CGRect(x: tile.x, y: top, width: tile.width, height: seam.thickness))
+                        highlights.addRect(CGRect(x: tile.x, y: top + seam.thickness,
+                            width: tile.width, height: seam.thickness))
+                    }
+                    context.fill(gaps, with: .color(Color.black.opacity(0.55 * seam.ink)))
+                    context.fill(highlights, with: .color(Color.white.opacity(0.10 * seam.ink)))
+                }
+            }
+            .frame(width: layout.width, height: layout.height)
+        }
     }
 }
 #endif

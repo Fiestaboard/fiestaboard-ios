@@ -120,7 +120,9 @@ jobs:
           retention-days: 14
 
   device-ui:
-    needs: device-units
+    # Unit failures remain blocking below, but must not hide independent UI evidence.
+    needs: [foundation, device-units]
+    if: ${{ !cancelled() && needs.foundation.result == 'success' && (needs.device-units.result == 'success' || needs.device-units.result == 'failure') }}
     runs-on: ${{ fromJSON(vars.NATIVE_RUNNER || '["xcode-27"]') }}
     timeout-minutes: 45
     strategy:
