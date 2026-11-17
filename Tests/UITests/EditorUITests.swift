@@ -238,11 +238,7 @@ import XCTest
     }
     /// Connect and sign in to the mock fixture's `/board-<scenario>-<id>/` prefix (iOS-R1 hook).
     private func connectToFixture(_ app: XCUIApplication, scenario: String) throws {
-        var request = URLRequest(url: URL(string: "http://127.0.0.1:\(fixturePort)/ready")!); request.timeoutInterval = 3
-        let semaphore = DispatchSemaphore(value: 0); var ready = false
-        URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
-        semaphore.wait()
-        try requireReadyFixture(ready, port: String(fixturePort))
+        try requireReadyFixture(port: String(fixturePort))
         app.launchArguments = []; app.launch()
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
         let address = app.textFields["connectionAddress"]
