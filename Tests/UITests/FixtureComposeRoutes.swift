@@ -45,12 +45,14 @@ extension FixtureRouter {
                 // Duplicate UUID POSTs are refused, never a second synthetic dispatch.
                 guard state.composeReceipts[key] == nil else { return reply(409, ["detail": "Synthetic fixture refuses replay"]) }
                 state.composePosts += 1
-                let unknown = state.composeUnknown
-                let record = composeRecord(unknown ? "unknown" : "formatted-timed-primary")!
+                let unknown = state.composeUnknown || state.composeAmbiguous
+                let record = composeRecord(unknown ? "unknown" : (state.composeHeld ? "explicit-hold" : "formatted-timed-primary"))!
                 let envelope = record["response"] as! [String: Any]
                 var receipt = (envelope["detail"] as? [String: Any]) ?? envelope
                 receipt["board_id"] = id; receipt["request_id"] = uuid; receipt["duration"] = duration
-                if !unknown {
+                if state.composeHeld {
+                    state.boards[id] = ["compose_receipt": ["request_id": uuid, "status": "held"]]
+                } else if !unknown {
                     let now = Date(), formatter = ISO8601DateFormatter()
                     receipt["started_at"] = formatter.string(from: now)
                     switch duration["kind"] as? String {
@@ -61,11 +63,31 @@ extension FixtureRouter {
                     state.boards[id] = ["compose_receipt": ["request_id": uuid, "status": "sent"], "text": lines.joined(separator: "\n")]
                 }
                 state.composeReceipts[key] = receipt
+                // Synthetic malformed success models a thrown decoder after the POST:
+                // no fabricated server receipt may stand in for the retained UUID.
+                if state.composeAmbiguous { return reply(200, [:], noStore: true) }
+                if state.composeHeld { return reply(202, receipt, noStore: true) }
                 if unknown { return reply(503, ["detail": receipt], noStore: true) }
                 return reply(200, receipt, noStore: true)
             }
             if method == "GET", segments.count == 5, segments[3] == "compose" {
-                guard let receipt = state.composeReceipts[id + "/" + segments[4].lowercased()] else { return reply(404) }
+                let key = id + "/" + segments[4].lowercased()
+                guard var receipt = state.composeReceipts[key] else { return reply(404) }
+                if state.composeHeld, receipt["status"] as? String == "held" {
+                    // Explicit GET observes the scenario's synthetic silence release.
+                    let now = Date(), formatter = ISO8601DateFormatter()
+                    let duration = receipt["duration"] as! [String: Any]
+                    receipt["status"] = "sent"; receipt["sent"] = true
+                    receipt["started_at"] = formatter.string(from: now)
+                    receipt["held_until"] = null; receipt["reason"] = null
+                    switch duration["kind"] as? String {
+                    case "minutes": receipt["expires_at"] = formatter.string(from: now.addingTimeInterval(Double(duration["minutes"] as? Int ?? 120) * 60))
+                    case "until": receipt["expires_at"] = duration["ends_at"]
+                    default: receipt["expires_at"] = null
+                    }
+                    state.composeReceipts[key] = receipt
+                    state.boards[id] = ["compose_receipt": ["request_id": receipt["request_id"]!, "status": "sent"]]
+                }
                 return reply(200, receipt, noStore: true)
             }
         }

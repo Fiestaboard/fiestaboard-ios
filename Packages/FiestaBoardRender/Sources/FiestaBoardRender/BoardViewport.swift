@@ -54,6 +54,47 @@ public struct BoardViewportEdges: Equatable, Sendable {
     }
 }
 
+/// The opt-in LED viewport enlarges uniformly within the available bezel and
+/// height budget. A raster that cannot fit at two points per pixel scrolls.
+struct MatrixViewportSizing: Equatable, Sendable {
+    let pitch: Double
+    let contentWidth: Double
+    let contentHeight: Double
+    let viewportWidth: Double
+    let viewportHeight: Double
+    var horizontalOverflow: Bool { contentWidth > max(0, viewportWidth - 16) + 0.000001 }
+    var verticalOverflow: Bool { contentHeight > max(0, viewportHeight - 16) + 0.000001 }
+
+    init(pixelWidth: Int, pixelHeight: Int, availableWidth: Double?, maximumHeight: Double = 320) {
+        let pixelsWide = Double(max(1, min(2048, pixelWidth)))
+        let pixelsHigh = Double(max(1, min(2048, pixelHeight)))
+        let cap = maximumHeight.isFinite ? min(320, max(0, maximumHeight)) : 320
+        let offeredWidth = availableWidth.flatMap { $0.isFinite ? max(0, $0) : nil }
+        viewportWidth = offeredWidth ?? pixelsWide * 2 + 16
+        pitch = max(2, min(max(0, viewportWidth - 16) / pixelsWide,
+                           max(0, cap - 16) / pixelsHigh))
+        contentWidth = pixelsWide * pitch
+        contentHeight = pixelsHigh * pitch
+        viewportHeight = min(cap, contentHeight + 16)
+    }
+}
+
+/// Gives the reader its final finite viewport in the same layout pass. There
+/// is no measured-width State and no initial frame drawn with an old width.
+private struct MatrixViewportFitLayout: Layout {
+    let pixelWidth: Int
+    let pixelHeight: Int
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let sizing = MatrixViewportSizing(pixelWidth: pixelWidth, pixelHeight: pixelHeight,
+            availableWidth: proposal.width.map(Double.init), maximumHeight: Double(proposal.height ?? 320))
+        return CGSize(width: sizing.viewportWidth, height: sizing.viewportHeight)
+    }
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, anchor: .topLeading,
+            proposal: ProposedViewSize(width: bounds.width, height: bounds.height))
+    }
+}
+
 /// A fixed hardware surround containing readable, horizontally scrolling content.
 /// A Note array pages by complete Notes, in row-major order. Thumbnails keep
 /// using `BoardThumbnail`; the owner's thumbnail exemption does not apply here.
@@ -61,21 +102,42 @@ public struct BoardViewport: View {
     private let frame: BoardFrame
     private let model: DisplayModel
     private let tileHeight: Double
+    private let fitLEDWidth: Bool
     @State private var page: Int? = 0
     @State private var edges = BoardViewportEdges()
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    public init(frame: BoardFrame, model: DisplayModel, tileHeight: Double = 13) {
+    public init(frame: BoardFrame, model: DisplayModel, tileHeight: Double = 13, fitLEDWidth: Bool = false) {
         self.frame = frame
         self.model = model
         self.tileHeight = tileHeight
+        self.fitLEDWidth = fitLEDWidth
     }
 
     public var body: some View {
         if model.technology == .ledMatrix {
-            matrixViewport
+            if fitLEDWidth { fittedMatrixViewport } else { matrixViewport }
         } else {
             flapViewport
+        }
+    }
+
+    private var fittedMatrixViewport: some View {
+        let raster = LedRasterizer.raster(frame, model: model)
+        return MatrixViewportFitLayout(pixelWidth: raster.width, pixelHeight: raster.height) {
+            GeometryReader { proxy in
+                let sizing = MatrixViewportSizing(pixelWidth: raster.width, pixelHeight: raster.height,
+                    availableWidth: Double(proxy.size.width), maximumHeight: Double(proxy.size.height))
+                ScrollView([.horizontal, .vertical]) {
+                    MatrixDotsView(raster: raster, appearance: model.appearance)
+                        .frame(width: sizing.contentWidth, height: sizing.contentHeight)
+                }
+                .padding(8)
+                .background(Color(rgb: model.appearance.bezel), in: RoundedRectangle(cornerRadius: 10))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(BoardSpeech.spoken(frame, model: model))
+            }
         }
     }
 
