@@ -179,8 +179,8 @@ public struct BoardCanvas: View {
         return true
     }
 
-    /// Group same-style surfaces and batch two seam fills instead of interleaving
-    /// surface/glyph/seams for every cell. Retain native rounded-rect primitives.
+    /// Batch disjoint same-style surfaces and two seam fills instead of
+    /// interleaving surface/glyph/seams for every cell. Retain rounded-rect paths.
     /// Content retains its exact painter and resolved-glyph cache. No cell moves,
     /// colour changes, temporal sampling or frame-budget relaxation.
     static func paintStatic(_ layout: BoardLayout, palette: FlapPalette, in context: inout GraphicsContext) {
@@ -190,16 +190,17 @@ public struct BoardCanvas: View {
             paintUnbatched(layout, palette: palette, transition: nil, at: .distantPast, in: &context)
             return
         }
+        var surfaces = Path()
         var gaps = Path()
         var highlights = Path()
         let seam = FlapTilePainter.seam(forTileHeight: layout.tileHeight)
         for tile in layout.tiles {
-            context.fill(Path(roundedRect: CGRect(x: tile.x, y: tile.y, width: tile.width, height: tile.height), cornerRadius: tile.radius),
-                         with: .color(Color(rgb: palette.surface)))
+            surfaces.addPath(Path(roundedRect: CGRect(x: tile.x, y: tile.y, width: tile.width, height: tile.height), cornerRadius: tile.radius))
             let top = (tile.y + tile.height / 2).rounded()
             gaps.addRect(CGRect(x: tile.x, y: top, width: tile.width, height: seam.thickness))
             highlights.addRect(CGRect(x: tile.x, y: top + seam.thickness, width: tile.width, height: seam.thickness))
         }
+        context.fill(surfaces, with: .color(Color(rgb: palette.surface)))
         let font = BoardFont.glyph(size: layout.fontSize)
         var resolved: [Character: GraphicsContext.ResolvedText] = [:]
         for tile in layout.tiles {
