@@ -67,6 +67,39 @@ import XCTest
         XCTAssertTrue(app.staticTexts["UI Test Server"].exists)
     }
 
+    func testIPadInteractiveDismissalClearsUnsubmittedResetFieldsBeforeReopening() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad form presentation")
+        let app = isolatedApplication(), server = FixtureHTTPServer.shared
+        try server.requireReady(); app.launch(); openManualHubEntry(app)
+        allowFixtureHTTP(app)
+        let address = app.textFields["connectionAddress"]
+        typeConnectionAddress("http://127.0.0.1:\(server.port)/signin-\(UUID().uuidString.lowercased())", into: address, in: app)
+        let connect = app.buttons["connectionConnect"]; reveal(connect, in: app); connect.tap()
+        let forgot = app.buttons["forgotPassword"]
+        XCTAssertTrue(forgot.waitForExistence(timeout: 10)); reveal(forgot, in: app); forgot.tap()
+        let haveCode = app.buttons["haveResetCode"]; reveal(haveCode, in: app); haveCode.tap()
+        let values = [("resetCode", "fb_reset_unsubmitted"), ("resetNewPassword", "unsubmitted-password"), ("resetConfirmation", "unsubmitted-password")]
+        for (identifier, text) in values {
+            let field = app.secureTextFields[identifier]
+            XCTAssertTrue(field.waitForExistence(timeout: 5)); reveal(field, in: app); field.tap(); field.typeText(text)
+        }
+        // Drag the real native form; this does not invoke the toolbar Close action.
+        let bar = app.navigationBars["Reset password"]
+        let start = bar.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+        start.press(forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: 0, dy: 650)))
+        let reopen = app.buttons["reopenOnboarding"]
+        XCTAssertTrue(reopen.waitForExistence(timeout: 8)); reopen.tap()
+        let saved = app.buttons.containing(.staticText, identifier: "UI Test Server").firstMatch
+        XCTAssertTrue(saved.waitForExistence(timeout: 5)); saved.tap()
+        XCTAssertTrue(forgot.waitForExistence(timeout: 10)); reveal(forgot, in: app); forgot.tap()
+        XCTAssertTrue(haveCode.waitForExistence(timeout: 5)); reveal(haveCode, in: app); haveCode.tap()
+        for (identifier, _) in values {
+            let field = app.secureTextFields[identifier]
+            XCTAssertTrue(field.waitForExistence(timeout: 5))
+            XCTAssertEqual(field.value as? String, field.placeholderValue ?? "", "Dismissed secrets must not return: \(identifier)")
+        }
+    }
+
     private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
         for _ in 0..<10 {
             if element.exists && element.isHittable {

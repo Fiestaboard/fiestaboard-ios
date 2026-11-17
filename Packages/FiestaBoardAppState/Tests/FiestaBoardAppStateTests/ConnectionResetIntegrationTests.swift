@@ -226,3 +226,38 @@ private final class ResetConnectionURLProtocol: URLProtocol, @unchecked Sendable
         client?.urlProtocolDidFinishLoading(self)
     }
 }
+
+extension ConnectionResetIntegrationTests {
+    // The sheet's actual onDismiss route must retire unsubmitted fields through the connection owner.
+    func testPresentationDismissalClearsUnsubmittedSecretsAndResetIntent() async throws {
+        let fixture = try ResetConnectionHTTP(reply: "reset-code-after-weak")
+        let model = try await connected(fixture)
+        let presentation = model.onboardingPresentationIntent
+        model.username = "retained-owner"; model.password = "unsubmitted-login-secret"
+        model.beginPasswordReset(); model.enterPasswordResetCode(); fill(model)
+        model.dismissOnboardingPresentation(presentation)
+        XCTAssertEqual(model.phase, .picker)
+        XCTAssertNil(model.snapshot); XCTAssertNil(model.passwordResetFlow)
+        XCTAssertEqual(model.password, ""); XCTAssertEqual(model.resetCode, "")
+        XCTAssertEqual(model.resetNewPassword, ""); XCTAssertEqual(model.resetConfirmation, "")
+        XCTAssertEqual(model.username, "retained-owner")
+        XCTAssertEqual(fixture.resetCount, 0)
+    }
+
+    // A reset reply arriving after the presentation closes belongs to the cancelled connection intent.
+    func testPresentationDismissalRejectsOutstandingResetCompletion() async throws {
+        let fixture = try ResetConnectionHTTP(reply: "reset-code-after-weak", deferred: true)
+        let model = try await connected(fixture)
+        let presentation = model.onboardingPresentationIntent
+        model.beginPasswordReset(); model.enterPasswordResetCode(); fill(model)
+        let attempt = model.submitPasswordReset()
+        await fixture.waitForReset()
+        model.dismissOnboardingPresentation(presentation)
+        fixture.release(); await attempt.value
+        XCTAssertEqual(model.phase, .picker)
+        XCTAssertNil(model.snapshot); XCTAssertNil(model.passwordResetFlow)
+        XCTAssertFalse(model.busy)
+        XCTAssertEqual(fixture.resetCount, 1)
+        XCTAssertEqual(model.resetCode, ""); XCTAssertEqual(model.resetNewPassword, ""); XCTAssertEqual(model.resetConfirmation, "")
+    }
+}

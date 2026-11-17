@@ -563,3 +563,33 @@ extension ConnectionModelTests {
         XCTAssertEqual(model.phase, .picker)
     }
 }
+
+extension ConnectionModelTests {
+    // Removing the old sheet while bootstrap is in flight must not cancel the newly selected hub.
+    func testOldPresentationDismissalCannotCancelNewConnectionAttempt() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        await service.blockBootstrap()
+        let oldPresentation = model.onboardingPresentationIntent
+        model.address = service.deployment.description
+        let attempt = model.connectAddress(); await service.waitForBootstrap()
+        model.dismissOnboardingPresentation(oldPresentation)
+        XCTAssertEqual(model.phase, .checking); XCTAssertTrue(model.busy)
+        await service.releaseBootstrap(); await attempt.value
+        XCTAssertEqual(model.phase, .connected)
+        XCTAssertNotNil(model.snapshot)
+    }
+
+    // A successful login removes its sheet too; dismissal may not revoke its retained live service.
+    func testSuccessfulConnectionDismissalKeepsTheConnectedHub() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        model.address = service.deployment.description; await model.connectAddress().value
+        let presentation = model.onboardingPresentationIntent
+        let before = await service.events.filter { $0 == "disconnect" }.count
+        model.dismissOnboardingPresentation(presentation)
+        XCTAssertEqual(model.phase, .connected); XCTAssertNotNil(model.snapshot)
+        let after = await service.events.filter { $0 == "disconnect" }.count
+        XCTAssertEqual(after, before)
+    }
+}
