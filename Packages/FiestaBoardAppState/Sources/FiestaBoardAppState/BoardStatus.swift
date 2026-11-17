@@ -138,6 +138,8 @@ public enum BoardPolling {
     private var postSendTask: Task<Void, Never>?
     private var observers: Set<AnyCancellable> = []
     private var wasBusy = false
+    private var epoch = UUID()
+    private var running = false
 
     /// Replaces the production post-send action (tests).
     public var onPostSendRefresh: (@MainActor () -> Void)?
@@ -145,6 +147,14 @@ public enum BoardPolling {
     public init(store: BoardStore, reader: @escaping @MainActor () -> (any BoardStatusReading)?,
                 sleep: @escaping Sleeper = { try await Task.sleep(nanoseconds: UInt64($0 * 1_000_000_000)) }) {
         self.store = store; self.reader = reader; self.sleep = sleep
+        // Published changes arrive synchronously, before a suspended old read can
+        // resume on the main actor. Display IDs are only unique within one hub.
+        store.$connectionLabel.dropFirst().sink { [weak self] _ in
+            self?.connectionChanged()
+        }.store(in: &observers)
+        store.$connecting.dropFirst().filter { $0 }.sink { [weak self] _ in
+            self?.connectionChanged()
+        }.store(in: &observers)
         store.objectWillChange.sink { [weak self] _ in
             Task { @MainActor [weak self] in self?.storeChanged() }
         }.store(in: &observers)
@@ -157,9 +167,11 @@ public enum BoardPolling {
     /// Start (or restart) the polls for the current connection and board.
     public func start() {
         stop()
+        running = true
+        let token = epoch
         schedule = nil; manual = nil; silence = nil
         rebuildModels(); recompute()
-        tasks.append(Task { [weak self] in await self?.loadAppearance() })
+        tasks.append(Task { [weak self] in await self?.loadAppearance(token: token) })
         tasks.append(loop(every: { _ in BoardPolling.status }) { $0.pollStatus() })
         tasks.append(loop(every: { _ in BoardPolling.board }) { $0.pollOtherFrames() })
         tasks.append(loop(every: { _ in BoardPolling.board }) { $0.pollSelectedMessage() })
@@ -174,19 +186,33 @@ public enum BoardPolling {
     }
 
     public func stop() {
+        epoch = UUID()
+        running = false
         tasks.forEach { $0.cancel() }; tasks = []
         postSendTask?.cancel(); postSendTask = nil
     }
+
+    private func connectionChanged() {
+        stop()
+        stored = [:]; models = [:]; runtime = [:]; frames = [:]
+        schedule = nil; manual = nil; silence = nil; collectionNames = [:]
+        selectedMessage = nil; outOfSync = nil; nowShowing = nil
+        display = BoardDisplaySettings(); overrideClearFailed = false
+        lastBoardID = nil; wasBusy = false
+    }
+
+    private func valid(_ token: UUID) -> Bool { token == epoch && !store.connecting }
 
     /// Re-read the board (+0.75 s and +3.5 s) and its status after a send, so
     /// the tiles flip into the new frame without a manual refresh.
     public func noteSend() {
         postSendTask?.cancel()
+        let token = epoch
         postSendTask = Task { [weak self, sleep] in
             var elapsed: TimeInterval = 0
             for mark in BoardPolling.postSend {
                 try? await sleep(mark - elapsed); elapsed = mark
-                guard !Task.isCancelled, let self else { return }
+                guard !Task.isCancelled, let self, self.valid(token) else { return }
                 self.postSendRefresh()
             }
         }
@@ -209,12 +235,14 @@ public enum BoardPolling {
 
     private func loop(every interval: @escaping @MainActor (BoardStatus) -> TimeInterval, immediately: Bool = true,
                       _ body: @escaping @MainActor (BoardStatus) -> Void) -> Task<Void, Never> {
-        Task { [weak self, sleep] in
+        let token = epoch
+        return Task { [weak self, sleep] in
+            guard !Task.isCancelled, self?.running == true, self?.valid(token) == true else { return }
             if immediately, let self { body(self) }
             while !Task.isCancelled {
                 guard let wait = self.map({ interval($0) }) else { return }
                 try? await sleep(wait)
-                guard !Task.isCancelled, let self else { return }
+                guard !Task.isCancelled, let self, self.running, self.valid(token) else { return }
                 body(self)
             }
         }
@@ -222,6 +250,7 @@ public enum BoardPolling {
 
     private var lastBoardID: String?
     private func storeChanged() {
+        guard running, !store.connecting, store.status != nil else { return }
         let busy = store.commandBusy
         if wasBusy && !busy { noteSend() }
         wasBusy = busy
@@ -256,30 +285,48 @@ public enum BoardPolling {
         if next != nowShowing { nowShowing = next }
     }
 
-    private func loadAppearance() async {
-        guard let reader = reader() else { return }
+    private func loadAppearance(token: UUID) async {
+        guard valid(token), let reader = reader() else { return }
         if let entries = try? await reader.boardSettings() {
+            guard valid(token) else { return }
             stored = Dictionary(entries.map { ($0.id, $0.dictionary()) }, uniquingKeysWith: { first, _ in first })
             rebuildModels()
         }
-        if let settings = try? await reader.displaySettings() { display = settings }
-        if let names = try? await reader.collectionNames() { collectionNames = names; recompute() }
+        guard valid(token) else { return }
+        if let settings = try? await reader.displaySettings() {
+            guard valid(token) else { return }
+            display = settings
+        }
+        guard valid(token) else { return }
+        if let names = try? await reader.collectionNames() {
+            guard valid(token) else { return }
+            collectionNames = names; recompute()
+        }
     }
 
     private func pollStatus() {
-        guard let reader = reader() else { return }
+        guard store.canProbeReachability, let reader = reader() else { return }
+        let token = epoch, pathToken = store.reachabilityEpoch
         Task { [weak self] in
-            guard let report = try? await reader.serviceStatus() else { return }
-            self?.runtime = report.boards
+            do {
+                let report = try await reader.serviceStatus()
+                guard let self, self.valid(token) else { return }
+                self.runtime = report.boards
+                self.store.recordHubResponse(pathToken: pathToken)
+            } catch {
+                guard let self, self.valid(token) else { return }
+                self.store.recordHubReadFailure(error, pathToken: pathToken)
+            }
         }
     }
 
     /// Re-read the selected board's current message (after Restore / Dismiss).
     public func pollSelectedMessage() {
         guard let reader = reader(), let id = store.selectedBoardID else { return }
+        let token = epoch
         Task { [weak self] in
             guard let message = try? await reader.currentMessage(boardID: id) else { return }
-            guard let self, self.store.selectedBoardID == id else { return }
+            guard let self, self.valid(token), self.store.selectedBoardID == id else { return }
             self.selectedMessage = message
             self.recomputeOutOfSync()
         }
@@ -295,8 +342,10 @@ public enum BoardPolling {
     public func dismissExternalFrame() async {
         guard let id = store.selectedBoardID,
               let writer = reader() as? any ExternalFrameDismissing else { return }
+        let token = epoch
         outOfSync = nil
         try? await writer.dismissExternalFrame(boardID: id)
+        guard valid(token), store.selectedBoardID == id else { return }
         pollSelectedMessage()
     }
 
@@ -309,14 +358,19 @@ public enum BoardPolling {
     /// and the board are re-read on the post-send schedule. Nothing retries on its own.
     public func clearTemporaryOverride() async {
         guard let writer = reader() as? any TemporaryOverrideClearing else { return }
+        let token = epoch
         overrideClearFailed = false
-        do { try await writer.clearTemporaryOverride() } catch { overrideClearFailed = true }
+        var failed = false
+        do { try await writer.clearTemporaryOverride() } catch { failed = true }
+        guard valid(token) else { return }
+        overrideClearFailed = failed
         pollActive()
         noteSend()
     }
 
     private func pollOtherFrames() {
         guard let reader = reader() else { return }
+        let token = epoch
         let others = store.boards.filter { $0.id != store.selectedBoardID }
         Task { [weak self] in
             var next: [String: BoardFrame] = [:]
@@ -329,7 +383,7 @@ public enum BoardPolling {
                 }
                 for await (id, frame) in group { if let frame { next[id] = frame } }
             }
-            guard let self else { return }
+            guard let self, self.valid(token) else { return }
             let merged = self.frames.merging(next) { _, new in new }
             if merged != self.frames { self.frames = merged }
         }
@@ -347,12 +401,13 @@ public enum BoardPolling {
 
     private func pollActive() {
         guard let reader = reader(), let id = store.selectedBoardID else { recompute(); return }
+        let token = epoch
         Task { [weak self] in
             async let schedule = try? reader.activeSchedulePage(boardID: id)
             async let manual = try? reader.activePage(boardID: id)
             async let silence = try? reader.silenceStatus(boardID: id)
             let (s, m, q) = await (schedule, manual, silence)
-            guard let self, self.store.selectedBoardID == id else { return }
+            guard let self, self.valid(token), self.store.selectedBoardID == id else { return }
             self.schedule = s; self.manual = m; self.silence = q
             self.recompute(); self.recomputeOutOfSync()
         }

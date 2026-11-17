@@ -18,10 +18,14 @@ import XCTest
     static let frozenDate = Date(timeIntervalSince1970: 1736005260) // 2025-01-04 07:41 America/Los_Angeles
     static var osMajor: Int { ProcessInfo.processInfo.operatingSystemVersion.majorVersion }
 
+    enum WindowMode { case detached, activeScene }
+
     static func image<V: View>(_ view: V, device: Device = .current,
-                              appearance: ColorScheme = .light,
+                              size: CGSize? = nil, appearance: ColorScheme = .light,
                               dynamicType: DynamicTypeSize = .large,
+                              windowMode: WindowMode = .detached,
                               inspect: ((UIWindow) -> Void)? = nil) -> UIImage {
+        let renderSize = size ?? device.size
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "America/Los_Angeles")!
         let host = UIHostingController(rootView: view
@@ -33,11 +37,27 @@ import XCTest
             .environment(\._accessibilityReduceMotion, true)
             .environment(\.parityDate, frozenDate)
             .transaction { $0.disablesAnimations = true })
-        host.view.frame = CGRect(origin: .zero, size: device.size)
-        let window = UIWindow(frame: host.view.frame)
+        host.view.frame = CGRect(origin: .zero, size: renderSize)
+        let scene: UIWindowScene?
+        if windowMode == .activeScene {
+            let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+            scene = scenes.first { $0.activationState == .foregroundActive && $0.windows.contains(where: \.isKeyWindow) }
+                ?? scenes.first { $0.activationState == .foregroundActive }
+            XCTAssertNotNil(scene, "Scene-owned snapshots require the app's active UIWindowScene")
+        } else {
+            scene = nil
+        }
+        let previousKeyWindow = scene?.windows.first(where: \.isKeyWindow)
+        let window = scene.map { UIWindow(windowScene: $0) } ?? UIWindow(frame: host.view.frame)
+        window.frame = host.view.frame
         window.overrideUserInterfaceStyle = appearance == .dark ? .dark : .light
         window.rootViewController = host
-        window.isHidden = false
+        if scene != nil { window.makeKeyAndVisible() } else { window.isHidden = false }
+        defer {
+            window.isHidden = true
+            window.rootViewController = nil
+            previousKeyWindow?.makeKey()
+        }
         host.view.backgroundColor = appearance == .dark ? .black : .white
         host.view.setNeedsLayout()
         host.view.layoutIfNeeded()
@@ -48,11 +68,9 @@ import XCTest
         format.scale = device.scale
         format.opaque = true
         format.preferredRange = .standard
-        let image = UIGraphicsImageRenderer(size: device.size, format: format).image { _ in
+        let image = UIGraphicsImageRenderer(size: renderSize, format: format).image { _ in
             host.view.drawHierarchy(in: host.view.bounds, afterScreenUpdates: true)
         }
-        window.isHidden = true
-        window.rootViewController = nil
         return image
     }
 
