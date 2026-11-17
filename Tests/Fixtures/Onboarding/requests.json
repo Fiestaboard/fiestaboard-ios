@@ -1,0 +1,106 @@
+{
+  "requests": [
+    {
+      "id": "device-login-before-reset",
+      "method": "POST",
+      "path": "/auth/device/login",
+      "status": 200
+    },
+    {
+      "id": "reset-invalid-code",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 400
+    },
+    {
+      "id": "reset-weak-password",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 422
+    },
+    {
+      "id": "reset-code-after-weak",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 200
+    },
+    {
+      "id": "reset-code-reused",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 400
+    },
+    {
+      "id": "device-session-after-reset",
+      "method": "GET",
+      "path": "/boards",
+      "status": 401
+    },
+    {
+      "id": "login-old-password",
+      "method": "POST",
+      "path": "/auth/device/login",
+      "status": 401
+    },
+    {
+      "id": "device-login-after-reset",
+      "method": "POST",
+      "path": "/auth/device/login",
+      "status": 200
+    },
+    {
+      "id": "auth-status-after-reset",
+      "method": "GET",
+      "path": "/auth/status",
+      "status": 200
+    },
+    {
+      "id": "reset-superseded-code",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 400
+    },
+    {
+      "id": "reset-expired-code",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 400
+    },
+    {
+      "id": "reset-extra-field",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 422
+    },
+    {
+      "id": "reset-password-too-long",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 422
+    },
+    {
+      "id": "reset-shared-lockout",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 429
+    },
+    {
+      "id": "device-login-shared-lockout",
+      "method": "POST",
+      "path": "/auth/device/login",
+      "status": 429
+    },
+    {
+      "id": "device-session-revoke",
+      "method": "DELETE",
+      "path": "/auth/device/session",
+      "status": 200
+    },
+    {
+      "id": "device-session-finally-revoked",
+      "method": "GET",
+      "path": "/boards",
+      "status": 401
+    }
+  ]
+}
