@@ -164,6 +164,40 @@ import XCTest
         XCTAssertEqual(source.value as? String, "")
     }
 
+    /// Required diagnostic journey: unsupported/denied/timeout is an explicit
+    /// failure artifact, never a skip or a presentation-performance estimate.
+    func testExplicitCurrentAppCaptureCapabilityRecordsNativeMetadataOrFailure() throws {
+        let app = isolatedApplication()
+        let output = FileManager.default.temporaryDirectory.appendingPathComponent("i8-capability-" + UUID().uuidString)
+        launchFixture(app, arguments: ["-fiestaboard.captureComposeCapability", "YES",
+            "-fiestaboard.captureComposeCapabilityOut", output.path], scenario: "i8-compose")
+        tapReady(app.buttons["homeCompose"])
+        XCTAssertEqual(app.staticTexts["composeCaptureProbePhase"].label, "idle")
+        tapReady(app.buttons["composeCaptureProbeStart"])
+        shot("i8-capture-capability-original-native-picker")
+        // This is explicit native consent after the diagnostic button. No
+        // permission is bypassed. The selector is pending actual runtime proof;
+        // an unrecognized picker ends as timeout with its original screenshot.
+        let system = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let systemStart = system.buttons["Start Recording"]
+        if systemStart.waitForExistence(timeout: 3) { tapReady(systemStart) }
+        else if app.buttons["Start Recording"].exists { tapReady(app.buttons["Start Recording"]) }
+        let report = app.staticTexts["composeCaptureProbeReport"]
+        XCTAssertTrue(report.waitForExistence(timeout: 16), "Capability probe must publish success or a bounded failure")
+        shot("i8-capture-capability-original-native-result")
+        let raw = try XCTUnwrap(report.value as? String)
+        let data = Data(raw.utf8)
+        let metadata = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
+        metadata.name = "i8-capture-capability-actual-report"; metadata.lifetime = .keepAlways; add(metadata)
+        let result = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        if let files = try? FileManager.default.contentsOfDirectory(at: output, includingPropertiesForKeys: nil) {
+            for file in files { let original = XCTAttachment(contentsOfFile: file); original.name = file.lastPathComponent; original.lifetime = .keepAlways; add(original) }
+        }
+        XCTAssertEqual(result["measurementEmitted"] as? Bool, false)
+        XCTAssertEqual(result["status"] as? String, "metadata_captured", "Required capture capability unavailable: \(raw)")
+        XCTAssertEqual(result["cleanupCompleted"] as? Bool, true)
+    }
+
     func testComposeControlsRemainAccessibleInDarkAX3() {
         let app = isolatedApplication()
         launchFixture(app, arguments: ["-AppleInterfaceStyle", "Dark", "-UIPreferredContentSizeCategoryName",

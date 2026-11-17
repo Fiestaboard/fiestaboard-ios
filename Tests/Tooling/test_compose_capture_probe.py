@@ -50,6 +50,7 @@ while let line = readLine() {
         case "stop": lifecycle.stopRequested()
         case "timeout": lifecycle.deadlineExpired()
         case "cleanup": lifecycle.cleanedUp()
+        case "cleanupFailure": lifecycle.cleanupFailed(domain: "SCStreamErrorDomain", code: -3819)
         default: break
         }
         snapshots.append(snapshot(requested))
@@ -164,6 +165,14 @@ while let line = readLine() {
         self.assertEqual(result['report']['reason'], 'stream_error')
         self.assertEqual(result['report']['errorDomain'], 'SCStreamErrorDomain')
         self.assertEqual(result['report']['errorCode'], -3823)
+
+    def test_cleanup_failure_cannot_publish_a_successful_capability_result(self):
+        result = self.run_lifecycle(self.start()+[dict(kind='frame', metadata=self.frame()), dict(kind='cleanupFailure')])[-1]
+        self.assertEqual(result['phase'], 'finished')
+        self.assertEqual(result['report']['status'], 'failed')
+        self.assertEqual(result['report']['reason'], 'cleanup_failed')
+        self.assertFalse(result['report']['cleanupCompleted'])
+        self.assertNotIn('frame', result['report'])
 
     def test_first_complete_sample_and_terminal_report_are_immutable(self):
         actions = self.start()+[dict(kind='frame', metadata=self.frame()), dict(kind='frame', metadata=self.frame(displayTicks=1050)), dict(kind='cleanup'), dict(kind='cleanup'), dict(kind='request')]

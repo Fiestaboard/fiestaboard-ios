@@ -55,6 +55,9 @@ struct ComposeEditor: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     connectionNotice
+                    #if DEBUG && canImport(ScreenCaptureKit)
+                    ComposeCaptureProbeControls()
+                    #endif
                     if let silence {
                         Label(silence.endsAt.map { "Silence is active until \($0.formatted(date: .omitted, time: .shortened))" } ?? "Silence is active", systemImage: "moon")
                             .font(.callout).foregroundStyle(ShellPalette(appearance: appearance).info)

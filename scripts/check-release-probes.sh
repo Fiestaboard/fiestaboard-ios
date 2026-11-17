@@ -29,6 +29,11 @@ pattern+='|previewInputLatency|inputToPreviewSeconds|FIESTABOARD_TEST_NAMESPACE|
 pattern+='|ShellPlacementProbe|shellTabPlacement|shellTabAccessoryPlacement|cache:(offline|updating|board|page-)|shell:connecting-label'
 pattern+='|FIESTABOARD_CLOSE_TRACE|traceClose|inputToPreviewPhases|markInputPhase'
 pattern+='|ConnectReviewDiscovery|fiestaboard\.(panelProfile|renderProfile|viewerMaterial)'
+# I8: opt-in capture capability diagnostics and captured-presentation ticket APIs.
+pattern+='|ComposeCapture|composeCaptureProbe|fiestaboard\.captureComposeCapability'
+pattern+='|ComposePresentationTicket|ComposePresentationObservation|enableCapturedPresentationDiagnostics|capturedPresentationTicket|firstObservedPresentation|recordCapturedPresentation'
+pattern+='|presentationSessionID|presentationNowTicks|presentationSecondsPerTick|presentationInputTicks|presentationReadyTicks|clearCapturedPresentation'
+pattern+='|postDebounceUpperBoundSeconds|inputToObservedUpperBoundSeconds|adoptionToObservedUpperBoundSeconds|postDebouncePreviewSeconds'
 pattern+='|I[0-9]+:[0-9]+;[0-9]+:[0-9]+|(^|[^0-9])[0-9]{2,4}:[0-9]{3,7}([^0-9]|$)|parity:[a-z]+'
 found=0
 while IFS= read -r -d '' binary; do
