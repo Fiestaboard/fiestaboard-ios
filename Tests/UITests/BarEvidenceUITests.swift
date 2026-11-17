@@ -94,7 +94,7 @@ import XCTest
     // MARK: Helpers
 
     private func signIn(scenario: String, arguments: [String] = []) throws -> XCUIApplication {
-        try FixtureHTTPServer.shared.requireReady()
+        try requireReadyFixture(port: String(fixturePort))
         let app = isolatedApplication()
         app.launchArguments = arguments; app.launch()
         let alias = "board-\(scenario)-" + UUID().uuidString.prefix(8).lowercased()

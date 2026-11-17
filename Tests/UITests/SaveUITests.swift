@@ -147,7 +147,7 @@ import XCTest
     /// Sign in to a fresh `/board-manual-<id>/` prefix and turn on changes for this server, so the
     /// session may write pages (the same opt-in a person makes in Settings).
     private func signInWithChanges() throws -> XCUIApplication {
-        try FixtureHTTPServer.shared.requireReady()
+        try requireReadyFixture(port: String(fixturePort))
         let app = isolatedApplication()
         app.launchArguments = []; app.launch()
         alias = "board-manual-" + UUID().uuidString.prefix(8).lowercased()
