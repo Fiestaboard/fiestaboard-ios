@@ -207,18 +207,10 @@ struct DraftScene: View {
         } else if connection.phase == .checking || connection.phase == .unreachable {
             NavigationStack {
                 if let cached = cache.value(for: shellHub, at: now), route == .pages {
-                    List(cached.pages) { page in Text(page.name) }.navigationTitle("Pages")
-                        .safeAreaInset(edge: .top) { Text("Updating…").font(.callout).padding() }
-                } else if connection.phase == .checking, let cached = cache.value(for: shellHub, at: now), route == .home {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("Updating…").font(.callout)
-                            Text(cached.displayName).font(.title)
-                            if let detail = cached.board {
-                                BoardViewport(frame: BoardFrame(detail), model: DisplayModel(summary: BoardSummaryFields(detail.summary), stored: nil))
-                            }
-                        }.padding().opacity(0.6)
-                    }.navigationTitle("Home")
+                    ShellCachedContent(snapshot: cached, route: .pages, offline: presentation == .offline)
+                } else if (connection.phase == .checking || presentation == .offline),
+                          let cached = cache.value(for: shellHub, at: now), route == .home {
+                    ShellCachedContent(snapshot: cached, route: .home, offline: presentation == .offline)
                 } else {
                     ShellConnectionView(state: presentation, hub: activeHubName, retry: { connection.retrySavedHub() })
                         .navigationTitle(route.rawValue)
