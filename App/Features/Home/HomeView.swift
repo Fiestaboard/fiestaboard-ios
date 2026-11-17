@@ -31,10 +31,14 @@ struct HomeView<Controls: View>: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if let summary {
+                        TimelineView(.periodic(from: .now, by: 1)) { timeline in
+                            if let banner = homePresentation(now: timeline.date).banner { statusBanner(banner) }
+                        }
                         if previewedPageID != nil {
                             Label(previewLabel, systemImage: "eye").font(.caption).accessibilityIdentifier("homePagePreviewLabel")
                         }
                         board(summary, height: geometry.size.height)
+                            .opacity(store.board?.summary.paused == true ? 0.5 : 1)
                             .contextMenu {
                                 Button("Change Page", systemImage: "rectangle.stack") { changingPage = true }
                                     .disabled(!status.canSelectHomePage(timed: false))
@@ -46,12 +50,11 @@ struct HomeView<Controls: View>: View {
                             HomeStatusSummary(presentation: presentation, displayName: summary.name,
                                 pageName: previewReady ? (previewPage?.name ?? "") : (status.nowShowing?.name ?? "No page selected"), previewing: previewReady, canCancel: status.canClearOverride,
                                 cancel: { Task { await status.clearTemporaryOverride() } })
-                            if let banner = presentation.banner { statusBanner(banner) }
                         }
                         if let face = status.outOfSync {
                             OutOfSyncBanner(face: face, summary: summary, store: store, status: status, restore: prepareRestore)
                         }
-                        if let outcome = status.homeControlOutcome, outcome != .pageSelected && outcome != .overrideCanceled && outcome != .overrideRestored {
+                        if let outcome = status.homeControlOutcome, outcome != .pageSelected && outcome != .overrideCanceled && outcome != .overrideRestored && outcome != .displayResumed {
                             Label(outcome.message, systemImage: outcome == .pageSelected || outcome == .overrideCanceled ? "checkmark.circle" : "info.circle")
                                 .font(.callout).accessibilityIdentifier("homeControlOutcome")
                         }
@@ -130,7 +133,7 @@ struct HomeView<Controls: View>: View {
         .onChange(of: store.selectedBoardID) { _, _ in changingPage = false; editing = false }
     }
     private var successfulHomeOutcome: Bool {
-        status.homeControlOutcome == .pageSelected || status.homeControlOutcome == .overrideCanceled || status.homeControlOutcome == .overrideRestored
+        status.homeControlOutcome == .pageSelected || status.homeControlOutcome == .overrideCanceled || status.homeControlOutcome == .overrideRestored || status.homeControlOutcome == .displayResumed
     }
     private func homePresentation(now: Date) -> HomePresentation {
         HomePresentation.make(detail: store.board, showing: status.nowShowing, silence: status.selectedSilence,
@@ -165,10 +168,54 @@ struct HomeView<Controls: View>: View {
         .accessibilityIdentifier("homeBoard").transaction { $0.animation = nil }
     }
     private func statusBanner(_ banner: HomeBanner) -> some View {
-        Label(banner.title, systemImage: banner == .paused ? "pause.circle" : banner == .silenced ? "moon" : "wifi.exclamationmark")
-            .font(.callout).padding(12).frame(maxWidth: .infinity, alignment: .leading)
-            .background(ShellPalette(appearance: appearance).card, in: RoundedRectangle(cornerRadius: 12))
-            .accessibilityIdentifier(banner == .paused ? "pausedBadge" : banner == .silenced ? "silenceBadge" : "displayOfflineBanner")
+        let silence = store.selectedBoardID.flatMap { HomeSilencePresentation.make(status: status.selectedSilence, boardID: $0) }
+        let tint: Color = banner == .silenced ? .blue : .primary
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                Image(systemName: banner == .paused ? "pause.circle" : banner == .silenced ? "moon" : "wifi.exclamationmark")
+                    .foregroundStyle(tint).font(.title2).accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(banner == .paused ? "\(summary?.name ?? "Display") is paused" : banner == .silenced
+                        ? "Silence Schedule" + (silence?.endsAt.map { " until " + $0.formatted(date: .omitted, time: .shortened) } ?? "") : banner.title)
+                        .font(.subheadline.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
+                    if banner == .paused {
+                        Text("Pages won’t change until you resume.").foregroundStyle(.secondary)
+                    } else if banner == .silenced {
+                        Text(silence?.heldPreview != nil ? "A message is held for \(summary?.name ?? "this display")." : "\(summary?.name ?? "This display") is following its Silence Schedule.")
+                            .foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+                        if silence?.holdsBlockedSends == true {
+                            Text("Anything you send now waits until silence ends.").foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+            }
+            if banner == .paused {
+                Button("Resume") { Task { await status.resumeHomeDisplay() } }
+                    .buttonStyle(.bordered).controlSize(.large).frame(maxWidth: .infinity, alignment: .trailing)
+                    .disabled(!status.canResumeHomeDisplay).accessibilityIdentifier("homeResumeDisplay")
+            }
+            if banner == .silenced, let silence, let preview = silence.heldPreview {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Held message").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+                    Text(preview).font(.headline).fixedSize(horizontal: false, vertical: true)
+                    if let queued = silence.queuedAt {
+                        Text("Held since \(queued.formatted(date: .omitted, time: .shortened))").font(.caption).foregroundStyle(.secondary)
+                    }
+                    if silence.holdsBlockedSends, let end = silence.endsAt {
+                        Text("Scheduled for \(end.formatted(date: .omitted, time: .shortened)).").font(.subheadline)
+                    } else if !silence.holdsBlockedSends {
+                        Text("Holding new messages is off. This message is still held.").font(.subheadline)
+                    }
+                }.padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                    .background(ShellPalette(appearance: appearance).skeleton, in: RoundedRectangle(cornerRadius: 12))
+                    .accessibilityIdentifier("homeHeldMessage")
+            }
+        }
+        .font(.callout).padding(16).frame(maxWidth: .infinity, alignment: .leading)
+        .background(ShellPalette(appearance: appearance).card, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(tint.opacity(0.7), lineWidth: 1))
+        .accessibilityIdentifier(banner == .paused ? "pausedBadge" : banner == .silenced ? "silenceBadge" : "displayOfflineBanner")
     }
 }
 

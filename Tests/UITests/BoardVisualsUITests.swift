@@ -21,8 +21,8 @@ final class BoardVisualsUITests: XCTestCase {
             ("collection", "Morning rotation › ", "Collection", ["collectionBadge"]),
             ("collection-native-null", "Morning rotation › Device selecting…", "Collection", ["collectionBadge"]),
             ("override", "Desk Note", "Override", []),
-            ("paused", "Hello World", "Manual Mode", ["pausedBadge"]),
-            ("silence", "Hello World", "Manual Mode", ["silenceBadge"]),
+            ("paused", "Hello World", "Paused", ["pausedBadge"]),
+            ("silence", "Hello World", "Silenced", ["silenceBadge"]),
         ]
         for (scenario, name, mode, badges) in expectations {
             let app = launchSignedIn(scenario: scenario)
