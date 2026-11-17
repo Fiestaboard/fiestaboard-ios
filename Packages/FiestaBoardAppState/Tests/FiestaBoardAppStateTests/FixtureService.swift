@@ -10,8 +10,10 @@ public actor FixtureFiestaBoardService: FiestaBoardService {
     private let simulation: FixtureTransport
     private let service: LiveFiestaBoardService
     private let homeAudit: Bool
+    private var homeResumeRecording: BoardDetail?
     private var homeRecording: (version: VersionInfo, boards: [BoardSummary], board: BoardDetail)?
     var canceledBoards: [String] = []
+    var resumedBoards: [String] = []
     private var homeFailure: FiestaBoardError?
     private var homeDelayed = false
     private var homeStarted = false
@@ -57,6 +59,7 @@ public actor FixtureFiestaBoardService: FiestaBoardService {
     func configureHomeRecording(version: VersionInfo, boards: [BoardSummary], board: BoardDetail) {
         homeRecording = (version,boards,board)
     }
+    func configureHomeResumeReadback(_ detail: BoardDetail) { homeResumeRecording = detail }
     public func boards() async throws -> [BoardSummary] {
         if let homeRecording { return homeRecording.boards }
         return try await service.boards()
@@ -379,7 +382,7 @@ private actor FixtureTransport: APITransport {
 }
 
 // Explicit synthetic Home behavior controls. Actual wire bodies stay in Tests/Fixtures/Home.
-extension FixtureFiestaBoardService: TemporaryOverrideClearing, HomePageSelecting, HomePageHolding, BoardStatusReading, HomeOverrideUndoing {
+extension FixtureFiestaBoardService: TemporaryOverrideClearing, HomePageSelecting, HomePageHolding, BoardStatusReading, HomeOverrideUndoing, HomeDisplayResuming {
     func configureUndo(supported: Bool, expiresAt: Date) { undoSupported = supported; undoExpiry = expiresAt }
     public func homeOverrideStatus(boardID: String) async throws -> HomeOverrideStatus {
         let value = undoSupported
@@ -431,6 +434,14 @@ extension FixtureFiestaBoardService: TemporaryOverrideClearing, HomePageSelectin
         try await homeMutation()
         return try JSONDecoder().decode(HomeControlReceipt.self, from: JSONSerialization.data(withJSONObject:
             ["board_id":boardID,"page_id":pageID,"sent":false,"active":true]))
+    }
+    public func resumeHomeDisplay(boardID: String) async throws -> HomePauseReceipt {
+        resumedBoards.append(boardID); try await homeMutation()
+        if let detail = homeResumeRecording, let recording = homeRecording {
+            homeRecording = (recording.version,recording.boards,detail)
+        }
+        return try JSONDecoder().decode(HomePauseReceipt.self,from:JSONSerialization.data(withJSONObject:
+            ["board_id":boardID,"paused":false]))
     }
     public func holdHomePage(pageID: String, boardID: String, durationMinutes: Int?) async throws -> HomeControlReceipt {
         try await selectHomePage(pageID: pageID, boardID: boardID, durationMinutes: durationMinutes)
