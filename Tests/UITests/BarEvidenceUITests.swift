@@ -27,6 +27,23 @@ import XCTest
         }
     }
 
+    /// I7: capture the actual Home hierarchy at AX3, with its audited scoped fixture.
+    func testHomeAtAccessibilityTextSize() throws {
+        try requireReadyFixture(port: String(fixturePort))
+        let app = isolatedApplication()
+        launchFixture(app, arguments: ["-UIPreferredContentSizeCategoryName", UIContentSizeCategory.accessibilityExtraLarge.rawValue], scenario: "i7-manual")
+        let board = element(app, "homeBoard")
+        XCTAssertTrue(waitFor(10) { ((board.value as? String) ?? board.label).contains("HELLO") }, "Home must contain its delivered board")
+        XCTAssertTrue(app.navigationBars["Home"].exists)
+        XCTAssertTrue(element(app, "nowShowingName").exists)
+        shot(app, "I7-home-AX3", settle: 4)
+        let change = app.buttons["changePage"]
+        reveal(change, app)
+        XCTAssertTrue(change.isHittable, "Change Page must remain reachable at AX3")
+        XCTAssertTrue(change.isEnabled, "The scoped fixture must preserve the actual Home control")
+        close(app)
+    }
+
     /// B31: the editor at accessibility XL text: chips, tiles and rows re-rasterise at the size.
     /// (The in-app demo: at this size the connection form's fields move out of the helper's reach.)
     func testEditorAtAccessibilityTextSize() throws {
@@ -94,7 +111,7 @@ import XCTest
     // MARK: Helpers
 
     private func signIn(scenario: String, arguments: [String] = []) throws -> XCUIApplication {
-        try FixtureHTTPServer.shared.requireReady()
+        try requireReadyFixture(port: String(fixturePort))
         let app = isolatedApplication()
         app.launchArguments = arguments; app.launch()
         let alias = "board-\(scenario)-" + UUID().uuidString.prefix(8).lowercased()

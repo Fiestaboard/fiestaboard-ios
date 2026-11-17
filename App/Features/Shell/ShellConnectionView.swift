@@ -23,7 +23,7 @@ struct ShellConnectionView: View {
                 Text("Check that your hub is on and you're on the same network, or use its remote address.")
             } actions: {
                 Button("Try again", action: retry)
-            }.accessibilityIdentifier("shellUnreachable")
+            }.background(palette.background.ignoresSafeArea()).accessibilityIdentifier("shellUnreachable")
         case .connecting(let still, _):
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {

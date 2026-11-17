@@ -207,7 +207,7 @@ import XCTest
     }
 
     private func connectToFixture(_ app: XCUIApplication, scenario: String) throws {
-        try FixtureHTTPServer.shared.requireReady()
+        try requireReadyFixture(port: port)
         app.launchArguments = []; app.launch()
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
         func revealForm(_ element: XCUIElement) {
