@@ -245,6 +245,25 @@ private actor ComposeStoreService: FiestaBoardService, ComposeServicing, Compose
 
 
 extension ComposeStoreTests {
+    func testDisplaySelectionProjectionRetainsUnresolvedComposeAuthorityBarrier() async throws {
+        for mode in ["unknown", "mismatched-accepted", "thrown"] {
+            let (store, service, request) = try await connected()
+            if mode == "unknown" { await service.configure(state: .unknown) }
+            if mode == "mismatched-accepted" { await service.replaceReadbackRequestID(UUID()) }
+            if mode == "thrown" { await service.configureSendError(.unknownMutationOutcome) }
+            await store.confirm(try XCTUnwrap(store.prepare(.compose(request)))).value
+            XCTAssertGreaterThan(store.boards.count, 1)
+            XCTAssertTrue(store.needsReadback)
+            XCTAssertFalse(store.canSelectBoard, "An available menu cannot offer a selection the authority rejects: \(mode)")
+            await store.refresh().value
+            XCTAssertFalse(store.canSelectBoard, "A background read cannot settle \(mode)")
+            await service.configure(state: .sent)
+            await service.configureSendError(nil); await service.replaceReadbackRequestID(nil)
+            await store.checkComposeOutcome().value
+            XCTAssertTrue(store.composeOperation?.acceptedReadback == true)
+            XCTAssertFalse(store.needsReadback); XCTAssertTrue(store.canSelectBoard)
+        }
+    }
     func testCompletedComposeAcceptanceSurvivesExpiryAndReplacementBoardSnapshots() async throws {
         for state in [ComposeReceipt.State.sent, .unchanged] {
             let (store, service, request) = try await connected()
