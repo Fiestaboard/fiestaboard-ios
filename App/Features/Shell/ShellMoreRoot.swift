@@ -20,9 +20,13 @@ struct ShellMoreRoot<Account: View, Hubs: View, About: View>: View {
                     Text(hubName).font(.headline)
                     Text(host).font(.subheadline).foregroundStyle(.secondary)
                 }
+            }.listRowBackground(palette.card)
+            Section {
                 NavigationLink(destination: account) {
                     Label(username ?? "Account", systemImage: "person.crop.circle")
                 }
+            }.listRowBackground(palette.card)
+            Section {
                 Button {} label: { Label("FiestaBot", systemImage: "sparkles") }.disabled(true)
             }.listRowBackground(palette.card)
             Section("Hub · " + hubName) {
@@ -56,6 +60,12 @@ struct ShellHubsView: View {
     var body: some View {
         List {
             Section {
+                Text("Saved hubs on this device. Tap one to switch.")
+                    .font(.subheadline).foregroundStyle(.secondary)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+            }
+            Section {
                 ForEach(hubs) { hub in
                     Button { select(hub) } label: {
                         HStack {
@@ -70,8 +80,12 @@ struct ShellHubsView: View {
                         }
                     }.disabled(busy)
                 }
+            } header: { Text("Saved hubs") }
+                footer: { Text("Each hub keeps its own sign-in and selected display.") }
+                .listRowBackground(palette.card)
+            Section {
                 Button("Add a hub", action: add).accessibilityIdentifier("shellAddHub")
-            } footer: { Text("Each hub keeps its own sign-in and selected display.") }
+            }
                 .listRowBackground(palette.card)
         }
         .scrollContentBackground(.hidden).background(palette.background)
