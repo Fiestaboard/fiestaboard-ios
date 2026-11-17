@@ -1,0 +1,145 @@
+{
+  "hubRepository": "Fiestaboard/FiestaBoard",
+  "hubCommit": "f47da6e4e764fc2826f396210f013e45dc1a7fd8",
+  "requestManifestSHA256": "28ecf491d2288f0f9df00b40088a4285887200f0b8f41263159b74c6dc4c1da1",
+  "recorder": "scripts/record-home-fixtures.py",
+  "method": "Docker built from immutable git archive; real FastAPI HTTP boundary",
+  "credentialSafety": "Synthetic account; mobile token never recorded and revoked before process exit",
+  "scenario": {
+    "kitchen": "cx-kitchen",
+    "desk": "cx-desk",
+    "pageID": "d0d3c867-eab5-493e-adcb-cae024e9ae2d"
+  },
+  "responses": [
+    {
+      "file": "home-boards.json",
+      "method": "GET",
+      "path": "/v1/boards",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "4caf7f4509fb770754afe212fd815eaf656fd8916b4889b6740e337fc91de4e9"
+    },
+    {
+      "file": "home-manual.json",
+      "method": "GET",
+      "path": "/v1/boards/cx-kitchen",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "1f01a590fbb7494d275e4e6e30b91064542b34d035f0a24ef252b7ae26ad9038"
+    },
+    {
+      "file": "override-timed.json",
+      "method": "POST",
+      "path": "/settings/temporary-override",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "e62cc84177fd48f4d89251b8971b01047709b7b5c1338b6c404f64a3e8a9cdac"
+    },
+    {
+      "file": "home-override.json",
+      "method": "GET",
+      "path": "/v1/boards/cx-kitchen",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "59675ab8e76b637e30094108648f908a8299926d6b73934d8d46957cf1050444"
+    },
+    {
+      "file": "active-override.json",
+      "method": "GET",
+      "path": "/schedules/active/page?board_id=cx-kitchen",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "e71e91f12c585b6e8cf3ae4df592739ccb5c52998d110e285a971ce3885f4db3"
+    },
+    {
+      "file": "override-detail.json",
+      "method": "GET",
+      "path": "/settings/temporary-override?board_id=cx-kitchen",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "e62cc84177fd48f4d89251b8971b01047709b7b5c1338b6c404f64a3e8a9cdac"
+    },
+    {
+      "file": "other-display.json",
+      "method": "GET",
+      "path": "/v1/boards/cx-desk",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "f18591a2827311361ad405393d3ba5044fe227be0e5930a01315fafcfb2982d1"
+    },
+    {
+      "file": "override-cancel.json",
+      "method": "DELETE",
+      "path": "/settings/temporary-override?board_id=cx-kitchen",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "c0bcb82c673b9882d9addaf682695dde02328c9080898b790b0c879877d534ac"
+    },
+    {
+      "file": "override-canceled.json",
+      "method": "GET",
+      "path": "/settings/temporary-override?board_id=cx-kitchen",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "2a99b4cdbd27b72fda3c53f1b647620e09bee38b31c5e746982c2d09c7149171"
+    },
+    {
+      "file": "override-indefinite.json",
+      "method": "POST",
+      "path": "/settings/temporary-override",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "ea0ba4ccb4e40ebb452e975eebaaddae7502a0fcca561c9d14b424c453f4fe26"
+    },
+    {
+      "file": "home-indefinite.json",
+      "method": "GET",
+      "path": "/v1/boards/cx-kitchen",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "a9c4e167b9f48ecfd930683b777436d759c8bb6e1b2b79880151250aa07d1a3c"
+    },
+    {
+      "file": "home-silence.json",
+      "method": "GET",
+      "path": "/silence-status?board_id=cx-kitchen",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "a88734d72139a080709e2ab6b98112ab4fe8c7535c1d975a41c37b9f1ce6a589"
+    },
+    {
+      "file": "home-runtime.json",
+      "method": "GET",
+      "path": "/v1/status",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "c9f910c7b09addc824a8b5a5c41600fc2c8987fee3f81c6da92344c345b543c1"
+    }
+  ]
+}
