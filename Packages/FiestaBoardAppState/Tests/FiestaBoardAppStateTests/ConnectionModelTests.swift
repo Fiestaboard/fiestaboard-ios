@@ -42,6 +42,62 @@ import FiestaBoardKit
         XCTAssertEqual(model.phase, .picker)
         XCTAssertNil(model.selectedSavedHub)
     }
+    func testForgetAndAuthenticationLossRemoveSnapshotAndRevokePendingWrites() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let service = try OnboardingService()
+        await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        let snapshots = ShellSnapshotStore(directory: directory.appendingPathComponent("snapshots"))
+        let store = BoardStore()
+        let model = ConnectionModel(store: store, catalog: ServerCatalog(directory: directory), discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, snapshots: snapshots, serviceFactory: { _ in service })
+        let saved = SavedServer(deployment: service.deployment, alias: "Known", installationID: "installation")
+        await model.selectSaved(saved).value
+        let hub = try XCTUnwrap(model.selectedSavedHub)
+        let first = try XCTUnwrap(model.snapshotLease)
+        let snapshot = ShellSnapshot(hub: hub, capturedAt: Date(), board: nil, displayName: "Kitchen", pages: [])
+        _ = try await snapshots.write(snapshot, lease: first)
+        await model.forgetSignIn()
+        XCTAssertNil(model.snapshotLease)
+        let staleWrite = try await snapshots.write(snapshot, lease: first)
+        XCTAssertFalse(staleWrite)
+        let forgotten = try await snapshots.read(for: hub, at: Date())
+        XCTAssertNil(forgotten)
+        await model.selectSaved(hub).value
+        let second = try XCTUnwrap(model.snapshotLease)
+        _ = try await snapshots.write(snapshot, lease: second)
+        store.disconnect()
+        await model.storeConnectionChanged().value
+        let signedOut = try await snapshots.read(for: hub, at: Date())
+        XCTAssertNil(signedOut)
+        XCTAssertNil(model.snapshotLease)
+    }
+    func testInstallationChangeAndForgetHubClearDurableSnapshot() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let service = try OnboardingService()
+        await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        let snapshots = ShellSnapshotStore(directory: directory.appendingPathComponent("snapshots"))
+        let model = ConnectionModel(store: BoardStore(), catalog: ServerCatalog(directory: directory), discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, snapshots: snapshots, serviceFactory: { _ in service })
+        let saved = SavedServer(deployment: service.deployment, alias: "Known", installationID: "installation")
+        await model.selectSaved(saved).value
+        let hub = try XCTUnwrap(model.selectedSavedHub)
+        let snapshot = ShellSnapshot(hub: hub, capturedAt: Date(), board: nil, displayName: "Kitchen", pages: [])
+        _ = try await snapshots.write(snapshot, lease: XCTUnwrap(model.snapshotLease))
+        await service.changeInstallation("different")
+        await model.checkServerState().value
+        let replaced = try await snapshots.read(for: hub, at: Date())
+        XCTAssertNil(replaced)
+        XCTAssertNil(model.snapshotLease)
+        await service.changeInstallation("installation")
+        await model.selectSaved(hub).value
+        let lease = try XCTUnwrap(model.snapshotLease)
+        _ = try await snapshots.write(snapshot, lease: lease)
+        await model.removeServer(hub)
+        let removed = try await snapshots.read(for: hub, at: Date())
+        XCTAssertNil(removed)
+        let staleWrite = try await snapshots.write(snapshot, lease: lease)
+        XCTAssertFalse(staleWrite)
+    }
     func testStartupNeverBuildsLiveServiceAndDisconnectReturnsPicker() async throws {
         let service = try OnboardingService(); let model = model(service)
         await model.start().value
