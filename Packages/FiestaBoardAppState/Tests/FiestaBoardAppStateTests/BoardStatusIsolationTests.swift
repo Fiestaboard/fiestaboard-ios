@@ -51,6 +51,25 @@ import FiestaBoardKit
         XCTAssertTrue(status.frames.isEmpty)
         XCTAssertNil(status.outOfSync)
     }
+    func testOldOverrideFailureCannotSetNewHubError() async throws {
+        let store = BoardStore()
+        await store.connect(try FixtureFiestaBoardService()).value
+        let old = try DelayedStatusReader(marker: "old", blocked: true)
+        let fresh = try DelayedStatusReader(marker: "fresh", blocked: false)
+        var reader: any BoardStatusReading = old
+        let status = BoardStatus(store: store, reader: { reader })
+        defer { status.stop() }
+        let cancel = Task { await status.clearTemporaryOverride() }
+        await old.gate.waitUntilCalled(["clear"])
+        reader = fresh
+        status.start()
+        await waitForFresh(status)
+        await old.gate.release()
+        await cancel.value
+        XCTAssertFalse(status.overrideClearFailed, "A failed old-hub mutation cannot annotate the new hub")
+        XCTAssertEqual(status.runtime["board-2"]?.error, "fresh")
+    }
+
     private func waitForFresh(_ status: BoardStatus) async {
         let done = expectation(description: "new hub facts published")
         let token = Publishers.CombineLatest4(status.$runtime, status.$frames, status.$display, status.$nowShowing)
@@ -97,13 +116,17 @@ private actor StatusReplyGate {
     }
     func release() { blocked = false; let pending = replies; replies = []; pending.forEach { $0.resume() } }
 }
-private actor DelayedStatusReader: BoardStatusReading {
+private actor DelayedStatusReader: BoardStatusReading, TemporaryOverrideClearing {
     let marker: String
     let gate: StatusReplyGate
     nonisolated let deployment: DeploymentURL
     init(marker: String, blocked: Bool) throws {
         self.marker = marker; gate = StatusReplyGate(blocked: blocked)
         deployment = try DeploymentURL("https://\(marker).example.invalid")
+    }
+    func clearTemporaryOverride() async throws {
+        await gate.wait("clear")
+        throw URLError(.cannotConnectToHost)
     }
     func boardSettings() async throws -> [StoredBoardEntry] { await gate.wait("settings"); return [] }
     func serviceStatus() async throws -> ServiceStatusReport {
