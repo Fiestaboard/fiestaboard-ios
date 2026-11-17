@@ -52,7 +52,8 @@ final class BoardViewportRenderTests: XCTestCase {
         var index = 0
         let options = XCTMeasureOptions()
         options.iterationCount = 30
-        measure(metrics: [XCTClockMetric()], options: options) {
+        // CPU is diagnostic: the unchanged draw-only wall p95 remains the gate.
+        measure(metrics: [XCTClockMetric(), XCTCPUMetric()], options: options) {
             let layout = BoardLayout.make(rows: rows, cols: cols,
                 cells: Array(repeating: Array(repeating: .character(index.isMultiple(of: 2) ? "A" : "B"), count: cols), count: rows), tileHeight: 13)
             let start = CACurrentMediaTime()
@@ -63,6 +64,7 @@ final class BoardViewportRenderTests: XCTestCase {
             index += 1
         }
         let p95 = samples.sorted()[Int(Double(samples.count - 1) * 0.95)]
+        print("I4 draw wall samples \(rows)x\(cols): \(samples)")
         print("I4 draw p95 \(rows)x\(cols): \(p95)s, budget \(1 / fps)s")
         XCTAssertLessThanOrEqual(p95, 1 / fps)
     }

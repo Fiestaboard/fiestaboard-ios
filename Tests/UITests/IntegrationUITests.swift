@@ -224,7 +224,7 @@ import XCTest
     /// Connect and sign in to the fixture's `/board-<scenario>-<id>/` prefix. The local-HTTP
     /// switch tap is retried (iOS-R2: on iPad the first tap can land while the keyboard leaves).
     private func connectToFixture(_ app: XCUIApplication, scenario: String) throws {
-        try FixtureHTTPServer.shared.requireReady()
+        try requireReadyFixture(port: port)
         app.launchArguments = []; app.launch()
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
         let address = app.textFields["connectionAddress"]

@@ -1,5 +1,6 @@
 import XCTest
 import SwiftUI
+import UIKit
 import FiestaBoardKit
 import FiestaBoardAppState
 @testable import FiestaBoard
@@ -14,6 +15,13 @@ import FiestaBoardAppState
     private func displays() throws -> [BoardSummary] {
         try JSONDecoder().decode([BoardSummary].self, from: Data(#"[{"id":"kitchen","name":"Kitchen","rows":6,"cols":22,"device_type":"flagship","is_primary":true,"schedule_enabled":false,"paused":false,"output":"vestaboard","charset":"vestaboard_v1"}]"#.utf8))
     }
+    /// Mirrors DraftScene's actual generated theme; avoids testing the system's default blue tint.
+    private func shellImage<V: View>(_ content: V, device: IOSSnapshot.Device = .current,
+                                     size: CGSize? = nil, appearance: ColorScheme = .light,
+                                     dynamicType: DynamicTypeSize = .large) -> UIImage {
+        IOSSnapshot.image(content.tint(ShellPalette(appearance: appearance).tint), device: device, size: size,
+                          appearance: appearance, dynamicType: dynamicType)
+    }
     func testActualNativeShellMoreAndHubsLightDarkAX3() throws {
         let device = IOSSnapshot.Device.current
         let saved = try hubs(), boards = try displays()
@@ -23,7 +31,7 @@ import FiestaBoardAppState
             for (modeName, appearance) in appearances {
                 for (typeName, type) in textSizes {
                     for route in [ShellTab.home, .more] {
-                        let image = IOSSnapshot.image(ShellContainer(selection: .constant(route), editorOpen: false) { tab in
+                        let image = shellImage(ShellContainer(selection: .constant(route), editorOpen: false) { tab in
                             NavigationStack {
                                 if tab == .more {
                                     ShellMoreRoot(hubName: saved[0].alias, host: saved[0].deployment.description,
@@ -46,7 +54,7 @@ import FiestaBoardAppState
                         XCTAssertEqual(image.scale, device.scale)
                         IOSSnapshot.assertMatches(image, named: "i6-shell-\(route.rawValue)-\(layoutName)-\(modeName)-\(typeName)", device: device)
                     }
-                    let list = IOSSnapshot.image(NavigationStack {
+                    let list = shellImage(NavigationStack {
                         ShellHubsView(hubs: saved, activeDeployment: saved[0].deployment.description, busy: false, select: { _ in }, add: {})
                     }, device: device, size: bounds, appearance: appearance, dynamicType: type)
                     IOSSnapshot.assertMatches(list, named: "i6-hubs-\(layoutName)-\(modeName)-\(typeName)", device: device)
@@ -62,7 +70,7 @@ import FiestaBoardAppState
             for (modeName, appearance) in appearances {
                 for (typeName, type) in textSizes {
                     FigmaGeometryRegistry.shared.reset()
-                    let image = IOSSnapshot.image(NavigationStack {
+                    let image = shellImage(NavigationStack {
                         ShellCachedContent(snapshot: snapshot, route: route, offline: true)
                     }, appearance: appearance, dynamicType: type)
                     let nodes = FigmaGeometryRegistry.shared.snapshot()
@@ -84,7 +92,7 @@ import FiestaBoardAppState
             for (modeName, appearance) in appearances {
                 for (typeName, size) in textSizes {
                     let device = IOSSnapshot.Device.current
-                    let image = IOSSnapshot.image(NavigationStack {
+                    let image = shellImage(NavigationStack {
                         ShellConnectionView(state: state, hub: "Kitchen hub", retry: {}).navigationTitle("Home")
                     }, device: device, appearance: appearance, dynamicType: size)
                     XCTAssertEqual(image.size, device.size)

@@ -223,6 +223,7 @@
 		F76A3FEC4B084A1BC996FC8A /* TacoLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8142EE8F6466519C5DE63C2B /* TacoLoader.swift */; };
 		F848C039BD1C062E2F58429F /* ConnectingSeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56B7BAC4377D0D37819D561E /* ConnectingSeedView.swift */; };
 		F8BF5AA50FF2360BC2C4333D /* ConnectionModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40AB705E1DB7F29BE21009EE /* ConnectionModel.swift */; };
+		FA23AFA5B9424ABD9CED10B4 /* FixtureReadiness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E6E8776A0D8982BD60EE299 /* FixtureReadiness.swift */; };
 		FA3550627351EAF33AA6B6B8 /* FiestaBoardDocuments.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 49BC2ED373F21B24BB1720FB /* FiestaBoardDocuments.framework */; };
 		FA82E332EFDFB6E66A0712A6 /* HomeCards.swift in Sources */ = {isa = PBXBuildFile; fileRef = F10565CA2D32497EFEDA162A /* HomeCards.swift */; };
 		FB621DE796169FBC63027344 /* BoardGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F4D28A6F5B7C2A79C4C5E93 /* BoardGeometry.swift */; };
@@ -478,6 +479,7 @@
 		8C2B0E6480EA5DA45AAE4DC4 /* PackageResources.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackageResources.swift; sourceTree = "<group>"; };
 		8C43C07B845D0FE960E2F90F /* TemplateChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateChip.swift; sourceTree = "<group>"; };
 		8D0769B4598394A149E221E8 /* SessionVault.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionVault.swift; sourceTree = "<group>"; };
+		8E6E8776A0D8982BD60EE299 /* FixtureReadiness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureReadiness.swift; sourceTree = "<group>"; };
 		8EA4080F422F75BB6EDCE14D /* PagesListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagesListView.swift; sourceTree = "<group>"; };
 		8EC4319060375B1C6504FA07 /* ShellNetwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellNetwork.swift; sourceTree = "<group>"; };
 		8F3ED2E4566FB29FD9D32688 /* HomePresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomePresentation.swift; sourceTree = "<group>"; };
@@ -915,6 +917,7 @@
 				17C9F199741FDCC7AED7601C /* FixtureBoardRoutes.swift */,
 				2CBC4260FBD8BBA41BFBF327 /* FixtureConnection.swift */,
 				B624F5195610C4DE164C4734 /* FixtureHTTPServer.swift */,
+				8E6E8776A0D8982BD60EE299 /* FixtureReadiness.swift */,
 				E560F163CC7CD3785EECA9FF /* FixtureRenderRoutes.swift */,
 				1F4F5E3CCE58628FA5AB3938 /* FixtureRouter.swift */,
 				6BBD25933907F3239D01D6CC /* FormulaUITests.swift */,
@@ -1418,6 +1421,7 @@
 				22B9443A49503B0D0E88F817 /* FixtureBoardRoutes.swift in Sources */,
 				3DF8E15C5CC8983509AE88F3 /* FixtureConnection.swift in Sources */,
 				F3AEBF196B58C50C6D5C48DE /* FixtureHTTPServer.swift in Sources */,
+				FA23AFA5B9424ABD9CED10B4 /* FixtureReadiness.swift in Sources */,
 				35AB716CE6F27D9AF8E1BAED /* FixtureRenderRoutes.swift in Sources */,
 				E91F4C81FF4093CC43277CF9 /* FixtureRouter.swift in Sources */,
 				82C97A471315A3DDFFC9C514 /* FormulaUITests.swift in Sources */,
