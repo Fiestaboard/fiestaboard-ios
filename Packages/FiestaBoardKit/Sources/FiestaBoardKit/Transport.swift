@@ -3,6 +3,7 @@ import Foundation
 /// Proof is scoped to a single request and is never stored or logged.
 public enum APIRequestContext: Sendable {
     case standard
+    case passwordReset
     case onboardingToken(String)
     case browserSession(origin: String, csrfToken: String)
 }
@@ -400,6 +401,9 @@ extension APIRequest {
     func boundedHeaders() throws -> [String: String] {
         switch context {
         case .standard: return [:]
+        case .passwordReset:
+            guard method == .post, path == ["auth", "password-reset"] else { throw FiestaBoardError.invalidRequestContext }
+            return [:]
         case .onboardingToken(let token):
             let setup = method == .post && path == ["auth", "setup"]
             let preference = method == .post && path == ["auth", "preference"] &&
@@ -420,6 +424,8 @@ extension APIRequest {
         let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
         let detail = object?["detail"] as? String
         let authEndpoint = path.count == 2 && path.first == "auth"
+        if status == 400, method == .post, path == ["auth", "password-reset"],
+           object?["error"] as? String == "invalid_grant" { return .invalidResetCode }
         if status == 401 && ([ ["auth", "login"], ["auth", "device", "login"] ].contains(path)) && (detail == "Invalid username or password" || object?["error"] as? String == "invalid_credentials") { return .invalidCredentials }
         if status == 403 {
             if [ ["auth", "setup"], ["auth", "preference"] ].contains(path),

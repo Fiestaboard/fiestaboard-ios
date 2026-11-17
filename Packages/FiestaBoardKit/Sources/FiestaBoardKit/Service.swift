@@ -31,6 +31,7 @@ public protocol FiestaBoardService: Sendable {
     func setAuthenticationPreference(enabled: Bool, setupToken: String?) async throws -> AuthStatus
     func setupAdministrator(username: String, password: String, setupToken: String?) async throws -> AuthStatus
     func login(username: String, password: String, rememberMe: Bool) async throws -> AuthStatus
+    func resetPassword(code: String, newPassword: String) async throws
     func claimPairing(code: String, rememberMe: Bool) async throws -> AuthStatus
     func authStatus() async throws -> AuthStatus
     func login(username: String, password: String) async throws -> AuthStatus
@@ -248,6 +249,18 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard status.authenticated, status.bootstrapPhase == .ready, status.username == username else { throw FiestaBoardError.unknownMutationOutcome }
         try await publishVerifiedScope(token: token)
         return status
+    }
+
+    /// Owner-terminal proof is public and single-use. A reset never signs this client in.
+    public func resetPassword(code: String, newPassword: String) async throws {
+        let token = try await beginAuthenticationTransition()
+        struct Body: Encodable { let code: String; let new_password: String }
+        try await onboardingAcknowledgement(APIRequest(.post, path: ["auth", "password-reset"],
+            body: JSONEncoder().encode(Body(code: code, new_password: newPassword)),
+            context: .passwordReset, cachePolicy: .noStore), expectedStatus: 200)
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        await transport.forgetRememberedSession()
+        guard token == generation else { throw FiestaBoardError.staleSession }
     }
 
     /// I10 supplies the scanned code. It is single-use proof, never stored.
@@ -944,5 +957,6 @@ extension LiveFiestaBoardService {
 }
 
 public extension FiestaBoardService {
+    func resetPassword(code: String, newPassword: String) async throws { throw FiestaBoardError.unsupportedOperation }
     func claimPairing(code: String, rememberMe: Bool = true) async throws -> AuthStatus { throw FiestaBoardError.unsupportedOperation }
 }
