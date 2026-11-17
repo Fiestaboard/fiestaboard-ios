@@ -16,4 +16,19 @@ import FiestaBoardEditorState
         XCTAssertEqual(received?.selection.lowerUTF16, 5)
         XCTAssertEqual(received?.selection.upperUTF16, 5)
     }
+
+    func testComposeAuthoringExposesItsMessageLabelAndExactSourceToVoiceOver() {
+        var found: TemplateUITextView?
+        func find(_ view: UIView) {
+            if let text = view as? TemplateUITextView, text.accessibilityIdentifier == "composeSource" { found = text }
+            view.subviews.forEach(find)
+        }
+        _ = IOSSnapshot.image(ComposeTextView(input: .init(text: "Hi {{icon.sun}}"), enabled: true, onChange: { _ in })) { window in
+            find(window)
+        }
+        XCTAssertNotNil(found)
+        XCTAssertEqual(found?.accessibilityLabel, "Message text")
+        XCTAssertEqual(found?.accessibilityValue as? String, "Hi {{icon.sun}}")
+        XCTAssertEqual(found?.isEditable, true)
+    }
 }

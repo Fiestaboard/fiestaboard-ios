@@ -62,9 +62,11 @@ struct ComposeEditor: View {
                     ComposePreviewPanel(projection: projection,
                         notice: .init(diagnosticsData: session.preview?.rawData, stale: session.previewIsStale, online: live),
                         displayName: name, updating: session.previewIsUpdating, retry: session.retryPreview)
+                        .figmaNode("compose:preview", label: "Message preview")
                     ComposeTextView(input: session.input, enabled: !locked, onChange: edit)
                         .frame(minHeight: 150)
                         .background(ShellPalette(appearance: appearance).card, in: RoundedRectangle(cornerRadius: 12))
+                        .figmaNode("compose:source", label: session.input.text)
                     if let drawing, drawing.isKnownDevice, drawing.technology == "led_matrix" {
                         Text("\(drawing.pixelWidth ?? 0) × \(drawing.pixelHeight ?? 0) px · \(drawing.font ?? "") font")
                             .font(.caption.monospaced()).foregroundStyle(.secondary)
@@ -119,6 +121,7 @@ struct ComposeEditor: View {
             }
         }
         .tint(ShellPalette(appearance: appearance).tint)
+        .figmaNode("compose:sheet", label: "Compose")
         .interactiveDismissDisabled(locked)
         .task(id: session.scope) { await loadCatalog() }
         .onChange(of: scenePhase) { _, phase in
@@ -274,7 +277,7 @@ struct ComposeEditor: View {
         }
         if store.pageLibrary?.needsReview == true {
             Button("Review Pages") { Task { await store.reviewPageLibrary() } }
-            if case .reviewed = store.pageLibrary?.phase {
+            if case .reviewed? = store.pageLibrary?.phase {
                 ForEach(store.pages) { page in Text(page.name).font(.callout) }
                 Text("A matching page name does not confirm the earlier request.").font(.footnote)
                 Button("I reviewed Pages") { store.acknowledgePageLibraryReview() }
@@ -329,6 +332,7 @@ private extension ComposeEditor {
         .scrollIndicators(.hidden)
         .glassEffect(.regular, in: .capsule)
         .padding(.horizontal, 12).padding(.bottom, 8)
+        .figmaNode("compose:toolbar")
         .disabled(locked)
     }
     func tool(_ title: String, symbol: String, kind: ComposePicker, enabled: Bool) -> some View {
