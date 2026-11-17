@@ -13,6 +13,37 @@ import FiestaBoardDocuments
             .map { TemplateAttachment(fragment: $0, font: font, variables: variables, traits: UITraitCollection(userInterfaceStyle: .light)) }
     }
 
+    /// Each first production render must own pixels, preserve point geometry and draw pigment.
+    /// The native seed golden caught an empty first red tile even though later factory calls passed.
+    func testAFirstColourTilesHaveOwnedPixelsAtBothTierOneScales() throws {
+        for scale in [CGFloat(2), CGFloat(3)] {
+            let traits = UITraitCollection(traitsFrom: [UITraitCollection(userInterfaceStyle: .light),
+                                                       UITraitCollection(displayScale: scale)])
+            for color in ["red", "blue"] {
+                let (image, bounds) = TemplateChipRenderer.tile(color: color, font: font, traits: traits, outlined: false)
+                let cg = try XCTUnwrap(image.cgImage, "first \(color) tile at \(scale)x has actual pixels")
+                XCTAssertEqual(image.scale, scale)
+                XCTAssertEqual(image.size.width, bounds.width, accuracy: 0.001)
+                XCTAssertEqual(image.size.height, bounds.height, accuracy: 0.001)
+                XCTAssertEqual(cg.width, Int(bounds.width * scale))
+                XCTAssertEqual(cg.height, Int(bounds.height * scale))
+                let context = try XCTUnwrap(CGContext(data: nil, width: cg.width, height: cg.height,
+                    bitsPerComponent: 8, bytesPerRow: cg.width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+                context.draw(cg, in: CGRect(x: 0, y: 0, width: cg.width, height: cg.height))
+                let pixels = try XCTUnwrap(context.data?.assumingMemoryBound(to: UInt8.self))
+                let index = ((cg.height / 3) * cg.width + cg.width / 2) * 4
+                XCTAssertEqual(pixels[index + 3], 255)
+                if color == "red" {
+                    XCTAssertGreaterThan(pixels[index], 150)
+                    XCTAssertLessThan(pixels[index + 2], 120)
+                } else {
+                    XCTAssertGreaterThan(pixels[index + 2], pixels[index])
+                }
+            }
+        }
+    }
+
     func testKindToStyle() {
         let chips = attachments(row + " {{fill_space}} {{red:HOT}} {{icon:sun}}")
         XCTAssertEqual(chips.compactMap(\.chip?.style), [.variable, .formula, .tile(color: "blue"), .fill, .span(color: "red"), .icon])
