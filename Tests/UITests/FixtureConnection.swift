@@ -94,6 +94,10 @@ extension XCTestCase {
 
     /// Real app sign-in against the loopback HTTP fixture, never a shipping demo path.
     @MainActor func launchFixture(_ app: XCUIApplication, arguments: [String] = []) {
+        // A fixture starts at enrollment; same-app relaunches retain this namespace.
+        if app.launchEnvironment["FIESTABOARD_TEST_NAMESPACE"] == nil {
+            app.launchEnvironment["FIESTABOARD_TEST_NAMESPACE"] = UUID().uuidString
+        }
         app.launchArguments = arguments
         app.launch()
         func reveal(_ element: XCUIElement) {
