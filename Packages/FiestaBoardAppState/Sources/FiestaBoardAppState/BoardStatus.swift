@@ -75,7 +75,7 @@ public enum NowShowingModel {
 
         var result = NowShowing(name: NowShowing.noPageText, pageID: nil, mode: mode, collection: false,
                                 silence: silenceActive, paused: board.paused, scheduleGap: false)
-        if silenceActive, silence?.mode == "page", let id = silence?.pageID {
+        if override == nil, silenceActive, silence?.mode == "page", let id = silence?.pageID {
             result.name = pageName(id); result.pageID = id
         } else if let activeID, activeID.hasPrefix(collectionPrefix) {
             let uuid = String(activeID.dropFirst(collectionPrefix.count))
@@ -132,6 +132,8 @@ public enum BoardPolling {
     private var stored: [String: [String: Any]] = [:]
     private var schedule: ActivePageStatus?
     private var manual: ActivePageStatus?
+    public var selectedSilence: SilenceStatus? { silence }
+    public var selectedOverride: ActivePageStatus.TemporaryOverride? { schedule?.temporaryOverride }
     private var silence: SilenceStatus?
     private var collectionNames: [String: String] = [:]
     private var tasks: [Task<Void, Never>] = []
@@ -357,11 +359,11 @@ public enum BoardPolling {
     /// The ✕ on the override badge (B8): `DELETE /settings/temporary-override`, then the status
     /// and the board are re-read on the post-send schedule. Nothing retries on its own.
     public func clearTemporaryOverride() async {
-        guard let writer = reader() as? any TemporaryOverrideClearing else { return }
+        guard store.canWrite, let id = store.selectedBoardID, let writer = reader() as? any TemporaryOverrideClearing else { return }
         let token = epoch
         overrideClearFailed = false
         var failed = false
-        do { try await writer.clearTemporaryOverride() } catch { failed = true }
+        do { try await writer.clearTemporaryOverride(boardID: id) } catch { failed = true }
         guard valid(token) else { return }
         overrideClearFailed = failed
         pollActive()

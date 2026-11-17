@@ -138,7 +138,7 @@ private actor DelayedStatusReader: BoardStatusReading, TemporaryOverrideClearing
         self.marker = marker; gate = StatusReplyGate(blocked: blocked)
         deployment = try DeploymentURL("https://\(marker).example.invalid")
     }
-    func clearTemporaryOverride() async throws {
+    func clearTemporaryOverride(boardID: String) async throws {
         await gate.wait("clear")
         throw URLError(.cannotConnectToHost)
     }

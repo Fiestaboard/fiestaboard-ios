@@ -48,13 +48,17 @@ public struct ServiceStatusReport: Codable, Sendable, Equatable {
 public struct ActivePageStatus: Codable, Sendable, Equatable {
     public struct TemporaryOverride: Codable, Sendable, Equatable {
         public let active: Bool
+        public let boardID: String?
+        public let startedAt: String?
         public let pageID: String?
         public let remainingSeconds: Double?
         public let expiresAt: String?
         enum CodingKeys: String, CodingKey {
+            case boardID = "board_id", startedAt = "started_at"
             case active, pageID = "page_id", remainingSeconds = "remaining_seconds", expiresAt = "expires_at"
         }
-        public init(active: Bool, pageID: String? = nil, remainingSeconds: Double? = nil, expiresAt: String? = nil) {
+        public init(active: Bool, pageID: String? = nil, remainingSeconds: Double? = nil, expiresAt: String? = nil, boardID: String? = nil, startedAt: String? = nil) {
+            self.boardID = boardID; self.startedAt = startedAt
             self.active = active; self.pageID = pageID; self.remainingSeconds = remainingSeconds; self.expiresAt = expiresAt
         }
     }
