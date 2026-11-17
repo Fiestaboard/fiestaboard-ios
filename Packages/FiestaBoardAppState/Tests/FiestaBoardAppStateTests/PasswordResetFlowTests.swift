@@ -28,6 +28,16 @@ final class PasswordResetFlowTests: XCTestCase {
         XCTAssertEqual(valid.newPassword, eightScalars)
     }
 
+    // Swift String equality normalizes Unicode, while the hub hashes the password's actual bytes.
+    func testConfirmationMustMatchPasswordBytesWithoutUnicodeNormalization() {
+        var flow = PasswordResetFlow()
+        flow.enterCode()
+        let decomposed = "e\u{301}e\u{301}e\u{301}e\u{301}"
+        let composed = "\u{e9}\u{e9}\u{e9}\u{e9}"
+        XCTAssertNil(flow.prepare(code: "fb_reset_fixture", newPassword: decomposed, confirmation: composed))
+        XCTAssertEqual(flow.invalidFields, [.confirmation])
+    }
+
     // Only the one matching successful response may announce changed; preparing never means success.
     func testConfirmedMatchingResponseChangesThePasswordState() throws {
         var flow = PasswordResetFlow()
