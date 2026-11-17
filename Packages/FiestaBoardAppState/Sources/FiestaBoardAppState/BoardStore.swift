@@ -104,6 +104,11 @@ public struct ComposeOperationRecord: Sendable {
     public let acceptedReadback: Bool
     fileprivate let generation: UInt64
 }
+private struct ComposeOutcomeContext {
+    let actionID: UUID
+    let request: ComposeRequest
+    let generation: UInt64
+}
 public struct ComposePageOperationRecord: Sendable {
     public let actionID: UUID
     public let request: ComposeRequest
@@ -134,6 +139,7 @@ public struct PreparedAction: Identifiable, Sendable {
 @MainActor public final class BoardStore: ObservableObject {
     @Published public private(set) var composePrincipal: ComposePrincipalProof?
     @Published public private(set) var composeOperation: ComposeOperationRecord?
+    @Published private var composeOutcomeContext: ComposeOutcomeContext?
     @Published public private(set) var composePageOperation: ComposePageOperationRecord?
     @Published public private(set) var pageLibrary: PageLibraryState?
     private var pageLibraryObservation: AnyCancellable?
@@ -376,7 +382,7 @@ public struct PreparedAction: Identifiable, Sendable {
     public func waitForSessionCleanup() async { await retirementTask?.value }
     private func resetConnection() {
         generation &+= 1
-        composePrincipal = nil; composeOperation = nil; composePageOperation = nil
+        composePrincipal = nil; composeOperation = nil; composeOutcomeContext = nil; composePageOperation = nil
         homeUndoCapability = nil; homeUndoContext = nil
         clearSchedules()
         pageLibraryObservation = nil; pageLibrary = nil; pageLibraryEpoch &+= 1
@@ -427,9 +433,10 @@ public struct PreparedAction: Identifiable, Sendable {
     }
 
     @discardableResult public func selectBoard(_ id: String) -> Task<Void, Never> {
-        guard boards.contains(where: { $0.id == id }), !connecting else { return Task {} }
+        guard boards.contains(where: { $0.id == id }), !connecting,
+              !composeNeedsOutcomeReadback else { return Task {} }
         generation &+= 1
-        composeOperation = nil; composePageOperation = nil
+        composeOperation = nil; composeOutcomeContext = nil; composePageOperation = nil
         homeUndoCapability = nil; homeUndoContext = nil
         clearSchedules()
         refreshTask?.cancel(); commandTask?.cancel()
@@ -489,7 +496,7 @@ public struct PreparedAction: Identifiable, Sendable {
             do {
                 let detail = try await service.board(target)
                 guard valid(token) else { return }
-                acceptSnapshot(detail); readbackTargets.remove(target); recordHubResponse(pathToken: pathToken)
+                acceptSnapshot(detail); completeBoardReadback(target); recordHubResponse(pathToken: pathToken)
                 await loadDefaultContext(service, target: target, token: token)
                 guard valid(token) else { return }
                 presentHomeUndoIfNeeded()
@@ -748,6 +755,12 @@ public struct PreparedAction: Identifiable, Sendable {
         usedActions.insert(action.id)
         inFlight.insert(action.target)
         readbackTargets.insert(action.target)
+        if case .compose(let request) = action.payload {
+            // Retain the exact attempted UUID even if transport/receipt decoding
+            // throws. No synthetic server receipt or second POST is created.
+            composeOutcomeContext = .init(actionID: action.id, request: request, generation: generation)
+            composeOperation = nil
+        }
         let composeLibrary: PageLibraryState?
         if case .composePage = action.payload { composeLibrary = pageLibrary } else { composeLibrary = nil }
         if let composeLibrary { composeLibrary.blocked = true; composeLibrary.phase = .working; pageLibraryEpoch &+= 1 }
@@ -838,7 +851,7 @@ public struct PreparedAction: Identifiable, Sendable {
                 do {
                     let detail = try await service.board(action.target)
                     guard valid(token) else { return }
-                    acceptSnapshot(detail); readbackTargets.remove(action.target)
+                    acceptSnapshot(detail); completeBoardReadback(action.target)
                     presentHomeUndoIfNeeded()
                 } catch {
                     guard valid(token) else { return }
@@ -893,6 +906,24 @@ public struct PreparedAction: Identifiable, Sendable {
                                      acceptedReadback: accepted, generation: operation.generation)
         }
     }
+    /// A normal board GET proves display state, not the outcome of a captured
+    /// UUID. Deferred acknowledgement and definite negatives remain distinct
+    /// from an unknown/in-flight delivery or an accepted but replaced UUID.
+    private var composeNeedsOutcomeReadback: Bool {
+        guard let context = composeOutcomeContext, context.generation == generation,
+              context.request.target == target else { return false }
+        guard let operation = composeOperation, operation.actionID == context.actionID else { return true }
+        switch operation.receipt.state {
+        case .unknown, .preparing, .dispatching: return true
+        case .sent, .unchanged: return !operation.acceptedReadback
+        case .held, .notSent, .partial, .expired, .superseded, .rejected: return false
+        }
+    }
+    private func completeBoardReadback(_ target: BoardTarget) {
+        if composeOutcomeContext?.request.target == target && composeNeedsOutcomeReadback {
+            readbackTargets.insert(target)
+        } else { readbackTargets.remove(target) }
+    }
     public func previewCompose(_ request: ComposeRequest) async throws -> TemplatePreviewResult {
         guard canProbeReachability, !connecting, isCurrentComposeRequest(request), let reader = service as? any ComposeServicing else { throw FiestaBoardError.invalidTarget }
         let token = generation, pathToken = reachabilityEpoch
@@ -931,24 +962,28 @@ public struct PreparedAction: Identifiable, Sendable {
             throw error
         }
     }
+    public var canCheckComposeOutcome: Bool {
+        guard let context = composeOutcomeContext else { return false }
+        return canProbeReachability && !connecting && !commandBusy
+            && context.generation == generation && isCurrentComposeRequest(context.request)
+    }
     @discardableResult public func checkComposeOutcome() -> Task<Void, Never> {
-        guard canProbeReachability, !connecting, !commandBusy, let operation = composeOperation,
-              operation.generation == generation, isCurrentComposeRequest(operation.request),
+        guard canCheckComposeOutcome, let context = composeOutcomeContext,
               let capturedService = service, let reader = capturedService as? any ComposeServicing else { return Task {} }
-        let token = generation, pathToken = reachabilityEpoch, target = operation.request.target
+        let token = generation, pathToken = reachabilityEpoch, target = context.request.target
         inFlight.insert(target); readbackTargets.insert(target)
         return Task { [weak self] in
             guard let self else { return }
             defer { inFlight.remove(target) }
             do {
-                let result = try await reader.composeOutcome(operation.request)
-                guard valid(token), composeOperation?.actionID == operation.actionID else { return }
-                composeOperation = .init(actionID: operation.actionID, request: operation.request, receipt: result, acceptedReadback: false, generation: token)
+                let result = try await reader.composeOutcome(context.request)
+                guard valid(token), composeOutcomeContext?.actionID == context.actionID else { return }
+                composeOperation = .init(actionID: context.actionID, request: context.request, receipt: result, acceptedReadback: false, generation: token)
                 message = Self.describeCompose(result)
                 if let retry = result.retryAfterSeconds { recordHubReadFailure(FiestaBoardError.rateLimited(retryAfterSeconds: retry), pathToken: pathToken) }
                 let detail = try await capturedService.board(target)
-                guard valid(token) else { return }
-                acceptSnapshot(detail); readbackTargets.remove(target); recordHubResponse(pathToken: pathToken)
+                guard valid(token), composeOutcomeContext?.actionID == context.actionID else { return }
+                acceptSnapshot(detail); completeBoardReadback(target); recordHubResponse(pathToken: pathToken)
             } catch {
                 guard valid(token) else { return }
                 if !handleAuthenticationLoss(error) { recordHubReadFailure(error, pathToken: pathToken); message = safeDescription(error) }
