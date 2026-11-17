@@ -277,10 +277,11 @@ extension ComposeSessionTests {
         let clearing = Task { try await session.clearBuffer(matchingRevision: revision) }
         await buffer.waitForRemoval()
         session.update(.init(text: "TYPED DURING READBACK"))
+        // The normal edit-save task can run before the clear result returns.
+        // Clearing must finish that save after adopting its replacement lease.
+        _ = try await session.persistBuffer()
         await buffer.resume(); let clearedCurrent = try await clearing.value
         XCTAssertFalse(clearedCurrent)
-        let persisted = try await session.persistBuffer()
-        XCTAssertNotNil(persisted)
         let restored = try await buffer.load(target.identity)
         XCTAssertEqual(restored?.text, "TYPED DURING READBACK")
     }
