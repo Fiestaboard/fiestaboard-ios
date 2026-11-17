@@ -45,6 +45,7 @@
     "PolishUITests/testRecordCaretOverChips"
   ],
   "ui-h": [
-    "PolishUITests/testRecordTypingUndoRedo"
+    "PolishUITests/testRecordTypingUndoRedo",
+    "ComposeUITests"
   ]
 }

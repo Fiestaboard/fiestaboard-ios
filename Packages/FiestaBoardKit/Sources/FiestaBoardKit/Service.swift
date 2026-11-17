@@ -76,7 +76,7 @@ public protocol FiestaBoardService: Sendable {
 
 /// Native phone authentication/read foundation with retained version-gated editor
 /// adapters. I5 does not widen historical mutation audits or claim a released pairing.
-public actor LiveFiestaBoardService: FiestaBoardService {
+public actor LiveFiestaBoardService: FiestaBoardService, ComposePrincipalProviding {
     public nonisolated let deployment: DeploymentURL
     public nonisolated let isDemo = false
     private let transport: any APITransport
@@ -84,6 +84,10 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     private var generation: UInt64 = 0
     private var observedInstallationID: String?
     private var activeScope: VerifiedConnectionScope?
+    private var activeComposePrincipal: ComposePrincipalProof?
+    private var composeBoards: [String: (generation: UInt64, detail: BoardDetail)] = [:]
+    private var consumedComposeRequests: Set<UUID> = []
+    private var consumedComposePageRequests: Set<UUID> = []
     private var replacementConnectionID: UUID?
     private var persistenceWarning: SessionPersistenceWarning?
     private var access = DraftAccess.readOnly
@@ -141,7 +145,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     private func bootstrapSnapshot(invalidateUnauthenticated: Bool) async throws -> BootstrapSnapshot {
         if invalidateUnauthenticated {
             replacementConnectionID = activeScope?.connectionID ?? replacementConnectionID
-            activeScope = nil
+            activeScope = nil; activeComposePrincipal = nil
         }
         let token = generation
         try Task.checkCancellation()
@@ -152,7 +156,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard identity.product == "FiestaBoard" else { throw FiestaBoardError.wrongProduct }
         guard token == generation else { throw FiestaBoardError.staleSession }
         if let previous = observedInstallationID, previous != identity.installationID {
-            activeScope = nil; replacementConnectionID = UUID()
+            activeScope = nil; activeComposePrincipal = nil; replacementConnectionID = UUID()
         }
         observedInstallationID = identity.installationID
         let auth: AuthStatus = try await fetch(APIRequest(path: ["auth", "status"], cachePolicy: .noStore), invalidateUnauthenticated: invalidateUnauthenticated)
@@ -160,7 +164,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         try Task.checkCancellation()
         if invalidateUnauthenticated && auth.bootstrapPhase != .ready { invalidateAuthentication() }
         if invalidateUnauthenticated && auth.bootstrapPhase == .ready && (!auth.enabled || auth.authenticated) {
-            try await publishVerifiedScope(token: token)
+            try await publishVerifiedScope(token: token, auth: auth)
         }
         return BootstrapSnapshot(deployment: deployment, health: health, identity: identity, auth: auth)
     }
@@ -174,7 +178,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard token == generation else { throw FiestaBoardError.staleSession }
         let status = try await verifiedAuthReadback()
         guard status.enabled == enabled, status.mode == (enabled ? "enabled" : "disabled"), status.firstRun != true else { throw FiestaBoardError.unknownMutationOutcome }
-        if status.bootstrapPhase == .ready && (!status.enabled || status.authenticated) { try await publishVerifiedScope(token: token) }
+        if status.bootstrapPhase == .ready && (!status.enabled || status.authenticated) { try await publishVerifiedScope(token: token, auth: status) }
         return status
     }
 
@@ -216,7 +220,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     /// Retire old reads/mutations before dispatch and clear their credential generation before accepting a replacement session.
     private func beginAuthenticationTransition() async throws -> UInt64 {
         generation &+= 1
-        activeScope = nil; replacementConnectionID = nil
+        activeScope = nil; activeComposePrincipal = nil; replacementConnectionID = nil
         creationContexts = [:]; deletionContexts = [:]; creatingPage = false
         savingPages = []; pageReadbacks = []; pageWriteGenerations = [:]
         controlVersion = nil; controlOptIn = false
@@ -246,7 +250,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard token == generation else { throw FiestaBoardError.staleSession }
         let status = try await verifiedAuthReadback()
         guard status.authenticated, status.bootstrapPhase == .ready, status.username == username else { throw FiestaBoardError.unknownMutationOutcome }
-        try await publishVerifiedScope(token: token)
+        try await publishVerifiedScope(token: token, auth: status)
         return status
     }
 
@@ -268,7 +272,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard token == generation, reply.isValid else { throw FiestaBoardError.staleSession }
         let status = try await verifiedAuthReadback()
         guard token == generation, status.authenticated, status.bootstrapPhase == .ready else { throw FiestaBoardError.unknownMutationOutcome }
-        try await publishVerifiedScope(token: token)
+        try await publishVerifiedScope(token: token, auth: status)
         return status
     }
 
@@ -303,7 +307,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
                 await transport.resetSession()
                 return false
             }
-            try await publishVerifiedScope(token: token)
+            try await publishVerifiedScope(token: token, auth: verified.auth)
             return true
         } catch {
             guard token == generation else { throw FiestaBoardError.staleSession }
@@ -327,7 +331,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     }
 
     public func logout() async throws {
-        activeScope = nil
+        activeScope = nil; activeComposePrincipal = nil
         generation &+= 1
         creationContexts = [:]; deletionContexts = [:]; creatingPage = false
         savingPages = []; pageReadbacks = []; pageWriteGenerations = [:]
@@ -404,6 +408,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         let detail: BoardDetail = try await fetch(APIRequest(path: ["v1", "boards", target.boardID]))
         try detail.validate()
         guard detail.summary.id == target.boardID else { throw FiestaBoardError.invalidResponse }
+        composeBoards[target.boardID] = (generation, detail)
         return detail
     }
 
@@ -427,7 +432,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         try JSONDecoder().decode(Page.self, from: await pageDocumentData(id: id))
     }
 
-    private func publishVerifiedScope(token: UInt64) async throws {
+    private func publishVerifiedScope(token: UInt64, auth: AuthStatus) async throws {
         guard let installation = observedInstallationID, !installation.isEmpty else { return }
         let provisional = await transport.provisionalConnectionID()
         guard token == generation else { throw FiestaBoardError.staleSession }
@@ -436,6 +441,145 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard token == generation, let confirmedID else { throw FiestaBoardError.staleSession }
         activeScope = VerifiedConnectionScope(deployment: deployment, installationID: installation, connectionID: confirmedID)
         replacementConnectionID = nil
+        activeComposePrincipal = nil
+        if auth.authenticated, auth.authKind == "mobile", let principal = auth.username,
+           let scope = activeScope {
+            let proof = await transport.bindComposePrincipal(principal, scope: scope)
+            guard token == generation, activeScope == scope else { throw FiestaBoardError.staleSession }
+            activeComposePrincipal = proof
+        }
+    }
+
+    public func composePrincipal() async -> ComposePrincipalProof? {
+        let token = generation
+        guard let proof = activeComposePrincipal, let scope = activeScope else { return nil }
+        let owned = await transport.ownsComposePrincipal(proof)
+        guard token == generation, activeScope == scope, activeComposePrincipal == proof, owned else { return nil }
+        return proof
+    }
+    public func rememberedComposePrincipal(installationID: String) async -> ComposePrincipalProof? {
+        let token = generation
+        if let observedInstallationID, Data(observedInstallationID.utf8) != Data(installationID.utf8) { return nil }
+        let proof = await transport.rememberedComposePrincipal(installationID: installationID)
+        guard token == generation else { return nil }
+        return proof
+    }
+
+    /// Compose's audited operation guard is independent of generic legacy
+    /// editor/settings write capability. Cached/offline proof cannot pass it.
+    private func requireCompose(_ request: ComposeRequest, writing: Bool) async throws -> UInt64 {
+        let token = generation
+        guard controlVersion?.runningVersion == "11.0.0-alpha.3", !writing || controlOptIn,
+              request.target.deployment == deployment, knownBoards[request.target.boardID] != nil,
+              request.principal.verifiedOnline else { throw FiestaBoardError.writesDisabled }
+        let proof = await composePrincipal()
+        guard token == generation, proof == request.principal else { throw FiestaBoardError.staleSession }
+        guard let entry = composeBoards[request.target.boardID], entry.generation == token,
+              entry.detail.composeProtocol == "compose-intent-v1",
+              try ComposeGeometry(summary: entry.detail.summary) == request.geometry else { throw FiestaBoardError.unsupportedOperation }
+        return token
+    }
+    public func sendCompose(_ request: ComposeRequest) async throws -> ComposeReceipt {
+        let token = try await requireCompose(request, writing: true)
+        guard !consumedComposeRequests.contains(request.requestID) else { throw FiestaBoardError.invalidRequestContext }
+        let body = try request.encoded()
+        consumedComposeRequests.insert(request.requestID)
+        let result = try await response(APIRequest(.post, path: ["v1", "boards", request.target.boardID, "compose"],
+            body: body, cachePolicy: .noStore, composePrincipalProof: request.principal))
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        _ = try await requireCompose(request, writing: true)
+        return try ComposeReceipt(rawData: result.data, httpStatus: result.status, expectedBoardID: request.target.boardID,
+            expectedRequestID: request.requestID, expectedDuration: request.duration)
+    }
+    public func previewCompose(_ request: ComposeRequest) async throws -> TemplatePreviewResult {
+        let token = try await requireCompose(request, writing: false)
+        let result = try await response(APIRequest(.post, path: ["templates", "render"],
+            body: try request.previewEncoded(), cachePolicy: .noStore, composePrincipalProof: request.principal))
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        _ = try await requireCompose(request, writing: false)
+        guard result.status == 200 else { throw FiestaBoardError.invalidResponse }
+        return try TemplatePreviewResult(rawData: result.data)
+    }
+    /// These separately captured catalog operations carry the same protected proof
+    /// through the transport budget as preview. They never consume a send UUID.
+    private func composeCatalogData(_ operation: APIRequest, request: ComposeRequest) async throws -> Data {
+        let token = try await requireCompose(request, writing: false)
+        let result = try await response(operation)
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        _ = try await requireCompose(request, writing: false)
+        guard result.status == 200 else { throw FiestaBoardError.rejected(status: result.status) }
+        return result.data
+    }
+    public func composeTemplateCatalog(_ request: ComposeRequest) async throws -> TemplateCatalog {
+        let data = try await composeCatalogData(APIRequest(path: ["v1", "variables"], cachePolicy: .noStore,
+            composePrincipalProof: request.principal), request: request)
+        guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let variables = object["variables"] as? [String: Any] else { throw FiestaBoardError.invalidResponse }
+        var manifests: [String: TemplateCatalog.Manifest] = [:]
+        for id in variables.keys.sorted() {
+            guard DeploymentURL.validSegment(id) else { throw FiestaBoardError.invalidResponse }
+            let raw = try await composeCatalogData(APIRequest(path: ["plugins", id, "manifest"], cachePolicy: .noStore,
+                composePrincipalProof: request.principal), request: request)
+            manifests[id] = try TemplateCatalog.Manifest(data: raw)
+        }
+        // Reuse the catalog's metadata/group decoding, then offer scalar tokens
+        // only. Neither manifest examples nor current local values are previews.
+        var metadata = object
+        if metadata["colors"] == nil { metadata["colors"] = [String: Int]() }
+        let decoded = try TemplateCatalog(variablesData: JSONSerialization.data(withJSONObject: metadata), manifests: manifests)
+        let plugins = decoded.plugins.map { plugin in
+            let groups = plugin.groups.compactMap { group -> TemplateCatalog.Group? in
+                let fields = group.fields.filter { field in
+                    !field.name.split(separator: ".").contains { $0 == "*" || Int($0) != nil }
+                }.map { field in
+                    TemplateCatalog.Field(name: field.name, path: field.path, summary: field.summary, label: field.label)
+                }
+                return fields.isEmpty ? nil : TemplateCatalog.Group(key: group.key, label: group.label, fields: fields)
+            }
+            return TemplateCatalog.Plugin(id: plugin.id, name: plugin.name, icon: plugin.icon, groups: groups, arrays: [])
+        }
+        return TemplateCatalog(plugins: plugins, colors: decoded.colors, formatting: decoded.formatting,
+            pluginSystemEnabled: decoded.pluginSystemEnabled, isServerCatalog: true)
+    }
+    public func composeFormulaFunctions(_ request: ComposeRequest) async throws -> FunctionCatalog {
+        try FunctionCatalog(data: await composeCatalogData(APIRequest(path: ["v1", "functions"], cachePolicy: .noStore,
+            composePrincipalProof: request.principal), request: request))
+    }
+    public func validateComposeFormula(_ expression: String, request: ComposeRequest) async throws -> FormulaCheck {
+        struct Body: Encodable { let template: [String] }
+        let body = try JSONEncoder().encode(Body(template: ["{{= \(expression) }}"]))
+        let data = try await composeCatalogData(APIRequest(.post, path: ["templates", "validate"], body: body,
+            cachePolicy: .noStore, composePrincipalProof: request.principal), request: request)
+        return FormulaCheck(try TemplateValidationResult(rawData: data))
+    }
+    public func composeOutcome(_ request: ComposeRequest) async throws -> ComposeReceipt {
+        let token = try await requireCompose(request, writing: false)
+        let result = try await response(APIRequest(path: ["v1", "boards", request.target.boardID, "compose", request.requestID.uuidString],
+            cachePolicy: .noStore, composePrincipalProof: request.principal))
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        _ = try await requireCompose(request, writing: false)
+        return try ComposeReceipt(rawData: result.data, httpStatus: result.status, expectedBoardID: request.target.boardID,
+            expectedRequestID: request.requestID, expectedDuration: request.duration, isOutcomeRead: true)
+    }
+    /// Separately audited by the authenticated operation corpus at b33160f3c.
+    /// /pages creates only; this path never selects/sends or touches Schedule.
+    public func saveComposePage(name: String, request: ComposeRequest) async throws -> ComposePageReceipt {
+        let token = try await requireCompose(request, writing: true)
+        guard !consumedComposePageRequests.contains(request.requestID) else { throw FiestaBoardError.invalidRequestContext }
+        let body = try request.pageEncoded(name: name)
+        consumedComposePageRequests.insert(request.requestID)
+        let result = try await response(APIRequest(.post, path: ["pages"], body: body, cachePolicy: .noStore, composePrincipalProof: request.principal))
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        _ = try await requireCompose(request, writing: true)
+        guard result.status == 201 else { throw FiestaBoardError.unknownMutationOutcome }
+        let created = try ComposePageReceipt(pageData: result.data, name: name, request: request)
+        let readback = try await response(APIRequest(path: ["pages", created.page.id], cachePolicy: .noStore, composePrincipalProof: request.principal))
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        _ = try await requireCompose(request, writing: true)
+        guard readback.status == 200 else { throw FiestaBoardError.unknownMutationOutcome }
+        let verified = try ComposePageReceipt(pageData: readback.data, name: name, request: request)
+        guard verified.page.id == created.page.id else { throw FiestaBoardError.unknownMutationOutcome }
+        return verified
     }
 
     /// Scope and exact bytes are captured under one service generation, including vault ownership.
@@ -690,7 +834,7 @@ extension LiveFiestaBoardService {
         collectionCreationWriteGeneration = 0; collectionCreationReviewed = false
     }
     private func invalidateAuthentication() {
-        activeScope = nil; replacementConnectionID = UUID()
+        activeScope = nil; activeComposePrincipal = nil; replacementConnectionID = UUID()
         generation &+= 1
         creationContexts = [:]; deletionContexts = [:]; creatingPage = false
         savingPages = []; pageReadbacks = []; pageWriteGenerations = [:]

@@ -100,6 +100,12 @@ public struct BoardDetail: Codable, Sendable {
     public let health: DisplayHealth?
     public let hasScopedHomeStatus: Bool
     public let layers: [CanvasLayer]?
+    public let composeProtocol: String?
+    public let drawing: BoardDrawing?
+    /// The last accepted Compose intent named by a fresh target read. This
+    /// UUID alone is presentation data; current scope and receipt must match.
+    public let composeRequestID: UUID?
+    private struct ComposeAcknowledgement: Codable { let request_id: UUID }
     public var renderingSupport: RenderingSupport {
         guard summary.charset == "vestaboard_v1", layers?.isEmpty != false,
               (try? validate()) != nil,
@@ -108,6 +114,9 @@ public struct BoardDetail: Codable, Sendable {
     }
     enum CodingKeys: String, CodingKey {
         case characters, text, source, layers, health
+        case composeProtocol = "compose_protocol"
+        case drawing
+        case composeReceipt = "compose_receipt"
         case overrideExpiresAt = "override_expires_at"
         case overrideStartedAt = "override_started_at"
         case nextChangeAt = "next_change_at"
@@ -132,6 +141,9 @@ public struct BoardDetail: Codable, Sendable {
         defaultPageID = try c.decodeIfPresent(String.self, forKey: .defaultPageID)
         source = try c.decode(String.self, forKey: .source)
         layers = try c.decodeIfPresent([CanvasLayer].self, forKey: .layers)
+        composeProtocol = try c.decodeIfPresent(String.self, forKey: .composeProtocol)
+        drawing = try? c.decodeIfPresent(BoardDrawing.self, forKey: .drawing)
+        composeRequestID = (try? c.decodeIfPresent(ComposeAcknowledgement.self, forKey: .composeReceipt))?.request_id
         overrideExpiresAt = try c.decodeIfPresent(String.self, forKey: .overrideExpiresAt)
         overrideStartedAt = try c.decodeIfPresent(String.self, forKey: .overrideStartedAt)
         nextChangeAt = try c.decodeIfPresent(String.self, forKey: .nextChangeAt)
@@ -152,6 +164,9 @@ public struct BoardDetail: Codable, Sendable {
         try c.encodeIfPresent(defaultPageID, forKey: .defaultPageID)
         try c.encode(source, forKey: .source)
         try c.encodeIfPresent(layers, forKey: .layers)
+        try c.encodeIfPresent(composeProtocol, forKey: .composeProtocol)
+        try c.encodeIfPresent(drawing, forKey: .drawing)
+        try c.encodeIfPresent(composeRequestID.map { ComposeAcknowledgement(request_id: $0) }, forKey: .composeReceipt)
         try c.encodeIfPresent(overrideExpiresAt, forKey: .overrideExpiresAt)
         try c.encodeIfPresent(overrideStartedAt, forKey: .overrideStartedAt)
         try c.encodeIfPresent(nextChangeAt, forKey: .nextChangeAt)

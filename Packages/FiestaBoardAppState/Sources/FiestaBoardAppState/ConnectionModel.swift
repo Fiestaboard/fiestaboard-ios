@@ -32,6 +32,9 @@ public enum ConnectionPhase: Sendable, Equatable {
     @Published public private(set) var validationFields: [ValidationField] = []
     @Published public private(set) var persistence = SessionPersistenceState()
     @Published public private(set) var snapshotLease: ShellSnapshotLease?
+    /// Presentation authority for one identity's local unsent buffer. Offline
+    /// proof is deliberately separate from transport authentication/control.
+    @Published public private(set) var composePrincipal: ComposePrincipalProof?
     private let snapshots: ShellSnapshotStore?
     private var snapshotConsentEpoch: UInt64 = 0
     @Published public var address = ""
@@ -141,6 +144,7 @@ public enum ConnectionPhase: Sendable, Equatable {
                 }
                 phase = knownRecordCanRetry(error) ? .unreachable : .picker
                 snapshot = nil; message = safe(error)
+                if phase == .unreachable { await publishComposePrincipal(next, token: token, offline: true) }
             }
             if valid(token) { busy = false }
         }
@@ -245,6 +249,8 @@ public enum ConnectionPhase: Sendable, Equatable {
         guard valid(token) else { return }
         if store.status != nil {
             phase = .connected
+            await publishComposePrincipal(next, token: token, offline: false)
+            guard valid(token) else { return }
             await beginSnapshotSession(token: token)
         } else {
             message = store.message
@@ -370,7 +376,26 @@ public enum ConnectionPhase: Sendable, Equatable {
             guard valid(token) else { return }; selected = saved; await reloadCatalog()
         } catch { if valid(token) { message = safe(error) } }
     }
-    private func invalidateSnapshotSession() { snapshotConsentEpoch &+= 1; snapshotLease = nil }
+    private func invalidateSnapshotSession() {
+        snapshotConsentEpoch &+= 1; snapshotLease = nil; composePrincipal = nil
+    }
+    private func publishComposePrincipal(_ next: any FiestaBoardService, token: UUID, offline: Bool) async {
+        guard valid(token), let provider = next as? any ComposePrincipalProviding,
+              let hub = selected, let installation = hub.installationID,
+              hub.deployment == next.deployment else { return }
+        let proof: ComposePrincipalProof?
+        if offline {
+            proof = await provider.rememberedComposePrincipal(installationID: installation)
+        } else {
+            guard snapshot?.auth.authenticated == true, snapshot?.auth.authKind == "mobile" else { return }
+            proof = await provider.composePrincipal()
+        }
+        guard valid(token), selected?.id == hub.id, let proof,
+              proof.verifiedOnline == !offline,
+              Data(proof.identity.deploymentID.utf8) == Data(next.deployment.description.utf8),
+              Data(proof.identity.installationID.utf8) == Data(installation.utf8) else { return }
+        composePrincipal = proof
+    }
     private func beginSnapshotSession(token: UUID) async {
         guard let snapshots, let hub = selected else { return }
         let consent = snapshotConsentEpoch

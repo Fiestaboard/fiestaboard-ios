@@ -1,0 +1,1438 @@
+{
+  "source_sha": "b33160f3cae395d95ff62772653b4e2d45862ea7",
+  "source_tree": "4c0823273dc31078876b9275463fdc3904087237",
+  "recorder_sha256": "2a4fb6854d05f95501a81f9842afd7cf117ee5653a11bf4a517b805c6dfaf8c9",
+  "boundary": "Actual FastAPI ASGI/auth/rendering/page stores; synthetic mobile credentials and fixture output plugin/runtime drivers; no physical device",
+  "protocol": "existing-v11-operation-audit",
+  "physical_preview_contract": "Existing rich rendered markup plus optional legacy canvas overlays. No physical_frame_version; complete native pixel projection uses existing BoardViewport/LedRasterizer, not a fabricated server frame.",
+  "font_contract": "drawing.font is a display setting; no font template token or display-setting mutation audited",
+  "collection_contract": "PageCreate has no semantic collection-assignment field; no second collection write audited",
+  "state_before": {
+    "active_page": {
+      "hall-1": "354de078-12a5-4d84-96cc-d03d4244f84b",
+      "note-fixture": null,
+      "tc001-fixture": null,
+      "baseline-fixture": null
+    },
+    "override": {
+      "hall-1": {
+        "page_id": "354de078-12a5-4d84-96cc-d03d4244f84b",
+        "expires_at": "2026-11-17T10:36:11.841501+00:00",
+        "revert_mode": "schedule",
+        "revert_page_id": null,
+        "template": null,
+        "line_metadata": null,
+        "device_type": null,
+        "notes_wide": null,
+        "notes_tall": null,
+        "grid_rows": null,
+        "grid_cols": null,
+        "started_at": "2026-11-17T08:36:11.841512+00:00",
+        "compose_request_id": null,
+        "compose_sent": null,
+        "compose_duration": null,
+        "compose_silence": null
+      },
+      "note-fixture": null,
+      "tc001-fixture": null,
+      "baseline-fixture": null
+    },
+    "schedule_enabled": {
+      "hall-1": false,
+      "note-fixture": false,
+      "tc001-fixture": false,
+      "baseline-fixture": false
+    },
+    "schedules": [
+      {
+        "id": "7d73bbc0-af69-41e7-a448-171048786307",
+        "revision": "cb6ff894-9f3c-4684-bcb8-dc86c40c2362",
+        "board_id": "hall-1",
+        "page_id": "354de078-12a5-4d84-96cc-d03d4244f84b",
+        "start_time": "00:00",
+        "end_time": "23:59",
+        "day_pattern": "all",
+        "custom_days": null,
+        "enabled": true,
+        "recurrence_type": "weekly",
+        "annual_date": null,
+        "annual_end_date": null,
+        "one_off_date": null,
+        "one_off_end_date": null,
+        "start_type": "fixed",
+        "start_sun_offset": 0,
+        "end_type": "fixed",
+        "end_sun_offset": 0,
+        "created_at": "2026-11-17T08:36:11.842302Z",
+        "updated_at": null,
+        "edit_protocol": "schedule-revision-v1"
+      }
+    ],
+    "output": {
+      "hall-1": {
+        "characters": null,
+        "driver_render_count": 0
+      },
+      "note-fixture": {
+        "characters": null,
+        "driver_render_count": 0
+      },
+      "tc001-fixture": {
+        "characters": null,
+        "driver_render_count": 0
+      },
+      "baseline-fixture": {
+        "characters": null,
+        "driver_render_count": 0
+      }
+    }
+  },
+  "state_after": {
+    "active_page": {
+      "hall-1": "354de078-12a5-4d84-96cc-d03d4244f84b",
+      "note-fixture": null,
+      "tc001-fixture": null,
+      "baseline-fixture": null
+    },
+    "override": {
+      "hall-1": {
+        "page_id": "354de078-12a5-4d84-96cc-d03d4244f84b",
+        "expires_at": "2026-11-17T10:36:11.841501+00:00",
+        "revert_mode": "schedule",
+        "revert_page_id": null,
+        "template": null,
+        "line_metadata": null,
+        "device_type": null,
+        "notes_wide": null,
+        "notes_tall": null,
+        "grid_rows": null,
+        "grid_cols": null,
+        "started_at": "2026-11-17T08:36:11.841512+00:00",
+        "compose_request_id": null,
+        "compose_sent": null,
+        "compose_duration": null,
+        "compose_silence": null
+      },
+      "note-fixture": null,
+      "tc001-fixture": null,
+      "baseline-fixture": null
+    },
+    "schedule_enabled": {
+      "hall-1": false,
+      "note-fixture": false,
+      "tc001-fixture": false,
+      "baseline-fixture": false
+    },
+    "schedules": [
+      {
+        "id": "7d73bbc0-af69-41e7-a448-171048786307",
+        "revision": "cb6ff894-9f3c-4684-bcb8-dc86c40c2362",
+        "board_id": "hall-1",
+        "page_id": "354de078-12a5-4d84-96cc-d03d4244f84b",
+        "start_time": "00:00",
+        "end_time": "23:59",
+        "day_pattern": "all",
+        "custom_days": null,
+        "enabled": true,
+        "recurrence_type": "weekly",
+        "annual_date": null,
+        "annual_end_date": null,
+        "one_off_date": null,
+        "one_off_end_date": null,
+        "start_type": "fixed",
+        "start_sun_offset": 0,
+        "end_type": "fixed",
+        "end_sun_offset": 0,
+        "created_at": "2026-11-17T08:36:11.842302Z",
+        "updated_at": null,
+        "edit_protocol": "schedule-revision-v1"
+      }
+    ],
+    "output": {
+      "hall-1": {
+        "characters": null,
+        "driver_render_count": 0
+      },
+      "note-fixture": {
+        "characters": null,
+        "driver_render_count": 0
+      },
+      "tc001-fixture": {
+        "characters": null,
+        "driver_render_count": 0
+      },
+      "baseline-fixture": {
+        "characters": null,
+        "driver_render_count": 0
+      }
+    }
+  },
+  "records": [
+    {
+      "case": "drawing-hall-1",
+      "method": "GET",
+      "path": "/v1/boards/hall-1",
+      "request": null,
+      "status": 200,
+      "response": {
+        "id": "hall-1",
+        "name": "Primary fixture",
+        "device_type": "flagship",
+        "rows": 6,
+        "cols": 22,
+        "is_primary": true,
+        "paused": false,
+        "schedule_enabled": false,
+        "auto_restore": true,
+        "output": "vestaboard",
+        "device_model": "vestaboard_flagship",
+        "charset": "vestaboard_v1",
+        "compose_protocol": "compose-intent-v1",
+        "compose_receipt": null,
+        "characters": null,
+        "text": null,
+        "expected_characters": null,
+        "read_at": null,
+        "active_page_id": "354de078-12a5-4d84-96cc-d03d4244f84b",
+        "scheduled_page_id": null,
+        "resolved_page_id": "354de078-12a5-4d84-96cc-d03d4244f84b",
+        "resolved_next_check_seconds": null,
+        "source": "manual",
+        "default_page_id": null,
+        "override_expires_at": "2026-11-17T10:36:11.841501+00:00",
+        "next_change_at": "2026-11-17T10:36:11+00:00",
+        "next_change_reason": "override_ends",
+        "next_page_id": "354de078-12a5-4d84-96cc-d03d4244f84b",
+        "override_started_at": "2026-11-17T08:36:11.841512+00:00",
+        "health": {
+          "last_connected_at": null,
+          "last_update_at": null,
+          "latency_ms": null,
+          "last_error_at": null,
+          "last_error": null,
+          "reachable": null,
+          "breaker_open": false
+        },
+        "drawing": {
+          "source": "device",
+          "technology": "split_flap",
+          "color": "tiles",
+          "monochrome": null,
+          "font": null,
+          "icons": [],
+          "pixel_width": null,
+          "pixel_height": null,
+          "features": {
+            "lowercase": false,
+            "color_text": false,
+            "background": false,
+            "tiles": true,
+            "icons": false,
+            "rgb": false,
+            "solid_shapes": false,
+            "pixels": false
+          }
+        },
+        "layers": null
+      },
+      "raw_response": "{\"id\":\"hall-1\",\"name\":\"Primary fixture\",\"device_type\":\"flagship\",\"rows\":6,\"cols\":22,\"is_primary\":true,\"paused\":false,\"schedule_enabled\":false,\"auto_restore\":true,\"output\":\"vestaboard\",\"device_model\":\"vestaboard_flagship\",\"charset\":\"vestaboard_v1\",\"compose_protocol\":\"compose-intent-v1\",\"compose_receipt\":null,\"characters\":null,\"text\":null,\"expected_characters\":null,\"read_at\":null,\"active_page_id\":\"354de078-12a5-4d84-96cc-d03d4244f84b\",\"scheduled_page_id\":null,\"resolved_page_id\":\"354de078-12a5-4d84-96cc-d03d4244f84b\",\"resolved_next_check_seconds\":null,\"source\":\"manual\",\"default_page_id\":null,\"override_expires_at\":\"2026-11-17T10:36:11.841501+00:00\",\"next_change_at\":\"2026-11-17T10:36:11+00:00\",\"next_change_reason\":\"override_ends\",\"next_page_id\":\"354de078-12a5-4d84-96cc-d03d4244f84b\",\"override_started_at\":\"2026-11-17T08:36:11.841512+00:00\",\"health\":{\"last_connected_at\":null,\"last_update_at\":null,\"latency_ms\":null,\"last_error_at\":null,\"last_error\":null,\"reachable\":null,\"breaker_open\":false},\"drawing\":{\"source\":\"device\",\"technology\":\"split_flap\",\"color\":\"tiles\",\"monochrome\":null,\"font\":null,\"icons\":[],\"pixel_width\":null,\"pixel_height\":null,\"features\":{\"lowercase\":false,\"color_text\":false,\"background\":false,\"tiles\":true,\"icons\":false,\"rgb\":false,\"solid_shapes\":false,\"pixels\":false}},\"layers\":null}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "drawing-note-fixture",
+      "method": "GET",
+      "path": "/v1/boards/note-fixture",
+      "request": null,
+      "status": 200,
+      "response": {
+        "id": "note-fixture",
+        "name": "Secondary fixture",
+        "device_type": "note",
+        "rows": 3,
+        "cols": 15,
+        "is_primary": false,
+        "paused": false,
+        "schedule_enabled": false,
+        "auto_restore": true,
+        "output": "vestaboard",
+        "device_model": "vestaboard_note",
+        "charset": "vestaboard_v2",
+        "compose_protocol": "compose-intent-v1",
+        "compose_receipt": null,
+        "characters": null,
+        "text": null,
+        "expected_characters": null,
+        "read_at": null,
+        "active_page_id": null,
+        "scheduled_page_id": null,
+        "resolved_page_id": null,
+        "resolved_next_check_seconds": null,
+        "source": "none",
+        "default_page_id": null,
+        "override_expires_at": null,
+        "next_change_at": null,
+        "next_change_reason": null,
+        "next_page_id": null,
+        "override_started_at": null,
+        "health": {
+          "last_connected_at": null,
+          "last_update_at": null,
+          "latency_ms": null,
+          "last_error_at": null,
+          "last_error": null,
+          "reachable": null,
+          "breaker_open": false
+        },
+        "drawing": {
+          "source": "device",
+          "technology": "split_flap",
+          "color": "tiles",
+          "monochrome": null,
+          "font": null,
+          "icons": [],
+          "pixel_width": null,
+          "pixel_height": null,
+          "features": {
+            "lowercase": false,
+            "color_text": false,
+            "background": false,
+            "tiles": true,
+            "icons": false,
+            "rgb": false,
+            "solid_shapes": false,
+            "pixels": false
+          }
+        },
+        "layers": null
+      },
+      "raw_response": "{\"id\":\"note-fixture\",\"name\":\"Secondary fixture\",\"device_type\":\"note\",\"rows\":3,\"cols\":15,\"is_primary\":false,\"paused\":false,\"schedule_enabled\":false,\"auto_restore\":true,\"output\":\"vestaboard\",\"device_model\":\"vestaboard_note\",\"charset\":\"vestaboard_v2\",\"compose_protocol\":\"compose-intent-v1\",\"compose_receipt\":null,\"characters\":null,\"text\":null,\"expected_characters\":null,\"read_at\":null,\"active_page_id\":null,\"scheduled_page_id\":null,\"resolved_page_id\":null,\"resolved_next_check_seconds\":null,\"source\":\"none\",\"default_page_id\":null,\"override_expires_at\":null,\"next_change_at\":null,\"next_change_reason\":null,\"next_page_id\":null,\"override_started_at\":null,\"health\":{\"last_connected_at\":null,\"last_update_at\":null,\"latency_ms\":null,\"last_error_at\":null,\"last_error\":null,\"reachable\":null,\"breaker_open\":false},\"drawing\":{\"source\":\"device\",\"technology\":\"split_flap\",\"color\":\"tiles\",\"monochrome\":null,\"font\":null,\"icons\":[],\"pixel_width\":null,\"pixel_height\":null,\"features\":{\"lowercase\":false,\"color_text\":false,\"background\":false,\"tiles\":true,\"icons\":false,\"rgb\":false,\"solid_shapes\":false,\"pixels\":false}},\"layers\":null}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "drawing-tc001-fixture",
+      "method": "GET",
+      "path": "/v1/boards/tc001-fixture",
+      "request": null,
+      "status": 200,
+      "response": {
+        "id": "tc001-fixture",
+        "name": "LED fixture",
+        "device_type": "panel",
+        "rows": 1,
+        "cols": 8,
+        "is_primary": false,
+        "paused": false,
+        "schedule_enabled": false,
+        "auto_restore": true,
+        "output": "recording_output",
+        "device_model": "ulanzi_tc001_awtrix",
+        "charset": "led_3x5",
+        "compose_protocol": "compose-intent-v1",
+        "compose_receipt": null,
+        "characters": null,
+        "text": null,
+        "expected_characters": null,
+        "read_at": null,
+        "active_page_id": null,
+        "scheduled_page_id": null,
+        "resolved_page_id": null,
+        "resolved_next_check_seconds": null,
+        "source": "none",
+        "default_page_id": null,
+        "override_expires_at": null,
+        "next_change_at": null,
+        "next_change_reason": null,
+        "next_page_id": null,
+        "override_started_at": null,
+        "health": {
+          "last_connected_at": null,
+          "last_update_at": null,
+          "latency_ms": null,
+          "last_error_at": null,
+          "last_error": null,
+          "reachable": null,
+          "breaker_open": false
+        },
+        "drawing": {
+          "source": "device",
+          "technology": "led_matrix",
+          "color": "rgb",
+          "monochrome": null,
+          "font": "3x5",
+          "icons": [
+            "sun",
+            "cloud",
+            "rain",
+            "bolt",
+            "check",
+            "cross",
+            "up",
+            "down",
+            "star",
+            "fog"
+          ],
+          "pixel_width": 32,
+          "pixel_height": 8,
+          "features": {
+            "lowercase": true,
+            "color_text": true,
+            "background": true,
+            "tiles": true,
+            "icons": true,
+            "rgb": true,
+            "solid_shapes": false,
+            "pixels": true
+          }
+        },
+        "layers": []
+      },
+      "raw_response": "{\"id\":\"tc001-fixture\",\"name\":\"LED fixture\",\"device_type\":\"panel\",\"rows\":1,\"cols\":8,\"is_primary\":false,\"paused\":false,\"schedule_enabled\":false,\"auto_restore\":true,\"output\":\"recording_output\",\"device_model\":\"ulanzi_tc001_awtrix\",\"charset\":\"led_3x5\",\"compose_protocol\":\"compose-intent-v1\",\"compose_receipt\":null,\"characters\":null,\"text\":null,\"expected_characters\":null,\"read_at\":null,\"active_page_id\":null,\"scheduled_page_id\":null,\"resolved_page_id\":null,\"resolved_next_check_seconds\":null,\"source\":\"none\",\"default_page_id\":null,\"override_expires_at\":null,\"next_change_at\":null,\"next_change_reason\":null,\"next_page_id\":null,\"override_started_at\":null,\"health\":{\"last_connected_at\":null,\"last_update_at\":null,\"latency_ms\":null,\"last_error_at\":null,\"last_error\":null,\"reachable\":null,\"breaker_open\":false},\"drawing\":{\"source\":\"device\",\"technology\":\"led_matrix\",\"color\":\"rgb\",\"monochrome\":null,\"font\":\"3x5\",\"icons\":[\"sun\",\"cloud\",\"rain\",\"bolt\",\"check\",\"cross\",\"up\",\"down\",\"star\",\"fog\"],\"pixel_width\":32,\"pixel_height\":8,\"features\":{\"lowercase\":true,\"color_text\":true,\"background\":true,\"tiles\":true,\"icons\":true,\"rgb\":true,\"solid_shapes\":false,\"pixels\":true}},\"layers\":[]}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "drawing-baseline-fixture",
+      "method": "GET",
+      "path": "/v1/boards/baseline-fixture",
+      "request": null,
+      "status": 200,
+      "response": {
+        "id": "baseline-fixture",
+        "name": "Unavailable output fixture",
+        "device_type": "flagship",
+        "rows": 6,
+        "cols": 22,
+        "is_primary": false,
+        "paused": false,
+        "schedule_enabled": false,
+        "auto_restore": true,
+        "output": "missing_fixture_output",
+        "device_model": null,
+        "charset": null,
+        "compose_protocol": "compose-intent-v1",
+        "compose_receipt": null,
+        "characters": null,
+        "text": null,
+        "expected_characters": null,
+        "read_at": null,
+        "active_page_id": null,
+        "scheduled_page_id": null,
+        "resolved_page_id": null,
+        "resolved_next_check_seconds": null,
+        "source": "none",
+        "default_page_id": null,
+        "override_expires_at": null,
+        "next_change_at": null,
+        "next_change_reason": null,
+        "next_page_id": null,
+        "override_started_at": null,
+        "health": {
+          "last_connected_at": null,
+          "last_update_at": null,
+          "latency_ms": null,
+          "last_error_at": null,
+          "last_error": null,
+          "reachable": null,
+          "breaker_open": false
+        },
+        "drawing": {
+          "source": "baseline",
+          "technology": "split_flap",
+          "color": "tiles",
+          "monochrome": null,
+          "font": null,
+          "icons": [],
+          "pixel_width": null,
+          "pixel_height": null,
+          "features": {
+            "lowercase": false,
+            "color_text": false,
+            "background": false,
+            "tiles": true,
+            "icons": false,
+            "rgb": false,
+            "solid_shapes": false,
+            "pixels": false
+          }
+        },
+        "layers": null
+      },
+      "raw_response": "{\"id\":\"baseline-fixture\",\"name\":\"Unavailable output fixture\",\"device_type\":\"flagship\",\"rows\":6,\"cols\":22,\"is_primary\":false,\"paused\":false,\"schedule_enabled\":false,\"auto_restore\":true,\"output\":\"missing_fixture_output\",\"device_model\":null,\"charset\":null,\"compose_protocol\":\"compose-intent-v1\",\"compose_receipt\":null,\"characters\":null,\"text\":null,\"expected_characters\":null,\"read_at\":null,\"active_page_id\":null,\"scheduled_page_id\":null,\"resolved_page_id\":null,\"resolved_next_check_seconds\":null,\"source\":\"none\",\"default_page_id\":null,\"override_expires_at\":null,\"next_change_at\":null,\"next_change_reason\":null,\"next_page_id\":null,\"override_started_at\":null,\"health\":{\"last_connected_at\":null,\"last_update_at\":null,\"latency_ms\":null,\"last_error_at\":null,\"last_error\":null,\"reachable\":null,\"breaker_open\":false},\"drawing\":{\"source\":\"baseline\",\"technology\":\"split_flap\",\"color\":\"tiles\",\"monochrome\":null,\"font\":null,\"icons\":[],\"pixel_width\":null,\"pixel_height\":null,\"features\":{\"lowercase\":false,\"color_text\":false,\"background\":false,\"tiles\":true,\"icons\":false,\"rgb\":false,\"solid_shapes\":false,\"pixels\":false}},\"layers\":null}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "preview-primary-formatting",
+      "method": "POST",
+      "path": "/templates/render",
+      "request": {
+        "board_id": "hall-1",
+        "template": [
+          "HELLO",
+          "ONE TWO THREE FOUR FIVE SIX SEVEN"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "right",
+            "wrap": false
+          },
+          {
+            "alignment": "left",
+            "wrap": true
+          }
+        ],
+        "device_type": "flagship",
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "diagnostics": true,
+        "preview": {
+          "data": "cached"
+        }
+      },
+      "status": 200,
+      "response": {
+        "rendered": "                 HELLO\nONE TWO THREE FOUR    \nFIVE SIX SEVEN        \n                      \n                      \n                      ",
+        "lines": [
+          "                 HELLO",
+          "ONE TWO THREE FOUR    ",
+          "FIVE SIX SEVEN        ",
+          "                      ",
+          "                      ",
+          "                      "
+        ],
+        "line_count": 6,
+        "charset": "vestaboard_v1",
+        "charset_issues": [],
+        "diagnostics": {
+          "formulas": [],
+          "lines": [
+            {
+              "line": 1,
+              "first_row": 1,
+              "rows_wanted": 1,
+              "rows_shown": 1,
+              "clip": null,
+              "clip_line": null,
+              "widest": 5,
+              "cut": false,
+              "hidden": []
+            },
+            {
+              "line": 2,
+              "first_row": 2,
+              "rows_wanted": 2,
+              "rows_shown": 2,
+              "clip": null,
+              "clip_line": null,
+              "widest": 18,
+              "cut": false,
+              "hidden": []
+            }
+          ]
+        },
+        "sources": {}
+      },
+      "raw_response": "{\"rendered\":\"                 HELLO\\nONE TWO THREE FOUR    \\nFIVE SIX SEVEN        \\n                      \\n                      \\n                      \",\"lines\":[\"                 HELLO\",\"ONE TWO THREE FOUR    \",\"FIVE SIX SEVEN        \",\"                      \",\"                      \",\"                      \"],\"line_count\":6,\"charset\":\"vestaboard_v1\",\"charset_issues\":[],\"diagnostics\":{\"formulas\":[],\"lines\":[{\"line\":1,\"first_row\":1,\"rows_wanted\":1,\"rows_shown\":1,\"clip\":null,\"clip_line\":null,\"widest\":5,\"cut\":false,\"hidden\":[]},{\"line\":2,\"first_row\":2,\"rows_wanted\":2,\"rows_shown\":2,\"clip\":null,\"clip_line\":null,\"widest\":18,\"cut\":false,\"hidden\":[]}]},\"sources\":{}}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "preview-secondary-note",
+      "method": "POST",
+      "path": "/templates/render",
+      "request": {
+        "board_id": "note-fixture",
+        "template": [
+          "SECONDARY",
+          "NOTE"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "center",
+            "wrap": false
+          },
+          {
+            "alignment": "left",
+            "wrap": true
+          }
+        ],
+        "device_type": "note",
+        "notes_wide": 1,
+        "notes_tall": 1
+      },
+      "status": 200,
+      "response": {
+        "rendered": "   SECONDARY   \nNOTE           \n               ",
+        "lines": [
+          "   SECONDARY   ",
+          "NOTE           ",
+          "               "
+        ],
+        "line_count": 3,
+        "charset": "vestaboard_v2",
+        "charset_issues": []
+      },
+      "raw_response": "{\"rendered\":\"   SECONDARY   \\nNOTE           \\n               \",\"lines\":[\"   SECONDARY   \",\"NOTE           \",\"               \"],\"line_count\":3,\"charset\":\"vestaboard_v2\",\"charset_issues\":[]}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "led-plain",
+      "method": "POST",
+      "path": "/templates/render",
+      "request": {
+        "board_id": "tc001-fixture",
+        "template": [
+          "Hi"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "device_type": "panel",
+        "grid_rows": 1,
+        "grid_cols": 8,
+        "notes_wide": 1,
+        "notes_tall": 1
+      },
+      "status": 200,
+      "response": {
+        "rendered": "Hi      ",
+        "lines": [
+          "Hi      "
+        ],
+        "line_count": 1,
+        "charset": "led_3x5",
+        "charset_issues": []
+      },
+      "raw_response": "{\"rendered\":\"Hi      \",\"lines\":[\"Hi      \"],\"line_count\":1,\"charset\":\"led_3x5\",\"charset_issues\":[]}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "led-color",
+      "method": "POST",
+      "path": "/templates/render",
+      "request": {
+        "board_id": "tc001-fixture",
+        "template": [
+          "{{red:Hi}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "device_type": "panel",
+        "grid_rows": 1,
+        "grid_cols": 8,
+        "notes_wide": 1,
+        "notes_tall": 1
+      },
+      "status": 200,
+      "response": {
+        "rendered": "{red:Hi}      ",
+        "lines": [
+          "{red:Hi}      "
+        ],
+        "line_count": 1,
+        "charset": "led_3x5",
+        "charset_issues": []
+      },
+      "raw_response": "{\"rendered\":\"{red:Hi}      \",\"lines\":[\"{red:Hi}      \"],\"line_count\":1,\"charset\":\"led_3x5\",\"charset_issues\":[]}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "led-rgb",
+      "method": "POST",
+      "path": "/templates/render",
+      "request": {
+        "board_id": "tc001-fixture",
+        "template": [
+          "{{#ff8800:Hi}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "device_type": "panel",
+        "grid_rows": 1,
+        "grid_cols": 8,
+        "notes_wide": 1,
+        "notes_tall": 1
+      },
+      "status": 200,
+      "response": {
+        "rendered": "{#ff8800:Hi}      ",
+        "lines": [
+          "{#ff8800:Hi}      "
+        ],
+        "line_count": 1,
+        "charset": "led_3x5",
+        "charset_issues": []
+      },
+      "raw_response": "{\"rendered\":\"{#ff8800:Hi}      \",\"lines\":[\"{#ff8800:Hi}      \"],\"line_count\":1,\"charset\":\"led_3x5\",\"charset_issues\":[]}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "led-icon",
+      "method": "POST",
+      "path": "/templates/render",
+      "request": {
+        "board_id": "tc001-fixture",
+        "template": [
+          "{{icon:sun}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "device_type": "panel",
+        "grid_rows": 1,
+        "grid_cols": 8,
+        "notes_wide": 1,
+        "notes_tall": 1
+      },
+      "status": 200,
+      "response": {
+        "rendered": "{icon:sun}       ",
+        "lines": [
+          "{icon:sun}       "
+        ],
+        "line_count": 1,
+        "charset": "led_3x5",
+        "charset_issues": []
+      },
+      "raw_response": "{\"rendered\":\"{icon:sun}       \",\"lines\":[\"{icon:sun}       \"],\"line_count\":1,\"charset\":\"led_3x5\",\"charset_issues\":[]}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "led-background",
+      "method": "POST",
+      "path": "/templates/render",
+      "request": {
+        "board_id": "tc001-fixture",
+        "template": [
+          "{{black/white:Hi}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "device_type": "panel",
+        "grid_rows": 1,
+        "grid_cols": 8,
+        "notes_wide": 1,
+        "notes_tall": 1
+      },
+      "status": 200,
+      "response": {
+        "rendered": "{black/white:Hi}      ",
+        "lines": [
+          "{black/white:Hi}      "
+        ],
+        "line_count": 1,
+        "charset": "led_3x5",
+        "charset_issues": []
+      },
+      "raw_response": "{\"rendered\":\"{black/white:Hi}      \",\"lines\":[\"{black/white:Hi}      \"],\"line_count\":1,\"charset\":\"led_3x5\",\"charset_issues\":[]}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "led-formula",
+      "method": "POST",
+      "path": "/templates/render",
+      "request": {
+        "board_id": "tc001-fixture",
+        "template": [
+          "{{= 1 + 2}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "device_type": "panel",
+        "grid_rows": 1,
+        "grid_cols": 8,
+        "notes_wide": 1,
+        "notes_tall": 1
+      },
+      "status": 200,
+      "response": {
+        "rendered": "3       ",
+        "lines": [
+          "3       "
+        ],
+        "line_count": 1,
+        "charset": "led_3x5",
+        "charset_issues": []
+      },
+      "raw_response": "{\"rendered\":\"3       \",\"lines\":[\"3       \"],\"line_count\":1,\"charset\":\"led_3x5\",\"charset_issues\":[]}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "led-unsupported-icon",
+      "method": "POST",
+      "path": "/templates/render",
+      "request": {
+        "board_id": "tc001-fixture",
+        "template": [
+          "{{icon:not_an_icon}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "device_type": "panel",
+        "grid_rows": 1,
+        "grid_cols": 8,
+        "notes_wide": 1,
+        "notes_tall": 1
+      },
+      "status": 200,
+      "response": {
+        "rendered": "{icon:no",
+        "lines": [
+          "{icon:no"
+        ],
+        "line_count": 1,
+        "charset": "led_3x5",
+        "charset_issues": [
+          {
+            "row": 0,
+            "col": 0,
+            "token": {
+              "type": "char",
+              "value": "{"
+            },
+            "reason": "char",
+            "fallback": {
+              "type": "char",
+              "value": " "
+            }
+          }
+        ]
+      },
+      "raw_response": "{\"rendered\":\"{icon:no\",\"lines\":[\"{icon:no\"],\"line_count\":1,\"charset\":\"led_3x5\",\"charset_issues\":[{\"row\":0,\"col\":0,\"token\":{\"type\":\"char\",\"value\":\"{\"},\"reason\":\"char\",\"fallback\":{\"type\":\"char\",\"value\":\" \"}}]}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "led-canvas-overlay",
+      "method": "POST",
+      "path": "/templates/render",
+      "request": {
+        "board_id": "tc001-fixture",
+        "template": [
+          "Hi"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "device_type": "panel",
+        "grid_rows": 1,
+        "grid_cols": 8,
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "canvases": [
+          {
+            "id": "recorded-canvas",
+            "area": {
+              "row": 1,
+              "col": 1,
+              "rows": 1,
+              "cols": 1
+            },
+            "content": {
+              "background": "#ff0000"
+            }
+          }
+        ]
+      },
+      "status": 200,
+      "response": {
+        "rendered": " i      ",
+        "lines": [
+          " i      "
+        ],
+        "line_count": 1,
+        "charset": "led_3x5",
+        "charset_issues": [],
+        "layers": [
+          {
+            "x": 0,
+            "y": 1,
+            "width": 3,
+            "height": 5,
+            "rgba": "/wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD/"
+          }
+        ],
+        "canvas_issues": []
+      },
+      "raw_response": "{\"rendered\":\" i      \",\"lines\":[\" i      \"],\"line_count\":1,\"charset\":\"led_3x5\",\"charset_issues\":[],\"layers\":[{\"x\":0,\"y\":1,\"width\":3,\"height\":5,\"rgba\":\"/wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD//wAA//8AAP//AAD/\"}],\"canvas_issues\":[]}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "preview-baseline-unsupported",
+      "method": "POST",
+      "path": "/templates/render",
+      "request": {
+        "board_id": "baseline-fixture",
+        "template": [
+          "{{red:Hi}} {{icon:sun}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "device_type": "flagship",
+        "notes_wide": 1,
+        "notes_tall": 1
+      },
+      "status": 200,
+      "response": {
+        "rendered": "{red:Hi} {icon:sun}                  \n                      \n                      \n                      \n                      \n                      ",
+        "lines": [
+          "{red:Hi} {icon:sun}                  ",
+          "                      ",
+          "                      ",
+          "                      ",
+          "                      ",
+          "                      "
+        ],
+        "line_count": 6,
+        "charset": null,
+        "charset_issues": null
+      },
+      "raw_response": "{\"rendered\":\"{red:Hi} {icon:sun}                  \\n                      \\n                      \\n                      \\n                      \\n                      \",\"lines\":[\"{red:Hi} {icon:sun}                  \",\"                      \",\"                      \",\"                      \",\"                      \",\"                      \"],\"line_count\":6,\"charset\":null,\"charset_issues\":null}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "preview-invalid-panel-geometry",
+      "method": "POST",
+      "path": "/templates/render",
+      "request": {
+        "board_id": "tc001-fixture",
+        "template": [
+          "Hi"
+        ],
+        "device_type": "panel"
+      },
+      "status": 422,
+      "response": {
+        "detail": [
+          {
+            "type": "value_error",
+            "loc": [
+              "body"
+            ],
+            "msg": "Value error, A panel render needs grid_rows and grid_cols",
+            "input": {
+              "board_id": "tc001-fixture",
+              "template": [
+                "Hi"
+              ],
+              "device_type": "panel"
+            },
+            "ctx": {
+              "error": {}
+            }
+          }
+        ]
+      },
+      "raw_response": "{\"detail\":[{\"type\":\"value_error\",\"loc\":[\"body\"],\"msg\":\"Value error, A panel render needs grid_rows and grid_cols\",\"input\":{\"board_id\":\"tc001-fixture\",\"template\":[\"Hi\"],\"device_type\":\"panel\"},\"ctx\":{\"error\":{}}}]}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "create-hall-1",
+      "method": "POST",
+      "path": "/pages",
+      "request": {
+        "name": "Captured hall-1",
+        "type": "template",
+        "template": [
+          "KEEP EXACT",
+          "SECOND"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "right",
+            "wrap": true
+          },
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "device_type": "flagship",
+        "notes_wide": 1,
+        "notes_tall": 1
+      },
+      "status": 201,
+      "response": {
+        "id": "d7a4e581-5116-44c8-a75c-f9c604c03896",
+        "revision": "95fb8dee-527e-4d4b-aeb1-82c719694671",
+        "name": "Captured hall-1",
+        "type": "template",
+        "device_type": "flagship",
+        "display_type": null,
+        "rows": null,
+        "template": [
+          "KEEP EXACT",
+          "SECOND"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "right",
+            "wrap": true
+          },
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "duration_seconds": 300,
+        "transition_strategy": null,
+        "transition_interval_ms": null,
+        "transition_step_size": null,
+        "demo_plugin_id": null,
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "grid_rows": null,
+        "grid_cols": null,
+        "canvases": null,
+        "tags": [],
+        "created_at": "2026-11-17T08:36:12.120907Z",
+        "updated_at": null,
+        "edit_protocol": "page-revision-v1",
+        "document_protocol": "page-document-v1"
+      },
+      "raw_response": "{\"id\":\"d7a4e581-5116-44c8-a75c-f9c604c03896\",\"revision\":\"95fb8dee-527e-4d4b-aeb1-82c719694671\",\"name\":\"Captured hall-1\",\"type\":\"template\",\"device_type\":\"flagship\",\"display_type\":null,\"rows\":null,\"template\":[\"KEEP EXACT\",\"SECOND\"],\"line_metadata\":[{\"alignment\":\"right\",\"wrap\":true},{\"alignment\":\"center\",\"wrap\":false}],\"duration_seconds\":300,\"transition_strategy\":null,\"transition_interval_ms\":null,\"transition_step_size\":null,\"demo_plugin_id\":null,\"notes_wide\":1,\"notes_tall\":1,\"grid_rows\":null,\"grid_cols\":null,\"canvases\":null,\"tags\":[],\"created_at\":\"2026-11-17T08:36:12.120907Z\",\"updated_at\":null,\"edit_protocol\":\"page-revision-v1\",\"document_protocol\":\"page-document-v1\"}",
+      "headers": {
+        "content-type": "application/json",
+        "deprecation": "true",
+        "link": "</api/v1/pages>; rel=\"successor-version\""
+      }
+    },
+    {
+      "case": "created-readback-hall-1",
+      "method": "GET",
+      "path": "/pages/d7a4e581-5116-44c8-a75c-f9c604c03896",
+      "request": null,
+      "status": 200,
+      "response": {
+        "id": "d7a4e581-5116-44c8-a75c-f9c604c03896",
+        "revision": "95fb8dee-527e-4d4b-aeb1-82c719694671",
+        "name": "Captured hall-1",
+        "type": "template",
+        "device_type": "flagship",
+        "display_type": null,
+        "rows": null,
+        "template": [
+          "KEEP EXACT",
+          "SECOND"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "right",
+            "wrap": true
+          },
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "duration_seconds": 300,
+        "transition_strategy": null,
+        "transition_interval_ms": null,
+        "transition_step_size": null,
+        "demo_plugin_id": null,
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "grid_rows": null,
+        "grid_cols": null,
+        "canvases": null,
+        "tags": [],
+        "created_at": "2026-11-17T08:36:12.120907Z",
+        "updated_at": null,
+        "edit_protocol": "page-revision-v1",
+        "document_protocol": "page-document-v1"
+      },
+      "raw_response": "{\"id\":\"d7a4e581-5116-44c8-a75c-f9c604c03896\",\"revision\":\"95fb8dee-527e-4d4b-aeb1-82c719694671\",\"name\":\"Captured hall-1\",\"type\":\"template\",\"device_type\":\"flagship\",\"display_type\":null,\"rows\":null,\"template\":[\"KEEP EXACT\",\"SECOND\"],\"line_metadata\":[{\"alignment\":\"right\",\"wrap\":true},{\"alignment\":\"center\",\"wrap\":false}],\"duration_seconds\":300,\"transition_strategy\":null,\"transition_interval_ms\":null,\"transition_step_size\":null,\"demo_plugin_id\":null,\"notes_wide\":1,\"notes_tall\":1,\"grid_rows\":null,\"grid_cols\":null,\"canvases\":null,\"tags\":[],\"created_at\":\"2026-11-17T08:36:12.120907Z\",\"updated_at\":null,\"edit_protocol\":\"page-revision-v1\",\"document_protocol\":\"page-document-v1\"}",
+      "headers": {
+        "content-type": "application/json",
+        "deprecation": "true",
+        "link": "</api/v1/pages/{page_id}>; rel=\"successor-version\""
+      }
+    },
+    {
+      "case": "create-note-fixture",
+      "method": "POST",
+      "path": "/pages",
+      "request": {
+        "name": "Captured note-fixture",
+        "type": "template",
+        "template": [
+          "KEEP EXACT",
+          "SECOND"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "right",
+            "wrap": true
+          },
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "device_type": "note",
+        "notes_wide": 1,
+        "notes_tall": 1
+      },
+      "status": 201,
+      "response": {
+        "id": "e8cdf662-72cd-4783-9524-9d1a4bd9a1a0",
+        "revision": "8415058a-a81e-4495-b4f0-2eff81f793fd",
+        "name": "Captured note-fixture",
+        "type": "template",
+        "device_type": "note",
+        "display_type": null,
+        "rows": null,
+        "template": [
+          "KEEP EXACT",
+          "SECOND"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "right",
+            "wrap": true
+          },
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "duration_seconds": 300,
+        "transition_strategy": null,
+        "transition_interval_ms": null,
+        "transition_step_size": null,
+        "demo_plugin_id": null,
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "grid_rows": null,
+        "grid_cols": null,
+        "canvases": null,
+        "tags": [],
+        "created_at": "2026-11-17T08:36:12.127674Z",
+        "updated_at": null,
+        "edit_protocol": "page-revision-v1",
+        "document_protocol": "page-document-v1"
+      },
+      "raw_response": "{\"id\":\"e8cdf662-72cd-4783-9524-9d1a4bd9a1a0\",\"revision\":\"8415058a-a81e-4495-b4f0-2eff81f793fd\",\"name\":\"Captured note-fixture\",\"type\":\"template\",\"device_type\":\"note\",\"display_type\":null,\"rows\":null,\"template\":[\"KEEP EXACT\",\"SECOND\"],\"line_metadata\":[{\"alignment\":\"right\",\"wrap\":true},{\"alignment\":\"center\",\"wrap\":false}],\"duration_seconds\":300,\"transition_strategy\":null,\"transition_interval_ms\":null,\"transition_step_size\":null,\"demo_plugin_id\":null,\"notes_wide\":1,\"notes_tall\":1,\"grid_rows\":null,\"grid_cols\":null,\"canvases\":null,\"tags\":[],\"created_at\":\"2026-11-17T08:36:12.127674Z\",\"updated_at\":null,\"edit_protocol\":\"page-revision-v1\",\"document_protocol\":\"page-document-v1\"}",
+      "headers": {
+        "content-type": "application/json",
+        "deprecation": "true",
+        "link": "</api/v1/pages>; rel=\"successor-version\""
+      }
+    },
+    {
+      "case": "created-readback-note-fixture",
+      "method": "GET",
+      "path": "/pages/e8cdf662-72cd-4783-9524-9d1a4bd9a1a0",
+      "request": null,
+      "status": 200,
+      "response": {
+        "id": "e8cdf662-72cd-4783-9524-9d1a4bd9a1a0",
+        "revision": "8415058a-a81e-4495-b4f0-2eff81f793fd",
+        "name": "Captured note-fixture",
+        "type": "template",
+        "device_type": "note",
+        "display_type": null,
+        "rows": null,
+        "template": [
+          "KEEP EXACT",
+          "SECOND"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "right",
+            "wrap": true
+          },
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "duration_seconds": 300,
+        "transition_strategy": null,
+        "transition_interval_ms": null,
+        "transition_step_size": null,
+        "demo_plugin_id": null,
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "grid_rows": null,
+        "grid_cols": null,
+        "canvases": null,
+        "tags": [],
+        "created_at": "2026-11-17T08:36:12.127674Z",
+        "updated_at": null,
+        "edit_protocol": "page-revision-v1",
+        "document_protocol": "page-document-v1"
+      },
+      "raw_response": "{\"id\":\"e8cdf662-72cd-4783-9524-9d1a4bd9a1a0\",\"revision\":\"8415058a-a81e-4495-b4f0-2eff81f793fd\",\"name\":\"Captured note-fixture\",\"type\":\"template\",\"device_type\":\"note\",\"display_type\":null,\"rows\":null,\"template\":[\"KEEP EXACT\",\"SECOND\"],\"line_metadata\":[{\"alignment\":\"right\",\"wrap\":true},{\"alignment\":\"center\",\"wrap\":false}],\"duration_seconds\":300,\"transition_strategy\":null,\"transition_interval_ms\":null,\"transition_step_size\":null,\"demo_plugin_id\":null,\"notes_wide\":1,\"notes_tall\":1,\"grid_rows\":null,\"grid_cols\":null,\"canvases\":null,\"tags\":[],\"created_at\":\"2026-11-17T08:36:12.127674Z\",\"updated_at\":null,\"edit_protocol\":\"page-revision-v1\",\"document_protocol\":\"page-document-v1\"}",
+      "headers": {
+        "content-type": "application/json",
+        "deprecation": "true",
+        "link": "</api/v1/pages/{page_id}>; rel=\"successor-version\""
+      }
+    },
+    {
+      "case": "create-tc001-fixture",
+      "method": "POST",
+      "path": "/pages",
+      "request": {
+        "name": "Captured tc001-fixture",
+        "type": "template",
+        "template": [
+          "KEEP EXACT",
+          "SECOND"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "right",
+            "wrap": true
+          },
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "device_type": "panel",
+        "grid_rows": 1,
+        "grid_cols": 8,
+        "notes_wide": 1,
+        "notes_tall": 1
+      },
+      "status": 201,
+      "response": {
+        "id": "58b2be22-5069-4128-a288-14e94acbcc74",
+        "revision": "9635b272-f5b4-422a-8ef8-2b70d6c42568",
+        "name": "Captured tc001-fixture",
+        "type": "template",
+        "device_type": "panel",
+        "display_type": null,
+        "rows": null,
+        "template": [
+          "KEEP EXACT",
+          "SECOND"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "right",
+            "wrap": true
+          },
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "duration_seconds": 300,
+        "transition_strategy": null,
+        "transition_interval_ms": null,
+        "transition_step_size": null,
+        "demo_plugin_id": null,
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "grid_rows": 1,
+        "grid_cols": 8,
+        "canvases": null,
+        "tags": [],
+        "created_at": "2026-11-17T08:36:12.133250Z",
+        "updated_at": null,
+        "edit_protocol": "page-revision-v1",
+        "document_protocol": "page-document-v1"
+      },
+      "raw_response": "{\"id\":\"58b2be22-5069-4128-a288-14e94acbcc74\",\"revision\":\"9635b272-f5b4-422a-8ef8-2b70d6c42568\",\"name\":\"Captured tc001-fixture\",\"type\":\"template\",\"device_type\":\"panel\",\"display_type\":null,\"rows\":null,\"template\":[\"KEEP EXACT\",\"SECOND\"],\"line_metadata\":[{\"alignment\":\"right\",\"wrap\":true},{\"alignment\":\"center\",\"wrap\":false}],\"duration_seconds\":300,\"transition_strategy\":null,\"transition_interval_ms\":null,\"transition_step_size\":null,\"demo_plugin_id\":null,\"notes_wide\":1,\"notes_tall\":1,\"grid_rows\":1,\"grid_cols\":8,\"canvases\":null,\"tags\":[],\"created_at\":\"2026-11-17T08:36:12.133250Z\",\"updated_at\":null,\"edit_protocol\":\"page-revision-v1\",\"document_protocol\":\"page-document-v1\"}",
+      "headers": {
+        "content-type": "application/json",
+        "deprecation": "true",
+        "link": "</api/v1/pages>; rel=\"successor-version\""
+      }
+    },
+    {
+      "case": "created-readback-tc001-fixture",
+      "method": "GET",
+      "path": "/pages/58b2be22-5069-4128-a288-14e94acbcc74",
+      "request": null,
+      "status": 200,
+      "response": {
+        "id": "58b2be22-5069-4128-a288-14e94acbcc74",
+        "revision": "9635b272-f5b4-422a-8ef8-2b70d6c42568",
+        "name": "Captured tc001-fixture",
+        "type": "template",
+        "device_type": "panel",
+        "display_type": null,
+        "rows": null,
+        "template": [
+          "KEEP EXACT",
+          "SECOND"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "right",
+            "wrap": true
+          },
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "duration_seconds": 300,
+        "transition_strategy": null,
+        "transition_interval_ms": null,
+        "transition_step_size": null,
+        "demo_plugin_id": null,
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "grid_rows": 1,
+        "grid_cols": 8,
+        "canvases": null,
+        "tags": [],
+        "created_at": "2026-11-17T08:36:12.133250Z",
+        "updated_at": null,
+        "edit_protocol": "page-revision-v1",
+        "document_protocol": "page-document-v1"
+      },
+      "raw_response": "{\"id\":\"58b2be22-5069-4128-a288-14e94acbcc74\",\"revision\":\"9635b272-f5b4-422a-8ef8-2b70d6c42568\",\"name\":\"Captured tc001-fixture\",\"type\":\"template\",\"device_type\":\"panel\",\"display_type\":null,\"rows\":null,\"template\":[\"KEEP EXACT\",\"SECOND\"],\"line_metadata\":[{\"alignment\":\"right\",\"wrap\":true},{\"alignment\":\"center\",\"wrap\":false}],\"duration_seconds\":300,\"transition_strategy\":null,\"transition_interval_ms\":null,\"transition_step_size\":null,\"demo_plugin_id\":null,\"notes_wide\":1,\"notes_tall\":1,\"grid_rows\":1,\"grid_cols\":8,\"canvases\":null,\"tags\":[],\"created_at\":\"2026-11-17T08:36:12.133250Z\",\"updated_at\":null,\"edit_protocol\":\"page-revision-v1\",\"document_protocol\":\"page-document-v1\"}",
+      "headers": {
+        "content-type": "application/json",
+        "deprecation": "true",
+        "link": "</api/v1/pages/{page_id}>; rel=\"successor-version\""
+      }
+    },
+    {
+      "case": "create-panel-needs-grid",
+      "method": "POST",
+      "path": "/pages",
+      "request": {
+        "name": "Rejected panel",
+        "type": "template",
+        "template": [
+          "Hi"
+        ],
+        "device_type": "panel"
+      },
+      "status": 422,
+      "response": {
+        "detail": [
+          {
+            "type": "value_error",
+            "loc": [
+              "body"
+            ],
+            "msg": "Value error, A panel page needs grid_rows and grid_cols",
+            "input": {
+              "name": "Rejected panel",
+              "type": "template",
+              "template": [
+                "Hi"
+              ],
+              "device_type": "panel"
+            },
+            "ctx": {
+              "error": {}
+            }
+          }
+        ]
+      },
+      "raw_response": "{\"detail\":[{\"type\":\"value_error\",\"loc\":[\"body\"],\"msg\":\"Value error, A panel page needs grid_rows and grid_cols\",\"input\":{\"name\":\"Rejected panel\",\"type\":\"template\",\"template\":[\"Hi\"],\"device_type\":\"panel\"},\"ctx\":{\"error\":{}}}]}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "anonymous-preview-denied",
+      "method": "POST",
+      "path": "/templates/render",
+      "request": {
+        "template": [
+          "Hi"
+        ]
+      },
+      "status": 401,
+      "response": {
+        "detail": "Not authenticated"
+      },
+      "raw_response": "{\"detail\":\"Not authenticated\"}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "tv-page-create-denied",
+      "method": "POST",
+      "path": "/pages",
+      "request": {
+        "name": "Denied",
+        "type": "template",
+        "template": [
+          "Hi"
+        ]
+      },
+      "status": 403,
+      "response": {
+        "error": "forbidden",
+        "detail": "This TV sign-in does not permit that operation."
+      },
+      "raw_response": "{\"error\":\"forbidden\",\"detail\":\"This TV sign-in does not permit that operation.\"}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    }
+  ]
+}

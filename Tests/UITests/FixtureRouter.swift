@@ -11,6 +11,9 @@ final class FixtureRouter {
     final class State {
         let scenario: String
         let homeContract: Bool
+        let composeUnknown: Bool
+        let composeAmbiguous: Bool
+        let composeHeld: Bool
         var mode: String
         var setup: Bool
         var token: String?
@@ -18,6 +21,9 @@ final class FixtureRouter {
         var savedPages: [String: [String: Any]] = [:]
         var extraPages: [[String: Any]] = []
         var saveCount = 0
+        // Synthetic I8 lifecycle state; recorded corpus bytes remain immutable.
+        var composeReceipts: [String: [String: Any]] = [:]
+        var composePosts = 0
         var flexible: [String: Any]
         var flexibleRevision = 1
         var sync: [String: Bool]
@@ -28,6 +34,9 @@ final class FixtureRouter {
         init(prefix: String, flexible: [String: Any]) {
             self.flexible = flexible
             homeContract = prefix.hasPrefix("/board-i7-")
+            composeUnknown = prefix.hasPrefix("/board-i8-compose-unknown-")
+            composeAmbiguous = prefix.hasPrefix("/board-i8-compose-ambiguous-")
+            composeHeld = prefix.hasPrefix("/board-i8-compose-held-")
             setup = prefix.hasPrefix("/setup-")
             mode = prefix.hasPrefix("/mixed-") || prefix.hasPrefix("/flexible-") ? "disabled" : (setup ? "undecided" : "enabled")
             let rawScenario = prefix.hasPrefix("/board-") ? String(prefix.dropFirst(7).split(separator: "-").dropLast().joined(separator: "-")) : "manual"
@@ -39,6 +48,7 @@ final class FixtureRouter {
     let seed: [String: Any]
     var recorded: [String: (method: String, path: String, response: Response)] = [:]
     var states: [String: State] = [:]
+    var composeRecords: [[String: Any]] = []
     let null = NSNull()
     var boards: [[String: Any]] { seed["boards"] as! [[String: Any]] }
     var pages: [[String: Any]] { seed["pages"] as! [[String: Any]] }
@@ -46,6 +56,13 @@ final class FixtureRouter {
     init(resourceURL: URL, recordedURL: URL? = nil) throws {
         seed = try JSONSerialization.jsonObject(with: Data(contentsOf: resourceURL)) as! [String: Any]
         if let recordedURL {
+            for file in ["operations-authenticated.json", "long-led-authenticated.json", "compose-authenticated.json", "catalog-authenticated.json"] {
+                let url = recordedURL.appendingPathComponent("Compose").appendingPathComponent(file)
+                if FileManager.default.fileExists(atPath: url.path) {
+                    let corpus = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
+                    composeRecords += corpus["records"] as! [[String: Any]]
+                }
+            }
             let source = try JSONSerialization.jsonObject(with: Data(contentsOf: recordedURL.appendingPathComponent("SOURCE.json"))) as! [String: Any]
             for record in source["responses"] as! [[String: Any]] {
                 let file = record["file"] as! String
@@ -83,7 +100,7 @@ final class FixtureRouter {
         let authorization = headers.first { $0.key.lowercased() == "authorization" }?.value
         let authenticated = state.token != nil && authorization == "Bearer " + state.token!
         if method == "GET", route == "health" { return reply(200, cases["health"]!) }
-        if method == "GET", route == "discover" { return reply(200, ["product": "FiestaBoard", "version": "11.0.0", "id": String(prefix.dropFirst()), "name": "UI Test Server"]) }
+        if method == "GET", route == "discover" { return reply(200, ["product": "FiestaBoard", "version": prefix.hasPrefix("/board-i8-compose-") ? "11.0.0-alpha.3" : "11.0.0", "id": String(prefix.dropFirst()), "name": "UI Test Server"]) }
         if method == "GET", route == "auth/status" {
             var status = cases[authenticated ? "auth_authenticated" : "auth_enabled"] as! [String: Any]
             status.merge(["mode": state.mode, "first_run": state.mode == "undecided", "enabled": state.mode != "disabled", "setup_required": state.setup && state.mode != "disabled", "username": authenticated ? "fixture_admin" as Any : null, "authenticated": authenticated, "auth_kind": authenticated ? "mobile" as Any : null]) { _, new in new }
@@ -101,6 +118,7 @@ final class FixtureRouter {
             guard authenticated else { return reply(401, cases["protected_unauthenticated"]!) }; state.token = nil; return reply(200, ["status": "ok"])
         }
         if state.mode != "disabled", !authenticated { return reply(401, cases["protected_unauthenticated"]!) }
+        if prefix.hasPrefix("/board-i8-compose-") { return composeRoute(method, route, body, boardID, state) }
         if prefix.hasPrefix("/board-"), let result = boardRoute(method, route, body, boardID, state,
             undoRequested: query.first { $0.name == "undo" }?.value == "true") { return result }
         if !prefix.hasPrefix("/mixed-"), let result = renderRoute(method, route, body, prefix) { return result }

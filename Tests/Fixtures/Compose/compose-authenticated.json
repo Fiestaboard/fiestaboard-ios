@@ -1,0 +1,783 @@
+{
+  "protocol": "compose-intent-v1",
+  "source_sha": "b33160f3cae395d95ff62772653b4e2d45862ea7",
+  "boundary": "actual FastAPI ASGI with real synthetic mobile authentication; synthetic hardware drivers",
+  "records": [
+    {
+      "case": "primary-capability",
+      "method": "GET",
+      "path": "/v1/boards/f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c",
+      "request": null,
+      "status": 200,
+      "response": {
+        "id": "f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c",
+        "name": "Kitchen",
+        "device_type": "flagship",
+        "rows": 6,
+        "cols": 22,
+        "is_primary": true,
+        "paused": false,
+        "schedule_enabled": false,
+        "auto_restore": true,
+        "output": "vestaboard",
+        "device_model": "vestaboard_flagship",
+        "charset": "vestaboard_v1",
+        "compose_protocol": "compose-intent-v1",
+        "compose_receipt": null,
+        "characters": null,
+        "text": null,
+        "expected_characters": null,
+        "read_at": null,
+        "active_page_id": null,
+        "scheduled_page_id": null,
+        "resolved_page_id": null,
+        "resolved_next_check_seconds": null,
+        "source": "none",
+        "default_page_id": null,
+        "override_expires_at": null,
+        "next_change_at": null,
+        "next_change_reason": null,
+        "next_page_id": null,
+        "override_started_at": null,
+        "health": {
+          "last_connected_at": null,
+          "last_update_at": null,
+          "latency_ms": null,
+          "last_error_at": null,
+          "last_error": null,
+          "reachable": null,
+          "breaker_open": false
+        },
+        "drawing": {
+          "source": "device",
+          "technology": "split_flap",
+          "color": "tiles",
+          "monochrome": null,
+          "font": null,
+          "icons": [],
+          "pixel_width": null,
+          "pixel_height": null,
+          "features": {
+            "lowercase": false,
+            "color_text": false,
+            "background": false,
+            "tiles": true,
+            "icons": false,
+            "rgb": false,
+            "solid_shapes": false,
+            "pixels": false
+          }
+        },
+        "layers": null
+      },
+      "headers": {}
+    },
+    {
+      "case": "secondary-capability",
+      "method": "GET",
+      "path": "/v1/boards/ecc71844-1f26-436b-bf63-b605ff99b225",
+      "request": null,
+      "status": 200,
+      "response": {
+        "id": "ecc71844-1f26-436b-bf63-b605ff99b225",
+        "name": "Hallway",
+        "device_type": "note",
+        "rows": 3,
+        "cols": 15,
+        "is_primary": false,
+        "paused": false,
+        "schedule_enabled": false,
+        "auto_restore": true,
+        "output": "vestaboard",
+        "device_model": "vestaboard_note",
+        "charset": "vestaboard_v2",
+        "compose_protocol": "compose-intent-v1",
+        "compose_receipt": null,
+        "characters": null,
+        "text": null,
+        "expected_characters": null,
+        "read_at": null,
+        "active_page_id": null,
+        "scheduled_page_id": null,
+        "resolved_page_id": null,
+        "resolved_next_check_seconds": null,
+        "source": "none",
+        "default_page_id": null,
+        "override_expires_at": null,
+        "next_change_at": null,
+        "next_change_reason": null,
+        "next_page_id": null,
+        "override_started_at": null,
+        "health": {
+          "last_connected_at": null,
+          "last_update_at": null,
+          "latency_ms": null,
+          "last_error_at": null,
+          "last_error": null,
+          "reachable": null,
+          "breaker_open": false
+        },
+        "drawing": {
+          "source": "device",
+          "technology": "split_flap",
+          "color": "tiles",
+          "monochrome": null,
+          "font": null,
+          "icons": [],
+          "pixel_width": null,
+          "pixel_height": null,
+          "features": {
+            "lowercase": false,
+            "color_text": false,
+            "background": false,
+            "tiles": true,
+            "icons": false,
+            "rgb": false,
+            "solid_shapes": false,
+            "pixels": false
+          }
+        },
+        "layers": null
+      },
+      "headers": {}
+    },
+    {
+      "case": "formatted-timed-primary",
+      "method": "POST",
+      "path": "/v1/boards/f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c/compose",
+      "request": {
+        "protocol": "compose-intent-v1",
+        "request_id": "5a8989cf-7303-4345-a3fa-4432706bf795",
+        "prepared_at": "2026-11-17T08:15:54.343965+00:00",
+        "template": [
+          "HELLO {{red:WORLD}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "geometry": {
+          "device_type": "flagship",
+          "notes_wide": 1,
+          "notes_tall": 1
+        },
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "silence": "hold"
+      },
+      "status": 200,
+      "response": {
+        "protocol": "compose-intent-v1",
+        "request_id": "5a8989cf-7303-4345-a3fa-4432706bf795",
+        "board_id": "f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c",
+        "status": "sent",
+        "sent": true,
+        "expires_at": "2026-11-17T10:15:54.507978+00:00",
+        "started_at": "2026-11-17T08:15:54.507978+00:00",
+        "held_until": null,
+        "reason": null,
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "retry_after_seconds": null,
+        "failed_regions": []
+      },
+      "headers": {
+        "cache-control": "no-store"
+      }
+    },
+    {
+      "case": "same-uuid-no-replay",
+      "method": "POST",
+      "path": "/v1/boards/f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c/compose",
+      "request": {
+        "protocol": "compose-intent-v1",
+        "request_id": "5a8989cf-7303-4345-a3fa-4432706bf795",
+        "prepared_at": "2026-11-17T08:15:54.343965+00:00",
+        "template": [
+          "HELLO {{red:WORLD}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "geometry": {
+          "device_type": "flagship",
+          "notes_wide": 1,
+          "notes_tall": 1
+        },
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "silence": "hold"
+      },
+      "status": 200,
+      "response": {
+        "protocol": "compose-intent-v1",
+        "request_id": "5a8989cf-7303-4345-a3fa-4432706bf795",
+        "board_id": "f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c",
+        "status": "sent",
+        "sent": true,
+        "expires_at": "2026-11-17T10:15:54.507978+00:00",
+        "started_at": "2026-11-17T08:15:54.507978+00:00",
+        "held_until": null,
+        "reason": null,
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "retry_after_seconds": null,
+        "failed_regions": []
+      },
+      "headers": {
+        "cache-control": "no-store"
+      }
+    },
+    {
+      "case": "primary-readback",
+      "method": "GET",
+      "path": "/v1/boards/f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c",
+      "request": null,
+      "status": 200,
+      "response": {
+        "id": "f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c",
+        "name": "Kitchen",
+        "device_type": "flagship",
+        "rows": 6,
+        "cols": 22,
+        "is_primary": true,
+        "paused": false,
+        "schedule_enabled": false,
+        "auto_restore": true,
+        "output": "vestaboard",
+        "device_model": "vestaboard_flagship",
+        "charset": "vestaboard_v1",
+        "compose_protocol": "compose-intent-v1",
+        "compose_receipt": {
+          "protocol": "compose-intent-v1",
+          "request_id": "5a8989cf-7303-4345-a3fa-4432706bf795",
+          "status": "sent",
+          "sent": true,
+          "started_at": "2026-11-17T08:15:54.507978+00:00",
+          "expires_at": "2026-11-17T10:15:54.507978+00:00",
+          "duration": {
+            "kind": "minutes",
+            "minutes": 120
+          }
+        },
+        "characters": null,
+        "text": null,
+        "expected_characters": null,
+        "read_at": null,
+        "active_page_id": null,
+        "scheduled_page_id": null,
+        "resolved_page_id": null,
+        "resolved_next_check_seconds": null,
+        "source": "none",
+        "default_page_id": null,
+        "override_expires_at": "2026-11-17T10:15:54.507978+00:00",
+        "next_change_at": "2026-11-17T10:15:54+00:00",
+        "next_change_reason": "override_ends",
+        "next_page_id": null,
+        "override_started_at": "2026-11-17T08:15:54.507978+00:00",
+        "health": {
+          "last_connected_at": null,
+          "last_update_at": null,
+          "latency_ms": null,
+          "last_error_at": null,
+          "last_error": null,
+          "reachable": null,
+          "breaker_open": false
+        },
+        "drawing": {
+          "source": "device",
+          "technology": "split_flap",
+          "color": "tiles",
+          "monochrome": null,
+          "font": null,
+          "icons": [],
+          "pixel_width": null,
+          "pixel_height": null,
+          "features": {
+            "lowercase": false,
+            "color_text": false,
+            "background": false,
+            "tiles": true,
+            "icons": false,
+            "rgb": false,
+            "solid_shapes": false,
+            "pixels": false
+          }
+        },
+        "layers": null
+      },
+      "headers": {}
+    },
+    {
+      "case": "uuid-poll",
+      "method": "GET",
+      "path": "/v1/boards/f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c/compose/5a8989cf-7303-4345-a3fa-4432706bf795",
+      "request": null,
+      "status": 200,
+      "response": {
+        "protocol": "compose-intent-v1",
+        "request_id": "5a8989cf-7303-4345-a3fa-4432706bf795",
+        "board_id": "f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c",
+        "status": "sent",
+        "sent": true,
+        "expires_at": "2026-11-17T10:15:54.507978+00:00",
+        "started_at": "2026-11-17T08:15:54.507978+00:00",
+        "held_until": null,
+        "reason": null,
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "retry_after_seconds": null,
+        "failed_regions": []
+      },
+      "headers": {
+        "cache-control": "no-store"
+      }
+    },
+    {
+      "case": "indefinite-secondary",
+      "method": "POST",
+      "path": "/v1/boards/ecc71844-1f26-436b-bf63-b605ff99b225/compose",
+      "request": {
+        "protocol": "compose-intent-v1",
+        "request_id": "ca975dde-b719-4781-9281-cf7c027ca9f2",
+        "prepared_at": "2026-11-17T08:15:54.543196+00:00",
+        "template": [
+          "HELLO {{red:WORLD}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "geometry": {
+          "device_type": "note"
+        },
+        "duration": {
+          "kind": "until_cancel"
+        },
+        "silence": "hold"
+      },
+      "status": 200,
+      "response": {
+        "protocol": "compose-intent-v1",
+        "request_id": "ca975dde-b719-4781-9281-cf7c027ca9f2",
+        "board_id": "ecc71844-1f26-436b-bf63-b605ff99b225",
+        "status": "sent",
+        "sent": true,
+        "expires_at": null,
+        "started_at": "2026-11-17T08:15:54.551327+00:00",
+        "held_until": null,
+        "reason": null,
+        "duration": {
+          "kind": "until_cancel"
+        },
+        "retry_after_seconds": null,
+        "failed_regions": []
+      },
+      "headers": {
+        "cache-control": "no-store"
+      }
+    },
+    {
+      "case": "explicit-hold",
+      "method": "POST",
+      "path": "/v1/boards/f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c/compose",
+      "request": {
+        "protocol": "compose-intent-v1",
+        "request_id": "b1d99b60-ec2d-470e-bb86-b0f66ae934c5",
+        "prepared_at": "2026-11-17T08:15:54.555330+00:00",
+        "template": [
+          "HELLO {{red:WORLD}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "geometry": {
+          "device_type": "flagship",
+          "notes_wide": 1,
+          "notes_tall": 1
+        },
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "silence": "hold"
+      },
+      "status": 202,
+      "response": {
+        "protocol": "compose-intent-v1",
+        "request_id": "b1d99b60-ec2d-470e-bb86-b0f66ae934c5",
+        "board_id": "f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c",
+        "status": "held",
+        "sent": false,
+        "expires_at": null,
+        "started_at": null,
+        "held_until": "2026-11-17T23:58:59.562654+00:00",
+        "reason": "Held until silence ends; the requested duration starts on accepted delivery",
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "retry_after_seconds": null,
+        "failed_regions": []
+      },
+      "headers": {
+        "cache-control": "no-store"
+      }
+    },
+    {
+      "case": "held-release-receipt",
+      "method": "GET",
+      "path": "/v1/boards/f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c/compose/b1d99b60-ec2d-470e-bb86-b0f66ae934c5",
+      "request": null,
+      "status": 200,
+      "response": {
+        "protocol": "compose-intent-v1",
+        "request_id": "b1d99b60-ec2d-470e-bb86-b0f66ae934c5",
+        "board_id": "f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c",
+        "status": "sent",
+        "sent": true,
+        "expires_at": "2026-11-17T10:15:54.567934+00:00",
+        "started_at": "2026-11-17T08:15:54.567934+00:00",
+        "held_until": null,
+        "reason": null,
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "retry_after_seconds": null,
+        "failed_regions": []
+      },
+      "headers": {
+        "cache-control": "no-store"
+      }
+    },
+    {
+      "case": "paused",
+      "method": "POST",
+      "path": "/v1/boards/f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c/compose",
+      "request": {
+        "protocol": "compose-intent-v1",
+        "request_id": "de114f7b-1a21-4dcf-9699-e851ed9d97ec",
+        "prepared_at": "2026-11-17T08:15:54.576409+00:00",
+        "template": [
+          "HELLO {{red:WORLD}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "geometry": {
+          "device_type": "flagship",
+          "notes_wide": 1,
+          "notes_tall": 1
+        },
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "silence": "override"
+      },
+      "status": 409,
+      "response": {
+        "detail": {
+          "protocol": "compose-intent-v1",
+          "request_id": "de114f7b-1a21-4dcf-9699-e851ed9d97ec",
+          "board_id": "f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c",
+          "status": "rejected",
+          "sent": false,
+          "expires_at": null,
+          "started_at": null,
+          "held_until": null,
+          "reason": "The target display is paused",
+          "duration": {
+            "kind": "minutes",
+            "minutes": 120
+          },
+          "retry_after_seconds": null,
+          "failed_regions": []
+        }
+      },
+      "headers": {
+        "cache-control": "no-store"
+      }
+    },
+    {
+      "case": "geometry-mismatch",
+      "method": "POST",
+      "path": "/v1/boards/f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c/compose",
+      "request": {
+        "protocol": "compose-intent-v1",
+        "request_id": "c9c62ba1-6069-41e6-b2bc-9076563f6415",
+        "prepared_at": "2026-11-17T08:15:54.585148+00:00",
+        "template": [
+          "HELLO {{red:WORLD}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "geometry": {
+          "device_type": "note"
+        },
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "silence": "hold"
+      },
+      "status": 409,
+      "response": {
+        "detail": {
+          "protocol": "compose-intent-v1",
+          "request_id": "c9c62ba1-6069-41e6-b2bc-9076563f6415",
+          "board_id": "f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c",
+          "status": "rejected",
+          "sent": false,
+          "expires_at": null,
+          "started_at": null,
+          "held_until": null,
+          "reason": "The captured display geometry has changed",
+          "duration": {
+            "kind": "minutes",
+            "minutes": 120
+          },
+          "retry_after_seconds": null,
+          "failed_regions": []
+        }
+      },
+      "headers": {
+        "cache-control": "no-store"
+      }
+    },
+    {
+      "case": "invalid-duration",
+      "method": "POST",
+      "path": "/v1/boards/f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c/compose",
+      "request": {
+        "protocol": "compose-intent-v1",
+        "request_id": "e3855716-648b-4d34-bbe0-a1ed4bf2fd14",
+        "prepared_at": "2026-11-17T08:15:54.592295+00:00",
+        "template": [
+          "HELLO {{red:WORLD}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "geometry": {
+          "device_type": "flagship",
+          "notes_wide": 1,
+          "notes_tall": 1
+        },
+        "duration": {
+          "kind": "minutes",
+          "minutes": 481
+        },
+        "silence": "hold"
+      },
+      "status": 422,
+      "response": {
+        "detail": [
+          {
+            "type": "less_than_equal",
+            "loc": [
+              "body",
+              "duration",
+              "minutes",
+              "minutes"
+            ],
+            "msg": "Input should be less than or equal to 480",
+            "input": 481,
+            "ctx": {
+              "le": 480
+            }
+          }
+        ]
+      },
+      "headers": {}
+    },
+    {
+      "case": "rate-limit",
+      "method": "POST",
+      "path": "/v1/boards/f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c/compose",
+      "request": {
+        "protocol": "compose-intent-v1",
+        "request_id": "09c8fe62-f5b7-4799-8d47-3200e35e9f20",
+        "prepared_at": "2026-11-17T08:15:54.596832+00:00",
+        "template": [
+          "HELLO {{red:WORLD}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "geometry": {
+          "device_type": "flagship",
+          "notes_wide": 1,
+          "notes_tall": 1
+        },
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "silence": "hold"
+      },
+      "status": 429,
+      "response": {
+        "detail": {
+          "protocol": "compose-intent-v1",
+          "request_id": "09c8fe62-f5b7-4799-8d47-3200e35e9f20",
+          "board_id": "f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c",
+          "status": "not_sent",
+          "sent": false,
+          "expires_at": null,
+          "started_at": null,
+          "held_until": null,
+          "reason": "The display send limit deferred this request",
+          "duration": {
+            "kind": "minutes",
+            "minutes": 120
+          },
+          "retry_after_seconds": 9,
+          "failed_regions": []
+        }
+      },
+      "headers": {
+        "cache-control": "no-store",
+        "retry-after": "9"
+      }
+    },
+    {
+      "case": "partial",
+      "method": "POST",
+      "path": "/v1/boards/f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c/compose",
+      "request": {
+        "protocol": "compose-intent-v1",
+        "request_id": "f3720476-447f-4149-b44a-17ca1ecc4045",
+        "prepared_at": "2026-11-17T08:15:54.609172+00:00",
+        "template": [
+          "HELLO {{red:WORLD}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "geometry": {
+          "device_type": "flagship",
+          "notes_wide": 1,
+          "notes_tall": 1
+        },
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "silence": "hold"
+      },
+      "status": 502,
+      "response": {
+        "detail": {
+          "protocol": "compose-intent-v1",
+          "request_id": "f3720476-447f-4149-b44a-17ca1ecc4045",
+          "board_id": "f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c",
+          "status": "partial",
+          "sent": null,
+          "expires_at": null,
+          "started_at": null,
+          "held_until": null,
+          "reason": "Only part of the display accepted the content",
+          "duration": {
+            "kind": "minutes",
+            "minutes": 120
+          },
+          "retry_after_seconds": null,
+          "failed_regions": []
+        }
+      },
+      "headers": {
+        "cache-control": "no-store"
+      }
+    },
+    {
+      "case": "unknown",
+      "method": "POST",
+      "path": "/v1/boards/f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c/compose",
+      "request": {
+        "protocol": "compose-intent-v1",
+        "request_id": "6cbd82f1-5f88-4dae-9855-278f8cf1422a",
+        "prepared_at": "2026-11-17T08:15:54.623174+00:00",
+        "template": [
+          "HELLO {{red:WORLD}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "center",
+            "wrap": false
+          }
+        ],
+        "geometry": {
+          "device_type": "flagship",
+          "notes_wide": 1,
+          "notes_tall": 1
+        },
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "silence": "hold"
+      },
+      "status": 503,
+      "response": {
+        "detail": {
+          "protocol": "compose-intent-v1",
+          "request_id": "6cbd82f1-5f88-4dae-9855-278f8cf1422a",
+          "board_id": "f59d41b1-a0ac-41c2-8242-4e9b8ed26c8c",
+          "status": "unknown",
+          "sent": null,
+          "expires_at": null,
+          "started_at": null,
+          "held_until": null,
+          "reason": "The display outcome is unknown; this request will not be replayed",
+          "duration": {
+            "kind": "minutes",
+            "minutes": 120
+          },
+          "retry_after_seconds": null,
+          "failed_regions": []
+        }
+      },
+      "headers": {
+        "cache-control": "no-store"
+      }
+    }
+  ]
+}

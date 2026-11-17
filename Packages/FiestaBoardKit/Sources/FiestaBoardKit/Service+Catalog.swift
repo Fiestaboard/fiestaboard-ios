@@ -1,5 +1,15 @@
 import Foundation
 
+/// Authenticated Compose picker reads bound to the captured principal and display.
+/// Array hydration is deliberately excluded: the recorded mobile scope denies it.
+public protocol ComposeCatalogReading: Sendable {
+    func composeTemplateCatalog(_ request: ComposeRequest) async throws -> TemplateCatalog
+    func composeFormulaFunctions(_ request: ComposeRequest) async throws -> FunctionCatalog
+    func validateComposeFormula(_ expression: String, request: ComposeRequest) async throws -> FormulaCheck
+}
+
+extension LiveFiestaBoardService: ComposeCatalogReading {}
+
 /// The editor's catalog reads (PLAN §2.3 "Catalogs", B21/B22). All are reads or a non-mutating
 /// validation POST; none is retried by the caller. `/v1/*` accepts the session like every route;
 /// `/plugins/*` and `/templates/*` are internal (cookie).

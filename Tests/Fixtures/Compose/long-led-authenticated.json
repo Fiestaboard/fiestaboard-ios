@@ -1,0 +1,672 @@
+{
+  "source_sha": "b33160f3cae395d95ff62772653b4e2d45862ea7",
+  "source_tree": "4c0823273dc31078876b9275463fdc3904087237",
+  "recorder_sha256": "1dfce711763abd88c08bf45477ea00f5ba1e090747aae45e0f1ad1799702a29e",
+  "boundary": "Actual authenticated FastAPI ASGI, template engine, Compose worker/ledger/settings and rich grid projection. Synthetic output runtime driver captures its render boundary and returns acceptance; no transport or physical hardware.",
+  "unmet": "19-character continuous scrolling and Reduce Motion paging are not provided. Preview/captured delivery are fixed 1x8; original request/override retain all 19 cells of source. Native durable draft retention requires native tests.",
+  "records": [
+    {
+      "case": "long-led-drawing",
+      "method": "GET",
+      "path": "/v1/boards/long-led-fixture",
+      "request": null,
+      "status": 200,
+      "response": {
+        "id": "long-led-fixture",
+        "name": "Long LED fixture",
+        "device_type": "panel",
+        "rows": 1,
+        "cols": 8,
+        "is_primary": false,
+        "paused": false,
+        "schedule_enabled": false,
+        "auto_restore": true,
+        "output": "recording_output",
+        "device_model": "ulanzi_tc001_awtrix",
+        "charset": "led_3x5",
+        "compose_protocol": "compose-intent-v1",
+        "compose_receipt": null,
+        "characters": null,
+        "text": null,
+        "expected_characters": null,
+        "read_at": null,
+        "active_page_id": null,
+        "scheduled_page_id": null,
+        "resolved_page_id": null,
+        "resolved_next_check_seconds": null,
+        "source": "none",
+        "default_page_id": null,
+        "override_expires_at": null,
+        "next_change_at": null,
+        "next_change_reason": null,
+        "next_page_id": null,
+        "override_started_at": null,
+        "health": {
+          "last_connected_at": null,
+          "last_update_at": null,
+          "latency_ms": null,
+          "last_error_at": null,
+          "last_error": null,
+          "reachable": null,
+          "breaker_open": false
+        },
+        "drawing": {
+          "source": "device",
+          "technology": "led_matrix",
+          "color": "rgb",
+          "monochrome": null,
+          "font": "3x5",
+          "icons": [
+            "sun",
+            "cloud",
+            "rain",
+            "bolt",
+            "check",
+            "cross",
+            "up",
+            "down",
+            "star",
+            "fog"
+          ],
+          "pixel_width": 32,
+          "pixel_height": 8,
+          "features": {
+            "lowercase": true,
+            "color_text": true,
+            "background": true,
+            "tiles": true,
+            "icons": true,
+            "rgb": true,
+            "solid_shapes": false,
+            "pixels": true
+          }
+        },
+        "layers": []
+      },
+      "raw_response": "{\"id\":\"long-led-fixture\",\"name\":\"Long LED fixture\",\"device_type\":\"panel\",\"rows\":1,\"cols\":8,\"is_primary\":false,\"paused\":false,\"schedule_enabled\":false,\"auto_restore\":true,\"output\":\"recording_output\",\"device_model\":\"ulanzi_tc001_awtrix\",\"charset\":\"led_3x5\",\"compose_protocol\":\"compose-intent-v1\",\"compose_receipt\":null,\"characters\":null,\"text\":null,\"expected_characters\":null,\"read_at\":null,\"active_page_id\":null,\"scheduled_page_id\":null,\"resolved_page_id\":null,\"resolved_next_check_seconds\":null,\"source\":\"none\",\"default_page_id\":null,\"override_expires_at\":null,\"next_change_at\":null,\"next_change_reason\":null,\"next_page_id\":null,\"override_started_at\":null,\"health\":{\"last_connected_at\":null,\"last_update_at\":null,\"latency_ms\":null,\"last_error_at\":null,\"last_error\":null,\"reachable\":null,\"breaker_open\":false},\"drawing\":{\"source\":\"device\",\"technology\":\"led_matrix\",\"color\":\"rgb\",\"monochrome\":null,\"font\":\"3x5\",\"icons\":[\"sun\",\"cloud\",\"rain\",\"bolt\",\"check\",\"cross\",\"up\",\"down\",\"star\",\"fog\"],\"pixel_width\":32,\"pixel_height\":8,\"features\":{\"lowercase\":true,\"color_text\":true,\"background\":true,\"tiles\":true,\"icons\":true,\"rgb\":true,\"solid_shapes\":false,\"pixels\":true}},\"layers\":[]}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "preview-plain-19",
+      "method": "POST",
+      "path": "/templates/render",
+      "request": {
+        "board_id": "long-led-fixture",
+        "template": [
+          "ABCDEFGHIJKLMNOPQRS"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "device_type": "panel",
+        "grid_rows": 1,
+        "grid_cols": 8,
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "diagnostics": true,
+        "preview": {
+          "data": "cached"
+        }
+      },
+      "status": 200,
+      "response": {
+        "rendered": "ABCDEFGH",
+        "lines": [
+          "ABCDEFGH"
+        ],
+        "line_count": 1,
+        "charset": "led_3x5",
+        "charset_issues": [],
+        "diagnostics": {
+          "formulas": [],
+          "lines": [
+            {
+              "line": 1,
+              "first_row": 1,
+              "rows_wanted": 1,
+              "rows_shown": 1,
+              "clip": null,
+              "clip_line": null,
+              "widest": 19,
+              "cut": true,
+              "hidden": []
+            }
+          ]
+        },
+        "sources": {}
+      },
+      "raw_response": "{\"rendered\":\"ABCDEFGH\",\"lines\":[\"ABCDEFGH\"],\"line_count\":1,\"charset\":\"led_3x5\",\"charset_issues\":[],\"diagnostics\":{\"formulas\":[],\"lines\":[{\"line\":1,\"first_row\":1,\"rows_wanted\":1,\"rows_shown\":1,\"clip\":null,\"clip_line\":null,\"widest\":19,\"cut\":true,\"hidden\":[]}]},\"sources\":{}}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "preview-rich-19",
+      "method": "POST",
+      "path": "/templates/render",
+      "request": {
+        "board_id": "long-led-fixture",
+        "template": [
+          "{{red:ABCDEFGHIJKLMNOPQRS}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "device_type": "panel",
+        "grid_rows": 1,
+        "grid_cols": 8,
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "diagnostics": true,
+        "preview": {
+          "data": "cached"
+        }
+      },
+      "status": 200,
+      "response": {
+        "rendered": "{red:ABCDEFGH}",
+        "lines": [
+          "{red:ABCDEFGH}"
+        ],
+        "line_count": 1,
+        "charset": "led_3x5",
+        "charset_issues": [],
+        "diagnostics": {
+          "formulas": [],
+          "lines": [
+            {
+              "line": 1,
+              "first_row": 1,
+              "rows_wanted": 1,
+              "rows_shown": 1,
+              "clip": null,
+              "clip_line": null,
+              "widest": 19,
+              "cut": true,
+              "hidden": []
+            }
+          ]
+        },
+        "sources": {}
+      },
+      "raw_response": "{\"rendered\":\"{red:ABCDEFGH}\",\"lines\":[\"{red:ABCDEFGH}\"],\"line_count\":1,\"charset\":\"led_3x5\",\"charset_issues\":[],\"diagnostics\":{\"formulas\":[],\"lines\":[{\"line\":1,\"first_row\":1,\"rows_wanted\":1,\"rows_shown\":1,\"clip\":null,\"clip_line\":null,\"widest\":19,\"cut\":true,\"hidden\":[]}]},\"sources\":{}}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "compose-plain-19",
+      "method": "POST",
+      "path": "/v1/boards/long-led-fixture/compose",
+      "request": {
+        "protocol": "compose-intent-v1",
+        "request_id": "4a5245d7-cb7d-40af-a707-61c27ff83bd9",
+        "prepared_at": "2026-11-17T08:55:39.914758+00:00",
+        "template": [
+          "ABCDEFGHIJKLMNOPQRS"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "geometry": {
+          "device_type": "panel",
+          "grid_rows": 1,
+          "grid_cols": 8,
+          "notes_wide": 1,
+          "notes_tall": 1
+        },
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "silence": "override"
+      },
+      "status": 200,
+      "response": {
+        "protocol": "compose-intent-v1",
+        "request_id": "4a5245d7-cb7d-40af-a707-61c27ff83bd9",
+        "board_id": "long-led-fixture",
+        "status": "sent",
+        "sent": true,
+        "expires_at": "2026-11-17T10:55:39.919828+00:00",
+        "started_at": "2026-11-17T08:55:39.919828+00:00",
+        "held_until": null,
+        "reason": null,
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "retry_after_seconds": null,
+        "failed_regions": []
+      },
+      "raw_response": "{\"protocol\":\"compose-intent-v1\",\"request_id\":\"4a5245d7-cb7d-40af-a707-61c27ff83bd9\",\"board_id\":\"long-led-fixture\",\"status\":\"sent\",\"sent\":true,\"expires_at\":\"2026-11-17T10:55:39.919828+00:00\",\"started_at\":\"2026-11-17T08:55:39.919828+00:00\",\"held_until\":null,\"reason\":null,\"duration\":{\"kind\":\"minutes\",\"minutes\":120},\"retry_after_seconds\":null,\"failed_regions\":[]}",
+      "headers": {
+        "cache-control": "no-store",
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "poll-plain-19",
+      "method": "GET",
+      "path": "/v1/boards/long-led-fixture/compose/4a5245d7-cb7d-40af-a707-61c27ff83bd9",
+      "request": null,
+      "status": 200,
+      "response": {
+        "protocol": "compose-intent-v1",
+        "request_id": "4a5245d7-cb7d-40af-a707-61c27ff83bd9",
+        "board_id": "long-led-fixture",
+        "status": "sent",
+        "sent": true,
+        "expires_at": "2026-11-17T10:55:39.919828+00:00",
+        "started_at": "2026-11-17T08:55:39.919828+00:00",
+        "held_until": null,
+        "reason": null,
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "retry_after_seconds": null,
+        "failed_regions": []
+      },
+      "raw_response": "{\"protocol\":\"compose-intent-v1\",\"request_id\":\"4a5245d7-cb7d-40af-a707-61c27ff83bd9\",\"board_id\":\"long-led-fixture\",\"status\":\"sent\",\"sent\":true,\"expires_at\":\"2026-11-17T10:55:39.919828+00:00\",\"started_at\":\"2026-11-17T08:55:39.919828+00:00\",\"held_until\":null,\"reason\":null,\"duration\":{\"kind\":\"minutes\",\"minutes\":120},\"retry_after_seconds\":null,\"failed_regions\":[]}",
+      "headers": {
+        "cache-control": "no-store",
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "compose-rich-19",
+      "method": "POST",
+      "path": "/v1/boards/long-led-fixture/compose",
+      "request": {
+        "protocol": "compose-intent-v1",
+        "request_id": "01cdec97-d584-47c8-b560-897b9bc857c4",
+        "prepared_at": "2026-11-17T08:55:39.924453+00:00",
+        "template": [
+          "{{red:ABCDEFGHIJKLMNOPQRS}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "geometry": {
+          "device_type": "panel",
+          "grid_rows": 1,
+          "grid_cols": 8,
+          "notes_wide": 1,
+          "notes_tall": 1
+        },
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "silence": "override"
+      },
+      "status": 200,
+      "response": {
+        "protocol": "compose-intent-v1",
+        "request_id": "01cdec97-d584-47c8-b560-897b9bc857c4",
+        "board_id": "long-led-fixture",
+        "status": "sent",
+        "sent": true,
+        "expires_at": "2026-11-17T10:55:39.928100+00:00",
+        "started_at": "2026-11-17T08:55:39.928100+00:00",
+        "held_until": null,
+        "reason": null,
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "retry_after_seconds": null,
+        "failed_regions": []
+      },
+      "raw_response": "{\"protocol\":\"compose-intent-v1\",\"request_id\":\"01cdec97-d584-47c8-b560-897b9bc857c4\",\"board_id\":\"long-led-fixture\",\"status\":\"sent\",\"sent\":true,\"expires_at\":\"2026-11-17T10:55:39.928100+00:00\",\"started_at\":\"2026-11-17T08:55:39.928100+00:00\",\"held_until\":null,\"reason\":null,\"duration\":{\"kind\":\"minutes\",\"minutes\":120},\"retry_after_seconds\":null,\"failed_regions\":[]}",
+      "headers": {
+        "cache-control": "no-store",
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "poll-rich-19",
+      "method": "GET",
+      "path": "/v1/boards/long-led-fixture/compose/01cdec97-d584-47c8-b560-897b9bc857c4",
+      "request": null,
+      "status": 200,
+      "response": {
+        "protocol": "compose-intent-v1",
+        "request_id": "01cdec97-d584-47c8-b560-897b9bc857c4",
+        "board_id": "long-led-fixture",
+        "status": "sent",
+        "sent": true,
+        "expires_at": "2026-11-17T10:55:39.928100+00:00",
+        "started_at": "2026-11-17T08:55:39.928100+00:00",
+        "held_until": null,
+        "reason": null,
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "retry_after_seconds": null,
+        "failed_regions": []
+      },
+      "raw_response": "{\"protocol\":\"compose-intent-v1\",\"request_id\":\"01cdec97-d584-47c8-b560-897b9bc857c4\",\"board_id\":\"long-led-fixture\",\"status\":\"sent\",\"sent\":true,\"expires_at\":\"2026-11-17T10:55:39.928100+00:00\",\"started_at\":\"2026-11-17T08:55:39.928100+00:00\",\"held_until\":null,\"reason\":null,\"duration\":{\"kind\":\"minutes\",\"minutes\":120},\"retry_after_seconds\":null,\"failed_regions\":[]}",
+      "headers": {
+        "cache-control": "no-store",
+        "content-type": "application/json"
+      }
+    }
+  ],
+  "preview_no_send_checks": [
+    {
+      "case": "plain-19",
+      "unchanged_before": {
+        "active_page": null,
+        "override": null,
+        "render_count": 0,
+        "output_characters": null
+      },
+      "unchanged_after": {
+        "active_page": null,
+        "override": null,
+        "render_count": 0,
+        "output_characters": null
+      },
+      "input_preserved": {
+        "board_id": "long-led-fixture",
+        "template": [
+          "ABCDEFGHIJKLMNOPQRS"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "device_type": "panel",
+        "grid_rows": 1,
+        "grid_cols": 8,
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "diagnostics": true,
+        "preview": {
+          "data": "cached"
+        }
+      }
+    },
+    {
+      "case": "rich-19",
+      "unchanged_before": {
+        "active_page": null,
+        "override": null,
+        "render_count": 0,
+        "output_characters": null
+      },
+      "unchanged_after": {
+        "active_page": null,
+        "override": null,
+        "render_count": 0,
+        "output_characters": null
+      },
+      "input_preserved": {
+        "board_id": "long-led-fixture",
+        "template": [
+          "{{red:ABCDEFGHIJKLMNOPQRS}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "device_type": "panel",
+        "grid_rows": 1,
+        "grid_cols": 8,
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "diagnostics": true,
+        "preview": {
+          "data": "cached"
+        }
+      }
+    }
+  ],
+  "captured_synthetic_deliveries": [
+    {
+      "characters": [
+        [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      ],
+      "cells": [
+        [
+          {
+            "type": "char",
+            "value": "A"
+          },
+          {
+            "type": "char",
+            "value": "B"
+          },
+          {
+            "type": "char",
+            "value": "C"
+          },
+          {
+            "type": "char",
+            "value": "D"
+          },
+          {
+            "type": "char",
+            "value": "E"
+          },
+          {
+            "type": "char",
+            "value": "F"
+          },
+          {
+            "type": "char",
+            "value": "G"
+          },
+          {
+            "type": "char",
+            "value": "H"
+          }
+        ]
+      ],
+      "device_type": "panel",
+      "with_outcome": true,
+      "case": "plain-19",
+      "original_request": {
+        "protocol": "compose-intent-v1",
+        "request_id": "4a5245d7-cb7d-40af-a707-61c27ff83bd9",
+        "prepared_at": "2026-11-17T08:55:39.914758+00:00",
+        "template": [
+          "ABCDEFGHIJKLMNOPQRS"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "geometry": {
+          "device_type": "panel",
+          "grid_rows": 1,
+          "grid_cols": 8,
+          "notes_wide": 1,
+          "notes_tall": 1
+        },
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "silence": "override"
+      },
+      "retained_override": {
+        "page_id": null,
+        "expires_at": "2026-11-17T10:55:39.919828+00:00",
+        "revert_mode": "schedule",
+        "revert_page_id": null,
+        "template": [
+          "ABCDEFGHIJKLMNOPQRS"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "device_type": "panel",
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "grid_rows": 1,
+        "grid_cols": 8,
+        "started_at": "2026-11-17T08:55:39.919828+00:00",
+        "compose_request_id": "4a5245d7-cb7d-40af-a707-61c27ff83bd9",
+        "compose_sent": true,
+        "compose_duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "compose_silence": "override"
+      },
+      "runtime_rendered_content": "ABCDEFGH"
+    },
+    {
+      "characters": [
+        [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ]
+      ],
+      "cells": [
+        [
+          {
+            "type": "char",
+            "value": "A",
+            "color": "red"
+          },
+          {
+            "type": "char",
+            "value": "B",
+            "color": "red"
+          },
+          {
+            "type": "char",
+            "value": "C",
+            "color": "red"
+          },
+          {
+            "type": "char",
+            "value": "D",
+            "color": "red"
+          },
+          {
+            "type": "char",
+            "value": "E",
+            "color": "red"
+          },
+          {
+            "type": "char",
+            "value": "F",
+            "color": "red"
+          },
+          {
+            "type": "char",
+            "value": "G",
+            "color": "red"
+          },
+          {
+            "type": "char",
+            "value": "H",
+            "color": "red"
+          }
+        ]
+      ],
+      "device_type": "panel",
+      "with_outcome": true,
+      "case": "rich-19",
+      "original_request": {
+        "protocol": "compose-intent-v1",
+        "request_id": "01cdec97-d584-47c8-b560-897b9bc857c4",
+        "prepared_at": "2026-11-17T08:55:39.924453+00:00",
+        "template": [
+          "{{red:ABCDEFGHIJKLMNOPQRS}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "geometry": {
+          "device_type": "panel",
+          "grid_rows": 1,
+          "grid_cols": 8,
+          "notes_wide": 1,
+          "notes_tall": 1
+        },
+        "duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "silence": "override"
+      },
+      "retained_override": {
+        "page_id": null,
+        "expires_at": "2026-11-17T10:55:39.928100+00:00",
+        "revert_mode": "schedule",
+        "revert_page_id": null,
+        "template": [
+          "{{red:ABCDEFGHIJKLMNOPQRS}}"
+        ],
+        "line_metadata": [
+          {
+            "alignment": "left",
+            "wrap": false
+          }
+        ],
+        "device_type": "panel",
+        "notes_wide": 1,
+        "notes_tall": 1,
+        "grid_rows": 1,
+        "grid_cols": 8,
+        "started_at": "2026-11-17T08:55:39.928100+00:00",
+        "compose_request_id": "01cdec97-d584-47c8-b560-897b9bc857c4",
+        "compose_sent": true,
+        "compose_duration": {
+          "kind": "minutes",
+          "minutes": 120
+        },
+        "compose_silence": "override"
+      },
+      "runtime_rendered_content": "{red:ABCDEFGH}"
+    }
+  ]
+}
