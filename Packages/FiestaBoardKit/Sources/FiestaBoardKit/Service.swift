@@ -87,6 +87,7 @@ public actor LiveFiestaBoardService: FiestaBoardService, ComposePrincipalProvidi
     private var activeComposePrincipal: ComposePrincipalProof?
     private var composeBoards: [String: (generation: UInt64, detail: BoardDetail)] = [:]
     private var consumedComposeRequests: Set<UUID> = []
+    private var consumedComposePageRequests: Set<UUID> = []
     private var replacementConnectionID: UUID?
     private var persistenceWarning: SessionPersistenceWarning?
     private var access = DraftAccess.readOnly
@@ -498,6 +499,35 @@ public actor LiveFiestaBoardService: FiestaBoardService, ComposePrincipalProvidi
         _ = try await requireCompose(request, writing: false)
         guard result.status == 200 else { throw FiestaBoardError.invalidResponse }
         return try TemplatePreviewResult(rawData: result.data)
+    }
+    public func composeOutcome(_ request: ComposeRequest) async throws -> ComposeReceipt {
+        let token = try await requireCompose(request, writing: false)
+        let result = try await response(APIRequest(path: ["v1", "boards", request.target.boardID, "compose", request.requestID.uuidString],
+            cachePolicy: .noStore, composePrincipalProof: request.principal))
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        _ = try await requireCompose(request, writing: false)
+        return try ComposeReceipt(rawData: result.data, httpStatus: result.status, expectedBoardID: request.target.boardID,
+            expectedRequestID: request.requestID, expectedDuration: request.duration, isOutcomeRead: true)
+    }
+    /// Separately audited by the authenticated operation corpus at b33160f3c.
+    /// /pages creates only; this path never selects/sends or touches Schedule.
+    public func saveComposePage(name: String, request: ComposeRequest) async throws -> ComposePageReceipt {
+        let token = try await requireCompose(request, writing: true)
+        guard !consumedComposePageRequests.contains(request.requestID) else { throw FiestaBoardError.invalidRequestContext }
+        let body = try request.pageEncoded(name: name)
+        consumedComposePageRequests.insert(request.requestID)
+        let result = try await response(APIRequest(.post, path: ["pages"], body: body, cachePolicy: .noStore, composePrincipalProof: request.principal))
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        _ = try await requireCompose(request, writing: true)
+        guard result.status == 201 else { throw FiestaBoardError.unknownMutationOutcome }
+        let created = try ComposePageReceipt(pageData: result.data, name: name, request: request)
+        let readback = try await response(APIRequest(path: ["pages", created.page.id], cachePolicy: .noStore, composePrincipalProof: request.principal))
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        _ = try await requireCompose(request, writing: true)
+        guard readback.status == 200 else { throw FiestaBoardError.unknownMutationOutcome }
+        let verified = try ComposePageReceipt(pageData: readback.data, name: name, request: request)
+        guard verified.page.id == created.page.id else { throw FiestaBoardError.unknownMutationOutcome }
+        return verified
     }
 
     /// Scope and exact bytes are captured under one service generation, including vault ownership.

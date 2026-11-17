@@ -56,7 +56,7 @@ public struct ComposeReceipt: Sendable {
         }
     }
     public init(rawData: Data, httpStatus: Int, expectedBoardID: String,
-                expectedRequestID: UUID, expectedDuration: ComposeBufferDuration) throws {
+                expectedRequestID: UUID, expectedDuration: ComposeBufferDuration, isOutcomeRead: Bool = false) throws {
         guard rawData.count <= 1_048_576,
               let top = try? RawJSONObject.members(rawData) else { throw FiestaBoardError.unknownMutationOutcome }
         let body = httpStatus >= 400 ? top["detail"] : rawData
@@ -111,7 +111,7 @@ public struct ComposeReceipt: Sendable {
             // Keep that physical fact separate from the rejected final intent.
             expectedStatus = 409
         }
-        guard expectedStatus == httpStatus else { throw FiestaBoardError.unknownMutationOutcome }
+        guard isOutcomeRead ? httpStatus == 200 : expectedStatus == httpStatus else { throw FiestaBoardError.unknownMutationOutcome }
         requestID = wire.request_id; boardID = wire.board_id; state = wire.status
         sent = wire.sent; expiresAt = expiry; startedAt = start; heldUntil = held
         self.duration = duration; reason = wire.reason; retryAfterSeconds = wire.retry_after_seconds

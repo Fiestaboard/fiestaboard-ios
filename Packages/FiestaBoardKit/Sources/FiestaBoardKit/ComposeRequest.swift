@@ -118,6 +118,13 @@ public struct ComposeRequest: Sendable {
         body["diagnostics"] = true; body["preview"] = ["data": "cached"]
         return try JSONSerialization.data(withJSONObject: body, options: [.sortedKeys])
     }
+    public func pageEncoded(name: String) throws -> Data {
+        guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, name.utf8.count <= 1024 else { throw FiestaBoardError.invalidRequestContext }
+        var body = try JSONSerialization.jsonObject(with: previewEncoded()) as! [String: Any]
+        for key in ["board_id", "diagnostics", "preview"] { body.removeValue(forKey: key) }
+        body["name"] = name; body["type"] = "template"
+        return try JSONSerialization.data(withJSONObject: body, options: [.sortedKeys])
+    }
     private static func instant(_ date: Date) -> String {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -127,5 +134,7 @@ public struct ComposeRequest: Sendable {
 public protocol ComposeServicing: Sendable {
     func sendCompose(_ request: ComposeRequest) async throws -> ComposeReceipt
     func previewCompose(_ request: ComposeRequest) async throws -> TemplatePreviewResult
+    func composeOutcome(_ request: ComposeRequest) async throws -> ComposeReceipt
+    func saveComposePage(name: String, request: ComposeRequest) async throws -> ComposePageReceipt
 }
 extension LiveFiestaBoardService: ComposeServicing {}
