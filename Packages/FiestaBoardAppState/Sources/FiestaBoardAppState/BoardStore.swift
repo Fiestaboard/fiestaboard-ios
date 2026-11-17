@@ -343,6 +343,11 @@ public struct PreparedAction: Identifiable, Sendable {
     }
 
     @discardableResult public func selectBoard(_ id: String) -> Task<Void, Never> {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["FIESTABOARD_TEST_NAMESPACE"] != nil {
+            print("DisplaySelectionTrace select same=\(id == selectedBoardID) generation=\(generation) refreshing=\(refreshing) connecting=\(connecting)")
+        }
+        #endif
         guard boards.contains(where: { $0.id == id }), !connecting else { return Task {} }
         generation &+= 1
         clearSchedules()
@@ -352,6 +357,11 @@ public struct PreparedAction: Identifiable, Sendable {
     }
 
     @discardableResult public func refresh() -> Task<Void, Never> {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["FIESTABOARD_TEST_NAMESPACE"] != nil {
+            print("DisplaySelectionTrace refresh generation=\(generation) refreshing=\(refreshing) commandBusy=\(commandBusy) stack=\(Thread.callStackSymbols.prefix(12).joined(separator: ";"))")
+        }
+        #endif
         guard let service, status != nil, let target, !commandBusy else { return Task {} }
         refreshTask?.cancel()
         let token = generation
