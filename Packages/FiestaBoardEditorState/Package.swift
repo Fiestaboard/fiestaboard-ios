@@ -6,7 +6,8 @@ let package = Package(
     products: [.library(name: "FiestaBoardEditorState", targets: ["FiestaBoardEditorState"])],
     dependencies: [.package(path: "../FiestaBoardDocuments"), .package(path: "../FiestaBoardKit")],
     targets: [
-        .target(name: "FiestaBoardEditorState", dependencies: ["FiestaBoardDocuments", "FiestaBoardKit"]),
+        .target(name: "FiestaBoardEditorState", dependencies: ["FiestaBoardDocuments", "FiestaBoardKit"],
+                resources: [.copy("PrivacyInfo.xcprivacy")]),
         .testTarget(name: "FiestaBoardEditorStateTests", dependencies: ["FiestaBoardEditorState"])
     ]
 )
