@@ -83,3 +83,36 @@ final class ComposeBufferStoreTests: XCTestCase {
         XCTAssertEqual(restored?.duration, .until(end))
     }
 }
+
+extension ComposeBufferStoreTests {
+    func testAcknowledgedOlderSendCannotClearNewerTyping() async throws {
+        let directory = directory(); defer { try? FileManager.default.removeItem(at: directory) }
+        let store = ComposeBufferStore(directory: directory), scope = identity()
+        let lease = try await store.open(scope)
+        _ = try await store.save(.init(identity: scope, revision: 1, text: "SENDING"), using: lease)
+        _ = try await store.save(.init(identity: scope, revision: 2, text: "NEW TYPING"), using: lease)
+        let removed = try await store.remove(using: lease, matchingRevision: 1)
+        let retained = try await store.load(scope)
+        XCTAssertFalse(removed); XCTAssertEqual(retained?.text, "NEW TYPING")
+    }
+}
+
+extension ComposeBufferStoreTests {
+    func testConcurrentStoreInstancesRetainHighestRevision() async throws {
+        let directory = directory(); defer { try? FileManager.default.removeItem(at: directory) }
+        let first = ComposeBufferStore(directory: directory), second = ComposeBufferStore(directory: directory), scope = identity()
+        let lease = try await first.open(scope)
+        try await withThrowingTaskGroup(of: Void.self) { tasks in
+            for revision in 1...100 {
+                tasks.addTask {
+                    let writer = revision.isMultiple(of: 2) ? first : second
+                    _ = try await writer.save(.init(identity: scope, revision: UInt64(revision), text: "DRAFT \(revision)"), using: lease)
+                }
+            }
+            try await tasks.waitForAll()
+        }
+        let restored = try await first.load(scope)
+        XCTAssertEqual(restored?.revision, 100)
+        XCTAssertEqual(restored?.text, "DRAFT 100")
+    }
+}
