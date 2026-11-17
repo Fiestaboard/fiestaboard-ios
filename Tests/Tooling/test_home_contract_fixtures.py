@@ -8,6 +8,15 @@ ROOT = Path(__file__).resolve().parents[2]
 HOME = ROOT / 'Tests/Fixtures/Home'
 
 class HomeContractFixtureTests(unittest.TestCase):
+    def test_paused_and_held_cases_are_actual_scoped_mobile_docker_responses(self):
+        self.verify(HOME/'DockerBanners', HOME/'requests-banners.json', 56, '6be367f4a76891d7b11a114a81a7d79f1b50534a')
+        source = json.loads((HOME/'DockerBanners/SOURCE.json').read_text())
+        self.assertTrue(source['method'].startswith('Docker'))
+        self.assertIn('Production silence_queue.HeldSend.text/hold',source['scenario']['heldSetup'])
+        for name, status in [('pause-invalid-body',422),('resume-unauthorized',401),('silence-discard-forbidden',403)]:
+            response = next(r for r in source['responses'] if r['file'] == name+'.json')
+            self.assertEqual(response['status'],status)
+
     def test_reviewed_atomic_undo_has_distinct_actual_docker_evidence(self):
         self.verify(HOME/'DockerUndo', HOME/'requests-undo.json', 34, '6be367f4a76891d7b11a114a81a7d79f1b50534a')
         source = json.loads((HOME/'DockerUndo/SOURCE.json').read_text())

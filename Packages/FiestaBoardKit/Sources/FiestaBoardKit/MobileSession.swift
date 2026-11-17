@@ -43,16 +43,25 @@ struct MobileSession: Codable, Sendable {
         let installationID: String
         let session: MobileSession
         let connectionID: UUID
+        let principalID: String?
     }
-    func persisted(deployment: DeploymentURL, installationID: String, connectionID: UUID) -> Data? {
+    func persisted(deployment: DeploymentURL, installationID: String, connectionID: UUID, principalID: String? = nil) -> Data? {
         guard authorization != nil else { return nil }
-        return try? JSONEncoder().encode(Stored(version: 3, deployment: deployment.description,
-            installationID: installationID, session: self, connectionID: connectionID))
+        return try? JSONEncoder().encode(Stored(version: 4, deployment: deployment.description,
+            installationID: installationID, session: self, connectionID: connectionID, principalID: principalID))
     }
     static func storedConnectionID(_ data: Data) -> UUID? { (try? JSONDecoder().decode(Stored.self, from: data))?.connectionID }
+    static func storedPrincipalID(_ data: Data, deployment: DeploymentURL, installationID: String) -> String? {
+        guard restore(data, deployment: deployment, installationID: installationID) != nil,
+              let stored = try? JSONDecoder().decode(Stored.self, from: data), stored.version == 4,
+              Data(stored.installationID.utf8) == Data(installationID.utf8),
+              let principal = stored.principalID, !principal.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              principal.utf8.count <= 256, !principal.unicodeScalars.contains(where: { $0.value < 32 || $0.value == 127 }) else { return nil }
+        return principal
+    }
     static func restore(_ data: Data, deployment: DeploymentURL, installationID: String) -> Self? {
         guard data.count <= 65_536, let stored = try? JSONDecoder().decode(Stored.self, from: data),
-              stored.version == 3, stored.deployment == deployment.description, stored.installationID == installationID,
+              [3, 4].contains(stored.version), stored.deployment == deployment.description, stored.installationID == installationID,
               stored.session.expiresAt.timeIntervalSinceReferenceDate.isFinite, stored.session.authorization != nil,
               stored.session.expiresAt <= Date().addingTimeInterval(31_536_001),
               MobileCredentialValidation.token(stored.session.accessToken),

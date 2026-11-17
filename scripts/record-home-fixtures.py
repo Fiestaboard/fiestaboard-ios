@@ -86,6 +86,39 @@ if 'undo-capability' in requests:
     capture('undo-indefinite-restored','POST','/settings/temporary-override/undo',200,json={'board_id':kitchen,'undo_token':receipt['undo_token']})
     capture('undo-legacy-cancel','DELETE',f'/settings/temporary-override?board_id={kitchen}',200)
     capture('undo-empty-cancel','DELETE',f'/settings/temporary-override?board_id={kitchen}&undo=true',200)
+if 'home-paused' in requests:
+    from datetime import datetime, timedelta, timezone
+    from src import silence_queue
+    capture('pause-accepted','POST',f'/settings/board/{kitchen}/pause',200,json={'paused':True})
+    capture('home-paused','GET',f'/v1/boards/{kitchen}',200)
+    capture('resume-other-display','POST',f'/settings/board/{desk}/pause',200,json={'paused':False})
+    capture('home-still-paused','GET',f'/v1/boards/{kitchen}',200)
+    capture('pause-invalid-body','POST',f'/settings/board/{kitchen}/pause',422,json={'paused':'no'})
+    capture('resume-unauthorized','POST',f'/settings/board/{kitchen}/pause',401,request_headers={},json={'paused':False})
+    capture('resume-accepted','POST',f'/settings/board/{kitchen}/pause',200,json={'paused':False})
+    capture('home-resumed','GET',f'/v1/boards/{kitchen}',200)
+    clock = datetime.now(timezone.utc)
+    silence_config = {'board_id':kitchen,'enabled':True,'mode':'freeze','show_queued_on_exit':True,
+        'start_time':(clock-timedelta(hours=1)).strftime('%H:%M+00:00'),
+        'end_time':(clock+timedelta(hours=1)).strftime('%H:%M+00:00')}
+    capture('silence-config','PUT','/settings/silence-schedule',200,json=silence_config)
+    capture('silence-empty','GET',f'/silence-status?board_id={kitchen}',200)
+    # Seed actual typed domain intents; the GET computes the production summary.
+    # This fixture does not pretend to send to an unconfigured physical output.
+    silence_queue.hold(silence_queue.HeldSend.text('Package delivered',board_id=kitchen))
+    capture('silence-held','GET',f'/silence-status?board_id={kitchen}',200)
+    silence_queue.hold(silence_queue.HeldSend.text('New reminder',board_id=kitchen))
+    capture('silence-replacement','GET',f'/silence-status?board_id={kitchen}',200)
+    capture('silence-other-display','GET',f'/silence-status?board_id={desk}',200)
+    capture('silence-holds-disabled','PUT','/settings/silence-schedule',200,json={**silence_config,'show_queued_on_exit':False})
+    capture('silence-without-hold','GET',f'/silence-status?board_id={kitchen}',200)
+    capture('silence-discard-forbidden','DELETE',f'/silence-queue?board_id={kitchen}',403)
+    capture('pause-with-context','POST',f'/settings/board/{kitchen}/pause',200,json={'paused':True})
+    capture('override-before-resume','POST','/settings/temporary-override',200,json={'board_id':kitchen,'page_id':page_id,'duration_minutes':180,'revert_mode':'schedule'})
+    capture('silence-before-resume','GET',f'/silence-status?board_id={kitchen}',200)
+    capture('resume-with-context','POST',f'/settings/board/{kitchen}/pause',200,json={'paused':False})
+    capture('override-after-resume','GET',f'/settings/temporary-override?board_id={kitchen}',200)
+    capture('silence-after-resume','GET',f'/silence-status?board_id={kitchen}',200)
 revoke=client.delete('/auth/device/session',headers=headers)
 assert revoke.status_code == 200, revoke.text
 source={'hubRepository':'Fiestaboard/FiestaBoard','hubCommit':os.environ['CX_HUB_COMMIT'],
@@ -93,6 +126,8 @@ source={'hubRepository':'Fiestaboard/FiestaBoard','hubCommit':os.environ['CX_HUB
     'recorder':'scripts/record-home-fixtures.py','method':os.environ.get('CX_RECORDING_METHOD','Docker built from immutable git archive; real FastAPI HTTP boundary'),
     'credentialSafety':'Synthetic account; mobile token never recorded and revoked before process exit',
     'scenario':{'kitchen':kitchen,'desk':desk,'pageID':page_id},'responses':recorded}
+if 'home-paused' in requests:
+    source['scenario']['heldSetup'] = 'Production silence_queue.HeldSend.text/hold; real GET summary; no physical send'
 if os.environ.get('CX_DOCKER_IMAGE'):
     import importlib.metadata
     import platform

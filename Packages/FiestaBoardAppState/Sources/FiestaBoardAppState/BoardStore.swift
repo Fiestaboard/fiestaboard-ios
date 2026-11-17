@@ -85,11 +85,12 @@ public struct LogoutNotice: Identifiable, Sendable, Equatable {
 }
 public enum ActionPayload: Sendable {
     case text(String), page(String), configuration(BoardPatch), restore
-    case homeCancelOverride, homeUndoOverride, homePage(id: String, durationMinutes: Int?, untilCanceled: Bool)
+    case homeCancelOverride, homeUndoOverride, homeResumeDisplay, homePage(id: String, durationMinutes: Int?, untilCanceled: Bool)
     fileprivate var homeOperation: HomeControlOperation? {
         switch self {
         case .homeCancelOverride: .cancelOverride
         case .homeUndoOverride: .undoOverride
+        case .homeResumeDisplay: .resumeDisplay
         case .homePage(_, let minutes, let indefinite): minutes != nil || indefinite ? .timedOverride : .selectPage
         default: nil
         }
@@ -658,13 +659,14 @@ public struct PreparedAction: Identifiable, Sendable {
                   hasScopedStatus: board?.hasScopedHomeStatus == true) else { return false }
         switch operation {
         case .cancelOverride: return service is any TemporaryOverrideClearing
+        case .resumeDisplay: return service is any HomeDisplayResuming
         case .selectPage: return service is any HomePageSelecting
         case .timedOverride: return service is any HomePageHolding
         case .undoOverride: return homeUndoCapability == target && service is any HomeOverrideUndoing
         }
     }
     public func canPerformHomeControl(_ operation: HomeControlOperation) -> Bool {
-        canPerformScopedHomeControl && supportsHomeControl(operation)
+        canPerformScopedHomeControl && supportsHomeControl(operation) && (operation != .resumeDisplay || board?.summary.paused == true)
     }
     private func canPrepare(_ payload: ActionPayload) -> Bool {
         if case .homeUndoOverride = payload { return canUndoHomeOverride }
@@ -684,7 +686,7 @@ public struct PreparedAction: Identifiable, Sendable {
                 guard canChangeDefaultPage, patch.paused == nil, patch.scheduleEnabled == nil, patch.autoRestore == nil else { return nil }
             }
             if case .set(let id) = patch.defaultPage, !pages.contains(where: { $0.id == id }) { return nil }
-        case .homeCancelOverride, .homeUndoOverride: break
+        case .homeCancelOverride, .homeUndoOverride, .homeResumeDisplay: break
         case .homePage(let id, let minutes, let indefinite):
             guard pages.contains(where: { $0.id == id }), minutes.map({ (1...480).contains($0) }) ?? true,
                   !indefinite || minutes == nil else { return nil }
@@ -745,6 +747,10 @@ public struct PreparedAction: Identifiable, Sendable {
                         try await writer.clearTemporaryOverride(boardID: action.target.boardID)
                     }
                     receipt = "Override canceled."
+                case .homeResumeDisplay:
+                    guard let writer = service as? any HomeDisplayResuming else { throw FiestaBoardError.writesDisabled }
+                    _ = try await writer.resumeHomeDisplay(boardID: action.target.boardID)
+                    receipt = "Display resumed. Physical output is not verified."
                 case .homeUndoOverride:
                     guard let context = action.homeUndoContext, let writer = service as? any HomeOverrideUndoing else { throw FiestaBoardError.writesDisabled }
                     _ = try await writer.undoHomeOverride(boardID: action.target.boardID, token: context.token)

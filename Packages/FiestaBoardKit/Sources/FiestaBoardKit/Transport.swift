@@ -18,14 +18,18 @@ public struct APIRequest: Sendable {
     public let timeout: TimeInterval
     public let context: APIRequestContext
     public let cachePolicy: APIRequestCachePolicy
+    /// Nonsecret scope checked after the transport budget, immediately before
+    /// dispatching the separately audited Compose read/mutation.
+    public let composePrincipalProof: ComposePrincipalProof?
     /// The bounded evaluation POSTs (and the page-thumbnail batch render) never
     /// write a page or send to hardware.
     public var isMutation: Bool {
         method != .get && !(method == .post && (path == ["templates", "validate"] || path == ["templates", "render"] || path == ["pages", "preview", "flexible"] || path == ["pages", "preview", "batch"]))
     }
-    public init(_ method: Method = .get, path: [String], body: Data? = nil, timeout: TimeInterval = 20, queryItems: [URLQueryItem] = [], context: APIRequestContext = .standard, cachePolicy: APIRequestCachePolicy = .default) {
+    public init(_ method: Method = .get, path: [String], body: Data? = nil, timeout: TimeInterval = 20, queryItems: [URLQueryItem] = [], context: APIRequestContext = .standard, cachePolicy: APIRequestCachePolicy = .default, composePrincipalProof: ComposePrincipalProof? = nil) {
         self.method = method; self.path = path; self.body = body; self.timeout = timeout; self.queryItems = queryItems
         self.context = context; self.cachePolicy = cachePolicy
+        self.composePrincipalProof = composePrincipalProof
     }
 }
 public struct APIResponse: Sendable {
@@ -44,6 +48,9 @@ public protocol APITransport: Sendable {
     func provisionalConnectionID() async -> UUID?
     func verifyConnectionID(_ proposed: UUID, installationID: String) async -> UUID?
     func ownsConnectionID(_ id: UUID) async -> Bool
+    func ownsComposePrincipal(_ proof: ComposePrincipalProof) async -> Bool
+    func bindComposePrincipal(_ principalID: String, scope: VerifiedConnectionScope) async -> ComposePrincipalProof?
+    func rememberedComposePrincipal(installationID: String) async -> ComposePrincipalProof?
 }
 public extension APITransport {
     /// Custom transports without queued work need no retirement action.
@@ -51,6 +58,9 @@ public extension APITransport {
     func provisionalConnectionID() async -> UUID? { nil }
     func verifyConnectionID(_ proposed: UUID, installationID: String) async -> UUID? { proposed }
     func ownsConnectionID(_ id: UUID) async -> Bool { true }
+    func ownsComposePrincipal(_ proof: ComposePrincipalProof) async -> Bool { false }
+    func bindComposePrincipal(_ principalID: String, scope: VerifiedConnectionScope) async -> ComposePrincipalProof? { nil }
+    func rememberedComposePrincipal(installationID: String) async -> ComposePrincipalProof? { nil }
     func configureSessionPersistence(rememberMe: Bool, installationID: String?) async {}
     func restoreRememberedSession(observedInstallationID: String) async -> Bool { false }
     func forgetRememberedSession() async {}
@@ -71,6 +81,7 @@ public actor URLSessionTransport: APITransport {
     private var persistence = SessionPersistenceState()
     private var persistenceEpoch: UInt64 = 0
     private var installationID: String?
+    private var verifiedPrincipalID: String?
     private var connectionID: UUID?
 
     public init(deployment: DeploymentURL, protocolClasses: [AnyClass] = [], vault: (any SessionVault)? = nil, requestBudget: HubRequestBudget? = nil) {
@@ -107,7 +118,7 @@ public actor URLSessionTransport: APITransport {
     public func resetSession() {
         revoking = false
         generation &+= 1
-        mobileSession = nil
+        mobileSession = nil; verifiedPrincipalID = nil
         connectionID = nil
         persistence.restored = false
     }
@@ -124,6 +135,7 @@ public actor URLSessionTransport: APITransport {
         persistenceEpoch &+= 1
         let epoch = persistenceEpoch
         persistence = .init(rememberMe: rememberMe)
+        verifiedPrincipalID = nil
         self.installationID = Self.validIdentity(installationID)
         connectionID = UUID()
         guard let vault else {
@@ -162,6 +174,7 @@ public actor URLSessionTransport: APITransport {
                 persistence.warning = .invalidStoredSession; return false
             }
             mobileSession = restored
+            verifiedPrincipalID = MobileSession.storedPrincipalID(data, deployment: deployment, installationID: identity)
             connectionID = MobileSession.storedConnectionID(data)
             installationID = identity
             persistence = .init(rememberMe: true, restored: true)
@@ -239,6 +252,54 @@ public actor URLSessionTransport: APITransport {
         return true
     }
 
+    public func ownsComposePrincipal(_ proof: ComposePrincipalProof) async -> Bool {
+        let token = generation, epoch = persistenceEpoch
+        guard !revoking, proof.verifiedOnline, proof.identity.deploymentID == deployment.description,
+              installationID == proof.identity.installationID, connectionID == proof.connectionID,
+              mobileSession?.authorization != nil,
+              verifiedPrincipalID.map({ Data($0.utf8) == Data(proof.identity.principalID.utf8) }) == true else { return false }
+        let owned = await ownsConnectionID(proof.connectionID)
+        return owned && token == generation && epoch == persistenceEpoch && !revoking && mobileSession?.authorization != nil
+            && verifiedPrincipalID.map({ Data($0.utf8) == Data(proof.identity.principalID.utf8) }) == true
+    }
+
+    /// Called only with authenticated readback and the service's verified scope.
+    public func bindComposePrincipal(_ principalID: String, scope: VerifiedConnectionScope) async -> ComposePrincipalProof? {
+        let token = generation, epoch = persistenceEpoch
+        guard !revoking, scope.deployment == deployment, connectionID == scope.connectionID,
+              installationID == scope.installationID, let principal = Self.validIdentity(principalID),
+              mobileSession?.authorization != nil, await ownsConnectionID(scope.connectionID),
+              token == generation, epoch == persistenceEpoch else { return nil }
+        verifiedPrincipalID = principal
+        await persistCredential(generation: token, epoch: epoch)
+        guard token == generation, epoch == persistenceEpoch, !revoking,
+              connectionID == scope.connectionID, mobileSession?.authorization != nil,
+              verifiedPrincipalID.map({ Data($0.utf8) == Data(principal.utf8) }) == true,
+              await ownsConnectionID(scope.connectionID), token == generation, epoch == persistenceEpoch else { return nil }
+        return ComposePrincipalProof(deployment: deployment, installationID: scope.installationID,
+            principalID: principal, connectionID: scope.connectionID, verifiedOnline: true)
+    }
+
+    /// Read protected identity without importing the stored credential into this transport.
+    public func rememberedComposePrincipal(installationID: String) async -> ComposePrincipalProof? {
+        let token = generation, epoch = persistenceEpoch
+        guard !revoking, !persistence.cleanupPending, let installation = Self.validIdentity(installationID), let vault else { return nil }
+        let owner: SessionVaultCoordinator.Lease
+        if let lease { owner = lease }
+        else { owner = await coordinator.claim(vault, for: deployment, replacing: false) }
+        guard token == generation, epoch == persistenceEpoch, !revoking else { return nil }
+        lease = owner
+        do {
+            let data = try await coordinator.perform(owner) { try await vault.load(for: self.deployment) }
+            let current = await coordinator.isCurrent(owner)
+            guard token == generation, epoch == persistenceEpoch, current, !revoking, !persistence.cleanupPending,
+                  let data, let principal = MobileSession.storedPrincipalID(data, deployment: deployment, installationID: installation),
+                  let connection = MobileSession.storedConnectionID(data) else { return nil }
+            return ComposePrincipalProof(deployment: deployment, installationID: installation,
+                principalID: principal, connectionID: connection, verifiedOnline: false)
+        } catch { return nil }
+    }
+
     private static func httpDate(_ value: String) -> Date? {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -259,7 +320,7 @@ public actor URLSessionTransport: APITransport {
         guard let vault, let lease else { persistence.warning = .unavailable; return }
         // A v1 import is not migrated until the service verifies it.
         guard let connectionID else { return }
-        guard let data = mobileSession?.persisted(deployment: deployment, installationID: installationID, connectionID: connectionID) else {
+        guard let data = mobileSession?.persisted(deployment: deployment, installationID: installationID, connectionID: connectionID, principalID: verifiedPrincipalID) else {
             persistence.warning = .noCredential
             do { _ = try await coordinator.perform(lease) { try await vault.remove(for: self.deployment); return nil } }
             catch { if token == generation && epoch == persistenceEpoch { persistence.warning = .unavailable; persistence.cleanupPending = true } }
@@ -283,6 +344,11 @@ public actor URLSessionTransport: APITransport {
 
     private func performSend(_ request: APIRequest, expectedGeneration: UInt64) async throws -> APIResponse {
         guard expectedGeneration == generation, !revoking || (request.method == .delete && request.path == ["auth", "device", "session"]) else { throw FiestaBoardError.staleSession }
+        if let proof = request.composePrincipalProof {
+            let epoch = persistenceEpoch
+            guard await ownsComposePrincipal(proof), expectedGeneration == generation,
+                  epoch == persistenceEpoch else { throw FiestaBoardError.staleSession }
+        }
         try Task.checkCancellation()
         let headers = try request.boundedHeaders()
         let currentGeneration = generation
@@ -330,11 +396,11 @@ public actor URLSessionTransport: APITransport {
             guard let reply = try? JSONDecoder().decode(MobileTokenReply.self, from: data),
                   let credential = try? MobileSession(reply: reply) else { throw FiestaBoardError.unknownMutationOutcome }
             guard currentPersistenceEpoch == persistenceEpoch else { throw FiestaBoardError.staleSession }
-            mobileSession = credential
+            mobileSession = credential; verifiedPrincipalID = nil
             await persistCredential(generation: currentGeneration, epoch: currentPersistenceEpoch)
         }
         if http.statusCode == 401 && mobileSession != nil {
-            mobileSession = nil
+            mobileSession = nil; verifiedPrincipalID = nil
             generation &+= 1
             let signedOutGeneration = generation
             await forgetRememberedSession()
@@ -346,6 +412,14 @@ public actor URLSessionTransport: APITransport {
         if canBeGateway && (http.value(forHTTPHeaderField: "Content-Type")?.lowercased().contains("text/html") == true ||
             data.first(where: { ![9, 10, 13, 32].contains($0) }) == 60) {
             throw request.isMutation ? FiestaBoardError.unknownMutationOutcome : .gatewayUnavailable
+        }
+        // Only the separately audited one-shot Compose operation owns these
+        // structured error receipts. Its decoder must validate UUID, target,
+        // duration and state before presenting any outcome. Auth remains above.
+        if request.method == .post, request.path.count == 4,
+           request.path[0] == "v1", request.path[1] == "boards", request.path[3] == "compose",
+           [409, 429, 502, 503].contains(http.statusCode) {
+            return APIResponse(status: http.statusCode, data: data)
         }
         if let error = request.safeError(status: http.statusCode, data: data) { throw error }
         switch http.statusCode {

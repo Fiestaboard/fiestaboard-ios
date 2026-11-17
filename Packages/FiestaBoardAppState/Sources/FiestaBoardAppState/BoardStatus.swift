@@ -364,6 +364,8 @@ public enum BoardPolling {
     public func canSelectHomePage(timed: Bool) -> Bool { store.canPerformHomeControl(timed ? .timedOverride : .selectPage) }
     public var canHoldHomePage: Bool { store.canPerformHomeControl(.timedOverride) }
     public func clearTemporaryOverride() async { await performHomeControl(.homeCancelOverride, success: .overrideCanceled) }
+    public var canResumeHomeDisplay: Bool { store.canPerformHomeControl(.resumeDisplay) }
+    public func resumeHomeDisplay() async { await performHomeControl(.homeResumeDisplay, success: .displayResumed) }
     public var canUndoOverride: Bool { store.canUndoHomeOverride }
     public func undoTemporaryOverride() async { await performHomeControl(.homeUndoOverride, success: .overrideRestored) }
     public func selectHomePage(pageID: String, durationMinutes: Int?) async {

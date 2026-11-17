@@ -67,8 +67,7 @@ import XCTest
         XCTAssertTrue(app.staticTexts["UI Test Server"].exists)
     }
 
-    func testIPadInteractiveDismissalClearsUnsubmittedResetFieldsBeforeReopening() throws {
-        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, "iPad form presentation")
+    func testPresentationExitClearsUnsubmittedResetFieldsBeforeReopening() throws {
         let app = isolatedApplication(), server = FixtureHTTPServer.shared
         try server.requireReady(); app.launch(); openManualHubEntry(app)
         allowFixtureHTTP(app)
@@ -83,12 +82,21 @@ import XCTest
             let field = app.secureTextFields[identifier]
             XCTAssertTrue(field.waitForExistence(timeout: 5)); reveal(field, in: app); field.tap(); field.typeText(text)
         }
-        // Drag the real native form; this does not invoke the toolbar Close action.
-        let bar = app.navigationBars["Reset password"]
-        let start = bar.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-        start.press(forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: 0, dy: 650)))
-        let reopen = app.buttons["reopenOnboarding"]
-        XCTAssertTrue(reopen.waitForExistence(timeout: 8)); reopen.tap()
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            // Drag the actual native form; this does not invoke toolbar Close.
+            let bar = app.navigationBars["Reset password"]
+            let start = bar.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            start.press(forDuration: 0.1, thenDragTo: start.withOffset(CGVector(dx: 0, dy: 650)))
+            let reopen = app.buttons["reopenOnboarding"]
+            XCTAssertTrue(reopen.waitForExistence(timeout: 8)); reopen.tap()
+        } else {
+            // Phone onboarding is a navigation stack rather than a dismissible form.
+            app.buttons["cancelPasswordReset"].tap()
+            let back = app.buttons["Back to Welcome"]
+            XCTAssertTrue(back.waitForExistence(timeout: 5)); back.tap()
+            let savedHubs = app.buttons["Choose a saved hub"]
+            XCTAssertTrue(savedHubs.waitForExistence(timeout: 5)); reveal(savedHubs, in: app); savedHubs.tap()
+        }
         let saved = app.buttons.containing(.staticText, identifier: "UI Test Server").firstMatch
         XCTAssertTrue(saved.waitForExistence(timeout: 5)); saved.tap()
         XCTAssertTrue(forgot.waitForExistence(timeout: 10)); reveal(forgot, in: app); forgot.tap()

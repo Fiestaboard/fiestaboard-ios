@@ -1,0 +1,25 @@
+{
+  "source_sha": "b33160f3cae395d95ff62772653b4e2d45862ea7",
+  "source_tree": "4c0823273dc31078876b9275463fdc3904087237",
+  "boundary": "actual FastAPI ASGI; real synthetic mobile authentication; synthetic output drivers; no physical hardware proof",
+  "records": [
+    {
+      "file": "compose-authenticated.json",
+      "source_file": "compose-authenticated-corpus-b33160f3c.json",
+      "source_sha": "b33160f3cae395d95ff62772653b4e2d45862ea7",
+      "sha256": "ef85f6fb1c5d52c5053faa1740ba22e4e7f297f5c84a7210e17bdaf9e3eed0ae"
+    },
+    {
+      "file": "operations-authenticated.json",
+      "source_file": "i8-operation-corpus-b33160f3c.json",
+      "source_sha": "b33160f3cae395d95ff62772653b4e2d45862ea7",
+      "sha256": "5ca99c7a741a77b86e76ad2c41e6ae7beaf68f2db744fd42e57b95690b5f7cfa"
+    },
+    {
+      "file": "long-led-authenticated.json",
+      "source_file": "i8-long-led-corpus-b33160f3c.json",
+      "source_sha": "b33160f3cae395d95ff62772653b4e2d45862ea7",
+      "sha256": "bc599c8c22ba9c39d448ddcdc33a4528a8bb145469f5b258bf011e2ac02b97de"
+    }
+  ]
+}

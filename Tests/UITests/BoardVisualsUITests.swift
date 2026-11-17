@@ -21,8 +21,8 @@ final class BoardVisualsUITests: XCTestCase {
             ("collection", "Morning rotation › ", "Collection", ["collectionBadge"]),
             ("collection-native-null", "Morning rotation › Device selecting…", "Collection", ["collectionBadge"]),
             ("override", "Desk Note", "Override", []),
-            ("paused", "Hello World", "Manual Mode", ["pausedBadge"]),
-            ("silence", "Hello World", "Manual Mode", ["silenceBadge"]),
+            ("paused", "Hello World", "Paused", ["pausedBadge"]),
+            ("silence", "Hello World", "Silenced", ["silenceBadge"]),
         ]
         for (scenario, name, mode, badges) in expectations {
             let app = launchSignedIn(scenario: scenario)
@@ -44,6 +44,41 @@ final class BoardVisualsUITests: XCTestCase {
             settle(1.2) // let the flip settle before the picture
             shot(app, "D1-B8-\(scenario)")
             if scenario == "manual" { shot(app, "D1-B33-home") }
+            app.terminate()
+        }
+    }
+
+    @MainActor
+    func testHomePausedBannerResumesSelectedDisplayAndDimsTheLastPage() async throws {
+        try await requireFixture()
+        let app = launchSignedIn(scenario: "paused")
+        let banner = app.descendants(matching: .any)["pausedBadge"]
+        XCTAssertTrue(banner.waitForExistence(timeout:10))
+        let board = app.descendants(matching: .any)["homeBoard"]
+        XCTAssertLessThan(banner.frame.maxY,board.frame.minY,"Paused explanation precedes the last-page preview")
+        let resume = app.buttons["homeResumeDisplay"]
+        XCTAssertTrue(resume.exists); XCTAssertTrue(resume.isEnabled)
+        resume.tap()
+        XCTAssertTrue(banner.waitForNonExistence(timeout:10),"selected display resumed")
+        waitFor(app.descendants(matching:.any)["modeBadge"],NSPredicate(format:"label == %@","Manual Mode"),10,"fresh resumed snapshot")
+        shot(app,"I7-home-resumed")
+        app.terminate()
+    }
+    @MainActor
+    func testHomeSilenceEmptyAndHeldHaveDistinctScopedReadOnlyContent() async throws {
+        try await requireFixture()
+        for scenario in ["silence","silence-held"] {
+            let app = launchSignedIn(scenario:scenario)
+            let banner = app.descendants(matching:.any)["silenceBadge"]
+            XCTAssertTrue(banner.waitForExistence(timeout:10))
+            XCTAssertTrue(app.staticTexts.matching(NSPredicate(format:"label BEGINSWITH %@","Silence Schedule")).firstMatch.exists)
+            XCTAssertEqual(app.descendants(matching:.any)["homeHeldMessage"].exists,scenario == "silence-held")
+            if scenario == "silence-held" {
+                XCTAssertTrue(app.staticTexts["Package delivered"].exists)
+                XCTAssertFalse(app.buttons["Discard"].exists)
+                XCTAssertFalse(app.buttons["Show now"].exists)
+            }
+            shot(app,"I7-home-" + scenario)
             app.terminate()
         }
     }

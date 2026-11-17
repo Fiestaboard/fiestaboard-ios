@@ -53,3 +53,13 @@ Set `CX_HOME_MANIFEST=Tests/Fixtures/Home/requests-undo.json` and
 record the additive contract. It uses a temporary empty Docker credential
 configuration and preserves the selected daemon endpoint; it never logs in or
 alters other Docker resources.
+
+`DockerBanners/` supplements the unchanged earlier corpora with 56 actual responses
+from the same immutable reviewed `6be367f4` backend. It covers scoped pause/resume,
+independent override/silence preservation, a single replaceable held intent, and
+the mobile control scope's 403 rejection of held-message discard. The response
+bytes and request manifest are hash-bound in its own `SOURCE.json`; no existing
+capture was overwritten. Held-message setup calls the production `HeldSend.text`
+and queue `hold` implementation; reads and mutations go through real FastAPI HTTP
+handlers. This corpus does not establish permitted mobile release/discard actions
+or physical delivery.

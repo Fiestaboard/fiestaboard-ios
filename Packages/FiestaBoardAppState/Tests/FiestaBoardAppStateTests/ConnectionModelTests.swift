@@ -1,5 +1,5 @@
 import XCTest
-import FiestaBoardKit
+@testable import FiestaBoardKit
 @testable import FiestaBoardAppState
 
 @MainActor final class ConnectionModelTests: XCTestCase {
@@ -155,6 +155,123 @@ import FiestaBoardKit
         let events = await service.events; XCTAssertTrue(events.isEmpty)
         model.disconnect(); XCTAssertEqual(model.phase, .picker)
     }
+    func testForgettingActiveHubSignsOutAndClosesItsWindow() async throws {
+        let service = try OnboardingService()
+        await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        let store = BoardStore(), catalog = ServerCatalog(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        let model = ConnectionModel(store: store, catalog: catalog, discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, serviceFactory: { _ in service })
+        await model.selectSaved(SavedServer(deployment: service.deployment, alias: "Kitchen", installationID: "installation")).value
+        let hub = try XCTUnwrap(model.selectedSavedHub)
+        XCTAssertNotNil(store.status)
+        await model.removeServer(hub)
+        XCTAssertEqual(model.phase, .picker)
+        XCTAssertNil(model.selectedSavedHub)
+        XCTAssertNil(store.status)
+        XCTAssertTrue(model.savedServers.isEmpty)
+        let events = await service.events
+        XCTAssertEqual(events.filter { $0 == "logout" }.count, 1)
+    }
+    func testForgettingInactiveHubVerifiesInstallationBeforeRestoringItsSignIn() async throws {
+        let active = try OnboardingService(), inactive = try OnboardingService(deploymentAddress: "https://other.example.com")
+        await active.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        await inactive.setRestoreResult(true)
+        let store = BoardStore(), catalog = ServerCatalog(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        let other = try await catalog.upsert(SavedServer(deployment: inactive.deployment, alias: "Other", installationID: "installation"))
+        let model = ConnectionModel(store: store, catalog: catalog, discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, serviceFactory: { $0 == active.deployment ? active : inactive })
+        await model.selectSaved(SavedServer(deployment: active.deployment, alias: "Kitchen", installationID: "installation")).value
+        let hub = model.selectedSavedHub
+        await model.removeServer(other)
+        XCTAssertEqual(model.selectedSavedHub?.id, hub?.id)
+        XCTAssertEqual(model.phase, .connected)
+        XCTAssertNotNil(store.status)
+        let events = await inactive.events
+        XCTAssertEqual(Array(events.prefix(3)), ["bootstrap", "restore:installation", "logout"])
+        XCTAssertFalse(model.savedServers.contains { $0.id == other.id })
+    }
+    func testForgettingChangedInstallationNeverRestoresCredentialsAndReportsUnconfirmedSignOut() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.changeInstallation("replacement")
+        let hub = SavedServer(deployment: service.deployment, alias: "Old hub", installationID: "original")
+        await model.removeServer(hub)
+        let events = await service.events
+        XCTAssertEqual(events.first, "bootstrap")
+        XCTAssertFalse(events.contains { $0.hasPrefix("restore:") || $0 == "logout" })
+        XCTAssertTrue(model.message?.contains("could not be confirmed") == true)
+    }
+    func testForgettingActiveHubSelectsNextSavedHub() async throws {
+        let active = try OnboardingService(), next = try OnboardingService(deploymentAddress: "https://next.example.com")
+        for service in [active, next] { await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false)) }
+        let catalog = ServerCatalog(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        let replacement = try await catalog.upsert(SavedServer(deployment: next.deployment, alias: "Next", installationID: "installation"))
+        let model = ConnectionModel(store: BoardStore(), catalog: catalog, discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, serviceFactory: { $0 == active.deployment ? active : next })
+        await model.selectSaved(SavedServer(deployment: active.deployment, alias: "First", installationID: "installation")).value
+        await model.removeServer(try XCTUnwrap(model.selectedSavedHub))
+        XCTAssertEqual(model.selectedSavedHub?.id, replacement.id)
+        XCTAssertEqual(model.phase, .connected)
+        let events = await next.events
+        XCTAssertFalse(events.contains("logout"))
+    }
+    func testForgettingHubKeepsRecordWhenProtectedCleanupFails() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        await model.selectSaved(SavedServer(deployment: service.deployment, alias: "Kitchen", installationID: "installation")).value
+        let hub = try XCTUnwrap(model.selectedSavedHub)
+        await service.failProtectedCleanup()
+        await model.removeServer(hub)
+        XCTAssertTrue(model.savedServers.contains { $0.id == hub.id })
+        XCTAssertTrue(model.message?.contains("could not be removed") == true)
+        XCTAssertFalse(model.busy)
+    }
+    func testLateForgetCompletionCannotDisconnectNewSelectedHub() async throws {
+        let first = try OnboardingService(), second = try OnboardingService(deploymentAddress: "https://second.example.com")
+        for service in [first, second] { await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false)) }
+        let store = BoardStore(), catalog = ServerCatalog(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        let model = ConnectionModel(store: store, catalog: catalog, discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, serviceFactory: { $0 == first.deployment ? first : second })
+        await model.selectSaved(SavedServer(deployment: first.deployment, alias: "First", installationID: "installation")).value
+        let removed = try XCTUnwrap(model.selectedSavedHub)
+        await first.blockLogout()
+        let forget = Task { await model.removeServer(removed) }
+        await first.waitForLogout()
+        XCTAssertNil(store.status, "Retire active writes before awaiting the hub")
+        await model.selectSaved(SavedServer(deployment: second.deployment, alias: "Second", installationID: "installation")).value
+        let selected = try XCTUnwrap(model.selectedSavedHub)
+        await first.releaseLogout()
+        await forget.value
+        XCTAssertEqual(model.selectedSavedHub?.id, selected.id)
+        XCTAssertEqual(model.phase, .connected)
+        XCTAssertNotNil(store.status)
+        XCTAssertFalse(model.savedServers.contains { $0.id == removed.id })
+    }
+    func testLogoutPurgesCachedContentBeforeRemoteSignOutCompletes() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let service = try OnboardingService()
+        await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        let snapshots = ShellSnapshotStore(directory: directory.appendingPathComponent("snapshots"))
+        let model = ConnectionModel(store: BoardStore(), catalog: ServerCatalog(directory: directory), discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, snapshots: snapshots, serviceFactory: { _ in service })
+        await model.selectSaved(SavedServer(deployment: service.deployment, alias: "Kitchen", installationID: "installation")).value
+        let hub = try XCTUnwrap(model.selectedSavedHub), lease = try XCTUnwrap(model.snapshotLease)
+        let snapshot = ShellSnapshot(hub: hub, capturedAt: Date(), board: nil, displayName: "Private content", pages: [.init(id: "private", name: "Private page")])
+        _ = try await snapshots.write(snapshot, lease: lease)
+        await service.blockLogout()
+        let logout = model.logout()
+        await service.waitForLogout()
+        // Observe local cleanup independently while DELETE remains suspended.
+        var cached = try await snapshots.read(for: hub, at: Date())
+        for _ in 0..<200 where cached != nil {
+            try await Task.sleep(for: .milliseconds(5))
+            cached = try await snapshots.read(for: hub, at: Date())
+        }
+        XCTAssertNil(cached, "Explicit logout must purge local content without waiting for the hub")
+        let staleWrite = try await snapshots.write(snapshot, lease: lease)
+        XCTAssertFalse(staleWrite, "A pending writer cannot restore content after logout")
+        let newerLease = try await snapshots.beginSession(for: hub)
+        _ = try await snapshots.write(snapshot, lease: newerLease)
+        await service.releaseLogout()
+        await logout.value
+        let newerSnapshot = try await snapshots.read(for: hub, at: Date())
+        XCTAssertNotNil(newerSnapshot, "Old remote completion cannot purge a newer same-hub cache")
+    }
     func testBootstrapPrecedesRestoreAndNeverReplacesRememberedConsent() async throws {
         let service = try OnboardingService(); let model = model(service)
         model.address = "https://board.example.com"
@@ -301,11 +418,26 @@ private struct EmptyDiscovery: ServerDiscovering {
     func candidates() -> AsyncThrowingStream<DiscoveredServer, Error> { AsyncThrowingStream { $0.finish() } }
     func snapshots() -> AsyncThrowingStream<[DiscoveredServer], Error> { AsyncThrowingStream { $0.finish() } }
 }
-private actor OnboardingService: FiestaBoardService {
+private actor OnboardingService: FiestaBoardService, ComposePrincipalProviding {
     nonisolated let deployment: DeploymentURL
     nonisolated let isDemo = false
     let demo: FixtureFiestaBoardService
     var events: [String] = []
+    var suppliedComposePrincipal: ComposePrincipalProof?
+    func supplyComposePrincipal(_ proof: ComposePrincipalProof?) { suppliedComposePrincipal = proof }
+    func composePrincipal() -> ComposePrincipalProof? { suppliedComposePrincipal?.verifiedOnline == true ? suppliedComposePrincipal : nil }
+    private var composeProofBlocked = false
+    private var composeProofGate: CheckedContinuation<Void, Never>?
+    private var composeProofObserver: CheckedContinuation<Void, Never>?
+    func blockComposeProof() { composeProofBlocked = true }
+    func waitForComposeProof() async { if composeProofGate != nil { return }; await withCheckedContinuation { composeProofObserver = $0 } }
+    func releaseComposeProof() { composeProofGate?.resume(); composeProofGate = nil }
+    func rememberedComposePrincipal(installationID: String) async -> ComposePrincipalProof? {
+        if composeProofBlocked { await withCheckedContinuation { composeProofGate = $0; composeProofObserver?.resume(); composeProofObserver = nil } }
+        guard let proof = suppliedComposePrincipal, !proof.verifiedOnline,
+              Data(proof.identity.installationID.utf8) == Data(installationID.utf8) else { return nil }
+        return proof
+    }
     var installation = "installation"
     func changeInstallation(_ value: String) { installation = value }
     var auth = AuthStatus(enabled: true, setupRequired: false, authenticated: false)
@@ -321,9 +453,9 @@ private actor OnboardingService: FiestaBoardService {
     var blocked = false
     var gate: CheckedContinuation<Void, Never>?
     var observers: [CheckedContinuation<Void, Never>] = []
-    init(usingDemoDeployment: Bool = false) throws {
+    init(usingDemoDeployment: Bool = false, deploymentAddress: String = "https://board.example.com") throws {
         let demo = try FixtureFiestaBoardService(); self.demo = demo
-        deployment = usingDemoDeployment ? demo.deployment : try DeploymentURL("https://board.example.com")
+        deployment = usingDemoDeployment ? demo.deployment : try DeploymentURL(deploymentAddress)
     }
     func blockBootstrap() { blocked = true }
     func waitForBootstrap() async { if gate != nil { return }; await withCheckedContinuation { observers.append($0) } }
@@ -338,7 +470,9 @@ private actor OnboardingService: FiestaBoardService {
         if blocked { await withCheckedContinuation { gate = $0; observers.forEach { $0.resume() }; observers = [] } }
         return try BootstrapSnapshot(deployment: deployment, health: ServerHealth(status: "ok", serviceRunning: false, version: "10.1.17"), identity: ServerIdentity(product: "FiestaBoard", version: "10.1.17", installationID: installation, name: "Test"), auth: authStatus())
     }
-    func restoreRememberedSession(observedInstallationID: String) async throws -> Bool { events.append("restore:" + observedInstallationID); return false }
+    var restoreResult = false
+    func setRestoreResult(_ value: Bool) { restoreResult = value }
+    func restoreRememberedSession(observedInstallationID: String) async throws -> Bool { events.append("restore:" + observedInstallationID); return restoreResult }
     func configureSessionPersistence(rememberMe: Bool, installationID: String?) async {
         events.append("configure")
         if configurationBlocked { await withCheckedContinuation { configurationGate = $0; configurationObservers.forEach { $0.resume() }; configurationObservers = [] } }
@@ -348,7 +482,19 @@ private actor OnboardingService: FiestaBoardService {
     func authStatus() -> AuthStatus { auth }
     func login(username: String, password: String) async throws -> AuthStatus { throw FiestaBoardError.unknownMutationOutcome }
     func login(username: String, password: String, rememberMe: Bool) async throws -> AuthStatus { events.append("login"); throw loginError }
-    func logout() async throws {}
+    private var logoutBlocked = false
+    private var logoutGate: CheckedContinuation<Void, Never>?
+    private var logoutObservers: [CheckedContinuation<Void, Never>] = []
+    func blockLogout() { logoutBlocked = true }
+    func waitForLogout() async { if logoutGate != nil { return }; await withCheckedContinuation { logoutObservers.append($0) } }
+    func releaseLogout() { logoutGate?.resume(); logoutGate = nil; logoutBlocked = false }
+    private var protectedCleanupFailed = false
+    func failProtectedCleanup() { protectedCleanupFailed = true }
+    func sessionPersistenceState() -> SessionPersistenceState { .init(cleanupPending: protectedCleanupFailed) }
+    func logout() async throws {
+        events.append("logout")
+        if logoutBlocked { await withCheckedContinuation { logoutGate = $0; logoutObservers.forEach { $0.resume() }; logoutObservers = [] } }
+    }
     private var connectFailure = false
     private var boardsFailure = false
     func failNextShellLoad(boards: Bool) { if boards { boardsFailure = true } else { connectFailure = true } }
@@ -591,5 +737,58 @@ extension ConnectionModelTests {
         XCTAssertEqual(model.phase, .connected); XCTAssertNotNil(model.snapshot)
         let after = await service.events.filter { $0 == "disconnect" }.count
         XCTAssertEqual(after, before)
+    }
+}
+
+
+extension ConnectionModelTests {
+    func testKnownOfflineHubPublishesOnlyProtectedRememberedComposeIdentity() async throws {
+        let service = try OnboardingService(), model = model(service)
+        let proof = ComposePrincipalProof(deployment: service.deployment, installationID: "installation",
+            principalID: "verified-user", connectionID: UUID(), verifiedOnline: false)
+        await service.supplyComposePrincipal(proof); await service.failBootstrap(.networkUnavailable)
+        await model.selectSaved(.init(deployment: service.deployment, alias: "Arbitrary alias", installationID: "installation")).value
+        XCTAssertEqual(model.phase, .unreachable)
+        XCTAssertEqual(model.composePrincipal, proof)
+        model.cancel(); XCTAssertNil(model.composePrincipal)
+    }
+    func testCatalogAliasAndUnauthenticatedUsernameNeverSelectComposeBuffer() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.failBootstrap(.networkUnavailable)
+        model.username = "admin"
+        await model.selectSaved(.init(deployment: service.deployment, alias: "admin", installationID: "installation")).value
+        XCTAssertNil(model.composePrincipal)
+    }
+    func testOnlineComposeProofPublicationAndForgetAreScopedToCurrentConnection() async throws {
+        let service = try OnboardingService(usingDemoDeployment: true), model = model(service)
+        await service.chooseAuth(.init(enabled: true, setupRequired: false, authenticated: true, authKind: "mobile"))
+        let proof = ComposePrincipalProof(deployment: service.deployment, installationID: "installation",
+            principalID: "verified-user", connectionID: UUID(), verifiedOnline: true)
+        await service.supplyComposePrincipal(proof)
+        await model.selectSaved(.init(deployment: service.deployment, alias: "Hub", installationID: "installation")).value
+        XCTAssertEqual(model.phase, .connected); XCTAssertEqual(model.composePrincipal, proof)
+        await model.forgetSignIn(); XCTAssertNil(model.composePrincipal)
+    }
+    func testWrongDeploymentProtectedProofCannotPublishUnderSelectedHub() async throws {
+        let service = try OnboardingService(), model = model(service)
+        let wrong = try DeploymentURL("https://other.example.com")
+        await service.supplyComposePrincipal(.init(deployment: wrong, installationID: "installation",
+            principalID: "verified-user", connectionID: UUID(), verifiedOnline: false))
+        await service.failBootstrap(.networkUnavailable)
+        await model.selectSaved(.init(deployment: service.deployment, alias: "Hub", installationID: "installation")).value
+        XCTAssertNil(model.composePrincipal)
+    }
+}
+
+
+extension ConnectionModelTests {
+    func testCancelledOfflineLookupCannotPublishPreviousHubProof() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.supplyComposePrincipal(.init(deployment: service.deployment, installationID: "installation",
+            principalID: "verified-user", connectionID: UUID(), verifiedOnline: false))
+        await service.failBootstrap(.networkUnavailable); await service.blockComposeProof()
+        let selecting = model.selectSaved(.init(deployment: service.deployment, alias: "Hub", installationID: "installation"))
+        await service.waitForComposeProof(); model.cancel(); await service.releaseComposeProof(); await selecting.value
+        XCTAssertEqual(model.phase, .picker); XCTAssertNil(model.composePrincipal)
     }
 }

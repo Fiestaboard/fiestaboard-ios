@@ -23,3 +23,14 @@ Tests/Fixtures/Home/HostUndo/undo-indefinite-cancel.json:generic-api-key:1
 Tests/Fixtures/Home/DockerUndo/undo-cancel.json:generic-api-key:1
 Tests/Fixtures/Home/DockerUndo/undo-stale-cancel.json:generic-api-key:1
 Tests/Fixtures/Home/DockerUndo/undo-indefinite-cancel.json:generic-api-key:1
+# Same consumed/invalidated, at-most30s synthetic authority in DockerBanners.
+# The isolated recording revoked its mobile session before exit; preserve bytes.
+Tests/Fixtures/Home/DockerBanners/undo-cancel.json:generic-api-key:1
+Tests/Fixtures/Home/DockerBanners/undo-stale-cancel.json:generic-api-key:1
+Tests/Fixtures/Home/DockerBanners/undo-indefinite-cancel.json:generic-api-key:1
+# Fixture filename/case selectors in checked I8 test source, not credential material.
+# Keep original tests and recorded responses unchanged; exact line/rule scope only.
+Packages/FiestaBoardAppState/Tests/FiestaBoardAppStateTests/ComposePreviewProjectionTests.swift:generic-api-key:16
+Packages/FiestaBoardAppState/Tests/FiestaBoardAppStateTests/ComposePreviewProjectionTests.swift:generic-api-key:27
+Packages/FiestaBoardKit/Tests/FiestaBoardKitTests/ComposeDrawingTests.swift:generic-api-key:14
+Packages/FiestaBoardKit/Tests/FiestaBoardKitTests/ComposeDrawingTests.swift:generic-api-key:27
