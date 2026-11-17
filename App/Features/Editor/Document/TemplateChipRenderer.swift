@@ -156,8 +156,22 @@ import FiestaBoardRender
         }
         .frame(width: width, height: height)
         let renderer = ImageRenderer(content: content)
-        renderer.scale = traits.displayScale > 0 ? traits.displayScale : 3
-        var image = renderer.uiImage ?? UIImage()
+        let scale = traits.displayScale > 0 ? traits.displayScale : 3
+        renderer.scale = scale
+        // Own the first render's backing pixels: the native seed golden caught an
+        // empty first tile from the UIImage convenience path while later tiles passed.
+        var rendered: CGImage?
+        renderer.render(rasterizationScale: scale) { size, draw in
+            guard size == CGSize(width: width, height: height),
+                  let space = CGColorSpace(name: CGColorSpace.sRGB),
+                  let context = CGContext(data: nil, width: Int(width * scale), height: Int(height * scale),
+                    bitsPerComponent: 8, bytesPerRow: 0, space: space,
+                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return }
+            context.scaleBy(x: scale, y: scale)
+            draw(context)
+            rendered = context.makeImage()
+        }
+        var image = rendered.map { UIImage(cgImage: $0, scale: scale, orientation: .up) } ?? UIImage()
         if outlined {
             let size = CGSize(width: width + 4, height: height + 4)
             image = UIGraphicsImageRenderer(size: size, format: UIGraphicsImageRendererFormat(for: traits)).image { _ in
