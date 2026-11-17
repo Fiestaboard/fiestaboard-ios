@@ -47,7 +47,7 @@ extension XCTestCase {
         do {
             try FixtureReadiness.require(URL(string: "http://127.0.0.1:\(port)/ready")!)
         } catch {
-            XCTFail("Required fixture unavailable or invalid (\(error)): FIXTURE_PORT=\(port) python3 Tests/UITests/fixture_server.py",
+            XCTFail("Required native fixture unavailable or invalid (\(error)); loopback port \(port)",
                     file: file, line: line)
             throw error
         }
