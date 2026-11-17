@@ -87,8 +87,47 @@ import XCTest
         XCTAssertTrue(app.textFields["composePageName"].waitForExistence(timeout: 5))
         shot("i8-save-as-page-native-sheet")
         app.buttons["composeSavePage"].tap()
+        let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.textFields["composePageName"])
+        XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 8), .completed)
         XCTAssertTrue(source.waitForExistence(timeout: 8))
         XCTAssertEqual(source.value as? String, "Dinner at seven")
+    }
+
+    func testUnsentDraftSurvivesColdOfflineRelaunch() {
+        let app = isolatedApplication()
+        launchFixture(app, scenario: "i8-compose", remember: true)
+        tapReady(app.buttons["homeCompose"])
+        let source = app.textViews["composeSource"]
+        XCTAssertTrue(source.waitForExistence(timeout: 5))
+        source.tap(); source.typeText("Keep offline exactly")
+        app.buttons["composeCancel"].tap()
+        XCTAssertTrue(app.buttons["homeCompose"].waitForExistence(timeout: 5))
+        app.terminate()
+        FixtureHTTPServer.shared.setDropped(true)
+        defer { FixtureHTTPServer.shared.setDropped(false); app.terminate() }
+        app.launch()
+        XCTAssertTrue(app.buttons["homeCompose"].waitForExistence(timeout: 15))
+        tapReady(app.buttons["homeCompose"])
+        XCTAssertTrue(source.waitForExistence(timeout: 8))
+        XCTAssertEqual(source.value as? String, "Keep offline exactly")
+        XCTAssertTrue(app.otherElements["composeOfflineNotice"].exists)
+        XCTAssertFalse(app.buttons["composeShowNow"].isEnabled)
+        shot("i8-compose-cold-offline-draft-retained")
+    }
+
+    func testAcceptedReadbackClearsTheSentDraft() {
+        let app = isolatedApplication()
+        launchFixture(app, scenario: "i8-compose")
+        tapReady(app.buttons["homeCompose"])
+        let source = app.textViews["composeSource"]
+        XCTAssertTrue(source.waitForExistence(timeout: 5))
+        source.tap(); source.typeText("Dinner at seven")
+        tapReady(app.buttons["composeShowNow"])
+        let closed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: source)
+        XCTAssertEqual(XCTWaiter.wait(for: [closed], timeout: 8), .completed)
+        tapReady(app.buttons["homeCompose"])
+        XCTAssertTrue(source.waitForExistence(timeout: 5))
+        XCTAssertEqual(source.value as? String, "")
     }
 
     func testComposeControlsRemainAccessibleInDarkAX3() {
