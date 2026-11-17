@@ -11,7 +11,12 @@ struct ShellContainer<Destination: View, Accessory: View>: View {
         GeometryReader { geometry in
             TabView(selection: $selection) {
                 ForEach(ShellTab.allCases) { route in
-                    Tab(value: route) { destination(route) } label: {
+                    Tab(value: route) {
+                        destination(route)
+                        #if DEBUG
+                            .overlay(alignment: .topTrailing) { ShellPlacementProbe() }
+                        #endif
+                    } label: {
                         Label(route.rawValue, systemImage: route.symbol)
                     }
                     .accessibilityIdentifier("destination-" + route.rawValue)
@@ -25,3 +30,21 @@ struct ShellContainer<Destination: View, Accessory: View>: View {
         }
     }
 }
+
+#if DEBUG
+private struct ShellPlacementProbe: View {
+    @Environment(\.tabBarPlacement) private var placement
+    private var value: String {
+        switch placement {
+        case .topBar: "top"
+        case .sidebar: "sidebar"
+        case .bottomBar: "bottom"
+        default: "other"
+        }
+    }
+    var body: some View {
+        Color.clear.frame(width: 1, height: 1).accessibilityElement()
+            .accessibilityLabel("Native tab placement").accessibilityValue(value).accessibilityIdentifier("shellTabPlacement")
+    }
+}
+#endif

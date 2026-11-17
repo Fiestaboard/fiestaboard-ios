@@ -44,6 +44,7 @@ public actor ShellSnapshotStore {
         guard active[lease.hubID] == lease.token else { return false }
         guard snapshot.version == 1, snapshot.hubID == lease.hubID, snapshot.deployment == lease.deployment,
               snapshot.installationID == lease.installationID else { throw FiestaBoardError.invalidResponse }
+        try snapshot.board?.validate()
         let data = try JSONEncoder().encode(snapshot)
         guard data.count <= maximumBytes else { throw FiestaBoardError.invalidResponse }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
@@ -65,6 +66,7 @@ public actor ShellSnapshotStore {
               snapshot.version == 1, snapshot.hubID == hub.id, snapshot.deployment == hub.deployment,
               snapshot.installationID == identity, now >= snapshot.capturedAt,
               now.timeIntervalSince(snapshot.capturedAt) < 600 else { return nil }
+        try snapshot.board?.validate()
         return snapshot
     }
     public func revoke(_ lease: ShellSnapshotLease) throws {

@@ -310,6 +310,7 @@ struct DraftScene: View {
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
                         NavigationLink { CollectionsView(store: store) } label: { Label("Collections", systemImage: "rectangle.stack") }
+                            .accessibilityIdentifier("shellCollections")
                     }
                 }
         }
@@ -331,101 +332,31 @@ struct DraftScene: View {
         return saved?.alias.isEmpty == false ? saved!.alias : "FiestaBoard hub"
     }
     private var displayAccessory: some View {
-        Menu {
-            Section {
-                Text(activeHubName)
-                Text(store.connectionLabel)
-            }
-            ForEach(store.boards) { display in
-                Button { store.selectBoard(display.id) } label: {
-                    if display.id == store.selectedBoardID { Label(display.name, systemImage: "checkmark") }
-                    else { Text(display.name) }
-                }
-                .disabled(store.connecting || store.commandBusy)
-            }
-        } label: {
-            HStack {
-                Image(systemName: "rectangle.on.rectangle")
-                VStack(alignment: .leading) {
-                    Text("Now showing · " + (boardStatus.nowShowing?.name ?? "No page selected"))
-                        .font(.subheadline)
-                    Text(store.boards.first { $0.id == store.selectedBoardID }?.name ?? "No display selected")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                Spacer()
-                Image(systemName: "chevron.up.chevron.down")
-            }.padding(.horizontal)
-        }
-        .accessibilityIdentifier("shellDisplaySwitcher")
+        ShellDisplayAccessory(displays: store.boards, selectedID: store.selectedBoardID, nowShowing: boardStatus.nowShowing?.name,
+                              hubName: activeHubName, host: shellHub, disabled: store.connecting || store.commandBusy,
+                              select: { store.selectBoard($0) })
     }
     private var more: some View {
         NavigationStack {
-            List {
-                Section {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(activeHubName).font(.headline)
-                        Text(store.connectionLabel).font(.subheadline).foregroundStyle(.secondary)
-                    }
-                    NavigationLink { settings } label: {
-                        Label(connection.snapshot?.auth.username ?? "Account", systemImage: "person.crop.circle")
-                    }
-                    Button {} label: { Label("FiestaBot", systemImage: "sparkles") }.disabled(true)
-                }
-                Section("Hub") {
-                    Button {} label: { Label("Network", systemImage: "wifi") }.disabled(true)
-                    Button {} label: { Label("AI provider", systemImage: "sparkles") }.disabled(true)
-                    Button {} label: { Label("System & backups", systemImage: "externaldrive") }.disabled(true)
-                    Button {} label: { Label("Language & time", systemImage: "clock") }.disabled(true)
-                    NavigationLink { hubs } label: {
-                        LabeledContent { Text("\(connection.savedServers.count) saved") } label: { Label("Hubs", systemImage: "externaldrive.connected.to.line.below") }
-                    }.accessibilityIdentifier("shellHubs")
-                }
-                Section("Manage") {
-                    NavigationLink { displays } label: { Label("Displays", systemImage: "rectangle.on.rectangle") }
-                    Button {} label: { Label("Integrations", systemImage: "puzzlepiece.extension") }.disabled(true)
-                }
-                Section("Help") {
-                    NavigationLink("About") {
-                        ScrollView { Text(licenseText).font(.footnote.monospaced()).padding().textSelection(.enabled) }
-                            .navigationTitle("About")
-                    }
-                }
+            ShellMoreRoot(hubName: activeHubName, host: shellHub, username: connection.snapshot?.auth.username,
+                          savedCount: connection.savedServers.count, openDisplays: { tab = .displays },
+                          account: { settings }, hubs: { hubs }) {
+                ScrollView { Text(licenseText).font(.footnote.monospaced()).padding().textSelection(.enabled) }
+                    .navigationTitle("About")
             }
-            .scrollContentBackground(.hidden)
-            .background(palette.background)
-            .navigationTitle("More")
         }
     }
     private var hubs: some View {
-        List {
-            Section {
-                ForEach(connection.savedServers) { hub in
-                    Button { connection.selectSaved(hub) } label: {
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text(hub.alias.isEmpty ? hub.deployment.description : hub.alias)
-                                Text(hub.deployment.description).font(.caption).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            if hub.deployment.description == store.connectionLabel {
-                                Label("Active", systemImage: "checkmark").font(.caption)
-                            }
-                        }
-                    }
-                    .disabled(connection.busy)
-                }
-                Button("Add a hub") { connection.disconnect(); connection.address = ""; connection.alias = ""; connection.username = ""; connection.allowLocalHTTP = false; addingHub = true }.accessibilityIdentifier("shellAddHub")
-            } footer: {
-                Text("Each hub keeps its own sign-in and selected display.")
-            }
-        }
-        .navigationTitle("Hubs")
+        ShellHubsView(hubs: connection.savedServers, activeDeployment: store.connectionLabel, busy: connection.busy,
+                      select: { connection.selectSaved($0) }, add: {
+            connection.disconnect(); connection.address = ""; connection.alias = ""; connection.username = ""
+            connection.allowLocalHTTP = false; addingHub = true
+        })
         .sheet(isPresented: $addingHub) { ConnectionView(model: connection, store: store) }
         .onChange(of: connection.phase) { _, phase in if phase == .connected { addingHub = false } }
     }
     private var settings: some View {
-        NavigationStack {
-            Form {
+        Form {
                 Section("Connection") {
                     connectionBanner
                     LabeledContent("Version", value: store.status?.version.displayedVersion ?? "Unknown")
@@ -451,7 +382,6 @@ struct DraftScene: View {
                     }
                 }
             }.frame(maxWidth: 1000).frame(maxWidth: .infinity).navigationTitle("Settings")
-        }
     }
     private var licenseText: String {
         guard let url = Bundle.main.url(forResource: "FiestaBoardTV-MIT", withExtension: "txt"),
