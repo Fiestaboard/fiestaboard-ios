@@ -36,6 +36,15 @@ import XCTest
         XCTAssertTrue(app.navigationBars["Hubs"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["shellAddHub"].exists)
         shot("i6-hubs-root")
+        let address = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "http://127.0.0.1:")).firstMatch
+        XCTAssertTrue(address.waitForExistence(timeout: 5))
+        let row = app.buttons.containing(.staticText, identifier: address.label).firstMatch
+        row.press(forDuration: 1)
+        app.buttons["Forget hub…"].tap()
+        XCTAssertTrue(app.buttons["shellConfirmForgetHub"].waitForExistence(timeout: 5))
+        shot("i6-forget-hub-confirmation")
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(address.exists, "Cancel keeps the saved hub")
     }
     func testIndependentTabStackAndEditorCloseRestoreShell() {
         XCUIDevice.shared.orientation = .portrait

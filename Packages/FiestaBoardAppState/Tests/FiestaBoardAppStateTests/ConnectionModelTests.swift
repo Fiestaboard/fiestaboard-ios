@@ -148,6 +148,50 @@ import FiestaBoardKit
         XCTAssertFalse(events.contains { $0.hasPrefix("restore:") || $0 == "logout" })
         XCTAssertTrue(model.message?.contains("could not be confirmed") == true)
     }
+    func testForgettingActiveHubSelectsNextSavedHub() async throws {
+        let active = try OnboardingService(), next = try OnboardingService(deploymentAddress: "https://next.example.com")
+        for service in [active, next] { await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false)) }
+        let catalog = ServerCatalog(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        let replacement = try await catalog.upsert(SavedServer(deployment: next.deployment, alias: "Next", installationID: "installation"))
+        let model = ConnectionModel(store: BoardStore(), catalog: catalog, discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, serviceFactory: { $0 == active.deployment ? active : next })
+        await model.selectSaved(SavedServer(deployment: active.deployment, alias: "First", installationID: "installation")).value
+        await model.removeServer(try XCTUnwrap(model.selectedSavedHub))
+        XCTAssertEqual(model.selectedSavedHub?.id, replacement.id)
+        XCTAssertEqual(model.phase, .connected)
+        let events = await next.events
+        XCTAssertFalse(events.contains("logout"))
+    }
+    func testForgettingHubKeepsRecordWhenProtectedCleanupFails() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        await model.selectSaved(SavedServer(deployment: service.deployment, alias: "Kitchen", installationID: "installation")).value
+        let hub = try XCTUnwrap(model.selectedSavedHub)
+        await service.failProtectedCleanup()
+        await model.removeServer(hub)
+        XCTAssertTrue(model.savedServers.contains { $0.id == hub.id })
+        XCTAssertTrue(model.message?.contains("could not be removed") == true)
+        XCTAssertFalse(model.busy)
+    }
+    func testLateForgetCompletionCannotDisconnectNewSelectedHub() async throws {
+        let first = try OnboardingService(), second = try OnboardingService(deploymentAddress: "https://second.example.com")
+        for service in [first, second] { await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false)) }
+        let store = BoardStore(), catalog = ServerCatalog(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString))
+        let model = ConnectionModel(store: store, catalog: catalog, discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, serviceFactory: { $0 == first.deployment ? first : second })
+        await model.selectSaved(SavedServer(deployment: first.deployment, alias: "First", installationID: "installation")).value
+        let removed = try XCTUnwrap(model.selectedSavedHub)
+        await first.blockLogout()
+        let forget = Task { await model.removeServer(removed) }
+        await first.waitForLogout()
+        XCTAssertNil(store.status, "Retire active writes before awaiting the hub")
+        await model.selectSaved(SavedServer(deployment: second.deployment, alias: "Second", installationID: "installation")).value
+        let selected = try XCTUnwrap(model.selectedSavedHub)
+        await first.releaseLogout()
+        await forget.value
+        XCTAssertEqual(model.selectedSavedHub?.id, selected.id)
+        XCTAssertEqual(model.phase, .connected)
+        XCTAssertNotNil(store.status)
+        XCTAssertFalse(model.savedServers.contains { $0.id == removed.id })
+    }
     func testBootstrapPrecedesRestoreAndNeverReplacesRememberedConsent() async throws {
         let service = try OnboardingService(); let model = model(service)
         model.address = "https://board.example.com"
@@ -343,7 +387,19 @@ private actor OnboardingService: FiestaBoardService {
     func authStatus() -> AuthStatus { auth }
     func login(username: String, password: String) async throws -> AuthStatus { throw FiestaBoardError.unknownMutationOutcome }
     func login(username: String, password: String, rememberMe: Bool) async throws -> AuthStatus { events.append("login"); throw loginError }
-    func logout() async throws { events.append("logout") }
+    private var logoutBlocked = false
+    private var logoutGate: CheckedContinuation<Void, Never>?
+    private var logoutObservers: [CheckedContinuation<Void, Never>] = []
+    func blockLogout() { logoutBlocked = true }
+    func waitForLogout() async { if logoutGate != nil { return }; await withCheckedContinuation { logoutObservers.append($0) } }
+    func releaseLogout() { logoutGate?.resume(); logoutGate = nil; logoutBlocked = false }
+    private var protectedCleanupFailed = false
+    func failProtectedCleanup() { protectedCleanupFailed = true }
+    func sessionPersistenceState() -> SessionPersistenceState { .init(cleanupPending: protectedCleanupFailed) }
+    func logout() async throws {
+        events.append("logout")
+        if logoutBlocked { await withCheckedContinuation { logoutGate = $0; logoutObservers.forEach { $0.resume() }; logoutObservers = [] } }
+    }
     private var connectFailure = false
     private var boardsFailure = false
     func failNextShellLoad(boards: Bool) { if boards { boardsFailure = true } else { connectFailure = true } }

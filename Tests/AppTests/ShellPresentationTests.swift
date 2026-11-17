@@ -30,7 +30,7 @@ import FiestaBoardAppState
                                   username: "fixture_admin", savedCount: saved.count, openDisplays: {},
                                   account: { Text("Account") }, hubs: {
                         ShellHubsView(hubs: saved, activeDeployment: saved[0].deployment.description,
-                                      busy: false, select: { _ in }, add: {})
+                                      busy: false, select: { _ in }, add: {}, forget: { _ in })
                     }, about: { Text("About") })
                 } else {
                     ShellConnectionView(state: .connecting(still: false, cached: false), hub: saved[0].alias, retry: {})
@@ -82,7 +82,7 @@ import FiestaBoardAppState
         let saved = try hubs()
         for (appearance, expected) in [(ColorScheme.light, [241, 236, 230]), (.dark, [11, 10, 8])] {
             let image = shellImage(NavigationStack {
-                ShellHubsView(hubs: saved, activeDeployment: saved[0].deployment.description, busy: false, select: { _ in }, add: {})
+                ShellHubsView(hubs: saved, activeDeployment: saved[0].deployment.description, busy: false, select: { _ in }, add: {}, forget: { _ in })
             }, appearance: appearance)
             let cg = try XCTUnwrap(image.cgImage)
             let pixelImage = try XCTUnwrap(cg.cropping(to: CGRect(x: image.scale * 2,
@@ -128,7 +128,7 @@ import FiestaBoardAppState
                         IOSSnapshot.assertMatches(image, named: "i6-shell-\(route.rawValue)-\(layoutName)-\(modeName)-\(typeName)", device: device)
                     }
                     let list = shellImage(NavigationStack {
-                        ShellHubsView(hubs: saved, activeDeployment: saved[0].deployment.description, busy: false, select: { _ in }, add: {})
+                        ShellHubsView(hubs: saved, activeDeployment: saved[0].deployment.description, busy: false, select: { _ in }, add: {}, forget: { _ in })
                     }, device: device, size: bounds, appearance: appearance, dynamicType: type)
                     IOSSnapshot.assertMatches(list, named: "i6-hubs-\(layoutName)-\(modeName)-\(typeName)", device: device)
                 }

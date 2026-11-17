@@ -349,7 +349,7 @@ struct DraftScene: View {
                       select: { connection.selectSaved($0) }, add: {
             connection.disconnect(); connection.address = ""; connection.alias = ""; connection.username = ""
             connection.allowLocalHTTP = false; addingHub = true
-        })
+        }, forget: { hub in Task { await connection.removeServer(hub) } }, notice: connection.message)
         .sheet(isPresented: $addingHub) { ConnectionView(model: connection, store: store) }
         .onChange(of: connection.phase) { _, phase in if phase == .connected { addingHub = false } }
     }
