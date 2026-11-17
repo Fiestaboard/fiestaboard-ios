@@ -48,6 +48,41 @@ final class BoardVisualsUITests: XCTestCase {
         }
     }
 
+    @MainActor
+    func testHomePausedBannerResumesSelectedDisplayAndDimsTheLastPage() async throws {
+        try await requireFixture()
+        let app = launchSignedIn(scenario: "paused")
+        let banner = app.descendants(matching: .any)["pausedBadge"]
+        XCTAssertTrue(banner.waitForExistence(timeout:10))
+        let board = app.descendants(matching: .any)["homeBoard"]
+        XCTAssertLessThan(banner.frame.maxY,board.frame.minY,"Paused explanation precedes the last-page preview")
+        let resume = app.buttons["homeResumeDisplay"]
+        XCTAssertTrue(resume.exists); XCTAssertTrue(resume.isEnabled)
+        resume.tap()
+        XCTAssertTrue(banner.waitForNonExistence(timeout:10),"selected display resumed")
+        waitFor(app.descendants(matching:.any)["modeBadge"],NSPredicate(format:"label == %@","Manual Mode"),10,"fresh resumed snapshot")
+        shot(app,"I7-home-resumed")
+        app.terminate()
+    }
+    @MainActor
+    func testHomeSilenceEmptyAndHeldHaveDistinctScopedReadOnlyContent() async throws {
+        try await requireFixture()
+        for scenario in ["silence","silence-held"] {
+            let app = launchSignedIn(scenario:scenario)
+            let banner = app.descendants(matching:.any)["silenceBadge"]
+            XCTAssertTrue(banner.waitForExistence(timeout:10))
+            XCTAssertTrue(app.staticTexts.matching(NSPredicate(format:"label BEGINSWITH %@","Silence Schedule")).firstMatch.exists)
+            XCTAssertEqual(app.descendants(matching:.any)["homeHeldMessage"].exists,scenario == "silence-held")
+            if scenario == "silence-held" {
+                XCTAssertTrue(app.staticTexts["Package delivered"].exists)
+                XCTAssertFalse(app.buttons["Discard"].exists)
+                XCTAssertFalse(app.buttons["Show now"].exists)
+            }
+            shot(app,"I7-home-" + scenario)
+            app.terminate()
+        }
+    }
+
     /// B1, B2, B5 (flap fallback): the shared renderer on the fixture boards.
     @MainActor
     func testBoardGallery() async throws {
