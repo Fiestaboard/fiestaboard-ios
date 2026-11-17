@@ -286,3 +286,25 @@ extension ComposeSessionTests {
         XCTAssertEqual(restored?.text, "TYPED DURING READBACK")
     }
 }
+
+extension ComposeSessionTests {
+    func testCachedTargetPresentationNeverBecomesLiveAuthorityOnReconnect() async throws {
+        let verified = try scope(), clock = ManualSleeper(), renderer = ComposeRenderGate()
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let buffer = ComposeBufferStore(directory: directory)
+        let presentation = ComposeBufferTarget(id: verified.target.boardID, name: "Cached kitchen", deviceType: "flagship", rows: 6, cols: 22)
+        let cached = ComposeScope(identity: verified.identity, connectionID: verified.connectionID, target: verified.target,
+            rows: verified.rows, cols: verified.cols, verifiedOnline: false, presentation: presentation)
+        let session = ComposeSession(scope: cached, online: false, sleep: { try await clock.sleep($0) }, render: { try await renderer.render($0) })
+        _ = try await session.bindBuffer(buffer)
+        session.update(.init(text: "KEPT OFFLINE")); _ = try await session.persistBuffer()
+        let retained = try await buffer.load(verified.identity)
+        XCTAssertEqual(retained?.targetPresentation, presentation)
+        session.setOnline(true); session.retryPreview(); await settle(); clock.advance(); await settle()
+        XCTAssertTrue(renderer.inputs.isEmpty); XCTAssertNil(session.prepare(), "Network availability cannot promote cached metadata to write authority")
+        session.changeScope(verified)
+        XCTAssertNotNil(session.prepare(), "Current authenticated target resolution can restore authority for the same retained input")
+        session.close()
+    }
+}
