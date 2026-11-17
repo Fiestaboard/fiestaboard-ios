@@ -2,6 +2,7 @@ import SwiftUI
 import FiestaBoardKit
 import FiestaBoardAppState
 import FiestaBoardRender
+import FiestaBoardDocuments
 
 @main struct FiestaBoardApp: App {
     private let connectionPersistence = ConnectionPersistence(
@@ -47,6 +48,7 @@ private typealias DraftState<Value> = SwiftUI.State<Value>
 
 struct DraftScene: View {
     private let snapshots: ShellSnapshotStore
+    private let composeBuffers: ComposeBufferStore
     @StateObject private var store: BoardStore
     @StateObject private var connection: ConnectionModel
     @StateObject private var boardStatus: BoardStatus
@@ -59,6 +61,7 @@ struct DraftScene: View {
     @DraftState private var now = Date().timeIntervalSince1970
     init(persistence: ConnectionPersistence) {
         snapshots = persistence.snapshots
+        composeBuffers = ComposeBufferStore(directory: AppPersistence.directory.appendingPathComponent("FiestaBoard/Compose", isDirectory: true))
         let store = BoardStore()
         _store = StateObject(wrappedValue: store)
         _thumbnails = StateObject(wrappedValue: PageThumbnails(store: store, reader: {
@@ -80,7 +83,6 @@ struct DraftScene: View {
     @DraftState private var addingHub = false
     /// The sidebar hides while a page editor is open so the board gets the full width (B29).
     @DraftState private var composing = false
-    @DraftState private var textDraft = ""
     @DraftState private var started = false
     @Environment(\.colorScheme) private var appearance
     private var palette: ShellPalette { ShellPalette(appearance: appearance) }
@@ -149,22 +151,7 @@ struct DraftScene: View {
             if !connecting && store.status != nil { boardStatus.start() } else if store.status == nil { boardStatus.stop() }
         }
         .sheet(isPresented: $composing) {
-            NavigationStack {
-                Form {
-                    Section("Message") {
-                        TextEditor(text: $textDraft).frame(minHeight: 150).accessibilityLabel("Message text")
-                    }
-                    Section {
-                        Button("Send") {
-                            if let action = store.prepare(.text(textDraft)) {
-                                store.confirm(action); composing = false
-                            }
-                        }.disabled(!store.canWrite || textDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    }
-                }
-                .navigationTitle("Compose text")
-                .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Done") { composing = false } } }
-            }
+            ComposeSheet(store: store, connection: connection, status: boardStatus, buffers: composeBuffers)
         }
         .task {
             guard !started else { return }; started = true
@@ -206,6 +193,7 @@ struct DraftScene: View {
             more
         } else if connection.phase == .checking || connection.phase == .unreachable {
             NavigationStack {
+                Group {
                 if let cached = cache.value(for: shellHub, at: now), route == .pages {
                     ShellCachedContent(snapshot: cached, route: .pages, offline: presentation == .offline)
                 } else if (connection.phase == .checking || presentation == .offline),
@@ -215,11 +203,28 @@ struct DraftScene: View {
                     ShellConnectionView(state: presentation, hub: activeHubName, retry: { connection.retrySavedHub() })
                         .navigationTitle(route.rawValue)
                 }
+                }
+                .toolbar {
+                    if route == .home, connection.composePrincipal != nil {
+                        ToolbarItem(placement: .primaryAction) {
+                            Button { composing = true } label: { Label("Compose", systemImage: "square.and.pencil") }
+                                .accessibilityIdentifier("homeCompose")
+                        }
+                    }
+                }
             }
         } else if presentation == .unreachable && route == .home {
             NavigationStack {
                 ShellConnectionView(state: .unreachable, hub: activeHubName, retry: { store.probeReachability() })
                     .navigationTitle("Home")
+                    .toolbar {
+                        if connection.composePrincipal != nil {
+                            ToolbarItem(placement: .primaryAction) {
+                                Button { composing = true } label: { Label("Compose", systemImage: "square.and.pencil") }
+                                    .accessibilityIdentifier("homeCompose")
+                            }
+                        }
+                    }
             }
         } else {
             destination(route)
@@ -233,7 +238,8 @@ struct DraftScene: View {
         switch route {
         case .home:
             NavigationStack {
-                HomeView(store: store, status: boardStatus, thumbnails: thumbnails, compose: { composing = true },
+                HomeView(store: store, status: boardStatus, thumbnails: thumbnails,
+                         canCompose: connection.composePrincipal != nil, compose: { composing = true },
                          preparePage: { if let action = store.prepare(.page($0)) { store.confirm(action) } },
                          prepareRestore: { if let action = store.prepare(.restore) { store.confirm(action) } },
                          openSettings: { tab = .more }, openSchedule: { tab = .schedule },

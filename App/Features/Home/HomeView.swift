@@ -8,6 +8,7 @@ struct HomeView<Controls: View>: View {
     @ObservedObject var store: BoardStore
     @ObservedObject var status: BoardStatus
     @ObservedObject var thumbnails: PageThumbnails
+    let canCompose: Bool
     let compose: () -> Void
     let preparePage: (String) -> Void
     let prepareRestore: () -> Void
@@ -87,7 +88,7 @@ struct HomeView<Controls: View>: View {
             ToolbarItem(placement: .topBarLeading) { displayMenu }
             ToolbarItemGroup(placement: .primaryAction) {
                 Button(action: compose) { Image(systemName: "square.and.pencil") }
-                    .accessibilityLabel("Compose").accessibilityIdentifier("homeCompose").disabled(!store.canWrite)
+                    .accessibilityLabel("Compose").accessibilityIdentifier("homeCompose").disabled(!canCompose)
                 Button { Task { await status.refreshHomeControlState() } } label: { Label("Refresh display", systemImage: "arrow.clockwise") }
                     .disabled(store.refreshing || store.commandBusy || status.homeControlBusy)
             }
