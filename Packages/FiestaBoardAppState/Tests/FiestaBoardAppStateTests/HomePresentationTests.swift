@@ -22,7 +22,7 @@ extension HomePresentationTests {
                                    end: String? = "1970-01-01T02:00:00Z",
                                    schedule: Bool = true, paused: Bool = false,
                                    silence: SilenceStatus? = nil, now: TimeInterval = 1800) throws -> HomePresentation {
-        var object: [String: Any] = ["id": "kitchen", "name": "Kitchen", "device_type": "flagship",
+        var object: [String: Any] = ["id": "cx-kitchen", "name": "Kitchen", "device_type": "flagship",
             "rows": 6, "cols": 22, "is_primary": true, "paused": paused,
             "schedule_enabled": schedule, "output": "none", "source": "manual",
             "next_change_reason": "override_ends"]
@@ -33,11 +33,18 @@ extension HomePresentationTests {
                                      now: Date(timeIntervalSince1970: now))
     }
 
+    private func recordedInactiveSilence() throws -> SilenceStatus {
+        var root = URL(fileURLWithPath: #filePath)
+        for _ in 0..<5 { root.deleteLastPathComponent() }
+        return try JSONDecoder().decode(SilenceStatus.self, from: Data(contentsOf:
+            root.appendingPathComponent("Tests/Fixtures/Home/DockerBanners/home-silence.json")))
+    }
+
     func testOverrideProgressDrainsFromAuthoritativeIntervalWithClock() throws {
         let start = try syntheticOverride(now: 0)
         XCTAssertEqual(start.overrideExpiresAt, Date(timeIntervalSince1970: 7200))
         XCTAssertEqual(try XCTUnwrap(start.overrideRemainingFraction), 1, accuracy: 0.000001)
-        let later = try syntheticOverride(now: 1800)
+        let later = try syntheticOverride(silence: recordedInactiveSilence(), now: 1800)
         XCTAssertEqual(try XCTUnwrap(later.overrideRemainingFraction), 0.75, accuracy: 0.000001)
         XCTAssertEqual(later.overrideRemaining, "1h 30m left")
         XCTAssertTrue(later.overrideResumesSchedule)
@@ -63,10 +70,23 @@ extension HomePresentationTests {
     }
 
     func testOverrideResumeClaimRequiresEnabledUnpausedUnsilencedSchedule() throws {
-        XCTAssertFalse(try syntheticOverride(schedule: false).overrideResumesSchedule)
-        XCTAssertFalse(try syntheticOverride(paused: true).overrideResumesSchedule)
+        XCTAssertFalse(try syntheticOverride(schedule: false, silence: recordedInactiveSilence()).overrideResumesSchedule)
+        XCTAssertFalse(try syntheticOverride(paused: true, silence: recordedInactiveSilence()).overrideResumesSchedule)
         XCTAssertFalse(try syntheticOverride(silence: .init(active: true)).overrideResumesSchedule)
         XCTAssertTrue(try syntheticOverride(silence: .init(active: false)).overrideResumesSchedule)
+        XCTAssertTrue(try syntheticOverride(silence: recordedInactiveSilence()).overrideResumesSchedule)
+    }
+
+    func testOverrideMissingSilenceReadKeepsExpiryExplanationNeutral() throws {
+        // BoardStatus stores nil both before the first read and after try? fails.
+        let p = try syntheticOverride(silence: nil)
+        XCTAssertNotNil(p.overrideExpiresAt)
+        XCTAssertFalse(p.overrideResumesSchedule, "No response does not prove silence is inactive")
+    }
+
+    func testOverrideOtherDisplayInactiveSilenceDoesNotProveSelectedDisplayResumes() throws {
+        let p = try syntheticOverride(silence: .init(active: false, boardID: "desk"))
+        XCTAssertFalse(p.overrideResumesSchedule)
     }
 
     func testNoOverrideDoesNotExposeExpiryProgressOrResumeClaim() {

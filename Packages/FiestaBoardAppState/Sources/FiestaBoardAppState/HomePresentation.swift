@@ -98,7 +98,8 @@ public struct HomePresentation: Equatable, Sendable {
             overrideRemaining: activeOverride ? HomeTiming.remainingLabel(expiresAt: detail?.overrideExpiresAt, now: now) : nil,
             overrideExpiresAt: expiry, overrideRemainingFraction: fraction,
             overrideResumesSchedule: expiry != nil && detail?.summary.scheduleEnabled == true
-                && detail?.summary.paused == false && silence?.active != true,
+                && detail?.summary.paused == false && silence?.active == false
+                && (silence?.boardID == nil || silence?.boardID == detail?.summary.id),
             banner: banner, nextChange: next)
     }
 }
