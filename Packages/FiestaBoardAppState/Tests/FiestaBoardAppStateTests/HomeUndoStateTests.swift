@@ -39,9 +39,9 @@ import FiestaBoardKit
         await store.refreshHomeUndoCapability().value
         await store.confirm(try XCTUnwrap(store.prepare(.homeCancelOverride))).value
         XCTAssertTrue(store.canUndoHomeOverride)
-        now = now.addingTimeInterval(31)
+        now = now.addingTimeInterval(6)
         XCTAssertFalse(store.canUndoHomeOverride); XCTAssertNil(store.prepare(.homeUndoOverride))
-        now = now.addingTimeInterval(-31)
+        now = now.addingTimeInterval(-6)
         await store.confirm(try XCTUnwrap(store.prepare(.homePage(id:"page-weather",durationMinutes:nil,untilCanceled:false)))).value
         XCTAssertFalse(store.canUndoHomeOverride)
         await store.confirm(try XCTUnwrap(store.prepare(.homeCancelOverride))).value
