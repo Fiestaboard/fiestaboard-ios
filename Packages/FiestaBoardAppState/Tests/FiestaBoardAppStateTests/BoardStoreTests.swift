@@ -1249,3 +1249,18 @@ extension BoardStoreTests {
         XCTAssertNil(store.hubReachable)
     }
 }
+
+extension BoardStoreTests {
+    func testRestoredPathCannotReusePriorHubReachability() async throws {
+        let store = BoardStore()
+        await store.connect(try FixtureFiestaBoardService()).value
+        XCTAssertEqual(store.hubReachable, true)
+        store.networkAvailable = false
+        XCTAssertEqual(store.hubReachable, false)
+        store.networkAvailable = true
+        XCTAssertEqual(store.hubReachable, false)
+        XCTAssertFalse(store.canWrite)
+        await store.refresh().value
+        XCTAssertEqual(store.hubReachable, true)
+    }
+}

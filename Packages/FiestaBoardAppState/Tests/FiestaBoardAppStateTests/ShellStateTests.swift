@@ -16,6 +16,7 @@ final class ShellStateTests: XCTestCase {
     }
     func testPathRecoveryDoesNotClaimSuccessfulHubConnection() {
         var state = ShellConnection()
+        state.observe(pathAvailable: true, hubReachable: true)
         state.observe(pathAvailable: false, hubReachable: false)
         state.observe(pathAvailable: true, hubReachable: false)
         XCTAssertFalse(state.reconnected)
@@ -37,5 +38,14 @@ extension ShellStateTests {
         XCTAssertNil(cache.value(for: "https://a.example", at: 9))
         cache.remove(for: "https://a.example")
         XCTAssertNil(cache.value(for: "https://a.example", at: 20))
+    }
+}
+
+extension ShellStateTests {
+    func testFirstSuccessDoesNotAnnounceReconnect() {
+        var state = ShellConnection()
+        state.observe(pathAvailable: true, hubReachable: false)
+        state.observe(pathAvailable: true, hubReachable: true)
+        XCTAssertFalse(state.reconnected)
     }
 }
