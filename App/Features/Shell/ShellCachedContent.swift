@@ -8,12 +8,15 @@ struct ShellCachedContent: View {
     let snapshot: ShellSnapshot
     let route: ShellTab
     let offline: Bool
+    @Environment(\.colorScheme) private var appearance
+    private var palette: ShellPalette { .init(appearance: appearance) }
     var body: some View {
         Group {
             if route == .pages {
                 List(snapshot.pages) { page in
                     Text(page.name).figmaNode("cache:page-" + page.id, label: page.name)
-                }
+                        .listRowBackground(palette.card)
+                }.scrollContentBackground(.hidden)
             } else {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
@@ -34,6 +37,7 @@ struct ShellCachedContent: View {
                 Text("Updating…").font(.callout).padding().figmaNode("cache:updating", label: "Updating…")
             }
         }
+        .background(palette.background.ignoresSafeArea())
         .navigationTitle(route.rawValue)
     }
 }

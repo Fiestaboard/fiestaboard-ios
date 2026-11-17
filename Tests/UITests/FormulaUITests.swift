@@ -44,7 +44,7 @@ import XCTest
 
     /// Sign in to the fixture's board prefix and open "Good Morning" in the document editor.
     private func openGoodMorning(scenario: String = "manual") throws -> (XCUIApplication, XCUIElement) {
-        try FixtureHTTPServer.shared.requireReady()
+        try requireReadyFixture(port: String(fixturePort))
         let app = isolatedApplication()
         app.launchArguments = []; app.launch()
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
