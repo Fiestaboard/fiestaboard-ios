@@ -6,7 +6,8 @@ import XCTest
 
     func testWelcomeExplanationAndManualAddressKeepPermissionContextual() {
         let app = isolatedApplication(); app.launch()
-        XCTAssertTrue(app.staticTexts["Welcome to FiestaBoard"].waitForExistence(timeout: 10))
+        let initialTitle = UIDevice.current.userInterfaceIdiom == .pad ? "Choose your hub" : "Welcome to FiestaBoard"
+        XCTAssertTrue(app.staticTexts[initialTitle].firstMatch.waitForExistence(timeout: 10))
         XCTAssertFalse(app.textFields["connectionAddress"].exists)
         app.buttons["findFiestaBoard"].tap()
         XCTAssertTrue(app.staticTexts["Find your hub on this Wi-Fi"].waitForExistence(timeout: 5))
@@ -37,7 +38,7 @@ import XCTest
         let server = FixtureHTTPServer.shared
         try server.requireReady()
         app.launch()
-        app.buttons["enterHubAddress"].tap()
+        openManualHubEntry(app)
         allowFixtureHTTP(app)
         let address = app.textFields["connectionAddress"]
         typeConnectionAddress("http://127.0.0.1:\(server.port)/signin-\(UUID().uuidString.lowercased())", into: address, in: app)

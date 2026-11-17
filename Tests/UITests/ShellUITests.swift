@@ -69,12 +69,13 @@ import XCTest
         XCTAssertTrue(addressLabel.waitForExistence(timeout: 5))
         let originalAddress = addressLabel.label
         app.buttons["shellAddHub"].tap()
+        openManualHubEntry(app)
         let address = app.textFields["connectionAddress"]
         XCTAssertTrue(address.waitForExistence(timeout: 5))
         let secondAddress = "http://127.0.0.1:\(FixtureHTTPServer.shared.port)/board-manual-\(UUID().uuidString.lowercased())"
         allowFixtureHTTP(app)
         typeConnectionAddress(secondAddress, into: address, in: app)
-        let alias = app.textFields["Server name (optional)"]
+        let alias = app.textFields["Hub name (optional)"]
         alias.tap(); alias.typeText("Second hub\n")
         app.buttons["connectionConnect"].tap()
         let username = app.textFields["Username"]

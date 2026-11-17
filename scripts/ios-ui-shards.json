@@ -2,6 +2,7 @@
   "ui-a": [
     "BoardVisualsUITests",
     "LaunchUITests",
+    "OnboardingUITests",
     "ParityFoundationUITests",
     "BoardViewportUITests",
     "ShellUITests"

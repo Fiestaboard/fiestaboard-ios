@@ -214,10 +214,11 @@ import XCTest
             for _ in 0..<8 { if element.exists && element.isHittable { break }; app.swipeUp() }
             for _ in 0..<8 { if element.exists && element.isHittable { break }; app.swipeDown() }
         }
+        openManualHubEntry(app)
         let address = app.textFields["connectionAddress"]
         XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 8))
         revealForm(address); typeConnectionAddress("http://127.0.0.1:\(port)/" + alias, into: address, in: app)
-        let name = app.textFields["Server name (optional)"]
+        let name = app.textFields["Hub name (optional)"]
         revealForm(name); name.tap(); name.typeText(alias + "\n")
         let localHTTP = app.switches["connectionLocalHTTP"]
         revealForm(localHTTP)

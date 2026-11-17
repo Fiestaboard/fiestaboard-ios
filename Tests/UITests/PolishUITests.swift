@@ -250,10 +250,11 @@ import XCTest
     }
     private func area(_ e: XCUIElement) -> CGFloat { e.frame.width * e.frame.height }
     private func connect(_ app: XCUIApplication, path: String) {
+        openManualHubEntry(app)
         let address = app.textFields["connectionAddress"]
         XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 10))
         reveal(address, app); typeConnectionAddress("http://127.0.0.1:\(fixturePort)/" + path, into: address, in: app)
-        let name = app.textFields["Server name (optional)"]
+        let name = app.textFields["Hub name (optional)"]
         reveal(name, app); name.tap(); name.typeText(path + "\n")
         let localHTTP = app.switches["connectionLocalHTTP"]
         reveal(localHTTP, app)
