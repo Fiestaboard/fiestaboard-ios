@@ -1,0 +1,191 @@
+{
+  "repo": "Fiestaboard/fiestaboard-tvos",
+  "commit": "f1fc67d8e94b4075d8075ca0a2ac8f0ecf2f5b6c",
+  "files": [
+    {
+      "source": "Sources/Render/LedDot.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/LedDot.swift",
+      "sourceSHA256": "29a275fad7697a6cc8ff48f7102d70aa748753c482125c9f6fc1e0d1aac7cbe7",
+      "adapted": true,
+      "sha256": "636b024cf77f4af6ceb331df22e28e3c585fdf5e968956f05dfff37608a43d2f"
+    },
+    {
+      "source": "Sources/Render/MatrixCanvas.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/MatrixCanvas.swift",
+      "sourceSHA256": "7625288c71ea3ef4fae43d8526f32ea16c5c6aa02397476a5847f414c048c9fc",
+      "adapted": true,
+      "sha256": "7a101c74fdb56afb02a1286791d74a29659493143e20fa0e817e096857108ed7"
+    },
+    {
+      "source": "Sources/Render/MatrixMarqueeLayers.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/MatrixMarqueeLayers.swift",
+      "sourceSHA256": "d97548a86849229ea1d03ee1b4c0b8500e5b61ef430804699143423192378e51",
+      "adapted": true,
+      "sha256": "d07a1a8942b34d7fac39b88ceed3c5a4520bd58c220ed5753a9015609b5e024f"
+    },
+    {
+      "source": "Sources/Render/MatrixPixelFrames.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/MatrixPixelFrames.swift",
+      "sourceSHA256": "9a058f99c5262523cc88ebe113818e84bf5f8e46a7a38f2f163a74389c534341",
+      "adapted": true,
+      "sha256": "064c346c024c90a93171c4c4d2a4c0555aec9bbe4b9cc16f0033bb2e24192398"
+    },
+    {
+      "source": "Sources/Render/MatrixTransitionSurface.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/MatrixTransitionSurface.swift",
+      "sourceSHA256": "7a9444cb8803fe5a3961ee6077b03e66881fc1f056b9d43b0dbab9756f27ce99",
+      "adapted": true,
+      "sha256": "6f62eb949a13752afb0d8a1d1a49a2d63f67457a026632e55b961c1e2351780e"
+    },
+    {
+      "source": "Sources/Render/TacoMark.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/TacoMark.swift",
+      "sourceSHA256": "adbbf5ddd014dbe7ddf2a38d6485cdcf99f3e8ffa3f1eeb66e55c65a29edabc8",
+      "adapted": true,
+      "sha256": "7b8ad2a8ae491632cafb9cd523e34252216327649477a3e18be4fe857e7ca318"
+    },
+    {
+      "source": "Sources/Render/TacoMarkView.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/TacoMarkView.swift",
+      "sourceSHA256": "44563692ad1d4fab4e0767bdb1c5153163358871857e8d127f490e405aee383f",
+      "adapted": true,
+      "sha256": "ed27050fbdeba6a0f0cedbd2508f26361b1206d3e4439267cf0ad0c5b94eb933"
+    },
+    {
+      "source": "Sources/Core/MatrixDisplay.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/MatrixDisplay.swift",
+      "sourceSHA256": "5b50577aff215654239b89c7422b62a8c4b06e5002278b9d9cb203c65f79836f",
+      "adapted": true,
+      "sha256": "da0d0d4c7fc5c10837ad289310176a988ca43be00d6d832945f9d82c74d51406"
+    },
+    {
+      "source": "Sources/Core/MatrixRaster.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/MatrixRaster.swift",
+      "sourceSHA256": "90d3ef2bd7acfa8a3df366076fe5e86ac50d6e7ac8f2ad4ecbf6af991349b875",
+      "adapted": true,
+      "sha256": "385796010b4731710b3d11bc9b72f4f0aea7e4ff4663235a5871372eceef2caa"
+    },
+    {
+      "source": "Sources/Core/BoardGeometry.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/BoardGeometry.swift",
+      "sourceSHA256": "320ccece6347fb8fb018be8c1aca0dacdc7c6a1bcf68dfb3ba727ec8cdf1b80d",
+      "adapted": true,
+      "sha256": "e1ec45cad91e6b5334883db0993a7c76f213ef67baafb516ba1ef5485ecf1bbc"
+    },
+    {
+      "source": "Sources/Core/BoardSpec.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/BoardSpec.swift",
+      "sourceSHA256": "e4d5369c469094d69b860fdc891b40727a37b1628242526a45cb34eb3ba9e53e",
+      "adapted": true,
+      "sha256": "1047ac04c2af2a8eeeb1ca2e8933a13cff0b1832ad5b9ea9db3d06b63e49ca61"
+    },
+    {
+      "source": "Spec/board-spec.json",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/RenderAssets/board-spec.json",
+      "sourceSHA256": "1a81fcc1cdc12192466a45208cd9ee175d0fb93082a026e5bff1291a5ff676e9",
+      "adapted": false,
+      "sha256": "1a81fcc1cdc12192466a45208cd9ee175d0fb93082a026e5bff1291a5ff676e9"
+    },
+    {
+      "source": "Resources/Matrix/led-fonts.json",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/RenderAssets/led-fonts.json",
+      "sourceSHA256": "975e1ee0eb0eea1e0138d1eeb3217eb3f4d9b610c55cfd66d6a7f65ecb02446d",
+      "adapted": false,
+      "sha256": "975e1ee0eb0eea1e0138d1eeb3217eb3f4d9b610c55cfd66d6a7f65ecb02446d"
+    },
+    {
+      "source": "Resources/Matrix/markup_icons.json",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/RenderAssets/markup_icons.json",
+      "sourceSHA256": "fc7eb7cabc90ff6c295e197a8609d74bd5ddbb4832bd7a0c06ac973f6aa6e712",
+      "adapted": false,
+      "sha256": "fc7eb7cabc90ff6c295e197a8609d74bd5ddbb4832bd7a0c06ac973f6aa6e712"
+    },
+    {
+      "source": "Resources/Matrix/provenance.json",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/RenderAssets/matrix-provenance.json",
+      "sourceSHA256": "ac347d16f847ca9a205bbc0ba14c332ebd2f1f6cdd7ee96b905539b5807cdff1",
+      "adapted": false,
+      "sha256": "ac347d16f847ca9a205bbc0ba14c332ebd2f1f6cdd7ee96b905539b5807cdff1"
+    },
+    {
+      "source": "Sources/Render/BoardCanvas.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/BoardCanvas.swift",
+      "sourceSHA256": "fea54b7d35be441092fe8d4dbc389d6ac895d5180b4b04e6d870402f106211cd",
+      "adapted": true,
+      "sha256": "e56a66ca5df827c4bda0f91845c53d99ba6e66c81682bb4467cb3fe1337f4696"
+    },
+    {
+      "source": "Sources/Render/FlapAtlas.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/FlapAtlas.swift",
+      "sourceSHA256": "638d41e562df2b5ede1c15afd867ba1fd71dec0a3709563b98748d63c1d941b1",
+      "adapted": true,
+      "sha256": "0a6d6311842a6072404e0a46db8a3adb6914fa51cf49d931a1f202ad103a0792"
+    },
+    {
+      "source": "Sources/Render/FlapPhysics.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/FlapPhysics.swift",
+      "sourceSHA256": "19054729b4b1c1d837f04b89658bc41787c18327fc027aa93d6c75378e34e965",
+      "adapted": true,
+      "sha256": "6950ddaa2a8f9eb8b0db914650bb42dced73db8d006c48b9b7acff3b7644fe4d"
+    },
+    {
+      "source": "Sources/Render/BoardFont.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/BoardFont.swift",
+      "sourceSHA256": "58cc7bc654e92676f26bbd892512ff02495deb34c7b1f6a23f22a21fd545f68b",
+      "adapted": true,
+      "sha256": "fc181324a6cc4fb8863ae3b9e4344a54e33de4ced5c6225926c80b25fb27edc8"
+    },
+    {
+      "source": "Sources/Render/BoardFlipTransition.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/BoardFlipTransition.swift",
+      "sourceSHA256": "00b995d49611d707c4a048e1da0ce51c29d5f84cffceca03879f322ba20b1b39",
+      "adapted": true,
+      "sha256": "a7ccde3aced45df067247610f602b9ff099e1e5855464c04898b3a2be8a1cad7"
+    },
+    {
+      "source": "Sources/Core/BoardLayout.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/BoardLayout.swift",
+      "sourceSHA256": "091c076e50d0e508e891e75c1333e186b2e9cc65aabee02405ce82910f29f349",
+      "adapted": true,
+      "sha256": "426c42facd949fffc35693387d65b457f27c3151a6431c24b5fa3c14ea0351c8"
+    },
+    {
+      "source": "Sources/Core/BoardTables.swift",
+      "destination": "Packages/FiestaBoardRender/Sources/FiestaBoardRender/BoardTables.swift",
+      "sourceSHA256": "b04a688367d91463fc520a31d7f4ddf09d5071d19ba760879fa95aebd71bf334",
+      "adapted": true,
+      "sha256": "b97e185e6d7b28f6e1aa9b282df9c4b6f1426b8b2378fa08ae13af377696b239"
+    }
+  ],
+  "keep": [
+    "DisplayModel.swift",
+    "BoardFrame.swift",
+    "BoardFrameView.swift",
+    "LedRasterizer.swift",
+    "LedMarkup.swift",
+    "BoardMessageParser.swift",
+    "BoardSpeech.swift",
+    "FlapTilePainter.swift",
+    "RenderAssets/"
+  ],
+  "adaptations": {
+    "BoardCanvas.swift": "Retains kept-editor FlapPalette/loading/step APIs and FlapTilePainter; canonical separate Note bezels ported. Disjoint whole-point static grids batch seams; exact pixel oracle and legacy fallback retain fractional Note/custom geometry.",
+    "FlapAtlas.swift": "Canonical phase atlas, phone palette and Swift6 Sendable adapter retained. Provider work bounded to twelve faces per sheet; eager owned RGBA snapshots and integer-packed 60 MiB budget prevent lazy-provider timeout.",
+    "FlapPhysics.swift": "Byte-equivalent algorithm; provenance header only.",
+    "BoardFont.swift": "Framework/SwiftPM resource loader and idempotent registration; canonical semibold glyph weight.",
+    "BoardFlipTransition.swift": "Canonical drum algorithm; phone step parameter/loading and Sendable retained.",
+    "BoardLayout.swift": "Canonical whole-point metrics/NoteArray/fitting; phone seams/stretch API adapters.",
+    "BoardGeometry.swift": "Canonical including NoteArray and NoteBezel; no platform adaptation.",
+    "BoardTables.swift": "Canonical table; retains I3 generated token pigments.",
+    "BoardSpec.swift": "Canonical decoder, unchanged.",
+    "MatrixRaster.swift": "Display parameter replaces TV Panel; PixelLayer replaces TV CanvasLayer; old phone byte-raster API retained; bounds checks on short layer buffers.",
+    "MatrixDisplay.swift": "BoardFrame.maxDimension replaces TV PanelFrame.",
+    "MatrixCanvas.swift": "UIKit animation guarded for macOS host compilation; pixel bytes converted once per paint.",
+    "MatrixMarqueeLayers.swift": "UIKit-only, same canonical algorithm.",
+    "MatrixTransitionSurface.swift": "UIKit-only, same canonical algorithm.",
+    "LedDot.swift": "Added provenance/license source header only; canonical implementation unchanged.",
+    "MatrixPixelFrames.swift": "Added provenance/license source header only; canonical implementation unchanged.",
+    "TacoMark.swift": "Added provenance/license source header only; canonical implementation unchanged.",
+    "TacoMarkView.swift": "Added provenance/license source header only; canonical implementation unchanged."
+  }
+}

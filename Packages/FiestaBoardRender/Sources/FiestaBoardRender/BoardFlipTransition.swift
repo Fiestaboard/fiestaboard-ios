@@ -1,4 +1,4 @@
-// Vendored from fiestaboard-appletv@a3df9c9 Sources/Render/BoardFlipTransition.swift. MIT: ThirdPartyNotices/FiestaBoardTV-MIT.txt.
+// Vendored from fiestaboard-tvos@f1fc67d Sources/Render/BoardFlipTransition.swift. MIT: ThirdPartyNotices/FiestaBoardTV-MIT.txt.
 import Foundation
 
 /// FiestaUI's 72-position flap drum, driven by one clock for the whole board.

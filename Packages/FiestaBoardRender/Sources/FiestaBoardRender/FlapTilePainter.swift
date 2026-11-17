@@ -90,6 +90,15 @@ public enum FlapTilePainter {
         let rect = CGRect(x: tile.x, y: tile.y, width: tile.width, height: tile.height)
         let shape = Path(roundedRect: rect, cornerRadius: tile.radius)
         context.fill(shape, with: .color(Color(rgb: palette.surface)))
+        drawContent(tile: tile, cell: cell, palette: palette, font: font, in: &context, resolved: &resolved)
+    }
+
+    /// Surface-free content drawing lets disjoint static grids batch backgrounds
+    /// and seams while the animated/per-tile path retains its original ordering.
+    static func drawContent(tile: TileRect, cell: BoardCell, palette: FlapPalette, font: Font,
+                            in context: inout GraphicsContext,
+                            resolved: inout [Character: GraphicsContext.ResolvedText]) {
+        let rect = CGRect(x: tile.x, y: tile.y, width: tile.width, height: tile.height)
         switch cell {
         case .blank:
             break

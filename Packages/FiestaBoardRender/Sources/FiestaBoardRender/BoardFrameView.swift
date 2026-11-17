@@ -103,7 +103,7 @@ public struct BoardFrameView: View {
                                  code62: model.code62, step: Double(flapStepMs) / 1000)
             .background(Color(rgb: palette.backing))
         return Group {
-            if bezel {
+            if bezel && model.seams == nil {
                 canvas
                     .padding(.horizontal, h * Self.bezelPadX)
                     .padding(.vertical, h * Self.bezelPadY * stretch)
