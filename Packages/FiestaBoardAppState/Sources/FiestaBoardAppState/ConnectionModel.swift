@@ -26,6 +26,7 @@ public enum ConnectionPhase: Sendable, Equatable {
     @Published public private(set) var searching = false
     @Published public private(set) var discoveryMessage: String?
     @Published public private(set) var message: String?
+    @Published public private(set) var loginRetryDeadline: LoginRetryDeadline?
     @Published public private(set) var busy = false
     @Published public private(set) var requiresStateCheck = false
     @Published public private(set) var requiresSetupProof = false
@@ -44,6 +45,8 @@ public enum ConnectionPhase: Sendable, Equatable {
     private let store: BoardStore
     private let catalog: ServerCatalog
     private let discovery: any ServerDiscovering
+    private let now: @MainActor () -> Date
+    private var loginDeadlines: [DeploymentURL: LoginRetryDeadline] = [:]
     private let preferences: UserDefaults
     private let factory: @Sendable (DeploymentURL) -> any FiestaBoardService
     private var service: (any FiestaBoardService)?
@@ -57,9 +60,9 @@ public enum ConnectionPhase: Sendable, Equatable {
     private let selectedKey = "FiestaBoard.selectedServerID"
 
     public init(store: BoardStore, catalog: ServerCatalog, discovery: any ServerDiscovering,
-                preferences: UserDefaults, snapshots: ShellSnapshotStore? = nil, serviceFactory: @escaping @Sendable (DeploymentURL) -> any FiestaBoardService) {
+                preferences: UserDefaults, snapshots: ShellSnapshotStore? = nil, now: @escaping @MainActor () -> Date = { Date() }, serviceFactory: @escaping @Sendable (DeploymentURL) -> any FiestaBoardService) {
         self.store = store; self.catalog = catalog; self.discovery = discovery
-        self.preferences = preferences; self.snapshots = snapshots; factory = serviceFactory
+        self.preferences = preferences; self.snapshots = snapshots; self.now = now; factory = serviceFactory
     }
     @discardableResult public func start() -> Task<Void, Never> {
         return Task { await reloadCatalog() }
@@ -103,6 +106,8 @@ public enum ConnectionPhase: Sendable, Equatable {
         cancel(); selected = record; phase = .checking; busy = true
         let token = generation, cleanup = cleanupTask
         let next = factory(deployment); service = next
+        loginDeadlines = loginDeadlines.filter { $0.value.remainingSeconds(at: now()) > 0 }
+        loginRetryDeadline = loginDeadlines[deployment]
         let task = Task { [weak self] in
             await cleanup?.value
             guard let self, valid(token) else { return }
@@ -171,7 +176,9 @@ public enum ConnectionPhase: Sendable, Equatable {
     }
     @discardableResult public func signIn() -> Task<Void, Never> {
         let secret = password; password = ""; setupToken = ""
-        guard let service, !busy, !requiresStateCheck, !username.isEmpty, !secret.isEmpty else { return Task {} }
+        guard let service, !busy, !requiresStateCheck,
+              (loginRetryDeadline?.remainingSeconds(at: now()) ?? 0) == 0,
+              !username.isEmpty, !secret.isEmpty else { return Task {} }
         let user = username, remember = rememberMe
         return authenticate { try await service.login(username: user, password: secret, rememberMe: remember) }
     }
@@ -216,6 +223,14 @@ public enum ConnectionPhase: Sendable, Equatable {
                 message = safe(error)
                 if (error as? FiestaBoardError) == .setupProofRequired { requiresSetupProof = true }
                 if let known = error as? FiestaBoardError {
+                    if case .rateLimited(let seconds) = known,
+                       let deployment = service?.deployment,
+                       let deadline = LoginRetryDeadline(retryAfterSeconds: seconds, receivedAt: now()) {
+                        loginDeadlines = loginDeadlines.filter { $0.value.remainingSeconds(at: now()) > 0 }
+                        let retained = loginDeadlines[deployment]
+                        let effective = retained.map { $0.endsAt > deadline.endsAt ? $0 : deadline } ?? deadline
+                        loginDeadlines[deployment] = effective; loginRetryDeadline = effective
+                    }
                     if case .validation(let fields) = known { validationFields = fields }
                     switch known {
                     case .unknownMutationOutcome, .networkUnavailable, .conflict, .onboardingConflict, .staleSession: requiresStateCheck = true
@@ -267,6 +282,7 @@ public enum ConnectionPhase: Sendable, Equatable {
         store.disconnect()
         if let old, !ownedByStore { cleanupTask = Task { await previous?.value; await old.disconnect() } }
         service = nil; handedToStore = false; snapshot = nil
+        loginRetryDeadline = nil
         busy = false; phase = .picker; password = ""; setupToken = ""; rememberMe = false
         requiresStateCheck = false; requiresSetupProof = false; validationFields = []; persistence = .init(); message = nil
     }
@@ -283,6 +299,7 @@ public enum ConnectionPhase: Sendable, Equatable {
         invalidateSnapshotSession()
         generation = UUID(); operation?.cancel(); operation = nil; stopDiscovery()
         service = nil; handedToStore = false; snapshot = nil; phase = .picker
+        loginRetryDeadline = nil
         busy = false; password = ""; setupToken = ""; rememberMe = false; persistence = .init()
         let logout = store.logout()
         return Task { await logout.value; await removeSnapshot(for: hub) }
