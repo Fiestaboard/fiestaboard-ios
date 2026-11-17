@@ -141,6 +141,11 @@ public struct PreparedAction: Identifiable, Sendable {
     @Published public private(set) var logoutNotices: [LogoutNotice] = []
     @Published public private(set) var connecting = false
     @Published public private(set) var refreshing = false
+    /// nil before a session read; a lost path invalidates the previous successful hub read.
+    @Published public private(set) var hubReachable: Bool?
+    @Published public var networkAvailable = true {
+        didSet { if !networkAvailable { hubReachable = false } }
+    }
     @Published private var readbackTargets: Set<BoardTarget> = []
     public var needsReadback: Bool { target.map { readbackTargets.contains($0) } ?? false }
     @Published public private(set) var connectionLabel = "Disconnected"
@@ -159,7 +164,7 @@ public struct PreparedAction: Identifiable, Sendable {
     private var usedActions: Set<UUID> = []
     public var commandBusy: Bool { target.map { inFlight.contains($0) } ?? false }
     public var canWrite: Bool {
-        board != nil && status != nil && status?.access != .readOnly && target != nil && !connecting && !refreshing && !commandBusy && !needsReadback && pageLibrary?.busy != true && pageLibrary?.needsReview != true
+        networkAvailable && hubReachable != false && board != nil && status != nil && status?.access != .readOnly && target != nil && !connecting && !refreshing && !commandBusy && !needsReadback && pageLibrary?.busy != true && pageLibrary?.needsReview != true
     }
     public var boardActionDisabledReason: ActionDisabledReason? {
         guard let status else { return .disconnected }
@@ -229,7 +234,7 @@ public struct PreparedAction: Identifiable, Sendable {
                 let list = try await next.boards()
                 guard valid(token) else { return }
                 pageSessionOptedIn = allowCandidateWrites || result.isDemo
-                status = result; boards = list
+                status = result; boards = list; hubReachable = true
                 let libraryState = pageLibraries[next.deployment] ?? PageLibraryState(deployment: next.deployment)
                 pageLibraries[next.deployment] = libraryState
                 pageLibrary = libraryState
@@ -264,6 +269,7 @@ public struct PreparedAction: Identifiable, Sendable {
                 }
             } catch {
                 guard valid(token) else { return }
+                if (error as? FiestaBoardError) == .networkUnavailable { hubReachable = false }
                 if !handleAuthenticationLoss(error) { message = safeDescription(error) }
             }
             if valid(token) { connecting = false }
@@ -298,7 +304,7 @@ public struct PreparedAction: Identifiable, Sendable {
         pageLibraryObservation = nil; pageLibrary = nil; pageLibraryEpoch &+= 1
         connectionTask?.cancel(); refreshTask?.cancel(); commandTask?.cancel(); collectionListTask?.cancel()
         connectionTask = nil; refreshTask = nil; commandTask = nil
-        service = nil; status = nil; boards = []; pages = []; board = nil; defaultPageContext = nil; defaultPageCapability = .unavailable; selectedBoardID = nil
+        service = nil; status = nil; hubReachable = nil; boards = []; pages = []; board = nil; defaultPageContext = nil; defaultPageCapability = .unavailable; selectedBoardID = nil
         connecting = false; refreshing = false; message = nil; remoteLogoutState = nil
         connectionLabel = "Disconnected"; usedActions = []; pageContexts = [:]; pageSessionOptedIn = false
         collections = []; collectionMessage = nil; collectionsLoading = false
@@ -362,10 +368,11 @@ public struct PreparedAction: Identifiable, Sendable {
             do {
                 let detail = try await service.board(target)
                 guard valid(token) else { return }
-                acceptSnapshot(detail); readbackTargets.remove(target)
+                acceptSnapshot(detail); readbackTargets.remove(target); hubReachable = true
                 await loadDefaultContext(service, target: target, token: token)
             } catch {
                 guard valid(token) else { return }
+                if (error as? FiestaBoardError) == .networkUnavailable { hubReachable = false }
                 if !handleAuthenticationLoss(error) { message = safeDescription(error) }
             }
             if valid(token) { refreshing = false }
