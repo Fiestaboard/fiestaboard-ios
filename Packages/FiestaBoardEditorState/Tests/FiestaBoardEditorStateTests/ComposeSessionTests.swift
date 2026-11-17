@@ -187,7 +187,8 @@ extension ComposeSessionTests {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
         let target = try scope(), buffer = ComposeBufferStore(directory: directory), lease = try await buffer.open(target.identity)
-        _ = try await buffer.save(.init(identity: target.identity, revision: 9, text: "KEPT", targetID: "removed"), using: lease)
+        _ = try await buffer.save(.init(identity: target.identity, revision: 9, text: "KEPT", targetID: "removed",
+            targetPresentation: .init(id: "removed", name: "Removed display", deviceType: "note", rows: 3, cols: 15)), using: lease)
         let session = ComposeSession(scope: target, online: true, render: { _ in throw FiestaBoardError.networkUnavailable })
         _ = try await session.bindBuffer(buffer, resolveTarget: { _ in nil })
         XCTAssertEqual(session.input.text, "KEPT"); XCTAssertEqual(session.scope, target)
@@ -198,6 +199,11 @@ extension ComposeSessionTests {
         XCTAssertEqual(retained?.targetID, "removed", "Saving must retain an unresolved target until an explicit display choice")
         session.changeScope(target) // Explicitly choosing the current display resolves the missing target.
         XCTAssertNotNil(session.prepare())
+        let updated = try await session.persistBuffer()
+        XCTAssertNotNil(updated)
+        let chosen = try await buffer.load(target.identity)
+        XCTAssertEqual(chosen?.targetID, "kitchen")
+        XCTAssertNil(chosen?.targetPresentation, "Removed display facts must not follow an explicit target choice")
     }
     func testAcknowledgedBufferRevisionCannotClearNewerUnsavedTyping() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
