@@ -75,6 +75,40 @@ import XCTest
         XCTAssertFalse(app.buttons["composeShowNow"].isEnabled)
     }
 
+    func testAmbiguousSendKeepsExactUUIDOutcomeActionAcrossReopen() {
+        let app = isolatedApplication()
+        launchFixture(app, scenario: "i8-compose-ambiguous")
+        tapReady(app.buttons["homeCompose"])
+        let source = app.textViews["composeSource"]
+        XCTAssertTrue(source.waitForExistence(timeout: 5))
+        source.tap(); source.typeText("Keep ambiguous draft")
+        tapReady(app.buttons["composeShowNow"])
+        XCTAssertTrue(app.buttons["composeCheckOutcome"].waitForExistence(timeout: 8))
+        XCTAssertEqual(app.buttons["composeCheckOutcome"].label, "Check message outcome")
+        app.buttons["composeCancel"].tap()
+        tapReady(app.buttons["homeCompose"])
+        XCTAssertTrue(source.waitForExistence(timeout: 5))
+        tapReady(app.buttons["composeCheckOutcome"])
+        XCTAssertEqual(source.value as? String, "Keep ambiguous draft")
+        XCTAssertFalse(app.buttons["composeShowNow"].isEnabled)
+        XCTAssertFalse(app.buttons["composeDisplayPicker"].isEnabled)
+    }
+
+    func testAcknowledgedHeldDraftRetainsReachableOutcomeActionUntilReleased() {
+        let app = isolatedApplication()
+        launchFixture(app, scenario: "i8-compose-held")
+        tapReady(app.buttons["homeCompose"])
+        let source = app.textViews["composeSource"]
+        XCTAssertTrue(source.waitForExistence(timeout: 5))
+        source.tap(); source.typeText("Deferred draft")
+        tapReady(app.buttons["composeShowNow"])
+        XCTAssertTrue(app.buttons["composeCheckOutcome"].waitForExistence(timeout: 8))
+        XCTAssertEqual(source.value as? String, "Deferred draft")
+        tapReady(app.buttons["composeCheckOutcome"])
+        let cleared = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: source)
+        XCTAssertEqual(XCTWaiter.wait(for: [cleared], timeout: 8), .completed)
+    }
+
     func testSaveAsPageKeepsTheUnsentComposeSource() {
         let app = isolatedApplication()
         launchFixture(app, scenario: "i8-compose")

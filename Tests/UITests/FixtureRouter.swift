@@ -12,6 +12,8 @@ final class FixtureRouter {
         let scenario: String
         let homeContract: Bool
         let composeUnknown: Bool
+        let composeAmbiguous: Bool
+        let composeHeld: Bool
         var mode: String
         var setup: Bool
         var token: String?
@@ -33,6 +35,8 @@ final class FixtureRouter {
             self.flexible = flexible
             homeContract = prefix.hasPrefix("/board-i7-")
             composeUnknown = prefix.hasPrefix("/board-i8-compose-unknown-")
+            composeAmbiguous = prefix.hasPrefix("/board-i8-compose-ambiguous-")
+            composeHeld = prefix.hasPrefix("/board-i8-compose-held-")
             setup = prefix.hasPrefix("/setup-")
             mode = prefix.hasPrefix("/mixed-") || prefix.hasPrefix("/flexible-") ? "disabled" : (setup ? "undecided" : "enabled")
             let rawScenario = prefix.hasPrefix("/board-") ? String(prefix.dropFirst(7).split(separator: "-").dropLast().joined(separator: "-")) : "manual"

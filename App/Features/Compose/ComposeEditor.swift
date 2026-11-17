@@ -266,14 +266,16 @@ struct ComposeEditor: View {
     @ViewBuilder private var outcome: some View {
         if let message = store.message { Text(message).font(.callout).accessibilityIdentifier("composeOutcome") }
         if store.commandBusy { ProgressView("Waiting for the hub…") }
-        if store.needsReadback, !store.commandBusy {
-            Button(store.composeOperation == nil ? "Refresh display state" : "Check message outcome") {
+        if store.canCheckComposeOutcome {
+            Button("Check message outcome") {
                 Task {
-                    if store.composeOperation == nil { await store.refresh().value }
-                    else { await store.checkComposeOutcome().value }
+                    await store.checkComposeOutcome().value
                     await clearAcknowledgedDraft()
                 }
             }.accessibilityIdentifier("composeCheckOutcome")
+        } else if store.needsReadback, !store.commandBusy {
+            Text("Waiting to check this message’s outcome. Reconnect or wait for the hub to become available.")
+                .font(.callout).accessibilityIdentifier("composeOutcomeWaiting")
         }
         if store.pageLibrary?.needsReview == true {
             Button("Review Pages") { Task { await store.reviewPageLibrary() } }
