@@ -166,6 +166,7 @@ extension ComposeServiceTests {
         let body = try JSONSerialization.jsonObject(with: XCTUnwrap(mutations.first?.httpBody)) as! [String: Any]
         XCTAssertEqual(body["type"] as? String, "template"); XCTAssertEqual(body["template"] as? [String], ["KEEP EXACT", "SECOND"])
         XCTAssertNil(body["duration"]); XCTAssertNil(body["silence"]); XCTAssertNil(body["board_id"])
+        XCTAssertNil(body["request_id"]); XCTAssertNil(body["protocol"]); XCTAssertNil(body["prepared_at"])
         XCTAssertEqual(log.requests.filter { $0.url?.path.contains("/pages/") == true && $0.httpMethod == "GET" }.count, 1)
         XCTAssertTrue(log.requests.filter { $0.url?.path.contains("/compose") == true || $0.url?.path.contains("active-page") == true || $0.url?.path.contains("schedule") == true }.isEmpty)
     }

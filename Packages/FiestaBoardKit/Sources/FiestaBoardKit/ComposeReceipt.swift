@@ -79,7 +79,7 @@ public struct ComposeReceipt: Sendable {
         case .sent, .unchanged:
             expectedStatus = 200
             guard wire.sent == (wire.status == .sent), let start, held == nil,
-                  wire.retry_after_seconds == nil else { throw FiestaBoardError.unknownMutationOutcome }
+                  wire.retry_after_seconds == nil, wire.failed_regions.isEmpty else { throw FiestaBoardError.unknownMutationOutcome }
             switch duration {
             case .minutes(let minutes):
                 guard let expiry, abs(expiry.timeIntervalSince(start) - Double(minutes * 60)) < 1 else { throw FiestaBoardError.unknownMutationOutcome }

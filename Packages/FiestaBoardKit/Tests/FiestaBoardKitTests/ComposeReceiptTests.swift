@@ -56,3 +56,30 @@ final class ComposeReceiptTests: XCTestCase {
         XCTAssertThrowsError(try decode(held, response: ["detail": "proxy failed"]))
     }
 }
+
+extension ComposeReceiptTests {
+    func testActualTargetReadbackCarriesCapturedComposeUUIDAndMalformedIdentityFailsClosed() throws {
+        var object = try record("primary-readback")["response"] as! [String: Any]
+        let board = try JSONDecoder().decode(BoardDetail.self, from: JSONSerialization.data(withJSONObject: object))
+        XCTAssertEqual(board.composeRequestID, UUID(uuidString: "5a8989cf-7303-4345-a3fa-4432706bf795"))
+        var acknowledgement = object["compose_receipt"] as! [String: Any]
+        acknowledgement["request_id"] = "invalid"; object["compose_receipt"] = acknowledgement
+        let malformed = try JSONDecoder().decode(BoardDetail.self, from: JSONSerialization.data(withJSONObject: object))
+        XCTAssertNil(malformed.composeRequestID)
+    }
+}
+
+extension ComposeReceiptTests {
+    func testAcceptedReceiptWithFailedRegionsIsContradictoryAndNeverAcknowledged() throws {
+        let captured = try record("formatted-timed-primary")
+        let original = captured["response"] as! [String: Any]
+        for state in ["sent", "unchanged"] {
+            var changed = original
+            changed["status"] = state; changed["sent"] = state == "sent"
+            changed["failed_regions"] = [["row": 0, "col": 0]]
+            XCTAssertThrowsError(try decode(captured, response: changed)) { error in
+                XCTAssertEqual(error as? FiestaBoardError, .unknownMutationOutcome)
+            }
+        }
+    }
+}
