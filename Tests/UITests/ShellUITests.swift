@@ -30,6 +30,8 @@ import XCTest
         XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 5), .completed)
         shot("i6-active-display-accessory")
         app.buttons["destination-More"].tap()
+        XCTAssertTrue(app.buttons["shellHubs"].waitForExistence(timeout: 5))
+        shot("i6-more-native-system-screen")
         app.buttons["shellHubs"].tap()
         XCTAssertTrue(app.navigationBars["Hubs"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["shellAddHub"].exists)

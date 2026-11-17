@@ -20,7 +20,7 @@ import FiestaBoardAppState
                                      size: CGSize? = nil, appearance: ColorScheme = .light,
                                      dynamicType: DynamicTypeSize = .large, inspect: ((UIWindow) -> Void)? = nil) -> UIImage {
         IOSSnapshot.image(content.tint(ShellPalette(appearance: appearance).tint), device: device, size: size,
-                          appearance: appearance, dynamicType: dynamicType, inspect: inspect)
+                          appearance: appearance, dynamicType: dynamicType, windowMode: .activeScene, inspect: inspect)
     }
     private func shellFixture(route: ShellTab, saved: [SavedServer], boards: [BoardSummary]) -> some View {
         ShellContainer(selection: .constant(route), editorOpen: false) { tab in
@@ -51,7 +51,9 @@ import FiestaBoardAppState
         let saved = try hubs(), boards = try displays()
         for (name, appearance, type) in [("light-large", ColorScheme.light, DynamicTypeSize.large),
                                           ("dark-ax3", .dark, .accessibility3)] {
-            _ = shellImage(shellFixture(route: .more, saved: saved, boards: boards),
+            let previousKeyWindow = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+                .flatMap(\.windows).first(where: \.isKeyWindow)
+            let image = shellImage(shellFixture(route: .more, saved: saved, boards: boards),
                            appearance: appearance, dynamicType: type, inspect: { window in
                 XCTAssertNotNil(window.windowScene, "Native shell captures must attach to an actual scene")
                 XCTAssertTrue(window.isKeyWindow, "The captured shell must own native system chrome")
@@ -64,11 +66,14 @@ import FiestaBoardAppState
                 } else {
                     XCTFail("Native shell has no attached tab controller")
                 }
-                let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-                attachment.name = "i6-original-system-screen-more-" + name
-                attachment.lifetime = .keepAlways
-                self.add(attachment)
             })
+            if let previousKeyWindow { XCTAssertTrue(previousKeyWindow.isKeyWindow, "Restore the app's key window after capture") }
+            // App-hosted tests capture static content. Authorized full-screen glass
+            // evidence is collected by ShellUITests through XCUIScreen.
+            let attachment = XCTAttachment(image: image)
+            attachment.name = "i6-static-scene-more-" + name
+            attachment.lifetime = .keepAlways
+            add(attachment)
         }
     }
 
