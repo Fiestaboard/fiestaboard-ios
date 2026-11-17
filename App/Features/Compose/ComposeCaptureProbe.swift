@@ -40,6 +40,12 @@ private final class ComposeCaptureFilterTransfer: @unchecked Sendable {
 @MainActor private final class ComposeCaptureProbeController: NSObject, ObservableObject, SCContentSharingPickerObserver, SCStreamDelegate, SCStreamOutput {
     @Published private(set) var phase = "idle"
     @Published private(set) var reportJSON = ""
+    @Published private(set) var cleanupRetryAvailable = false
+    // Retain the resource owner across sheet dismissal until an actual stop is proven.
+    private static var retainedOwners: [ObjectIdentifier: ComposeCaptureProbeController] = [:]
+    static func owner(namespace: String) -> ComposeCaptureProbeController {
+        retainedOwners.values.first { $0.namespace == namespace } ?? ComposeCaptureProbeController(namespace: namespace)
+    }
     private var lifecycle: ComposeCaptureProbeLifecycle
     private let namespace: String
     private let gate = ComposeCaptureSampleGate()
@@ -48,6 +54,8 @@ private final class ComposeCaptureFilterTransfer: @unchecked Sendable {
     private var streamID: ObjectIdentifier?
     private var startInFlight = false
     private var cleanupInFlight = false
+    private var cleanupAttemptID: UUID?
+    private var outputAttached = false
     private var observing = false
     private var oldConfiguration: SCContentSharingPickerConfiguration?
     private var oldPickerActive = false
@@ -79,6 +87,12 @@ private final class ComposeCaptureFilterTransfer: @unchecked Sendable {
         // Explicit current-app picker; no enumeration, automatic consent or wider filter.
         picker.presentPickerForCurrentApplication()
     }
+    func retryStop() {
+        guard lifecycle.requestCleanupRetry() else { return }
+        cleanupDeadline?.cancel(); cleanupDeadline = nil
+        cleanupAttemptID = nil; cleanupInFlight = false
+        publish(); cleanUp()
+    }
     func stop(inactive: Bool = false) {
         if inactive { lifecycle.sceneBecameInactive() } else { lifecycle.stopRequested() }
         publish(); cleanUp()
@@ -93,7 +107,8 @@ private final class ComposeCaptureFilterTransfer: @unchecked Sendable {
         let configuration = SCStreamConfiguration(); configuration.capturesAudio = false
         let owned = SCStream(filter: filter, configuration: configuration, delegate: self)
         stream = owned; streamID = ObjectIdentifier(owned); startInFlight = true
-        do { try owned.addStreamOutput(self, type: .screen, sampleHandlerQueue: sampleQueue) }
+        lifecycle.streamConstructed(); Self.retainedOwners[ObjectIdentifier(self)] = self
+        do { try owned.addStreamOutput(self, type: .screen, sampleHandlerQueue: sampleQueue); outputAttached = true }
         catch { startInFlight = false; failed(error); return }
         publish()
         Task { [weak self, owned] in
@@ -127,24 +142,31 @@ private final class ComposeCaptureFilterTransfer: @unchecked Sendable {
             if let oldConfiguration { picker.defaultConfiguration = oldConfiguration }
             picker.isActive = oldPickerActive
         }
-        if cleanupDeadline == nil {
+        if cleanupAttemptID == nil {
+            let attemptID = UUID(); cleanupAttemptID = attemptID
             cleanupDeadline = Task { [weak self] in
                 do { try await Task.sleep(for: .seconds(2)) } catch { return }
-                guard let self else { return }
+                guard let self, cleanupAttemptID == attemptID else { return }
+                cleanupInFlight = false
                 lifecycle.cleanupFailed(domain: "ComposeCaptureProbe.cleanupTimeout", code: 1); publish()
             }
         }
         // A late start completion must stop its own stream, even after timeout.
         guard !startInFlight else { return }
         cleanupInFlight = true
+        let attemptID = cleanupAttemptID
         guard let owned = stream else { finishCleanup(); return }
         Task { [weak self, owned] in
             guard let self else { try? await owned.stopCapture(); return }
             do {
                 if owned.isCapturing { try await owned.stopCapture() }
-                try owned.removeStreamOutput(self, type: .screen)
+                guard streamID == ObjectIdentifier(owned) else { return }
+                if outputAttached { try owned.removeStreamOutput(self, type: .screen); outputAttached = false }
                 finishCleanup()
             } catch {
+                guard streamID == ObjectIdentifier(owned), cleanupAttemptID == attemptID else { return }
+                cleanupDeadline?.cancel(); cleanupDeadline = nil
+                cleanupAttemptID = nil; cleanupInFlight = false
                 let error = error as NSError
                 lifecycle.cleanupFailed(domain: error.domain, code: error.code); publish()
             }
@@ -153,10 +175,15 @@ private final class ComposeCaptureFilterTransfer: @unchecked Sendable {
     private func finishCleanup() {
         cleanupDeadline?.cancel(); cleanupDeadline = nil
         stream = nil; streamID = nil; pendingSample = nil
-        lifecycle.cleanedUp(); publish()
+        cleanupAttemptID = nil; cleanupInFlight = false
+        // A late successful stop can complete cleanup after a timeout, while
+        // retaining the failed capability result rather than inventing success.
+        if lifecycle.phase == .finished { _ = lifecycle.requestCleanupRetry() }
+        lifecycle.cleanedUp(); Self.retainedOwners.removeValue(forKey: ObjectIdentifier(self)); publish()
     }
     private func publish() {
         phase = lifecycle.phase.rawValue
+        cleanupRetryAvailable = lifecycle.phase == .finished && lifecycle.streamOwned && lifecycle.report?.cleanupCompleted == false
         guard let report = lifecycle.report else { return }
         do {
             try FileManager.default.createDirectory(at: outputURL, withIntermediateDirectories: true)
@@ -165,6 +192,8 @@ private final class ComposeCaptureFilterTransfer: @unchecked Sendable {
             envelope["sdk"] = Bundle.main.object(forInfoDictionaryKey: "DTSDKName") as? String ?? "unknown"
             envelope["namespace"] = namespace
             envelope["measurementEmitted"] = false
+            envelope["streamOwned"] = lifecycle.streamOwned
+            envelope["cleanupRetryAvailable"] = cleanupRetryAvailable
             if report.status == "metadata_captured", let rawSample {
                 var planes: [[String: Any]] = []
                 for (index, plane) in rawSample.planes.enumerated() {
@@ -254,7 +283,7 @@ private final class ComposeCaptureFilterTransfer: @unchecked Sendable {
 private struct ComposeCaptureProbePanel: View {
     @StateObject private var controller: ComposeCaptureProbeController
     @Environment(\.scenePhase) private var scenePhase
-    init(namespace: String) { _controller = StateObject(wrappedValue: ComposeCaptureProbeController(namespace: namespace)) }
+    init(namespace: String) { _controller = StateObject(wrappedValue: ComposeCaptureProbeController.owner(namespace: namespace)) }
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button("Run capture capability probe") { controller.request() }
@@ -264,7 +293,9 @@ private struct ComposeCaptureProbePanel: View {
                 Text("Capture capability report").accessibilityIdentifier("composeCaptureProbeReport")
                     .accessibilityValue(controller.reportJSON)
             }
-            if controller.phase != "idle", controller.phase != "finished" {
+            if controller.cleanupRetryAvailable {
+                Button("Retry stopping capture") { controller.retryStop() }.accessibilityIdentifier("composeCaptureProbeRetryStop")
+            } else if controller.phase != "idle", controller.phase != "finished" {
                 Button("Stop capability probe") { controller.stop() }.accessibilityIdentifier("composeCaptureProbeStop")
             }
         }.font(.caption)

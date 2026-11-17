@@ -52,6 +52,7 @@ struct ComposeCaptureProbeLifecycle {
     enum Phase: String { case idle, awaitingConsent, starting, capturing, stopping, finished }
     private(set) var phase: Phase = .idle
     private(set) var report: ComposeCaptureProbeReport?
+    private(set) var streamOwned = false
     var cleanupRequested: Bool { phase == .stopping }
     private let enabled: Bool
     private let namespace: String?
@@ -81,7 +82,12 @@ struct ComposeCaptureProbeLifecycle {
         guard phase == .awaitingConsent else { return false }
         phase = .starting; return true
     }
-    mutating func streamStarted() { if phase == .starting { phase = .capturing } }
+    mutating func streamConstructed() { if phase == .starting { streamOwned = true } }
+    mutating func streamStarted() { if phase == .starting, streamOwned { phase = .capturing } }
+    mutating func requestCleanupRetry() -> Bool {
+        guard phase == .finished, streamOwned, let report, !report.cleanupCompleted else { return false }
+        pending = report; phase = .stopping; return true
+    }
     mutating func receivedFrame(_ frame: ComposeCaptureProbeFrame) {
         guard phase == .capturing, frame.outputType == "screen", frame.status == 0 else { return }
         guard frame.valid else { stop(reason: "invalid_metadata"); return }
@@ -100,11 +106,12 @@ struct ComposeCaptureProbeLifecycle {
     }
     mutating func cleanupFailed(domain: String, code: Int) {
         guard phase == .stopping else { return }
-        report = .init(status: "failed", reason: "cleanup_failed", frame: nil, errorDomain: domain, errorCode: code, cleanupCompleted: false)
-        phase = .finished
+        let failure = ComposeCaptureProbeReport(status: "failed", reason: "cleanup_failed", frame: nil, errorDomain: domain, errorCode: code, cleanupCompleted: false)
+        pending = failure; report = failure; phase = .finished
     }
     mutating func cleanedUp() {
         guard phase == .stopping, let pending else { return }
+        streamOwned = false
         report = .init(status: pending.status, reason: pending.reason, frame: pending.frame,
             errorDomain: pending.errorDomain, errorCode: pending.errorCode, cleanupCompleted: true)
         phase = .finished
