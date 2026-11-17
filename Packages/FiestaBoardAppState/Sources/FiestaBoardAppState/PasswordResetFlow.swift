@@ -27,7 +27,7 @@ public struct PasswordResetFlow: Sendable, Equatable {
         invalidFields = []
         if !(1...256).contains(code.unicodeScalars.count) { invalidFields.insert(.code) }
         if !(8...1024).contains(newPassword.unicodeScalars.count) { invalidFields.insert(.newPassword) }
-        if confirmation != newPassword { invalidFields.insert(.confirmation) }
+        if !confirmation.utf8.elementsEqual(newPassword.utf8) { invalidFields.insert(.confirmation) }
         guard invalidFields.isEmpty else { return nil }
         let id = UUID(); pending = id; phase = .submitting
         return PasswordResetAttempt(id: id, code: code, newPassword: newPassword)
