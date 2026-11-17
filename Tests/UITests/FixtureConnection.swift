@@ -41,6 +41,18 @@ extension XCTestCase {
         XCTFail("Display menu must select \(display); selected label: \(picker.label)", file: file, line: line)
     }
 
+    /// Missing loopback infrastructure must fail a required journey, never skip it.
+    @MainActor func requireReadyFixture(port: String,
+                                       file: StaticString = #filePath, line: UInt = #line) throws {
+        do {
+            try FixtureReadiness.require(URL(string: "http://127.0.0.1:\(port)/ready")!)
+        } catch {
+            XCTFail("Required fixture unavailable or invalid (\(error)): FIXTURE_PORT=\(port) python3 Tests/UITests/fixture_server.py",
+                    file: file, line: line)
+            throw error
+        }
+    }
+
     /// Cold simulator keyboard startup may accept a caret without becoming ready for typing.
     @MainActor func typeConnectionAddress(_ text: String, into address: XCUIElement, in app: XCUIApplication,
                                          file: StaticString = #filePath, line: UInt = #line) {

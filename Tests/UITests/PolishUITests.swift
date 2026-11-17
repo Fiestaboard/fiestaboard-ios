@@ -265,7 +265,7 @@ import XCTest
         reveal(connect, app); connect.tap()
     }
     private func signIn(scenario: String, remember: Bool = false) throws -> XCUIApplication {
-        try FixtureHTTPServer.shared.requireReady()
+        try requireReadyFixture(port: String(fixturePort))
         let app = isolatedApplication()
         app.launchArguments = []; app.launch()
         connect(app, path: "board-\(scenario)-" + UUID().uuidString.prefix(8).lowercased())

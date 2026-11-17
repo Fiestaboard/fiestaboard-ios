@@ -368,6 +368,6 @@ final class BoardVisualsUITests: XCTestCase {
     }
 
     @MainActor private func requireFixture() async throws {
-        try FixtureHTTPServer.shared.requireReady()
+        try requireReadyFixture(port: port)
     }
 }
