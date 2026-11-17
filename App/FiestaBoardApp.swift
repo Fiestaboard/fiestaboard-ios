@@ -46,6 +46,7 @@ enum AppPersistence {
 private typealias DraftState<Value> = SwiftUI.State<Value>
 
 struct DraftScene: View {
+    private let snapshots: ShellSnapshotStore
     @StateObject private var store: BoardStore
     @StateObject private var connection: ConnectionModel
     @StateObject private var boardStatus: BoardStatus
@@ -54,9 +55,10 @@ struct DraftScene: View {
     @DraftState private var shellConnection = ShellConnection()
     @DraftState private var retryBackoff = ShellBackoff()
     @DraftState private var connectingSince: TimeInterval?
-    @DraftState private var cache = ShellCache<CachedShell>()
+    @DraftState private var cache = ShellCache<ShellSnapshot>()
     @DraftState private var now = Date().timeIntervalSince1970
     init(persistence: ConnectionPersistence) {
+        snapshots = persistence.snapshots
         let store = BoardStore()
         _store = StateObject(wrappedValue: store)
         _thumbnails = StateObject(wrappedValue: PageThumbnails(reader: {
@@ -67,7 +69,7 @@ struct DraftScene: View {
         }))
         _connection = StateObject(wrappedValue: ConnectionModel(
             store: store, catalog: persistence.catalog, discovery: BonjourServerDiscovery(),
-            preferences: AppPersistence.preferences, serviceFactory: {
+            preferences: AppPersistence.preferences, snapshots: persistence.snapshots, serviceFactory: {
                 let service = LiveFiestaBoardService(deployment: $0, vault: KeychainSessionVault(), clientMetadata: .init(deviceName: UIDevice.current.name))
                 StatusReaderRegistry.shared.register(service)
                 return service
@@ -105,10 +107,13 @@ struct DraftScene: View {
         }
         .onChange(of: shellHub) { _, _ in retryBackoff.reset(); observeConnection() }
         .onChange(of: connection.phase) { _, phase in
-            if phase == .checking { connectingSince = now }
+            if phase == .checking { connectingSince = now; restoreCache() }
             else { connectingSince = nil }
             if case .authentication = phase { cache.remove(for: connection.address); shellConnection = .init() }
-            if phase == .picker { shellConnection = .init() }
+            if phase == .picker { shellConnection = .init(); cache.remove(for: connection.address) }
+        }
+        .onChange(of: connection.snapshotLease) { _, lease in
+            if lease == nil { cache.remove(for: connection.address) } else { captureCache() }
         }
         .onChange(of: store.refreshing) { _, refreshing in
             if !refreshing && store.hubReachable == true { captureCache() }
@@ -169,11 +174,6 @@ struct DraftScene: View {
         }
     }
 
-    private struct CachedShell: Sendable {
-        let board: BoardDetail?
-        let display: String
-        let pages: [Page]
-    }
     private var shellHub: String { store.status == nil ? connection.address : store.connectionLabel }
     private var presentation: ShellConnection.Presentation {
         ShellConnection.presentation(pathAvailable: network.available, hubReachable: store.hubReachable == true,
@@ -183,9 +183,23 @@ struct DraftScene: View {
         shellConnection.observe(pathAvailable: network.available, hubReachable: store.hubReachable == true, hub: shellHub)
     }
     private func captureCache() {
-        guard store.status != nil else { return }
-        cache.store(CachedShell(board: store.board, display: store.boards.first { $0.id == store.selectedBoardID }?.name ?? "", pages: store.pages),
-                    for: store.connectionLabel, at: now)
+        guard store.status != nil, connection.phase == .connected, let hub = connection.selectedSavedHub,
+              let lease = connection.snapshotLease, hub.deployment.description == store.connectionLabel else { return }
+        let snapshot = ShellSnapshot(hub: hub, capturedAt: Date(timeIntervalSince1970: now), board: store.board,
+                                     displayName: store.boards.first { $0.id == store.selectedBoardID }?.name ?? "",
+                                     pages: store.pages.map { .init(id: $0.id, name: $0.name) })
+        cache.store(snapshot, for: store.connectionLabel, at: now)
+        Task { _ = try? await snapshots.write(snapshot, lease: lease) }
+    }
+    private func restoreCache() {
+        guard let hub = connection.selectedSavedHub else { return }
+        let date = Date(timeIntervalSince1970: now)
+        Task {
+            guard let snapshot = try? await snapshots.read(for: hub, at: date),
+                  connection.selectedSavedHub?.id == hub.id,
+                  connection.phase == .checking || connection.phase == .unreachable else { return }
+            cache.store(snapshot, for: hub.deployment.description, at: snapshot.capturedAt.timeIntervalSince1970)
+        }
     }
     @ViewBuilder private func shellDestination(_ route: ShellTab) -> some View {
         if (connection.phase == .checking || connection.phase == .unreachable) && route == .more {
@@ -199,7 +213,7 @@ struct DraftScene: View {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Updating…").font(.callout)
-                            Text(cached.display).font(.title)
+                            Text(cached.displayName).font(.title)
                             if let detail = cached.board {
                                 BoardViewport(frame: BoardFrame(detail), model: DisplayModel(summary: BoardSummaryFields(detail.summary), stored: nil))
                             }
@@ -400,7 +414,7 @@ struct DraftScene: View {
                     }
                     .disabled(connection.busy)
                 }
-                Button("Add a hub") { connection.disconnect(); connection.address = ""; addingHub = true }.accessibilityIdentifier("shellAddHub")
+                Button("Add a hub") { connection.disconnect(); connection.address = ""; connection.alias = ""; connection.username = ""; connection.allowLocalHTTP = false; addingHub = true }.accessibilityIdentifier("shellAddHub")
             } footer: {
                 Text("Each hub keeps its own sign-in and selected display.")
             }
