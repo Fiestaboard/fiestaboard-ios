@@ -314,3 +314,39 @@ extension ComposeSessionTests {
         session.close()
     }
 }
+
+extension ComposeSessionTests {
+    func testUnresolvedBufferedDisplayCannotRenderUsingFallbackTargetBeforeExplicitChoice() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let target = try scope(), buffer = ComposeBufferStore(directory: directory), lease = try await buffer.open(target.identity)
+        _ = try await buffer.save(.init(identity: target.identity, revision: 1, text: "FOR REMOVED DISPLAY", targetID: "removed"), using: lease)
+        let clock = ManualSleeper()
+        var targets: [String] = []
+        let session = ComposeSession(scope: target, sleep: { try await clock.sleep($0) }, render: { request in
+            targets.append(request.scope.target.boardID); return try self.reply("ACTUAL RESULT")
+        })
+        _ = try await session.bindBuffer(buffer)
+        session.update(.init(text: "NEW TEXT FOR REMOVED DISPLAY")); await settle(); clock.advance(); await settle()
+        session.retryPreview(); await settle()
+        XCTAssertTrue(targets.isEmpty, "Typing/retry must not evaluate a retained removed-display draft against the fallback target")
+        XCTAssertTrue(session.previewIsStale); XCTAssertNil(session.preview)
+        session.changeScope(target); await settle(); clock.advance(); await settle()
+        XCTAssertEqual(targets, ["kitchen"], "Explicit display choice can start a correctly captured read")
+        session.close()
+    }
+    func testBindingOlderBufferNeverOverwritesInputAlreadyTypedByCurrentOwner() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let target = try scope(), buffer = ComposeBufferStore(directory: directory), lease = try await buffer.open(target.identity)
+        _ = try await buffer.save(.init(identity: target.identity, revision: 50, text: "OLDER DRAFT", targetID: target.target.boardID), using: lease)
+        let session = ComposeSession(scope: target, online: false, render: { _ in throw FiestaBoardError.networkUnavailable })
+        session.update(.init(text: "CURRENT TYPING"))
+        let restored = try await session.bindBuffer(buffer)
+        XCTAssertFalse(restored); XCTAssertEqual(session.input.text, "CURRENT TYPING")
+        _ = try await session.persistBuffer()
+        let saved = try await buffer.load(target.identity)
+        XCTAssertEqual(saved?.text, "CURRENT TYPING"); XCTAssertGreaterThan(saved?.revision ?? 0, 50)
+        session.close()
+    }
+}
