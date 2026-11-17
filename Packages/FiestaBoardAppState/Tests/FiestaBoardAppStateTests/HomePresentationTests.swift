@@ -63,3 +63,14 @@ extension HomePresentationTests {
         XCTAssertNil(HomeTiming.durationMinutes(until: now.addingTimeInterval(28801), now: now))
     }
 }
+
+extension HomePresentationTests {
+    func testPausedStatusUsesPausedModeInsteadOfManual() throws {
+        var root = URL(fileURLWithPath:#filePath)
+        for _ in 0..<5 { root.deleteLastPathComponent() }
+        let detail = try JSONDecoder().decode(BoardDetail.self,from:Data(contentsOf:
+            root.appendingPathComponent("Tests/Fixtures/Home/DockerBanners/home-paused.json")))
+        let result = HomePresentation.make(detail:detail,showing:nil,silence:nil,pageNames:[:],now:Date())
+        XCTAssertEqual(result.modeLabel,"Paused")
+    }
+}

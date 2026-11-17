@@ -8,7 +8,7 @@ cx_commit="${CX_HUB_COMMIT:-f47da6e4e764fc2826f396210f013e45dc1a7fd8}"
 [[ "$cx_commit" =~ ^[a-f0-9]{40}$ ]] || { echo 'Full immutable hub SHA required' >&2; exit 2; }
 cx_out="${CX_HOME_OUT:-Tests/Fixtures/Home}"
 cx_manifest="${CX_HOME_MANIFEST:-Tests/Fixtures/Home/requests.json}"
-cx_image="cx-iosnext5-i7-contract-${cx_commit:0:12}"
+cx_image="cx-iosnext5-i7-contract-${cx_commit:0:12}-$(basename "$cx_manifest" .json)"
 cx_base="python@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90"
 cx_tmp=$(mktemp -d /private/tmp/cx-iosnext5-i7-contract.XXXXXX)
 trap 'rm -rf "$cx_tmp"' EXIT
