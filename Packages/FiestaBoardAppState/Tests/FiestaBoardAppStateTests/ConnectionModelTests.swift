@@ -3,9 +3,44 @@ import FiestaBoardKit
 @testable import FiestaBoardAppState
 
 @MainActor final class ConnectionModelTests: XCTestCase {
-    private func model(_ service: OnboardingService) -> ConnectionModel {
-        ConnectionModel(store: BoardStore(), catalog: ServerCatalog(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)), discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, serviceFactory: { _ in service })
+    private func model(_ service: OnboardingService, now: @escaping @MainActor () -> Date = { Date() }) -> ConnectionModel {
+        ConnectionModel(store: BoardStore(), catalog: ServerCatalog(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)), discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, now: now, serviceFactory: { _ in service })
     }
+    private final class Clock { var value = Date(timeIntervalSince1970: 1_000) }
+
+    // The actual request gate must use elapsed wall time, including time in the background.
+    func testLoginDispatchResumesExactlyAtTheAdvertisedDeadline() async throws {
+        let clock = Clock(), service = try OnboardingService()
+        let model = model(service, now: { clock.value })
+        await service.setLoginError(.rateLimited(retryAfterSeconds: 60))
+        model.address = service.deployment.description
+        await model.connectAddress().value
+        model.username = "admin"; model.password = "wrong-password"
+        await model.signIn().value
+        clock.value = Date(timeIntervalSince1970: 1_059.999)
+        model.password = "still-before-deadline"; await model.signIn().value
+        let before = await service.events.filter { $0 == "login" }.count
+        XCTAssertEqual(before, 1)
+        clock.value = Date(timeIntervalSince1970: 1_060)
+        model.password = "new-user-attempt"; await model.signIn().value
+        let after = await service.events.filter { $0 == "login" }.count
+        XCTAssertEqual(after, 2)
+    }
+
+    // Returning through the hub picker must not bypass this hub's live lockout.
+    func testReselectingTheSameHubKeepsItsAdvertisedLockout() async throws {
+        let clock = Clock(), service = try OnboardingService()
+        let model = model(service, now: { clock.value })
+        await service.setLoginError(.rateLimited(retryAfterSeconds: 60))
+        model.address = service.deployment.description; await model.connectAddress().value
+        model.username = "admin"; model.password = "wrong-password"; await model.signIn().value
+        model.cancel()
+        model.address = service.deployment.description; await model.connectAddress().value
+        model.username = "admin"; model.password = "try-from-picker"; await model.signIn().value
+        let attempts = await service.events.filter { $0 == "login" }.count
+        XCTAssertEqual(attempts, 1)
+    }
+
     // Removing the auth Retry-After gate must dispatch a second forbidden login.
     func testLoginLockoutDoesNotDispatchAnImmediateSecondAttempt() async throws {
         let service = try OnboardingService(), model = model(service)
