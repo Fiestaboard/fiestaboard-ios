@@ -14,6 +14,12 @@
       "source_file": "i8-operation-corpus-b33160f3c.json",
       "source_sha": "b33160f3cae395d95ff62772653b4e2d45862ea7",
       "sha256": "5ca99c7a741a77b86e76ad2c41e6ae7beaf68f2db744fd42e57b95690b5f7cfa"
+    },
+    {
+      "file": "long-led-authenticated.json",
+      "source_file": "i8-long-led-corpus-b33160f3c.json",
+      "source_sha": "b33160f3cae395d95ff62772653b4e2d45862ea7",
+      "sha256": "bc599c8c22ba9c39d448ddcdc33a4528a8bb145469f5b258bf011e2ac02b97de"
     }
   ]
 }
