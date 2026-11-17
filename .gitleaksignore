@@ -17,3 +17,8 @@ Tests/Fixtures/Home/HostUndo/undo-indefinite-cancel.json:generic-api-key:1
 Tests/Fixtures/Home/DockerUndo/undo-cancel.json:generic-api-key:1
 Tests/Fixtures/Home/DockerUndo/undo-stale-cancel.json:generic-api-key:1
 Tests/Fixtures/Home/DockerUndo/undo-indefinite-cancel.json:generic-api-key:1
+# Same consumed/invalidated, at-most30s synthetic authority in DockerBanners.
+# The isolated recording revoked its mobile session before exit; preserve bytes.
+Tests/Fixtures/Home/DockerBanners/undo-cancel.json:generic-api-key:1
+Tests/Fixtures/Home/DockerBanners/undo-stale-cancel.json:generic-api-key:1
+Tests/Fixtures/Home/DockerBanners/undo-indefinite-cancel.json:generic-api-key:1
