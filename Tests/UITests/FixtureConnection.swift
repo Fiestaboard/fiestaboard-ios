@@ -42,12 +42,14 @@ extension XCTestCase {
     }
 
     /// Missing loopback infrastructure must fail a required journey, never skip it.
-    @MainActor func requireReadyFixture(_ ready: Bool, port: String,
+    @MainActor func requireReadyFixture(port: String,
                                        file: StaticString = #filePath, line: UInt = #line) throws {
-        guard ready else {
-            XCTFail("Required fixture unavailable: FIXTURE_PORT=\(port) python3 Tests/UITests/fixture_server.py",
+        do {
+            try FixtureReadiness.require(URL(string: "http://127.0.0.1:\(port)/ready")!)
+        } catch {
+            XCTFail("Required fixture unavailable or invalid (\(error)): FIXTURE_PORT=\(port) python3 Tests/UITests/fixture_server.py",
                     file: file, line: line)
-            throw URLError(.cannotConnectToHost)
+            throw error
         }
     }
 
