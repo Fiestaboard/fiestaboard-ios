@@ -68,6 +68,7 @@
 		391711DA37358895D64CC5AF /* ComposeSavePageSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8549D7AA9350306BF56F8CB6 /* ComposeSavePageSheet.swift */; };
 		3925C07AC2DE62611C5593B2 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 303AB3F8B1E5C7F725129E4B /* HomeView.swift */; };
 		397493F0F9A1451945FB4B43 /* Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36CC08CCC9CD15CEF0B9CCC6 /* Strings.swift */; };
+		3A4BAE29EA9EF14FD12BEE5E /* FixtureComposeRoutes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 957E3077F2F7E58BDB758C60 /* FixtureComposeRoutes.swift */; };
 		3A7D569AE67E9EF1DB06CE68 /* ServerAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABDE686F7FEDAE342474766 /* ServerAddress.swift */; };
 		3AF1B964616FC06573CF54CF /* CanvasShapesTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57E78CF28F4D305B7575EA9B /* CanvasShapesTab.swift */; };
 		3B086D744E54E75ECD8CAA96 /* OutOfSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF0741C9C94B7EE04EE2C6C /* OutOfSync.swift */; };
@@ -519,6 +520,7 @@
 		918875B3FE2650F6F4E9D4CA /* FiestaBoardTV-MIT.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "FiestaBoardTV-MIT.txt"; sourceTree = "<group>"; };
 		91AFB6E82C3582AC819A44A0 /* PageEditorScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageEditorScreen.swift; sourceTree = "<group>"; };
 		93B36F688F58E798D2EB8384 /* CanvasEditing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasEditing.swift; sourceTree = "<group>"; };
+		957E3077F2F7E58BDB758C60 /* FixtureComposeRoutes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureComposeRoutes.swift; sourceTree = "<group>"; };
 		971BC95938B395BCAF17CC76 /* SchedulesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchedulesView.swift; sourceTree = "<group>"; };
 		9AB3A2DCDAFE040B20C380C9 /* BoardDocumentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardDocumentView.swift; sourceTree = "<group>"; };
 		9EAF3EC9114378244809DC09 /* ParityFoundationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParityFoundationTests.swift; sourceTree = "<group>"; };
@@ -964,6 +966,7 @@
 				086B978FC5F59D48F214FFCD /* ComposeUITests.swift */,
 				6C3F1838186E744DA302ABA0 /* EditorUITests.swift */,
 				17C9F199741FDCC7AED7601C /* FixtureBoardRoutes.swift */,
+				957E3077F2F7E58BDB758C60 /* FixtureComposeRoutes.swift */,
 				2CBC4260FBD8BBA41BFBF327 /* FixtureConnection.swift */,
 				B624F5195610C4DE164C4734 /* FixtureHTTPServer.swift */,
 				8E6E8776A0D8982BD60EE299 /* FixtureReadiness.swift */,
@@ -1487,6 +1490,7 @@
 				CCEE9073886F79D1B7CBC567 /* ComposeUITests.swift in Sources */,
 				2B60831683DA1544E9E5D5C4 /* EditorUITests.swift in Sources */,
 				22B9443A49503B0D0E88F817 /* FixtureBoardRoutes.swift in Sources */,
+				3A4BAE29EA9EF14FD12BEE5E /* FixtureComposeRoutes.swift in Sources */,
 				3DF8E15C5CC8983509AE88F3 /* FixtureConnection.swift in Sources */,
 				F3AEBF196B58C50C6D5C48DE /* FixtureHTTPServer.swift in Sources */,
 				FA23AFA5B9424ABD9CED10B4 /* FixtureReadiness.swift in Sources */,

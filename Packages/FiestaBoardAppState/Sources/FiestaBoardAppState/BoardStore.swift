@@ -906,6 +906,31 @@ public struct PreparedAction: Identifiable, Sendable {
             throw error
         }
     }
+    public func composeTemplateCatalog(_ request: ComposeRequest) async throws -> TemplateCatalog {
+        try await readComposeCatalog(request) { try await $0.composeTemplateCatalog(request) }
+    }
+    public func composeFormulaFunctions(_ request: ComposeRequest) async throws -> FunctionCatalog {
+        try await readComposeCatalog(request) { try await $0.composeFormulaFunctions(request) }
+    }
+    public func validateComposeFormula(_ expression: String, request: ComposeRequest) async throws -> FormulaCheck {
+        try await readComposeCatalog(request) { try await $0.validateComposeFormula(expression, request: request) }
+    }
+    private func readComposeCatalog<Result: Sendable>(_ request: ComposeRequest,
+        read: (any ComposeCatalogReading) async throws -> Result) async throws -> Result {
+        guard canProbeReachability, !connecting, isCurrentComposeRequest(request),
+              let reader = service as? any ComposeCatalogReading else { throw FiestaBoardError.invalidTarget }
+        let token = generation, pathToken = reachabilityEpoch
+        do {
+            let result = try await read(reader)
+            guard valid(token), canProbeReachability, !connecting, isCurrentComposeRequest(request) else { throw FiestaBoardError.invalidTarget }
+            recordHubResponse(pathToken: pathToken)
+            return result
+        } catch {
+            guard token == generation else { throw FiestaBoardError.staleSession }
+            if !handleAuthenticationLoss(error) { recordHubReadFailure(error, pathToken: pathToken) }
+            throw error
+        }
+    }
     @discardableResult public func checkComposeOutcome() -> Task<Void, Never> {
         guard canProbeReachability, !connecting, !commandBusy, let operation = composeOperation,
               operation.generation == generation, isCurrentComposeRequest(operation.request),
