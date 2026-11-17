@@ -172,8 +172,21 @@ import XCTest
         launchFixture(app, arguments: ["-fiestaboard.captureComposeCapability", "YES",
             "-fiestaboard.captureComposeCapabilityOut", output.path], scenario: "i8-compose")
         tapReady(app.buttons["homeCompose"])
+        let start = app.buttons["composeCaptureProbeStart"]
+        if !start.waitForExistence(timeout: 3) {
+            shot("i8-capture-capability-unsupported-original-screen")
+            let unsupported = app.staticTexts["composeCaptureProbeReport"]
+            if let raw = unsupported.value as? String {
+                let artifact = XCTAttachment(data: Data(raw.utf8), uniformTypeIdentifier: "public.json")
+                artifact.name = "i8-capture-capability-unsupported-report"; artifact.lifetime = .keepAlways; add(artifact)
+            }
+            let hierarchy = XCTAttachment(string: app.debugDescription)
+            hierarchy.name = "i8-capture-capability-unsupported-hierarchy"; hierarchy.lifetime = .keepAlways; add(hierarchy)
+            XCTFail("Required capability probe cannot start; failed metadata and original screen attached")
+            return
+        }
         XCTAssertEqual(app.staticTexts["composeCaptureProbePhase"].label, "idle")
-        tapReady(app.buttons["composeCaptureProbeStart"])
+        tapReady(start)
         shot("i8-capture-capability-original-native-picker")
         // This is explicit native consent after the diagnostic button. No
         // permission is bypassed. The selector is pending actual runtime proof;
@@ -182,6 +195,10 @@ import XCTest
         let systemStart = system.buttons["Start Recording"]
         if systemStart.waitForExistence(timeout: 3) { tapReady(systemStart) }
         else if app.buttons["Start Recording"].exists { tapReady(app.buttons["Start Recording"]) }
+        else {
+            let hierarchy = XCTAttachment(string: app.debugDescription + "\n\nSPRINGBOARD\n" + system.debugDescription)
+            hierarchy.name = "i8-capture-capability-unverified-picker-hierarchy"; hierarchy.lifetime = .keepAlways; add(hierarchy)
+        }
         let report = app.staticTexts["composeCaptureProbeReport"]
         XCTAssertTrue(report.waitForExistence(timeout: 16), "Capability probe must publish success or a bounded failure")
         shot("i8-capture-capability-original-native-result")

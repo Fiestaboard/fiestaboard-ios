@@ -27,7 +27,7 @@ while let line = readLine() {
     var snapshots: [[String: Any]] = []
     func snapshot(_ requested: Bool? = nil) -> [String: Any] {
         var value: [String: Any] = ["phase": lifecycle.phase.rawValue,
-            "cleanupRequested": lifecycle.cleanupRequested, "report": NSNull()]
+            "cleanupRequested": lifecycle.cleanupRequested, "streamOwned": lifecycle.streamOwned, "report": NSNull()]
         if let report = lifecycle.report {
             value["report"] = try! JSONSerialization.jsonObject(with: JSONEncoder().encode(report))
         }
@@ -40,7 +40,9 @@ while let line = readLine() {
         switch action["kind"] as? String {
         case "request": requested = lifecycle.requestStart(isAvailable: action["available"] as? Bool ?? true)
         case "select": requested = lifecycle.selectedCurrentApplication()
+        case "owned": lifecycle.streamConstructed()
         case "started": lifecycle.streamStarted()
+        case "retryCleanup": requested = lifecycle.requestCleanupRetry()
         case "frame":
             let data = try JSONSerialization.data(withJSONObject: action["metadata"]!)
             lifecycle.receivedFrame(try JSONDecoder().decode(ComposeCaptureProbeFrame.self, from: data))
@@ -86,7 +88,7 @@ while let line = readLine() {
         return result
 
     def start(self):
-        return [dict(kind='request'), dict(kind='select'), dict(kind='started')]
+        return [dict(kind='request'), dict(kind='select'), dict(kind='owned'), dict(kind='started')]
 
     def test_no_automatic_capture_or_selection_without_explicit_request(self):
         result = self.run_lifecycle([dict(kind='select'), dict(kind='started')])
@@ -112,7 +114,7 @@ while let line = readLine() {
     def test_complete_screen_metadata_is_published_only_after_cleanup_without_latency(self):
         metadata = self.frame()
         result = self.run_lifecycle(self.start()+[dict(kind='frame', metadata=metadata), dict(kind='cleanup')])
-        self.assertEqual([r['phase'] for r in result], ['idle', 'awaitingConsent', 'starting', 'capturing', 'stopping', 'finished'])
+        self.assertEqual([r['phase'] for r in result], ['idle', 'awaitingConsent', 'starting', 'starting', 'capturing', 'stopping', 'finished'])
         self.assertTrue(result[1]['requested'])
         self.assertTrue(result[2]['requested'])
         self.assertTrue(result[-2]['cleanupRequested'])
@@ -173,6 +175,47 @@ while let line = readLine() {
         self.assertEqual(result['report']['reason'], 'cleanup_failed')
         self.assertFalse(result['report']['cleanupCompleted'])
         self.assertNotIn('frame', result['report'])
+
+    def test_cleanup_retry_retains_stream_until_actual_success_and_keeps_failed_report(self):
+        result = self.run_lifecycle(self.start()+[dict(kind='frame', metadata=self.frame()),
+            dict(kind='cleanupFailure'), dict(kind='retryCleanup'), dict(kind='cleanup'), dict(kind='retryCleanup')])
+        failed, retrying, cleaned, duplicate = result[-4:]
+        self.assertTrue(failed['streamOwned'])
+        self.assertFalse(failed['report']['cleanupCompleted'])
+        self.assertTrue(retrying['requested'])
+        self.assertTrue(retrying['streamOwned'])
+        self.assertEqual(retrying['phase'], 'stopping')
+        self.assertFalse(retrying['report']['cleanupCompleted'])
+        self.assertFalse(cleaned['streamOwned'])
+        self.assertTrue(cleaned['report']['cleanupCompleted'])
+        self.assertEqual(cleaned['report']['status'], 'failed')
+        self.assertFalse(duplicate['requested'])
+
+    def test_scene_inactive_cleanup_failure_can_retry_but_cannot_adopt_late_frame(self):
+        result = self.run_lifecycle(self.start()+[dict(kind='inactive'), dict(kind='cleanupFailure'),
+            dict(kind='retryCleanup'), dict(kind='frame', metadata=self.frame()), dict(kind='cleanup')])[-1]
+        self.assertEqual(result['report']['status'], 'failed')
+        self.assertTrue(result['report']['cleanupCompleted'])
+        self.assertFalse(result['streamOwned'])
+        self.assertNotIn('frame', result['report'])
+
+    def test_cleanup_retry_without_failed_owned_stream_cannot_start_capture(self):
+        for actions in [[dict(kind='retryCleanup')], [dict(kind='request'), dict(kind='retryCleanup')],
+                        self.start()+[dict(kind='retryCleanup')]]:
+            with self.subTest(actions=actions):
+                self.assertFalse(self.run_lifecycle(actions)[-1]['requested'])
+
+    def test_started_callback_without_constructed_stream_does_not_establish_capture(self):
+        result = self.run_lifecycle([dict(kind='request'), dict(kind='select'), dict(kind='started')])[-1]
+        self.assertEqual(result['phase'], 'starting')
+        self.assertFalse(result['streamOwned'])
+        self.assertIsNone(result['report'])
+
+    def test_late_cleanup_error_cannot_revoke_proven_stop_success(self):
+        result = self.run_lifecycle(self.start()+[dict(kind='frame', metadata=self.frame()),
+            dict(kind='cleanupFailure'), dict(kind='retryCleanup'), dict(kind='cleanup'), dict(kind='cleanupFailure')])
+        self.assertEqual(result[-1]['report'], result[-2]['report'])
+        self.assertTrue(result[-1]['report']['cleanupCompleted'])
 
     def test_first_complete_sample_and_terminal_report_are_immutable(self):
         actions = self.start()+[dict(kind='frame', metadata=self.frame()), dict(kind='frame', metadata=self.frame(displayTicks=1050)), dict(kind='cleanup'), dict(kind='cleanup'), dict(kind='request')]
