@@ -1826,7 +1826,7 @@
 		2757DD3B27D5C3CC7101F778 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = Tests/Support/Simulator.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -2008,7 +2008,7 @@
 		734B7377F3DC1F9FCAC4DA1B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = Tests/Support/Simulator.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
