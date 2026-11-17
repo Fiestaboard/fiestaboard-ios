@@ -497,3 +497,69 @@ extension ConnectionModelTests {
         }
     }
 }
+
+extension ConnectionModelTests {
+    // The wrong-password surface must target the password field while preserving the entered username.
+    func testWrongCredentialsPublishPasswordFieldRejectionAndResetClearsIt() async throws {
+        let service = try OnboardingService(), model = model(service)
+        model.address = service.deployment.description; await model.connectAddress().value
+        await service.setLoginError(.invalidCredentials)
+        model.username = "retained-owner"; model.password = "wrong-secret"
+        await model.signIn().value
+        XCTAssertTrue(model.signInPasswordRejected)
+        XCTAssertEqual(model.username, "retained-owner"); XCTAssertEqual(model.password, "")
+        XCTAssertEqual(model.phase, .authentication(.signIn)); XCTAssertFalse(model.requiresStateCheck)
+        model.beginPasswordReset()
+        XCTAssertFalse(model.signInPasswordRejected)
+        XCTAssertEqual(model.passwordResetFlow?.phase, .instructions)
+    }
+
+    // Opening setup uses the verified selected deployment; returning reads once without admin creation or sign in.
+    func testWebSetupReturnRechecksOnceAndKeepsTheVerifiedHub() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.chooseAuth(AuthStatus(enabled: true, setupRequired: true, authenticated: false))
+        model.address = service.deployment.description; await model.connectAddress().value
+        let hub = try XCTUnwrap(model.selectedSavedHub)
+        model.address = "https://unverified.example.test"
+        XCTAssertEqual(model.beginWebSetup()?.absoluteString, service.deployment.description)
+        XCTAssertEqual(model.setupWebReturn, .awaitingReturn)
+        let before = await service.bootstrapAttempts
+        await service.chooseAuth(AuthStatus(enabled: true, setupRequired: false, authenticated: false))
+        await model.returnFromWebSetup().value
+        XCTAssertEqual(model.setupWebReturn, .finished)
+        XCTAssertEqual(model.selectedSavedHub?.id, hub.id)
+        XCTAssertEqual(model.phase, .authentication(.signIn))
+        await model.returnFromWebSetup().value
+        let after = await service.bootstrapAttempts, events = await service.events
+        XCTAssertEqual(after, before + 1)
+        XCTAssertFalse(events.contains("login")); XCTAssertFalse(events.contains("setup"))
+    }
+
+    // An unfinished web wizard remains explicit; a foreground event cannot claim it finished.
+    func testIncompleteWebSetupRetainsAddressAndPermitsExplicitReopen() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.chooseAuth(AuthStatus(enabled: true, setupRequired: true, authenticated: false))
+        model.address = service.deployment.description; await model.connectAddress().value
+        _ = model.beginWebSetup(); await model.returnFromWebSetup().value
+        XCTAssertEqual(model.setupWebReturn, .incomplete)
+        XCTAssertEqual(model.phase, .authentication(.setupAdministrator))
+        XCTAssertEqual(model.snapshot?.deployment, service.deployment)
+        XCTAssertEqual(model.beginWebSetup()?.absoluteString, service.deployment.description)
+        XCTAssertEqual(model.setupWebReturn, .awaitingReturn)
+    }
+
+    // A browser return after leaving a hub cannot issue a new read or route the next connection.
+    func testWebSetupReturnAfterHubExitDoesNotDispatch() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.chooseAuth(AuthStatus(enabled: true, setupRequired: true, authenticated: false))
+        model.address = service.deployment.description; await model.connectAddress().value
+        _ = model.beginWebSetup()
+        let before = await service.bootstrapAttempts
+        model.cancel(); await model.returnFromWebSetup().value
+        let after = await service.bootstrapAttempts
+        XCTAssertEqual(after, before)
+        XCTAssertEqual(model.setupWebReturn, .none)
+        XCTAssertNil(model.beginWebSetup())
+        XCTAssertEqual(model.phase, .picker)
+    }
+}
