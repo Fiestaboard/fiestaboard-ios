@@ -51,6 +51,8 @@ struct ShellHubsView: View {
     let busy: Bool
     let select: (SavedServer) -> Void
     let add: () -> Void
+    @Environment(\.colorScheme) private var appearance
+    private var palette: ShellPalette { .init(appearance: appearance) }
     var body: some View {
         List {
             Section {
@@ -70,6 +72,9 @@ struct ShellHubsView: View {
                 }
                 Button("Add a hub", action: add).accessibilityIdentifier("shellAddHub")
             } footer: { Text("Each hub keeps its own sign-in and selected display.") }
-        }.navigationTitle("Hubs")
+                .listRowBackground(palette.card)
+        }
+        .scrollContentBackground(.hidden).background(palette.background)
+        .navigationTitle("Hubs")
     }
 }
