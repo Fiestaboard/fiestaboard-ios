@@ -79,7 +79,8 @@ struct DraftScene: View {
     @DraftState private var composing = false
     @DraftState private var textDraft = ""
     @DraftState private var started = false
-    private let accent = Color.orange
+    @Environment(\.colorScheme) private var appearance
+    private var palette: ShellPalette { ShellPalette(appearance: appearance) }
 
     var body: some View {
         Group {
@@ -91,7 +92,7 @@ struct DraftScene: View {
                     .onPreferenceChange(EditorIsOpenKey.self) { editorOpen = $0 }
             }
         }
-        .tint(accent)
+        .tint(palette.tint)
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { date in now = date.timeIntervalSince1970 }
         .onChange(of: network.available) { _, available in
             store.networkAvailable = available
@@ -370,6 +371,8 @@ struct DraftScene: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(palette.background)
             .navigationTitle("More")
         }
     }

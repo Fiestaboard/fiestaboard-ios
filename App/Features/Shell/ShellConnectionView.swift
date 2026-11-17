@@ -8,13 +8,7 @@ struct ShellConnectionView: View {
     let hub: String
     let retry: () -> Void
     @Environment(\.colorScheme) private var appearance
-    private var skeleton: Color {
-        color(appearance == .dark ? FiestaTokenValues.Dark.accent : FiestaTokenValues.Light.accent)
-    }
-    private var background: Color {
-        color(appearance == .dark ? FiestaTokenValues.Dark.background : FiestaTokenValues.Light.background)
-    }
-    private func color(_ token: TokenColor) -> Color { Color(.sRGB, red: token.red, green: token.green, blue: token.blue, opacity: token.alpha) }
+    private var palette: ShellPalette { ShellPalette(appearance: appearance) }
     var body: some View {
         switch state {
         case .online: EmptyView()
@@ -43,13 +37,13 @@ struct ShellConnectionView: View {
                             Text("Connecting to " + hub + "…").font(.system(size: 15))
                         }.padding(.leading, 4)
                     }
-                    RoundedRectangle(cornerRadius: 8).fill(skeleton).frame(height: 150).accessibilityHidden(true)
-                    RoundedRectangle(cornerRadius: 8).fill(skeleton).frame(maxWidth: 220).frame(height: 18).accessibilityHidden(true)
-                    RoundedRectangle(cornerRadius: 8).fill(skeleton).frame(maxWidth: 300).frame(height: 18).accessibilityHidden(true)
-                    RoundedRectangle(cornerRadius: 8).fill(skeleton).frame(width: 160, height: 44).accessibilityHidden(true)
-                    ForEach(0..<3) { _ in RoundedRectangle(cornerRadius: 8).fill(skeleton).frame(height: 56).accessibilityHidden(true) }
+                    RoundedRectangle(cornerRadius: 8).fill(palette.skeleton).frame(height: 150).accessibilityHidden(true)
+                    RoundedRectangle(cornerRadius: 8).fill(palette.skeleton).frame(maxWidth: 220).frame(height: 18).accessibilityHidden(true)
+                    RoundedRectangle(cornerRadius: 8).fill(palette.skeleton).frame(maxWidth: 300).frame(height: 18).accessibilityHidden(true)
+                    RoundedRectangle(cornerRadius: 8).fill(palette.skeleton).frame(width: 160, height: 44).accessibilityHidden(true)
+                    ForEach(0..<3) { _ in RoundedRectangle(cornerRadius: 8).fill(palette.skeleton).frame(height: 56).accessibilityHidden(true) }
                 }.padding(.horizontal, 16).padding(.top, 8)
-            }.background(background).accessibilityIdentifier("shellConnecting")
+            }.background(palette.background).accessibilityIdentifier("shellConnecting")
         }
     }
 }

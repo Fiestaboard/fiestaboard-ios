@@ -110,6 +110,7 @@
 		7E3327DD48E9020CF4B0E3A2 /* CanvasAreaPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88FC48CA3F91EB260F3FD8F8 /* CanvasAreaPicker.swift */; };
 		8079E379D3CE13AE1EC94708 /* OutOfSyncBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 233BD4E3B5E7ACACB5CEF599 /* OutOfSyncBanner.swift */; };
 		80B8E42E3EAFE0CD8F5BC5D3 /* FiestaBoardEditorState.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0CE51B6E8E630F1CA0FAFFB0 /* FiestaBoardEditorState.framework */; };
+		817EFCBD091002FE0C00C8EE /* ShellPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF43E217AEABB9DA88887736 /* ShellPalette.swift */; };
 		82536B6015C825E11468AE5B /* FiestaBoardKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */; };
 		82C97A471315A3DDFFC9C514 /* FormulaUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BBD25933907F3239D01D6CC /* FormulaUITests.swift */; };
 		8371500590B12076405A4A1F /* BoardViewportUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0D58C91FCFB7C0909D35936 /* BoardViewportUITests.swift */; };
@@ -496,6 +497,7 @@
 		BD6BE9A9CDCA742A1B397022 /* TemplateChipFactoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TemplateChipFactoryTests.swift; sourceTree = "<group>"; };
 		BECB0B3DC31A74CE977E8FDF /* PolishUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolishUITests.swift; sourceTree = "<group>"; };
 		BF16DDCF129380FBA1D99C7A /* StrokeTransaction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokeTransaction.swift; sourceTree = "<group>"; };
+		BF43E217AEABB9DA88887736 /* ShellPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShellPalette.swift; sourceTree = "<group>"; };
 		BF511ED96A45C3C1ACBC2D8E /* FigmaGeometryRegistry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FigmaGeometryRegistry.swift; sourceTree = "<group>"; };
 		C035AA6946E7B9F0C3244872 /* LedMarkup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LedMarkup.swift; sourceTree = "<group>"; };
 		C038325A589937ADD54B59BD /* DrawMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawMode.swift; sourceTree = "<group>"; };
@@ -972,6 +974,7 @@
 				738025F2DFCF52B724839E1D /* ShellConnectionView.swift */,
 				0A41290E5CCF31930DEC8C2D /* ShellContainer.swift */,
 				8EC4319060375B1C6504FA07 /* ShellNetwork.swift */,
+				BF43E217AEABB9DA88887736 /* ShellPalette.swift */,
 			);
 			path = Shell;
 			sourceTree = "<group>";
@@ -1567,6 +1570,7 @@
 				A47924ACFEFBA3D71BF5F578 /* ShellConnectionView.swift in Sources */,
 				512F26AA466A4CDF30AD732B /* ShellContainer.swift in Sources */,
 				19217D9C712CBC19732C4674 /* ShellNetwork.swift in Sources */,
+				817EFCBD091002FE0C00C8EE /* ShellPalette.swift in Sources */,
 				E05D4B423EE03A5812BAA09F /* SignInView.swift in Sources */,
 				E8F1676D2E7396FD25987850 /* StatusReaderRegistry.swift in Sources */,
 				397493F0F9A1451945FB4B43 /* Strings.swift in Sources */,
