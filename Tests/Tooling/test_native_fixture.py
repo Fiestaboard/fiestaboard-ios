@@ -49,12 +49,38 @@ while let line = readLine() {
         subprocess.run(['swiftc', '-swift-version', '6', '-module-cache-path', str(BUILD/'modules'),
                         str(ROOT/'Tests/UITests/FixtureRouter.swift'), str(ROOT/'Tests/UITests/FixtureHTTPServer.swift'),
                         str(ROOT/'Tests/UITests/FixtureBoardRoutes.swift'),
+                        str(ROOT/'Tests/UITests/FixtureComposeRoutes.swift'),
                         str(ROOT/'Tests/UITests/FixtureRenderRoutes.swift'), str(main), '-o', str(cls.binary)],check=True,capture_output=True,text=True)
 
     def run_sequence(self, inputs):
         result = subprocess.run([str(self.binary), str(ROOT/'Tests/UITests/FixtureResources/retained-ui.json'), str(ROOT/'Tests/Fixtures')],
           input=''.join(json.dumps(i)+'\n' for i in inputs),text=True,capture_output=True,check=True)
         return [json.loads(line) for line in result.stdout.splitlines()]
+
+    def test_compose_namespace_retains_recorded_h3_and_clipped_preview_evidence(self):
+        prefix='/board-i8-compose-new/api/'
+        auth={'authorization':'Bearer fb_mob_fixture_board-i8-compose-new'}
+        request={'board_id':'tc001-fixture','template':['ABCDEFGHIJKLMNOPQRS'],
+                 'line_metadata':[{'alignment':'left','wrap':False}], 'device_type':'panel',
+                 'grid_rows':1,'grid_cols':8,'notes_wide':1,'notes_tall':1,
+                 'diagnostics':True,'preview':{'data':'cached'}}
+        result=self.run_sequence([
+            dict(target=prefix+'discover'),
+            dict(target=prefix+'v1/boards'),
+            dict(method='POST',target=prefix+'auth/device/login',body={'username':'fixture_admin','password':'fixture-password','client_id':'fiestaboard-ios'}),
+            dict(target=prefix+'version',headers=auth),
+            dict(target=prefix+'v1/boards/tc001-fixture',headers=auth),
+            dict(method='POST',target=prefix+'templates/render',headers=auth,body=request)])
+        self.assertEqual(result[0]['body']['version'],'11.0.0-alpha.3')
+        self.assertEqual(result[1]['status'],401)
+        self.assertEqual(result[3]['body']['running_version'],'11.0.0-alpha.3')
+        self.assertTrue(result[3]['body']['is_dev'])
+        records=json.loads((ROOT/'Tests/Fixtures/Compose/operations-authenticated.json').read_text())['records']
+        drawing=next(r['response']['drawing'] for r in records if r['case']=='drawing-tc001-fixture')
+        self.assertEqual(result[4]['body']['drawing'],drawing)
+        long=json.loads((ROOT/'Tests/Fixtures/Compose/long-led-authenticated.json').read_text())['records']
+        preview=next(r for r in long if r['case']=='preview-plain-19')
+        self.assertEqual(base64.b64decode(result[5]['raw']).decode(),preview['raw_response'])
 
     def test_retained_route_behaviors_match_exported_migration_controls(self):
         cases=json.loads((ROOT/'Tests/Tooling/native-fixture-cases.json').read_text())['cases']
