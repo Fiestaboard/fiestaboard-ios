@@ -29,13 +29,14 @@ enum RenderHarness {
     }
 
     /// Draw `view` into an image so a test can sample what was painted.
-    /// Mobile change: `ImageRenderer` instead of `drawHierarchy`, because this
-    /// bundle runs without a host app and the snapshotter needs a render server.
+    /// This bundle runs without a host app. Draw into owned pixels directly;
+    /// the UIImage convenience snapshot can leave a lazy image-provider request.
     static func image<V: View>(_ view: V, size: CGSize = tvSize) -> UIImage {
-        let renderer = ImageRenderer(content: view.frame(width: size.width, height: size.height))
-        renderer.scale = 1
-        renderer.isOpaque = false
-        return renderer.uiImage ?? UIImage()
+        guard let image = BitmapCapture.image(view, size: size) else {
+            XCTFail("Could not render the requested bitmap")
+            return UIImage()
+        }
+        return UIImage(cgImage: image)
     }
 }
 

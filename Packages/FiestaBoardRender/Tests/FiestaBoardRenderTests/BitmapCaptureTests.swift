@@ -4,7 +4,7 @@ import XCTest
 
 @MainActor
 final class BitmapCaptureTests: XCTestCase {
-    func testFirstCapturePaintsPigmentAndHardwareIntoOwnedPixels() throws {
+    func testAFirstCapturePaintsPigmentAndHardwareIntoOwnedPixels() throws {
         let layout = BoardLayout.make(rows: 1, cols: 1, cells: [[.color(.red)]], tileHeight: 200)
         let image = try XCTUnwrap(BitmapCapture.image(BoardCanvas(layout: layout, background: .black),
             size: CGSize(width: layout.width, height: layout.height)))
@@ -19,7 +19,7 @@ final class BitmapCaptureTests: XCTestCase {
         XCTAssertEqual(Int(edge[0]), 13, accuracy: 3)
     }
 
-    func testCapturesDoNotShareTheirBackingAndPreserveTransparency() throws {
+    func testBCapturesDoNotShareTheirBackingAndPreserveTransparency() throws {
         let first = try XCTUnwrap(BitmapCapture.image(Color.red, size: CGSize(width: 17, height: 23)))
         let second = try XCTUnwrap(BitmapCapture.image(Color.clear, size: CGSize(width: 17, height: 23)))
         XCTAssertEqual(first.width, 17)
