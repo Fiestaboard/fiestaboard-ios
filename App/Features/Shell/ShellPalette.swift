@@ -6,6 +6,10 @@ struct ShellPalette {
     let appearance: ColorScheme
     var background: Color { color(appearance == .dark ? FiestaTokenValues.Dark.background : FiestaTokenValues.Light.background) }
     var card: Color { color(appearance == .dark ? FiestaTokenValues.Dark.card : FiestaTokenValues.Light.card) }
+    var foreground: Color { color(appearance == .dark ? FiestaTokenValues.Dark.foreground : FiestaTokenValues.Light.foreground) }
+    var info: Color { color(appearance == .dark ? FiestaTokenValues.Dark.info : FiestaTokenValues.Light.info) }
+    var infoTint: Color { color(appearance == .dark ? PlatformIOSValues.Dark.tintInfo : PlatformIOSValues.Light.tintInfo) }
+    var muted: Color { color(appearance == .dark ? FiestaTokenValues.Dark.muted : FiestaTokenValues.Light.muted) }
     var tint: Color { color(appearance == .dark ? FiestaTokenValues.Dark.brand : FiestaTokenValues.Light.brand) }
     var skeleton: Color { color(appearance == .dark ? FiestaTokenValues.Dark.accent : FiestaTokenValues.Light.accent) }
     private func color(_ token: TokenColor) -> Color {

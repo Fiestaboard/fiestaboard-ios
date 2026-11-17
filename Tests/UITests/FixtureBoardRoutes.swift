@@ -163,6 +163,12 @@ extension FixtureRouter {
             out["temporary_override"] = ["active": override, "page_id": override ? "note" as Any : null, "expires_at": override ? "2026-10-31T09:09:00Z" as Any : null, "remaining_seconds": override ? 540 as Any : null, "revert_mode": override ? "schedule" as Any : null]; return reply(200, out)
         }
         if method == "GET", route == "silence-status" {
+            if !state.homeContract {
+                let active = state.scenario == "silence"
+                return reply(200,["enabled":active,"active":active,"mode":active ? "indicator" as Any : null,"page_id":null,
+                    "ends_at_utc":active ? "2026-10-31T14:00:00Z" as Any : null,"next_change_utc":null,
+                    "seconds_until_next_change":null,"holds_blocked_sends":false,"held":null])
+            }
             let active = state.scenario.hasPrefix("silence") && boardID == "kitchen"
             let held: Any = active && state.scenario == "silence-held"
                 ? ["kind":"text","preview":"Package delivered","queued_at":ISO8601DateFormatter().string(from:state.started)] : null

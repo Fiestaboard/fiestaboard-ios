@@ -31,8 +31,11 @@ struct HomeView<Controls: View>: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if let summary {
-                        TimelineView(.periodic(from: .now, by: 1)) { timeline in
-                            if let banner = homePresentation(now: timeline.date).banner { statusBanner(banner) }
+                        if let banner = homePresentation(now: .now).banner {
+                            statusBanner(banner)
+                            if banner == .silenced, let silence = silencePresentation, silence.heldPreview != nil {
+                                heldMessageCard(silence)
+                            }
                         }
                         if previewedPageID != nil {
                             Label(previewLabel, systemImage: "eye").font(.caption).accessibilityIdentifier("homePagePreviewLabel")
@@ -168,12 +171,16 @@ struct HomeView<Controls: View>: View {
         .accessibilityIdentifier("homeBoard").transaction { $0.animation = nil }
     }
     private func statusBanner(_ banner: HomeBanner) -> some View {
-        let silence = store.selectedBoardID.flatMap { HomeSilencePresentation.make(status: status.selectedSilence, boardID: $0) }
-        let tint: Color = banner == .silenced ? .blue : .primary
+        let silence = silencePresentation
+        let palette = ShellPalette(appearance: appearance)
+        let tint = banner == .silenced ? palette.info : palette.foreground
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: banner == .paused ? "pause.circle" : banner == .silenced ? "moon" : "wifi.exclamationmark")
-                    .foregroundStyle(tint).font(.title2).accessibilityHidden(true)
+                    .foregroundStyle(tint).font(.system(size: 20)).frame(width: 36, height: 36)
+                    .background(banner == .silenced ? palette.infoTint : palette.muted,
+                        in: RoundedRectangle(cornerRadius: FiestaTokenValues.Radius.control))
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 6) {
                     Text(banner == .paused ? "\(summary?.name ?? "Display") is paused" : banner == .silenced
                         ? "Silence Schedule" + (silence?.endsAt.map { " until " + $0.formatted(date: .omitted, time: .shortened) } ?? "") : banner.title)
@@ -195,28 +202,32 @@ struct HomeView<Controls: View>: View {
                     .buttonStyle(.bordered).controlSize(.large).frame(maxWidth: .infinity, alignment: .trailing)
                     .disabled(!status.canResumeHomeDisplay).accessibilityIdentifier("homeResumeDisplay")
             }
-            if banner == .silenced, let silence, let preview = silence.heldPreview {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Held message").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                    Text(preview).font(.headline).fixedSize(horizontal: false, vertical: true)
-                    if let queued = silence.queuedAt {
-                        Text("Held since \(queued.formatted(date: .omitted, time: .shortened))").font(.caption).foregroundStyle(.secondary)
-                    }
-                    if silence.holdsBlockedSends, let end = silence.endsAt {
-                        Text("Scheduled for \(end.formatted(date: .omitted, time: .shortened)).").font(.subheadline)
-                    } else if !silence.holdsBlockedSends {
-                        Text("Holding new messages is off. This message is still held.").font(.subheadline)
-                    }
-                }.padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                    .background(ShellPalette(appearance: appearance).skeleton, in: RoundedRectangle(cornerRadius: 12))
-                    .accessibilityIdentifier("homeHeldMessage")
-            }
         }
         .font(.callout).padding(16).frame(maxWidth: .infinity, alignment: .leading)
-        .background(ShellPalette(appearance: appearance).card, in: RoundedRectangle(cornerRadius: 14))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(tint.opacity(0.7), lineWidth: 1))
+        .background(palette.card, in: RoundedRectangle(cornerRadius: FiestaTokenValues.Radius.card))
+        .overlay(RoundedRectangle(cornerRadius: FiestaTokenValues.Radius.card).stroke(tint, lineWidth: 1))
         .accessibilityIdentifier(banner == .paused ? "pausedBadge" : banner == .silenced ? "silenceBadge" : "displayOfflineBanner")
     }
+    private var silencePresentation: HomeSilencePresentation? {
+        store.selectedBoardID.flatMap { HomeSilencePresentation.make(status: status.selectedSilence, boardID: $0) }
+    }
+    private func heldMessageCard(_ silence: HomeSilencePresentation) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Held message").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
+            Text(silence.heldPreview ?? "").font(.headline).fixedSize(horizontal: false, vertical: true)
+            if let queued = silence.queuedAt {
+                Text("Held since \(queued.formatted(date: .omitted, time: .shortened))").font(.caption).foregroundStyle(.secondary)
+            }
+            if silence.holdsBlockedSends, let end = silence.endsAt {
+                Text("Scheduled for \(end.formatted(date: .omitted, time: .shortened)).").font(.subheadline)
+            } else if !silence.holdsBlockedSends {
+                Text("Holding new messages is off. This message is still held.").font(.subheadline)
+            }
+        }.padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .background(ShellPalette(appearance: appearance).card, in: RoundedRectangle(cornerRadius: FiestaTokenValues.Radius.card))
+            .accessibilityIdentifier("homeHeldMessage")
+    }
+
 }
 
 /// One quick-action tile: icon above a one-line label, full tile tappable.
