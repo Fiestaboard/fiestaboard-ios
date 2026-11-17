@@ -1264,3 +1264,35 @@ extension BoardStoreTests {
         XCTAssertEqual(store.hubReachable, true)
     }
 }
+
+extension BoardStoreTests {
+    func testAutomaticReachabilityRetryCannotClearUnknownWriteReadbackBarrier() async throws {
+        let service = try FixtureFiestaBoardService(), store = BoardStore()
+        await store.connect(service).value
+        await service.setSimulation(.unknown)
+        await store.confirm(try XCTUnwrap(store.prepare(.text("MAYBE")))).value
+        XCTAssertTrue(store.needsReadback)
+        store.networkAvailable = false
+        store.networkAvailable = true
+        await store.probeReachability().value
+        XCTAssertTrue(store.needsReadback)
+        XCTAssertFalse(store.canWrite)
+        await store.refresh().value
+        XCTAssertFalse(store.needsReadback)
+    }
+}
+
+extension BoardStoreTests {
+    func testHubProbeRecoversWithoutASelectedDisplay() async throws {
+        let service = try SessionFaultService(), store = BoardStore()
+        await service.setEmptyBoards()
+        await store.connect(service, allowCandidateWrites: true).value
+        XCTAssertNil(store.selectedBoardID)
+        store.networkAvailable = false
+        store.networkAvailable = true
+        await store.probeReachability().value
+        XCTAssertEqual(store.hubReachable, true)
+        XCTAssertNotNil(store.status)
+        XCTAssertNil(store.selectedBoardID)
+    }
+}

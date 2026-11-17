@@ -6,6 +6,29 @@ import FiestaBoardKit
     private func model(_ service: OnboardingService) -> ConnectionModel {
         ConnectionModel(store: BoardStore(), catalog: ServerCatalog(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)), discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, serviceFactory: { _ in service })
     }
+    func testSavedHubBootstrapFailureRetainsShellContextAndCanRecover() async throws {
+        let service = try OnboardingService()
+        await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        await service.failBootstrap(.networkUnavailable)
+        let model = model(service)
+        let saved = SavedServer(deployment: service.deployment, alias: "Known hub", installationID: "installation")
+        await model.selectSaved(saved).value
+        XCTAssertEqual(model.phase, .unreachable)
+        XCTAssertEqual(model.selectedSavedHub?.id, saved.id)
+        XCTAssertNil(model.snapshot)
+        await service.failBootstrap(nil)
+        await model.retrySavedHub().value
+        XCTAssertEqual(model.phase, .connected)
+    }
+    func testUnknownHubBootstrapFailureReturnsEnrollment() async throws {
+        let service = try OnboardingService()
+        await service.failBootstrap(.networkUnavailable)
+        let model = model(service)
+        model.address = service.deployment.description
+        await model.connectAddress().value
+        XCTAssertEqual(model.phase, .picker)
+        XCTAssertNil(model.selectedSavedHub)
+    }
     func testStartupNeverBuildsLiveServiceAndDisconnectReturnsPicker() async throws {
         let service = try OnboardingService(); let model = model(service)
         await model.start().value
@@ -186,7 +209,10 @@ private actor OnboardingService: FiestaBoardService {
     func blockBootstrap() { blocked = true }
     func waitForBootstrap() async { if gate != nil { return }; await withCheckedContinuation { observers.append($0) } }
     func releaseBootstrap() { gate?.resume(); gate = nil }
+    var bootstrapFailure: FiestaBoardError?
+    func failBootstrap(_ error: FiestaBoardError?) { bootstrapFailure = error }
     func bootstrap() async throws -> BootstrapSnapshot {
+        if let bootstrapFailure { throw bootstrapFailure }
         events.append("bootstrap")
         if blocked { await withCheckedContinuation { gate = $0; observers.forEach { $0.resume() }; observers = [] } }
         return try BootstrapSnapshot(deployment: deployment, health: ServerHealth(status: "ok", serviceRunning: false, version: "10.1.17"), identity: ServerIdentity(product: "FiestaBoard", version: "10.1.17", installationID: installation, name: "Test"), auth: authStatus())

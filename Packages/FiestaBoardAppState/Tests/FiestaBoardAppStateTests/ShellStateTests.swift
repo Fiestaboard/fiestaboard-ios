@@ -49,3 +49,16 @@ extension ShellStateTests {
         XCTAssertFalse(state.reconnected)
     }
 }
+
+extension ShellStateTests {
+    func testDifferentHubFirstSuccessDoesNotReuseReconnectHistory() {
+        var state = ShellConnection()
+        state.observe(pathAvailable: true, hubReachable: true, hub: "A")
+        state.observe(pathAvailable: true, hubReachable: false, hub: "B")
+        state.observe(pathAvailable: true, hubReachable: true, hub: "B")
+        XCTAssertFalse(state.reconnected)
+        state.observe(pathAvailable: false, hubReachable: false, hub: "B")
+        state.observe(pathAvailable: true, hubReachable: true, hub: "B")
+        XCTAssertTrue(state.reconnected)
+    }
+}
