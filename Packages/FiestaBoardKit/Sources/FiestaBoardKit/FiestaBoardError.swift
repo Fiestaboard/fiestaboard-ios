@@ -4,7 +4,7 @@ import Foundation
 public enum FiestaBoardError: Error, Sendable, Equatable, LocalizedError {
     case unsupportedOperation, invalidRequestContext, wrongProduct
     case setupRequired(firstRun: Bool), onboardingConflict(OnboardingConflictReason)
-    case invalidCredentials, setupProofRequired, csrfRequired, forbidden
+    case invalidCredentials, invalidResetCode, setupProofRequired, csrfRequired, forbidden
     case validation(fields: [ValidationField]), startupUnavailable, gatewayUnavailable
     case invalidDeployment, insecureDeployment, invalidPath, invalidTarget
     case unauthenticated, conflict, rateLimited(retryAfterSeconds: Int?)
@@ -24,6 +24,7 @@ public enum FiestaBoardError: Error, Sendable, Equatable, LocalizedError {
         case .setupRequired: "Choose authentication and finish administrator setup for this deployment."
         case .onboardingConflict(let reason): reason.message
         case .invalidCredentials: "The username or password is incorrect."
+        case .invalidResetCode: "That reset code is invalid or has expired. Run the reset command again."
         case .setupProofRequired: "This install has a stored MCP token. Supply that token to enable login or create the administrator."
         case .csrfRequired: "Refresh the browser session proof before trying this action again."
         case .forbidden: "This session is not permitted to perform this action."
@@ -77,4 +78,7 @@ public enum OnboardingConflictReason: Sendable, Equatable {
         }
     }
 }
-public enum ValidationField: String, Sendable, Equatable { case username, password, enabled }
+public enum ValidationField: String, Sendable, Equatable {
+    case username, password, enabled
+    case newPassword = "new_password"
+}

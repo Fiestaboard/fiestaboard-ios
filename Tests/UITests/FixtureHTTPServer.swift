@@ -14,6 +14,10 @@ final class FixtureHTTPServer: @unchecked Sendable {
     var port: UInt16 { listener.port!.rawValue }
     func holdHomeMutations(_ held: Bool) { router.homeMutationGate.setHeld(held) }
     var homeMutationWaiting: Bool { router.homeMutationGate.isWaiting }
+    func holdOnboardingBootstrap(_ held: Bool) { router.onboardingBootstrapGate.setHeld(held) }
+    var onboardingBootstrapWaiting: Bool { router.onboardingBootstrapGate.isWaiting }
+    func holdOnboardingHandoffPages(_ held: Bool) { router.onboardingHandoffPagesGate.setHeld(held) }
+    var onboardingHandoffPagesWaiting: Bool { router.onboardingHandoffPagesGate.isWaiting }
 
     init(router: FixtureRouter) throws {
         self.router = router

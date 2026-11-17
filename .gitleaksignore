@@ -7,6 +7,12 @@ Tokens/platform-ios.json:generic-api-key:27
 # Recorder revokes this token before exit; SOURCE.json and the revoked HTTP
 # response preserve provenance. Never suppress production mobile credentials.
 Tests/Fixtures/device-login.json:generic-api-key:1
+# I9 byte-exact synthetic contract_admin mobile tokens from immutable f47da6e.
+# The reset invalidates the first; explicit revoke invalidates the second.
+# Recorded device-session-after-reset/finally-revoked 401s and SOURCE.json
+# preserve proof. Never suppress production credentials or a whole directory.
+Tests/Fixtures/Onboarding/device-login-before-reset.json:generic-api-key:1
+Tests/Fixtures/Onboarding/device-login-after-reset.json:generic-api-key:1
 # I7 byte-exact synthetic Undo receipts from immutable isolated backend6be367f.
 # Recorded use/stale refusals consume or invalidate them; the mobile session is
 # revoked before exit and their at-most30s deadlines have passed. No live tokens.
@@ -22,9 +28,8 @@ Tests/Fixtures/Home/DockerUndo/undo-indefinite-cancel.json:generic-api-key:1
 Tests/Fixtures/Home/DockerBanners/undo-cancel.json:generic-api-key:1
 Tests/Fixtures/Home/DockerBanners/undo-stale-cancel.json:generic-api-key:1
 Tests/Fixtures/Home/DockerBanners/undo-indefinite-cancel.json:generic-api-key:1
-# I8 exact source lines below contain only the immutable corpus filename and
-# drawing case selector (operations-authenticated / drawing-tc001-fixture).
-# Independently inspected and scanned; there are no credentials in these calls.
+# Fixture filename/case selectors in checked I8 test source, not credential material.
+# Keep original tests and recorded responses unchanged; exact line/rule scope only.
 Packages/FiestaBoardAppState/Tests/FiestaBoardAppStateTests/ComposePreviewProjectionTests.swift:generic-api-key:16
 Packages/FiestaBoardAppState/Tests/FiestaBoardAppStateTests/ComposePreviewProjectionTests.swift:generic-api-key:27
 Packages/FiestaBoardKit/Tests/FiestaBoardKitTests/ComposeDrawingTests.swift:generic-api-key:14

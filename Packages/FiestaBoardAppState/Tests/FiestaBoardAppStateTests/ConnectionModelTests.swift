@@ -3,8 +3,58 @@ import XCTest
 @testable import FiestaBoardAppState
 
 @MainActor final class ConnectionModelTests: XCTestCase {
-    private func model(_ service: OnboardingService) -> ConnectionModel {
-        ConnectionModel(store: BoardStore(), catalog: ServerCatalog(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)), discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, serviceFactory: { _ in service })
+    private func model(_ service: OnboardingService, now: @escaping @MainActor () -> Date = { Date() }) -> ConnectionModel {
+        ConnectionModel(store: BoardStore(), catalog: ServerCatalog(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)), discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, now: now, serviceFactory: { _ in service })
+    }
+    private final class Clock { var value = Date(timeIntervalSince1970: 1_000) }
+
+    // The actual request gate must use elapsed wall time, including time in the background.
+    func testLoginDispatchResumesExactlyAtTheAdvertisedDeadline() async throws {
+        let clock = Clock(), service = try OnboardingService()
+        let model = model(service, now: { clock.value })
+        await service.setLoginError(.rateLimited(retryAfterSeconds: 60))
+        model.address = service.deployment.description
+        await model.connectAddress().value
+        model.username = "admin"; model.password = "wrong-password"
+        await model.signIn().value
+        clock.value = Date(timeIntervalSince1970: 1_059.999)
+        model.password = "still-before-deadline"; await model.signIn().value
+        let before = await service.events.filter { $0 == "login" }.count
+        XCTAssertEqual(before, 1)
+        clock.value = Date(timeIntervalSince1970: 1_060)
+        model.password = "new-user-attempt"; await model.signIn().value
+        let after = await service.events.filter { $0 == "login" }.count
+        XCTAssertEqual(after, 2)
+    }
+
+    // Returning through the hub picker must not bypass this hub's live lockout.
+    func testReselectingTheSameHubKeepsItsAdvertisedLockout() async throws {
+        let clock = Clock(), service = try OnboardingService()
+        let model = model(service, now: { clock.value })
+        await service.setLoginError(.rateLimited(retryAfterSeconds: 60))
+        model.address = service.deployment.description; await model.connectAddress().value
+        model.username = "admin"; model.password = "wrong-password"; await model.signIn().value
+        model.cancel()
+        model.address = service.deployment.description; await model.connectAddress().value
+        model.username = "admin"; model.password = "try-from-picker"; await model.signIn().value
+        let attempts = await service.events.filter { $0 == "login" }.count
+        XCTAssertEqual(attempts, 1)
+    }
+
+    // Removing the auth Retry-After gate must dispatch a second forbidden login.
+    func testLoginLockoutDoesNotDispatchAnImmediateSecondAttempt() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.setLoginError(.rateLimited(retryAfterSeconds: 60))
+        model.address = service.deployment.description
+        await model.connectAddress().value
+        model.username = "admin"; model.password = "wrong-password"
+        await model.signIn().value
+        model.password = "new-attempt-before-deadline"
+        await model.signIn().value
+        let attempts = await service.events.filter { $0 == "login" }.count
+        XCTAssertEqual(attempts, 1, "Retry-After blocks network dispatch, not only the button's copy")
+        XCTAssertEqual(model.username, "admin")
+        XCTAssertTrue(model.password.isEmpty)
     }
     func testSavedHubBootstrapFailureRetainsShellContextAndCanRecover() async throws {
         let service = try OnboardingService()
@@ -533,6 +583,7 @@ private actor EmptyRememberedConnectionVault: SessionVault {
 }
 
 private final class AuthDisabledConnectionURLProtocol: URLProtocol, @unchecked Sendable {
+    nonisolated(unsafe) static var heldPages: ConnectionHandoffPagesGate?
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func stopLoading() {}
@@ -551,6 +602,12 @@ private final class AuthDisabledConnectionURLProtocol: URLProtocol, @unchecked S
         default:
             client?.urlProtocol(self, didFailWithError: URLError(.badURL)); return
         }
+        if request.url!.host == "post-status.test", request.url!.lastPathComponent == "pages", let gate = Self.heldPages {
+            gate.hold(self, body: body); return
+        }
+        respond(body)
+    }
+    func respond(_ body: String) {
         let response = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: [:])!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: Data(body.utf8))
@@ -591,6 +648,104 @@ extension ConnectionModelTests {
             do { _ = try await store.readbackCollection(context: collection.context); XCTFail("Durable scope must not revive an old live context") }
             catch { XCTAssertEqual(error as? FiestaBoardError, .staleSession) }
         }
+    }
+}
+
+extension ConnectionModelTests {
+    // The wrong-password surface must target the password field while preserving the entered username.
+    func testWrongCredentialsPublishPasswordFieldRejectionAndResetClearsIt() async throws {
+        let service = try OnboardingService(), model = model(service)
+        model.address = service.deployment.description; await model.connectAddress().value
+        await service.setLoginError(.invalidCredentials)
+        model.username = "retained-owner"; model.password = "wrong-secret"
+        await model.signIn().value
+        XCTAssertTrue(model.signInPasswordRejected)
+        XCTAssertEqual(model.username, "retained-owner"); XCTAssertEqual(model.password, "")
+        XCTAssertEqual(model.phase, .authentication(.signIn)); XCTAssertFalse(model.requiresStateCheck)
+        model.beginPasswordReset()
+        XCTAssertFalse(model.signInPasswordRejected)
+        XCTAssertEqual(model.passwordResetFlow?.phase, .instructions)
+    }
+
+    // Opening setup uses the verified selected deployment; returning reads once without admin creation or sign in.
+    func testWebSetupReturnRechecksOnceAndKeepsTheVerifiedHub() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.chooseAuth(AuthStatus(enabled: true, setupRequired: true, authenticated: false))
+        model.address = service.deployment.description; await model.connectAddress().value
+        let hub = try XCTUnwrap(model.selectedSavedHub)
+        model.address = "https://unverified.example.test"
+        XCTAssertEqual(model.beginWebSetup()?.absoluteString, service.deployment.description)
+        XCTAssertEqual(model.setupWebReturn, .awaitingReturn)
+        let before = await service.bootstrapAttempts
+        await service.chooseAuth(AuthStatus(enabled: true, setupRequired: false, authenticated: false))
+        await model.returnFromWebSetup().value
+        XCTAssertEqual(model.setupWebReturn, .finished)
+        XCTAssertEqual(model.selectedSavedHub?.id, hub.id)
+        XCTAssertEqual(model.phase, .authentication(.signIn))
+        await model.returnFromWebSetup().value
+        let after = await service.bootstrapAttempts, events = await service.events
+        XCTAssertEqual(after, before + 1)
+        XCTAssertFalse(events.contains("login")); XCTAssertFalse(events.contains("setup"))
+    }
+
+    // An unfinished web wizard remains explicit; a foreground event cannot claim it finished.
+    func testIncompleteWebSetupRetainsAddressAndPermitsExplicitReopen() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.chooseAuth(AuthStatus(enabled: true, setupRequired: true, authenticated: false))
+        model.address = service.deployment.description; await model.connectAddress().value
+        _ = model.beginWebSetup(); await model.returnFromWebSetup().value
+        XCTAssertEqual(model.setupWebReturn, .incomplete)
+        XCTAssertEqual(model.phase, .authentication(.setupAdministrator))
+        XCTAssertEqual(model.snapshot?.deployment, service.deployment)
+        XCTAssertEqual(model.beginWebSetup()?.absoluteString, service.deployment.description)
+        XCTAssertEqual(model.setupWebReturn, .awaitingReturn)
+    }
+
+    // A browser return after leaving a hub cannot issue a new read or route the next connection.
+    func testWebSetupReturnAfterHubExitDoesNotDispatch() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.chooseAuth(AuthStatus(enabled: true, setupRequired: true, authenticated: false))
+        model.address = service.deployment.description; await model.connectAddress().value
+        _ = model.beginWebSetup()
+        let before = await service.bootstrapAttempts
+        model.cancel(); await model.returnFromWebSetup().value
+        let after = await service.bootstrapAttempts
+        XCTAssertEqual(after, before)
+        XCTAssertEqual(model.setupWebReturn, .none)
+        XCTAssertNil(model.beginWebSetup())
+        XCTAssertEqual(model.phase, .picker)
+    }
+}
+
+extension ConnectionModelTests {
+    // A callback from a replaced sheet must not cancel its successor while bootstrap is in flight.
+    func testOldPresentationDismissalCannotCancelNewConnectionAttempt() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        await service.blockBootstrap()
+        let oldPresentation = model.beginOnboardingPresentation()
+        let replacement = model.beginOnboardingPresentation()
+        XCTAssertNotEqual(oldPresentation, replacement)
+        model.address = service.deployment.description
+        let attempt = model.connectAddress(); await service.waitForBootstrap()
+        model.dismissOnboardingPresentation(oldPresentation)
+        XCTAssertEqual(model.phase, .checking); XCTAssertTrue(model.busy)
+        await service.releaseBootstrap(); await attempt.value
+        XCTAssertEqual(model.phase, .connected)
+        XCTAssertNotNil(model.snapshot)
+    }
+
+    // A successful login removes its sheet too; dismissal may not revoke its retained live service.
+    func testSuccessfulConnectionDismissalKeepsTheConnectedHub() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        let presentation = model.beginOnboardingPresentation()
+        model.address = service.deployment.description; await model.connectAddress().value
+        let before = await service.events.filter { $0 == "disconnect" }.count
+        model.dismissOnboardingPresentation(presentation)
+        XCTAssertEqual(model.phase, .connected); XCTAssertNotNil(model.snapshot)
+        let after = await service.events.filter { $0 == "disconnect" }.count
+        XCTAssertEqual(after, before)
     }
 }
 
@@ -644,5 +799,182 @@ extension ConnectionModelTests {
         let selecting = model.selectSaved(.init(deployment: service.deployment, alias: "Hub", installationID: "installation"))
         await service.waitForComposeProof(); model.cancel(); await service.releaseComposeProof(); await selecting.value
         XCTAssertEqual(model.phase, .picker); XCTAssertNil(model.composePrincipal)
+    }
+}
+
+
+extension ConnectionModelTests {
+    // DraftScene must consume this route so a user-owned form is not removed during bootstrap.
+    func testActiveOnboardingRootRouteSurvivesCheckingAndAuthRequired() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.blockBootstrap()
+        let presentation = model.attachOnboardingPresentation()
+        model.address = service.deployment.description
+        let selecting = model.connectAddress(); await service.waitForBootstrap()
+        let visibleWhileChecking = model.shouldPresentOnboarding
+        await service.releaseBootstrap(); await selecting.value
+        XCTAssertTrue(visibleWhileChecking, "The actual root must retain enrollment's presenter while checking")
+        XCTAssertEqual(model.phase, .authentication(.signIn)); XCTAssertNotNil(model.snapshot)
+        XCTAssertTrue(model.shouldPresentOnboarding)
+        // A legitimate host reattachment is distinct from explicitly replacing the presentation.
+        model.password = "still-current-secret"
+        let reattached = model.attachOnboardingPresentation()
+        XCTAssertEqual(reattached, presentation)
+        XCTAssertEqual(model.phase, .authentication(.signIn)); XCTAssertNotNil(model.snapshot)
+        XCTAssertEqual(model.password, "still-current-secret")
+        model.dismissOnboardingPresentation(presentation)
+        XCTAssertEqual(model.phase, .picker); XCTAssertNil(model.snapshot); XCTAssertEqual(model.password, "")
+    }
+
+    func testColdSavedHubRootRouteKeepsCheckingAndUnreachableShell() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.blockBootstrap()
+        let hub = SavedServer(deployment: service.deployment, alias: "Restoring hub", installationID: "installation")
+        let restoring = model.selectSaved(hub); await service.waitForBootstrap()
+        let visibleWhileChecking = model.shouldPresentOnboarding
+        await service.releaseBootstrap(); await restoring.value
+        XCTAssertFalse(visibleWhileChecking, "Cold restoration retains the connecting/cached shell")
+        await service.failBootstrap(.networkUnavailable)
+        await model.selectSaved(hub).value
+        XCTAssertEqual(model.phase, .unreachable); XCTAssertFalse(model.shouldPresentOnboarding)
+        XCTAssertEqual(model.selectedSavedHub?.id, hub.id)
+    }
+
+    func testOnboardingRootRouteHandsConnectedHubToShell() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        let presentation = model.attachOnboardingPresentation()
+        model.address = service.deployment.description; await model.connectAddress().value
+        XCTAssertEqual(model.phase, .connected); XCTAssertFalse(model.shouldPresentOnboarding)
+        let before = await service.events.filter { $0 == "disconnect" }.count
+        model.dismissOnboardingPresentation(presentation)
+        XCTAssertEqual(model.phase, .connected); XCTAssertNotNil(model.snapshot)
+        let after = await service.events.filter { $0 == "disconnect" }.count
+        XCTAssertEqual(after, before)
+    }
+
+    func testAttachDoesNotReplaceButExplicitBeginStillRetiresTheOldForm() async throws {
+        let service = try OnboardingService(), model = model(service)
+        let first = model.attachOnboardingPresentation()
+        model.address = service.deployment.description; await model.connectAddress().value
+        model.password = "retired-secret"; model.setupToken = "retired-proof"
+        let replacement = model.beginOnboardingPresentation()
+        XCTAssertNotEqual(first, replacement)
+        XCTAssertEqual(model.password, ""); XCTAssertEqual(model.setupToken, ""); XCTAssertNil(model.snapshot)
+        XCTAssertEqual(model.attachOnboardingPresentation(), replacement)
+        await model.connectAddress().value
+        model.password = "replacement-secret"
+        model.dismissOnboardingPresentation(first)
+        XCTAssertEqual(model.phase, .authentication(.signIn)); XCTAssertEqual(model.password, "replacement-secret")
+        model.dismissOnboardingPresentation(replacement)
+        XCTAssertEqual(model.phase, .picker); XCTAssertEqual(model.password, "")
+        XCTAssertNotEqual(model.attachOnboardingPresentation(), replacement, "A dismissed scope cannot be reattached")
+    }
+}
+
+
+extension ConnectionModelTests {
+    // Phone handoff has no sheet dismissal callback; the completed owner must retire in the model.
+    func testCompletedOnboardingCannotOwnLaterShellHubSwitch() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        let completed = model.attachOnboardingPresentation()
+        model.address = service.deployment.description; await model.connectAddress().value
+        XCTAssertEqual(model.phase, .connected)
+        let hub = try XCTUnwrap(model.selectedSavedHub)
+        await service.blockBootstrap()
+        let switching = model.selectSaved(hub); await service.waitForBootstrap()
+        let enrollmentVisible = model.shouldPresentOnboarding
+        model.dismissOnboardingPresentation(completed)
+        let phaseAfterStaleCallback = model.phase
+        await service.releaseBootstrap(); await switching.value
+        XCTAssertFalse(enrollmentVisible, "A completed phone enrollment must not change a later shell hub switch into enrollment")
+        XCTAssertEqual(phaseAfterStaleCallback, .checking, "A completed presentation callback cannot cancel the shell's switch")
+        XCTAssertEqual(model.phase, .connected); XCTAssertNotNil(model.snapshot)
+    }
+}
+
+
+/// Only the HTTP boundary is held; Live service, transport, Store and Connection model are real.
+private final class ConnectionHandoffPagesGate: @unchecked Sendable {
+    private let lock = NSLock()
+    private var pending: (AuthDisabledConnectionURLProtocol, String)?
+    private var observers: [CheckedContinuation<Void, Never>] = []
+    func hold(_ channel: AuthDisabledConnectionURLProtocol, body: String) {
+        let waiting = lock.withLock { pending = (channel, body); let result = observers; observers = []; return result }
+        waiting.forEach { $0.resume() }
+    }
+    func waitForPages() async {
+        await withCheckedContinuation { continuation in
+            let ready = lock.withLock { if pending != nil { return true }; observers.append(continuation); return false }
+            if ready { continuation.resume() }
+        }
+    }
+    func release() {
+        let reply = lock.withLock { let result = pending; pending = nil; return result }
+        if let (channel, body) = reply { channel.respond(body) }
+    }
+}
+
+extension ConnectionModelTests {
+    private func heldLiveHandoff(_ gate: ConnectionHandoffPagesGate) throws -> (ConnectionModel, BoardStore, URL) {
+        AuthDisabledConnectionURLProtocol.heldPages = gate
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        let deployment = try DeploymentURL("https://post-status.test")
+        let transport = URLSessionTransport(deployment: deployment, protocolClasses: [AuthDisabledConnectionURLProtocol.self])
+        let service = LiveFiestaBoardService(deployment: deployment, transport: transport)
+        let store = BoardStore()
+        let model = ConnectionModel(store: store, catalog: ServerCatalog(directory: directory), discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, serviceFactory: { _ in service })
+        model.address = deployment.description
+        return (model, store, directory)
+    }
+
+    func testActiveRootSurvivesRealServiceStatusUntilHeldPagesFinish() async throws {
+        let gate = ConnectionHandoffPagesGate(), (model, store, directory) = try heldLiveHandoff(gate)
+        defer { gate.release(); AuthDisabledConnectionURLProtocol.heldPages = nil; try? FileManager.default.removeItem(at: directory) }
+        let owner = model.attachOnboardingPresentation()
+        let connecting = model.connectAddress(); await gate.waitForPages()
+        XCTAssertNotNil(store.status, "The real Store publishes status before its pages HTTP request finishes")
+        XCTAssertEqual(model.phase, .checking); XCTAssertTrue(model.busy); XCTAssertTrue(store.connecting)
+        let visibleBeforeConnected = model.shouldPresentOnboarding
+        XCTAssertEqual(model.attachOnboardingPresentation(), owner)
+        gate.release(); await connecting.value
+        XCTAssertTrue(visibleBeforeConnected, "Store status cannot unmount a presenter that still owns cancellation")
+        XCTAssertEqual(model.phase, .connected); XCTAssertFalse(model.shouldPresentOnboarding)
+        XCTAssertNotNil(store.status); XCTAssertFalse(store.connecting)
+        model.dismissOnboardingPresentation(owner)
+        XCTAssertEqual(model.phase, .connected); XCTAssertNotNil(store.status)
+    }
+
+    func testDismissAfterRealServiceStatusRejectsHeldPagesCompletionAndClearsSecrets() async throws {
+        let gate = ConnectionHandoffPagesGate(), (model, store, directory) = try heldLiveHandoff(gate)
+        defer { gate.release(); AuthDisabledConnectionURLProtocol.heldPages = nil; try? FileManager.default.removeItem(at: directory) }
+        let owner = model.attachOnboardingPresentation()
+        let connecting = model.connectAddress(); await gate.waitForPages()
+        XCTAssertNotNil(store.status); XCTAssertEqual(model.phase, .checking)
+        let visibleBeforeDismissal = model.shouldPresentOnboarding
+        model.password = "unsubmitted-password"; model.setupToken = "unsubmitted-proof"
+        model.resetCode = "unsubmitted-code"; model.resetNewPassword = "unsubmitted-new-password"; model.resetConfirmation = "unsubmitted-confirmation"
+        model.dismissOnboardingPresentation(owner)
+        XCTAssertEqual(model.phase, .picker); XCTAssertNil(model.snapshot); XCTAssertNil(store.status)
+        XCTAssertEqual(model.password, ""); XCTAssertEqual(model.setupToken, "")
+        XCTAssertEqual(model.resetCode, ""); XCTAssertEqual(model.resetNewPassword, ""); XCTAssertEqual(model.resetConfirmation, "")
+        gate.release(); await connecting.value
+        XCTAssertTrue(visibleBeforeDismissal)
+        XCTAssertEqual(model.phase, .picker); XCTAssertNil(model.snapshot); XCTAssertNil(store.status)
+        XCTAssertFalse(model.busy); XCTAssertFalse(store.connecting)
+    }
+
+    func testColdSavedHubKeepsShellAfterRealServiceStatusWhilePagesAreHeld() async throws {
+        let gate = ConnectionHandoffPagesGate(), (model, store, directory) = try heldLiveHandoff(gate)
+        defer { gate.release(); AuthDisabledConnectionURLProtocol.heldPages = nil; try? FileManager.default.removeItem(at: directory) }
+        let hub = SavedServer(deployment: try DeploymentURL(model.address), alias: "Restoring hub", installationID: "native-installation")
+        let connecting = model.selectSaved(hub); await gate.waitForPages()
+        XCTAssertNotNil(store.status); XCTAssertEqual(model.phase, .checking)
+        let visibleBeforeConnected = model.shouldPresentOnboarding
+        gate.release(); await connecting.value
+        XCTAssertFalse(visibleBeforeConnected, "Unowned cold restoration must retain the shell")
+        XCTAssertEqual(model.phase, .connected); XCTAssertFalse(model.shouldPresentOnboarding)
+        XCTAssertNotNil(store.status)
     }
 }

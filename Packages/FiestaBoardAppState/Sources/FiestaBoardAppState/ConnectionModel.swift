@@ -17,6 +17,10 @@ public enum ConnectionPhase: Sendable, Equatable {
     case picker, checking, unreachable, authentication(BootstrapPhase), connected
 }
 
+public enum WebSetupReturn: Sendable, Equatable {
+    case none, awaitingReturn, checking, incomplete, finished, unconfirmed
+}
+
 /// One window's onboarding intent. Secrets never enter the catalog or preferences.
 @MainActor public final class ConnectionModel: ObservableObject {
     @Published public private(set) var phase: ConnectionPhase = .picker
@@ -25,7 +29,11 @@ public enum ConnectionPhase: Sendable, Equatable {
     @Published public private(set) var discoveredServers: [DiscoveredServer] = []
     @Published public private(set) var searching = false
     @Published public private(set) var discoveryMessage: String?
+    @Published public private(set) var hubDiscoveryFlow = HubDiscoveryFlow()
     @Published public private(set) var message: String?
+    @Published public private(set) var loginRetryDeadline: LoginRetryDeadline?
+    @Published public private(set) var signInPasswordRejected = false
+    @Published public private(set) var setupWebReturn: WebSetupReturn = .none
     @Published public private(set) var busy = false
     @Published public private(set) var requiresStateCheck = false
     @Published public private(set) var requiresSetupProof = false
@@ -44,15 +52,49 @@ public enum ConnectionPhase: Sendable, Equatable {
     @Published public var setupToken = ""
     @Published public var rememberMe = false
     @Published public var alias = ""
+    @Published public private(set) var passwordResetFlow: PasswordResetFlow?
+    @Published public var resetCode = ""
+    @Published public var resetNewPassword = ""
+    @Published public var resetConfirmation = ""
+    private var resetIntent = UUID()
     private let store: BoardStore
     private let catalog: ServerCatalog
     private let discovery: any ServerDiscovering
+    private let now: @MainActor () -> Date
+    private var loginDeadlines: [DeploymentURL: LoginRetryDeadline] = [:]
     private let preferences: UserDefaults
     private let factory: @Sendable (DeploymentURL) -> any FiestaBoardService
     private var service: (any FiestaBoardService)?
     private var selected: SavedServer?
     public var selectedSavedHub: SavedServer? { selected }
     private var generation = UUID()
+    // Presentation ownership survives hub selection, independently of request generation.
+    @Published private var onboardingPresentationID: UUID?
+    /// The root keeps user enrollment mounted while its own bootstrap runs.
+    /// A cold saved-hub restore has no presentation owner and retains the shell.
+    public var shouldPresentOnboarding: Bool {
+        guard phase != .connected else { return false }
+        if onboardingPresentationID != nil { return true }
+        return store.status == nil && phase != .checking && phase != .unreachable
+    }
+    /// Reattach the current host without replacing its intent or clearing its hub.
+    @discardableResult public func attachOnboardingPresentation() -> UUID {
+        onboardingPresentationID ?? beginOnboardingPresentation()
+    }
+    /// Start one native presentation; replacing an unfinished form clears its secrets.
+    @discardableResult public func beginOnboardingPresentation() -> UUID {
+        if onboardingPresentationID != nil, phase != .connected { cancel() }
+        let intent = UUID()
+        onboardingPresentationID = intent
+        return intent
+    }
+    public func dismissOnboardingPresentation(_ intent: UUID) {
+        guard onboardingPresentationID == intent else { return }
+        onboardingPresentationID = nil
+        // A completed handoff retires the form without revoking the shell's service.
+        guard phase != .connected else { return }
+        cancelConnection()
+    }
     private var operation: Task<Void, Never>?
     private var discoveryTask: Task<Void, Never>?
     private var cleanupTask: Task<Void, Never>?
@@ -61,17 +103,32 @@ public enum ConnectionPhase: Sendable, Equatable {
     private let selectedKey = "FiestaBoard.selectedServerID"
 
     public init(store: BoardStore, catalog: ServerCatalog, discovery: any ServerDiscovering,
-                preferences: UserDefaults, snapshots: ShellSnapshotStore? = nil, serviceFactory: @escaping @Sendable (DeploymentURL) -> any FiestaBoardService) {
+                preferences: UserDefaults, snapshots: ShellSnapshotStore? = nil, now: @escaping @MainActor () -> Date = { Date() }, serviceFactory: @escaping @Sendable (DeploymentURL) -> any FiestaBoardService) {
         self.store = store; self.catalog = catalog; self.discovery = discovery
-        self.preferences = preferences; self.snapshots = snapshots; factory = serviceFactory
+        self.preferences = preferences; self.snapshots = snapshots; self.now = now; factory = serviceFactory
     }
     @discardableResult public func start() -> Task<Void, Never> {
         return Task { await reloadCatalog() }
     }
-    public func findServers() {
-        stopDiscovery(); searching = true; discoveryMessage = nil; discoveredServers = []
+    @discardableResult public func findServers() -> Task<Void, Never> {
+        guard snapshot == nil, !busy else { return Task {} }
+        stopDiscovery(); discoveryMessage = nil; discoveredServers = []
+        hubDiscoveryFlow.requestDiscovery()
+        guard hubDiscoveryFlow.mayBrowse else { return Task {} }
+        return browseServers()
+    }
+    @discardableResult public func continueDiscoveryAfterExplanation() -> Task<Void, Never> {
+        guard snapshot == nil, !busy, hubDiscoveryFlow.phase == .localNetworkExplanation else { return Task {} }
+        hubDiscoveryFlow.continueAfterExplanation()
+        return browseServers()
+    }
+    public func enterManualAddress() {
+        stopDiscovery(); hubDiscoveryFlow.enterAddress()
+    }
+    private func browseServers() -> Task<Void, Never> {
+        discoveryTask?.cancel(); searching = true; discoveryMessage = nil; discoveredServers = []
         let token = generation
-        discoveryTask = Task { [weak self, discovery] in
+        let task = Task { [weak self, discovery] in
             do {
                 for try await results in discovery.snapshots() {
                     guard let self, generation == token, !Task.isCancelled else { return }
@@ -79,14 +136,19 @@ public enum ConnectionPhase: Sendable, Equatable {
                 }
                 guard let self, generation == token, !Task.isCancelled else { return }
                 searching = false
-                discoveryMessage = discoveredServers.isEmpty ? "No servers found. Check Wi-Fi or enter an address manually." : nil
+                hubDiscoveryFlow.stopSearching()
+                discoveryMessage = discoveredServers.isEmpty ? "No hubs found. Check Wi-Fi or enter an address manually." : nil
             } catch {
                 guard let self, generation == token, !Task.isCancelled else { return }
-                searching = false; discoveryMessage = "Discovery could not finish. Check Wi-Fi and Local Network settings, or enter an address manually."
+                searching = false; hubDiscoveryFlow.stopSearching()
+                discoveryMessage = "Discovery could not finish. Check Wi-Fi and Local Network settings, or enter an address manually."
             }
         }
+        discoveryTask = task; return task
     }
-    public func stopDiscovery() { discoveryTask?.cancel(); discoveryTask = nil; searching = false }
+    public func stopDiscovery() {
+        discoveryTask?.cancel(); discoveryTask = nil; searching = false; hubDiscoveryFlow.stopSearching()
+    }
     /// Selecting discovery fills the address; local HTTP still requires the user's explicit choice.
     public func useDiscovered(_ server: DiscoveredServer) { address = server.deployment.description; alias = server.displayName; allowLocalHTTP = false }
     @discardableResult public func connectAddress() -> Task<Void, Never> {
@@ -104,9 +166,11 @@ public enum ConnectionPhase: Sendable, Equatable {
         return select(server.deployment, record: server)
     }
     private func select(_ deployment: DeploymentURL, record: SavedServer?) -> Task<Void, Never> {
-        cancel(); selected = record; phase = .checking; busy = true
+        cancelConnection(); selected = record; phase = .checking; busy = true
         let token = generation, cleanup = cleanupTask
         let next = factory(deployment); service = next
+        loginDeadlines = loginDeadlines.filter { $0.value.remainingSeconds(at: now()) > 0 }
+        loginRetryDeadline = loginDeadlines[deployment]
         let task = Task { [weak self] in
             await cleanup?.value
             guard let self, valid(token) else { return }
@@ -166,20 +230,85 @@ public enum ConnectionPhase: Sendable, Equatable {
             if let known = selected?.installationID, known != result.identity.installationID {
                 invalidateSnapshotSession(); await removeSnapshot(for: selected)
                 guard valid(token) else { return }
-                cancel()
+                cancelConnection()
                 message = "This address identifies a different FiestaBoard installation. Remove the saved server and forget its sign-in before adding it again."
                 return
             }
             snapshot = result; requiresStateCheck = false
+            if setupWebReturn == .checking {
+                setupWebReturn = result.phase == .ready || result.phase == .signIn ? .finished : .incomplete
+            }
             await route(service, token: token)
         }
     }
+    public func beginWebSetup() -> URL? {
+        guard !busy, !requiresStateCheck,
+              phase == .authentication(.chooseAuthentication) || phase == .authentication(.setupAdministrator),
+              let snapshot, let url = URL(string: snapshot.deployment.description) else { return nil }
+        setupWebReturn = .awaitingReturn
+        return url
+    }
+    @discardableResult public func returnFromWebSetup() -> Task<Void, Never> {
+        guard setupWebReturn == .awaitingReturn, !busy, service != nil else { return Task {} }
+        setupWebReturn = .checking
+        return checkServerState()
+    }
     @discardableResult public func signIn() -> Task<Void, Never> {
         let secret = password; password = ""; setupToken = ""
-        guard let service, !busy, !requiresStateCheck, !username.isEmpty, !secret.isEmpty else { return Task {} }
+        guard let service, !busy, !requiresStateCheck,
+              (loginRetryDeadline?.remainingSeconds(at: now()) ?? 0) == 0,
+              !username.isEmpty, !secret.isEmpty else { return Task {} }
         let user = username, remember = rememberMe
         return authenticate { try await service.login(username: user, password: secret, rememberMe: remember) }
     }
+    public func beginPasswordReset() {
+        guard phase == .authentication(.signIn), !busy, !requiresStateCheck else { return }
+        clearResetSecrets(); password = ""; setupToken = ""
+        resetIntent = UUID(); passwordResetFlow = PasswordResetFlow(); message = nil; validationFields = []; signInPasswordRejected = false
+    }
+    public func enterPasswordResetCode() { passwordResetFlow?.enterCode() }
+    @discardableResult public func submitPasswordReset() -> Task<Void, Never> {
+        let code = resetCode, secret = resetNewPassword, confirmation = resetConfirmation
+        clearResetSecrets(); password = ""; setupToken = ""
+        guard phase == .authentication(.signIn), let service, !busy, !requiresStateCheck,
+              (loginRetryDeadline?.remainingSeconds(at: now()) ?? 0) == 0,
+              let attempt = passwordResetFlow?.prepare(code: code, newPassword: secret, confirmation: confirmation) else { return Task {} }
+        let intent = resetIntent
+        return run { [weak self] token in
+            guard let self else { return }
+            do {
+                try await service.resetPassword(code: attempt.code, newPassword: attempt.newPassword)
+                guard valid(token), resetIntent == intent else { return }
+                invalidateSnapshotSession(); await removeSnapshot(for: selected)
+                guard valid(token), resetIntent == intent else { return }
+                persistence = await service.sessionPersistenceState()
+                guard valid(token), resetIntent == intent else { return }
+                passwordResetFlow?.receive(.changed, for: attempt.id)
+            } catch {
+                guard valid(token), resetIntent == intent else { return }
+                let result: PasswordResetFlow.Result
+                switch error as? FiestaBoardError {
+                case .invalidResetCode: result = .invalidCode
+                case .validation(let fields): result = .rejectedFields(fields.contains(.newPassword) ? [.newPassword] : [])
+                case .rateLimited: result = .rejectedFields([])
+                default: result = .unknownOutcome; requiresStateCheck = true
+                }
+                passwordResetFlow?.receive(result, for: attempt.id)
+                throw error
+            }
+        }
+    }
+    public func cancelPasswordReset() {
+        if passwordResetFlow?.phase == .submitting {
+            operation?.cancel(); operation = nil; busy = false; requiresStateCheck = true
+        }
+        resetIntent = UUID(); passwordResetFlow = nil; clearResetSecrets()
+    }
+    public func finishPasswordReset() {
+        guard passwordResetFlow?.phase == .passwordChanged else { return }
+        cancelPasswordReset()
+    }
+    private func clearResetSecrets() { resetCode = ""; resetNewPassword = ""; resetConfirmation = "" }
     @discardableResult public func setAuthentication(enabled: Bool) -> Task<Void, Never> {
         let proof = setupToken; setupToken = ""; password = ""
         guard let service, !busy, !requiresStateCheck else { return Task {} }
@@ -208,7 +337,7 @@ public enum ConnectionPhase: Sendable, Equatable {
         }
     }
     private func run(_ action: @escaping @MainActor (UUID) async throws -> Void) -> Task<Void, Never> {
-        busy = true; message = nil; validationFields = []
+        busy = true; message = nil; validationFields = []; signInPasswordRejected = false
         let token = generation
         let task = Task { [weak self] in
             do {
@@ -219,8 +348,18 @@ public enum ConnectionPhase: Sendable, Equatable {
             catch {
                 guard let self, valid(token) else { return }
                 message = safe(error)
+                if setupWebReturn == .checking { setupWebReturn = .unconfirmed }
                 if (error as? FiestaBoardError) == .setupProofRequired { requiresSetupProof = true }
                 if let known = error as? FiestaBoardError {
+                    if known == .invalidCredentials { signInPasswordRejected = true }
+                    if case .rateLimited(let seconds) = known,
+                       let deployment = service?.deployment,
+                       let deadline = LoginRetryDeadline(retryAfterSeconds: seconds, receivedAt: now()) {
+                        loginDeadlines = loginDeadlines.filter { $0.value.remainingSeconds(at: now()) > 0 }
+                        let retained = loginDeadlines[deployment]
+                        let effective = retained.map { $0.endsAt > deadline.endsAt ? $0 : deadline } ?? deadline
+                        loginDeadlines[deployment] = effective; loginRetryDeadline = effective
+                    }
                     if case .validation(let fields) = known { validationFields = fields }
                     switch known {
                     case .unknownMutationOutcome, .networkUnavailable, .conflict, .onboardingConflict, .staleSession: requiresStateCheck = true
@@ -249,6 +388,7 @@ public enum ConnectionPhase: Sendable, Equatable {
         guard valid(token) else { return }
         if store.status != nil {
             phase = .connected
+            onboardingPresentationID = nil
             await publishComposePrincipal(next, token: token, offline: false)
             guard valid(token) else { return }
             await beginSnapshotSession(token: token)
@@ -268,12 +408,19 @@ public enum ConnectionPhase: Sendable, Equatable {
         await reloadCatalog()
     }
     public func cancel() {
+        onboardingPresentationID = nil
+        cancelConnection()
+    }
+    private func cancelConnection() {
+        cancelPasswordReset()
         invalidateSnapshotSession()
         generation = UUID(); operation?.cancel(); operation = nil; stopDiscovery()
         let old = service, ownedByStore = handedToStore, previous = cleanupTask
         store.disconnect()
         if let old, !ownedByStore { cleanupTask = Task { await previous?.value; await old.disconnect() } }
         service = nil; handedToStore = false; snapshot = nil
+        loginRetryDeadline = nil
+        signInPasswordRejected = false; setupWebReturn = .none
         busy = false; phase = .picker; password = ""; setupToken = ""; rememberMe = false
         requiresStateCheck = false; requiresSetupProof = false; validationFields = []; persistence = .init(); message = nil
     }
@@ -286,10 +433,13 @@ public enum ConnectionPhase: Sendable, Equatable {
         return Task { await removeSnapshot(for: hub) }
     }
     @discardableResult public func logout() -> Task<Void, Never> {
+        cancelPasswordReset()
         let hub = selected
         invalidateSnapshotSession()
         generation = UUID(); operation?.cancel(); operation = nil; stopDiscovery()
         service = nil; handedToStore = false; snapshot = nil; phase = .picker
+        loginRetryDeadline = nil
+        signInPasswordRejected = false; setupWebReturn = .none
         busy = false; password = ""; setupToken = ""; rememberMe = false; persistence = .init()
         let logout = store.logout()
         return Task { await removeSnapshot(for: hub); await logout.value }

@@ -1,0 +1,204 @@
+{
+  "hubRepository": "Fiestaboard/FiestaBoard",
+  "hubCommit": "f47da6e4e764fc2826f396210f013e45dc1a7fd8",
+  "requestManifestSHA256": "2346fd5ef3174f4d64f89e4d0050ad4a92ba1e815666a99f8371e144b8ca6ab9",
+  "recorderSHA256": "fdf795e8531a8c978741b6a75bf4a82bcc4c4d05fe105b06f86e76b9d3d5a8de",
+  "dependencyLockSHA256": "953286960d30e78e0da316c10b60b9a3670d6ada70ca9c88e8dd534170baa263",
+  "environmentSHA256": "b33e172f26a4b57ed722605035d69dd7fe72c99723ef437d8d2119e3ff1fd3e5",
+  "dockerImageID": "sha256:c181d7a4afe23a7f2b0a704a1225ae81ba4a9d94dc56ef26395581ddfe575cf6",
+  "dockerBaseDigests": [
+    "python@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90"
+  ],
+  "method": "Immutable git archive in separately built pinned Python Docker image; actual FastAPI HTTP boundary",
+  "credentialSafety": "Synthetic contract_admin only; reset codes cleared and both recorded mobile tokens revoked before exit",
+  "setup": "Internal code creation/clock only seed reset states; ten actual invalid reset requests seed shared IP lockout",
+  "responses": [
+    {
+      "file": "device-login-before-reset.json",
+      "method": "POST",
+      "path": "/auth/device/login",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "f90ea805889c5558475b45bf7ee4733c819e5393615471afa5fad8754d0fa31e"
+    },
+    {
+      "file": "reset-invalid-code.json",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 400,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "f42417bb5dcd6ccced858c11fca95f86082e95930da43b28f9aef47a170c5a34"
+    },
+    {
+      "file": "reset-weak-password.json",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 422,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "336d01d76d2e982d3a2f6d74f8ce64cf7451fd22610cf523fe58acef2f4dda1a"
+    },
+    {
+      "file": "reset-code-after-weak.json",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "a29ee2b15c494311c52521766e44af56a3ad2248e7a8ab465e5206463c13d288"
+    },
+    {
+      "file": "reset-code-reused.json",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 400,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "f42417bb5dcd6ccced858c11fca95f86082e95930da43b28f9aef47a170c5a34"
+    },
+    {
+      "file": "device-session-after-reset.json",
+      "method": "GET",
+      "path": "/boards",
+      "status": 401,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "14a25323d0ee8b6e657b5925dfdc36e39f31f339732750b544a06255f281f6ea"
+    },
+    {
+      "file": "login-old-password.json",
+      "method": "POST",
+      "path": "/auth/device/login",
+      "status": 401,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "b2c802aea19a4a2f056c10962bf9ca2b4a1d1e5cc26870701d8045b538fb9146"
+    },
+    {
+      "file": "device-login-after-reset.json",
+      "method": "POST",
+      "path": "/auth/device/login",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "b078cc6236b112c5ffacfa97a56be7be811665722bb702b3bba1cdf7606f3ae7"
+    },
+    {
+      "file": "auth-status-after-reset.json",
+      "method": "GET",
+      "path": "/auth/status",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "1e9a0b3e447eaa7047d93fe1f0c61e46c35855c291317d5599a922dac81e2f63"
+    },
+    {
+      "file": "reset-superseded-code.json",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 400,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "f42417bb5dcd6ccced858c11fca95f86082e95930da43b28f9aef47a170c5a34"
+    },
+    {
+      "file": "reset-expired-code.json",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 400,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "f42417bb5dcd6ccced858c11fca95f86082e95930da43b28f9aef47a170c5a34"
+    },
+    {
+      "file": "reset-extra-field.json",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 422,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "40ff8e80b4423529e47e4c837625949fc211f29720c59ca92240fc19fef2fedc"
+    },
+    {
+      "file": "reset-password-too-long.json",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 422,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "39bdd3c027a2b1dc0f9a02eb220eb1818b7d0a004ef73781821d7e109247fbea"
+    },
+    {
+      "file": "reset-shared-lockout.json",
+      "method": "POST",
+      "path": "/auth/password-reset",
+      "status": 429,
+      "headers": {
+        "retry-after": "60",
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "2935c62e93b4d5d4a6de3d756d498f41a6d02ea6bdbaab53ccb265785719db03"
+    },
+    {
+      "file": "device-login-shared-lockout.json",
+      "method": "POST",
+      "path": "/auth/device/login",
+      "status": 429,
+      "headers": {
+        "retry-after": "60",
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "2935c62e93b4d5d4a6de3d756d498f41a6d02ea6bdbaab53ccb265785719db03"
+    },
+    {
+      "file": "device-session-revoke.json",
+      "method": "DELETE",
+      "path": "/auth/device/session",
+      "status": 200,
+      "headers": {
+        "content-type": "application/json",
+        "cache-control": "no-store"
+      },
+      "sha256": "a29ee2b15c494311c52521766e44af56a3ad2248e7a8ab465e5206463c13d288"
+    },
+    {
+      "file": "device-session-finally-revoked.json",
+      "method": "GET",
+      "path": "/boards",
+      "status": 401,
+      "headers": {
+        "content-type": "application/json"
+      },
+      "sha256": "14a25323d0ee8b6e657b5925dfdc36e39f31f339732750b544a06255f281f6ea"
+    }
+  ]
+}

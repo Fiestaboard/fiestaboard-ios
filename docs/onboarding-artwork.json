@@ -1,0 +1,59 @@
+{
+  "file": "ZQ8RMELCO6qEOFZUnQu36e",
+  "welcome_node": "39:63582",
+  "ipad_node": "42:77391",
+  "source_context_sha256": "e12e72699bcf8e8b5cf7f2b5e996a6d7f1db6333926138c7669450229110e0c4",
+  "brand_rectangles": 330,
+  "brand_sha256": "f5969b358a8eec8db12ed59be3e65893e70e3fb28ce624553f4405b53ff9f0f8",
+  "assets": [
+    {
+      "name": "OnboardingBackdropMask",
+      "source_asset": "2e3e4415-fbe4-4095-8d1f-37ee66086a75/837c4.svg",
+      "width": "720",
+      "height": "400",
+      "sha256": "09c06528dfa25613ce29ddc1661052a5440c54703fcb946483f2bfeaa5242266"
+    },
+    {
+      "name": "OnboardingPrivacy",
+      "source_asset": "2e3e4415-fbe4-4095-8d1f-37ee66086a75/b8b5a.svg",
+      "width": "20",
+      "height": "20",
+      "sha256": "54f38985afe3c4a0a0ba868efab70d1c25480d0eaee03db8f43b6a06b2ca0084"
+    },
+    {
+      "name": "OnboardingFind",
+      "source_asset": "2e3e4415-fbe4-4095-8d1f-37ee66086a75/759d0.svg",
+      "width": "16",
+      "height": "16",
+      "sha256": "192f201b1cc5913b69e206d994cf749cd726e2ffa644c17a0fa2244c926b1d50"
+    },
+    {
+      "name": "OnboardingQR",
+      "source_asset": "2e3e4415-fbe4-4095-8d1f-37ee66086a75/2bccd.svg",
+      "width": "16",
+      "height": "16",
+      "sha256": "127f3697316a269a2b5f608ee8daeb8986fbc86b47a5e130d5c8724891706603"
+    },
+    {
+      "name": "OnboardingHub",
+      "source_asset": "e75d075f-9906-482d-bddb-592e56a013f1/a971b.svg",
+      "width": "16",
+      "height": "16",
+      "sha256": "8870bfa84d57179c938c12938a0625601f6408b38047d98435d4de2597a9f94c"
+    },
+    {
+      "name": "OnboardingSearch",
+      "source_asset": "e75d075f-9906-482d-bddb-592e56a013f1/78260.svg",
+      "width": "18",
+      "height": "18",
+      "sha256": "2eeef7d1f0260b5db881a2feaaf213bf45a49d33b0039decf35ac52a08e6fd48"
+    },
+    {
+      "name": "OnboardingAddress",
+      "source_asset": "e75d075f-9906-482d-bddb-592e56a013f1/2efde.svg",
+      "width": "18",
+      "height": "18",
+      "sha256": "884585d01bda3da52e680ec71565cab3e6029f9afccdcc4feba7bbcacf0b57e4"
+    }
+  ]
+}

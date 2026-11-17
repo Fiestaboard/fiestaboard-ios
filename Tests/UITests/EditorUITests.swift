@@ -241,11 +241,12 @@ import XCTest
         try requireReadyFixture(port: String(fixturePort))
         app.launchArguments = []; app.launch()
         let alias = "board-" + scenario + "-" + UUID().uuidString.prefix(8).lowercased()
+        openManualHubEntry(app)
         let address = app.textFields["connectionAddress"]
         XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 8))
         allowFixtureHTTP(app)
         reveal(address, app); typeConnectionAddress("http://127.0.0.1:\(fixturePort)/" + alias, into: address, in: app)
-        let name = app.textFields["Server name (optional)"]
+        let name = app.textFields["Hub name (optional)"]
         reveal(name, app); name.tap(); name.typeText(alias + "\n")
         let connect = app.buttons["connectionConnect"]
         reveal(connect, app); connect.tap()

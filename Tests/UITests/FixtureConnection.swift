@@ -84,6 +84,22 @@ extension XCTestCase {
         }
     }
 
+    /// Follow the production Welcome/chooser route; never bypass onboarding through launch flags.
+    @MainActor func openManualHubEntry(_ app: XCUIApplication,
+                                      file: StaticString = #filePath, line: UInt = #line) {
+        if app.textFields["connectionAddress"].exists { return }
+        let entry = app.buttons["enterHubAddress"]
+        guard entry.waitForExistence(timeout: 10) else {
+            XCTFail("The onboarding manual-entry action must exist", file: file, line: line); return
+        }
+        for _ in 0..<12 { if entry.isHittable { break }; app.swipeUp() }
+        guard entry.isHittable else {
+            XCTFail("The manual-entry action must be reachable", file: file, line: line); return
+        }
+        entry.tap()
+        XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 5), file: file, line: line)
+    }
+
     /// Cold simulator keyboard startup may accept a caret without becoming ready for typing.
     @MainActor func typeConnectionAddress(_ text: String, into address: XCUIElement, in app: XCUIApplication,
                                          file: StaticString = #filePath, line: UInt = #line) {
@@ -147,6 +163,7 @@ extension XCTestCase {
             for _ in 0..<12 { if element.exists && element.isHittable { break }; app.swipeUp() }
             for _ in 0..<12 { if element.exists && element.isHittable { break }; app.swipeDown() }
         }
+        openManualHubEntry(app)
         let address = app.textFields["connectionAddress"]
         // At accessibility sizes the form may not instantiate this off-screen row yet.
         reveal(address)

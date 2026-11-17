@@ -14,8 +14,9 @@ if [[ $# -gt 1 ]]; then echo 'Too many arguments' >&2; exit 2; fi
 draft_output="$HOME/Library/Developer/FiestaBoard/ios"
 mkdir -p "$draft_output/clang"
 draft_build_args=(-project FiestaBoard.xcodeproj -scheme "$draft_scheme"
-  -destination "$draft_destination" -derivedDataPath "$draft_output/dd-build"
-  -clonedSourcePackagesDirPath "$draft_output/spm")
+  -destination "$draft_destination" -derivedDataPath "$draft_output/dd-shared"
+  -clonedSourcePackagesDirPath "$draft_output/spm"
+  -jobs 4 -parallel-testing-enabled NO -maximum-concurrent-test-simulator-destinations 1)
 if [[ "$draft_action" == archive ]]; then
   draft_build_args+=(-archivePath "$draft_output/FiestaBoard.xcarchive")
 fi
@@ -24,5 +25,5 @@ env CLANG_MODULE_CACHE_PATH="$draft_output/clang" \
 if [[ "$draft_action" == archive ]]; then
   printf '\nUnsigned validation archive: %s/FiestaBoard.xcarchive\n' "$draft_output"
 else
-  printf '\nUnsigned draft app: %s/dd-build/Build/Products/%s/FiestaBoard.app\n' "$draft_output" "$draft_products"
+  printf '\nUnsigned draft app: %s/dd-shared/Build/Products/%s/FiestaBoard.app\n' "$draft_output" "$draft_products"
 fi
