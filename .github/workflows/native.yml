@@ -124,7 +124,7 @@ jobs:
       max-parallel: 1
       matrix:
         device: [iphone, ipad]
-        shard: [ui-a, ui-b, ui-c, ui-d, ui-e]
+        shard: [ui-a, ui-b, ui-f, ui-c, ui-d, ui-e, ui-g, ui-h]
         include:
           - device: iphone
             model: iPhone 17
