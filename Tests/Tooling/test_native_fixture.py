@@ -143,6 +143,42 @@ while let line = readLine() {
         self.assertEqual(results[2]['body'],results[3]['body'])
         self.assertEqual(results[5]['body']['pages'],[results[3]['body']])
 
+    def test_compose_held_acknowledgement_can_be_polled_without_another_send(self):
+        prefix='/board-i8-compose-held-new/api/'
+        auth={'authorization':'Bearer fb_mob_fixture_board-i8-compose-held-new'}
+        request={'protocol':'compose-intent-v1','request_id':'11223344-1234-4567-89ab-0123456789ab',
+                 'template':['Deferred draft'],'duration':{'kind':'minutes','minutes':120},'silence':'hold'}
+        route='v1/boards/hall-1/compose'
+        results=self.run_sequence([
+            dict(method='POST',target=prefix+'auth/device/login',body={'username':'fixture_admin','password':'fixture-password'}),
+            dict(method='POST',target=prefix+route,headers=auth,body=request),
+            dict(target=prefix+'v1/boards/hall-1',headers=auth),
+            dict(target=prefix+route+'/'+request['request_id'],headers=auth),
+            dict(method='POST',target=prefix+route,headers=auth,body=request)])
+        self.assertEqual([r['status'] for r in results],[200,202,200,200,409])
+        self.assertEqual(results[1]['body']['status'],'held')
+        self.assertFalse(results[1]['body']['sent'])
+        self.assertIsNone(results[1]['body']['started_at'])
+        self.assertEqual(results[2]['body']['compose_receipt']['request_id'],request['request_id'])
+        self.assertEqual(results[3]['body']['status'],'sent')
+        self.assertTrue(results[3]['body']['sent'])
+
+    def test_compose_ambiguous_send_has_no_invented_receipt_but_retains_uuid_get(self):
+        prefix='/board-i8-compose-ambiguous-new/api/'
+        auth={'authorization':'Bearer fb_mob_fixture_board-i8-compose-ambiguous-new'}
+        request={'protocol':'compose-intent-v1','request_id':'11223344-1234-4567-89ab-0123456789ab',
+                 'template':['Keep ambiguous draft'],'duration':{'kind':'minutes','minutes':120},'silence':'hold'}
+        route='v1/boards/hall-1/compose'
+        results=self.run_sequence([
+            dict(method='POST',target=prefix+'auth/device/login',body={'username':'fixture_admin','password':'fixture-password'}),
+            dict(method='POST',target=prefix+route,headers=auth,body=request),
+            dict(target=prefix+route+'/'+request['request_id'],headers=auth),
+            dict(method='POST',target=prefix+route,headers=auth,body=request)])
+        self.assertEqual([r['status'] for r in results],[200,200,200,409])
+        self.assertEqual(results[1]['body'],{})  # Synthetic malformed success, not a server receipt.
+        self.assertEqual(results[2]['body']['status'],'unknown')
+        self.assertEqual(results[2]['body']['request_id'],request['request_id'])
+
     def test_retained_route_behaviors_match_exported_migration_controls(self):
         cases=json.loads((ROOT/'Tests/Tooling/native-fixture-cases.json').read_text())['cases']
         # Each request owns fresh prefix state; exact legacy synthetic responses are compared.

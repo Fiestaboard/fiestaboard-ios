@@ -55,6 +55,54 @@ final class BoardViewportTests: XCTestCase {
         XCTAssertEqual(layout.height, 629)
     }
 
+    func testSmallLEDEnlargementUsesInnerBezelWidthAndPreservesAspect() {
+        let sizing = MatrixViewportSizing(pixelWidth: 32, pixelHeight: 8, availableWidth: 370, maximumHeight: 240)
+        XCTAssertEqual(sizing.pitch, 354.0 / 32, accuracy: 0.0001)
+        XCTAssertEqual(sizing.contentWidth, 354, accuracy: 0.0001)
+        XCTAssertEqual(sizing.contentHeight, 88.5, accuracy: 0.0001)
+        XCTAssertEqual(sizing.viewportWidth, 370)
+        XCTAssertEqual(sizing.viewportHeight, 104.5, accuracy: 0.0001)
+        XCTAssertFalse(sizing.horizontalOverflow)
+        XCTAssertFalse(sizing.verticalOverflow)
+    }
+
+    func testNarrowLEDViewportKeepsTwoPointPitchAndHorizontalOverflow() {
+        let sizing = MatrixViewportSizing(pixelWidth: 32, pixelHeight: 8, availableWidth: 40, maximumHeight: 240)
+        XCTAssertEqual(sizing.pitch, 2)
+        XCTAssertEqual(sizing.contentWidth, 64)
+        XCTAssertEqual(sizing.viewportWidth, 40)
+        XCTAssertTrue(sizing.horizontalOverflow)
+        XCTAssertFalse(sizing.verticalOverflow)
+    }
+
+    func testTallLEDEnlargementRespectsCappedViewportHeight() {
+        let sizing = MatrixViewportSizing(pixelWidth: 16, pixelHeight: 80, availableWidth: 370, maximumHeight: 240)
+        XCTAssertEqual(sizing.pitch, 2.8, accuracy: 0.0001)
+        XCTAssertEqual(sizing.contentWidth, 44.8, accuracy: 0.0001)
+        XCTAssertEqual(sizing.contentHeight, 224, accuracy: 0.0001)
+        XCTAssertEqual(sizing.viewportHeight, 240)
+        XCTAssertFalse(sizing.verticalOverflow)
+    }
+
+    func testLargeLEDKeepsBothAxesScrollableInsteadOfShrinkingOrClippingRaster() {
+        let sizing = MatrixViewportSizing(pixelWidth: 512, pixelHeight: 256, availableWidth: 370, maximumHeight: 240)
+        XCTAssertEqual(sizing.pitch, 2)
+        XCTAssertEqual(sizing.contentWidth, 1024)
+        XCTAssertEqual(sizing.contentHeight, 512)
+        XCTAssertEqual(sizing.viewportHeight, 240)
+        XCTAssertTrue(sizing.horizontalOverflow)
+        XCTAssertTrue(sizing.verticalOverflow)
+    }
+
+    func testUnspecifiedOrNonfiniteWidthDoesNotInventAnEnlargement() {
+        for width: Double? in [nil, .nan, .infinity] {
+            let sizing = MatrixViewportSizing(pixelWidth: 32, pixelHeight: 8, availableWidth: width, maximumHeight: 240)
+            XCTAssertEqual(sizing.pitch, 2)
+            XCTAssertEqual(sizing.viewportWidth, 80)
+            XCTAssertEqual(sizing.viewportHeight, 32)
+        }
+    }
+
     func testDD24SquareDotsRoundOnlyAtSixDevicePixels() {
         XCTAssertEqual(LedDot.cornerRadius(dot: 2, scale: 2), 0)
         XCTAssertEqual(LedDot.cornerRadius(dot: 2, scale: 3), 0.3, accuracy: 0.0001)

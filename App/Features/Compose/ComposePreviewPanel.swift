@@ -12,7 +12,7 @@ struct ComposePreviewPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             if let projection {
-                BoardViewport(frame: projection.frame, model: projection.model)
+                BoardViewport(frame: projection.frame, model: projection.model, fitLEDWidth: true)
                     .frame(minHeight: 100, maxHeight: 240)
                     .accessibilityLabel("Message preview for \(displayName)")
                     .accessibilityIdentifier("composeBoardPreview")

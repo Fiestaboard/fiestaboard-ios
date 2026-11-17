@@ -38,3 +38,10 @@ Unsupported LED input has no invented preview. Mobile raw array hydration keeps
 its recorded 403; no sample/current-value/index fallback is supplied. Duplicate
 UUID POSTs are refused and outcome GETs do not dispatch a send. These fixtures
 are not live hub, physical display, scrolling, or performance evidence.
+
+I8 `held` adds a synthetic clock/UUID adaptation of the recorded held receipt.
+Its explicit UUID GET observes synthetic silence release, then the matching
+board acknowledgement; it never POSTs another send. I8 `ambiguous` returns a
+synthetic malformed success body after retaining the UUID, so the service throws
+without inventing a receipt. Explicit UUID GET then reads the retained unknown
+outcome. These lifecycle controls do not modify the authenticated corpus.
