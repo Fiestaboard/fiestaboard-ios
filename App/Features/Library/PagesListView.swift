@@ -152,22 +152,7 @@ struct PagesListView: View {
     }
 
     private func frame(_ page: Page, geometry: PageGeometry, model: DisplayModel, preview: PagePreview?) -> BoardFrame {
-        guard let preview, preview.available else {
-            // Before the server's render (or without one, e.g. demo): a blank board.
-            return .empty(rows: geometry.rows, cols: geometry.cols)
-        }
-        let layers = preview.layers.compactMap { layer -> PixelLayer? in
-            guard let data = Data(base64Encoded: layer.rgba) else { return nil }
-            return PixelLayer(x: layer.x, y: layer.y, w: layer.width, h: layer.height, rgba: data)
-        }
-        if model.technology == .ledMatrix, let json = preview.cellsJSON,
-           let rows = (try? JSONSerialization.jsonObject(with: json)) as? [[Any]] {
-            return BoardFrame(rows: geometry.rows, cols: geometry.cols,
-                              cells: rows.map { $0.compactMap(BoardToken.init(json:)) }, layers: layers)
-        }
-        var frame = BoardFrame.fromLines(preview.lines, rows: geometry.rows, cols: geometry.cols)
-        frame.layers = layers
-        return frame
+        PagePreviewFrame.make(preview, geometry: geometry, model: model)
     }
 
     // MARK: library feedback and empty state

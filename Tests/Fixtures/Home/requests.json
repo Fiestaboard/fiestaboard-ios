@@ -1,0 +1,82 @@
+{
+  "requests": [
+    {
+      "id": "home-boards",
+      "method": "GET",
+      "path": "/v1/boards",
+      "status": 200
+    },
+    {
+      "id": "home-manual",
+      "method": "GET",
+      "path": "/v1/boards/{kitchen}",
+      "status": 200
+    },
+    {
+      "id": "override-timed",
+      "method": "POST",
+      "path": "/settings/temporary-override",
+      "status": 200
+    },
+    {
+      "id": "home-override",
+      "method": "GET",
+      "path": "/v1/boards/{kitchen}",
+      "status": 200
+    },
+    {
+      "id": "active-override",
+      "method": "GET",
+      "path": "/schedules/active/page?board_id={kitchen}",
+      "status": 200
+    },
+    {
+      "id": "override-detail",
+      "method": "GET",
+      "path": "/settings/temporary-override?board_id={kitchen}",
+      "status": 200
+    },
+    {
+      "id": "other-display",
+      "method": "GET",
+      "path": "/v1/boards/{desk}",
+      "status": 200
+    },
+    {
+      "id": "override-cancel",
+      "method": "DELETE",
+      "path": "/settings/temporary-override?board_id={kitchen}",
+      "status": 200
+    },
+    {
+      "id": "override-canceled",
+      "method": "GET",
+      "path": "/settings/temporary-override?board_id={kitchen}",
+      "status": 200
+    },
+    {
+      "id": "override-indefinite",
+      "method": "POST",
+      "path": "/settings/temporary-override",
+      "status": 200
+    },
+    {
+      "id": "home-indefinite",
+      "method": "GET",
+      "path": "/v1/boards/{kitchen}",
+      "status": 200
+    },
+    {
+      "id": "home-silence",
+      "method": "GET",
+      "path": "/silence-status?board_id={kitchen}",
+      "status": 200
+    },
+    {
+      "id": "home-runtime",
+      "method": "GET",
+      "path": "/v1/status",
+      "status": 200
+    }
+  ]
+}

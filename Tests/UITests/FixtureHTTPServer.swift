@@ -12,6 +12,8 @@ final class FixtureHTTPServer: @unchecked Sendable {
     private var dropped = false
     private var connections: [ObjectIdentifier: NWConnection] = [:]
     var port: UInt16 { listener.port!.rawValue }
+    func holdHomeMutations(_ held: Bool) { router.homeMutationGate.setHeld(held) }
+    var homeMutationWaiting: Bool { router.homeMutationGate.isWaiting }
 
     init(router: FixtureRouter) throws {
         self.router = router

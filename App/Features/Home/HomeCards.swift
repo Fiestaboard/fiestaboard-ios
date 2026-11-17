@@ -13,52 +13,39 @@ struct HomeCards: View {
     @State private var now = Date()
 
     private var others: [BoardSummary] { store.boards.filter { $0.id != store.selectedBoardID } }
-    private var upNext: ScheduleUpNext? {
-        guard let list = store.scheduleList, store.scheduleTarget?.boardID == store.selectedBoardID else { return nil }
-        return ScheduleUpNext.next(list.schedules, now: now)
+    private var upNext: HomeNextChange? {
+        HomePresentation.make(detail: store.board, showing: status.nowShowing, silence: status.selectedSilence,
+            pageNames: Dictionary(store.pages.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first }), now: now).nextChange
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 22) {
-            if let upNext { scheduleCard(upNext) }
+            TimelineView(.periodic(from: .now, by: 30)) { timeline in
+                let next = HomePresentation.make(detail: store.board, showing: status.nowShowing, silence: status.selectedSilence,
+                    pageNames: Dictionary(store.pages.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first }), now: timeline.date).nextChange
+                if let next { scheduleCard(next) }
+            }
             if !others.isEmpty { otherDisplays }
         }
         .padding(.top, 10)
-        // Read once the selected board has loaded (not while connecting).
-        .task(id: "\(store.board?.summary.id ?? "-")|\(store.connecting)") {
-            guard store.board != nil, !store.connecting else { return }
-            now = Date()
-            await store.refreshSchedules().value
-        }
     }
-
-    // MARK: schedule
-
-    private func scheduleCard(_ next: ScheduleUpNext) -> some View {
-        let name = store.pages.first { $0.id == next.pageID }?.name ?? "A scheduled page"
-        let scheduleOn = store.scheduleList?.enabled ?? store.board?.summary.scheduleEnabled ?? false
-        return VStack(alignment: .leading, spacing: 8) {
-            sectionTitle("Next on the schedule")
-            Button(action: openSchedule) {
-                HStack(spacing: 12) {
-                    Image(systemName: "calendar").font(.title3).foregroundStyle(.blue)
-                        .frame(width: 40, height: 40).background(.blue.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(name).font(.body.weight(.semibold)).foregroundStyle(.primary)
-                        Text(scheduleOn ? "Starts \(next.whenText(now: now))"
-                                        : "Would start \(next.whenText(now: now)) · the schedule is off")
-                            .font(.subheadline).foregroundStyle(.secondary)
+    private func scheduleCard(_ next: HomeNextChange) -> some View {
+        Button(action: openSchedule) {
+            VStack(alignment: .leading, spacing: 12) {
+                sectionTitle("Up next")
+                HStack(alignment: .top, spacing: 16) {
+                    Text(next.at, style: .time).font(.caption.monospacedDigit()).foregroundStyle(.tint)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(next.title).font(.subheadline.weight(.medium))
+                        if let page = next.pageName, page != next.title { Text("Then \(page)").font(.caption).foregroundStyle(.secondary) }
                     }
                     Spacer(minLength: 0)
-                    Image(systemName: "chevron.right").font(.footnote.weight(.semibold)).foregroundStyle(.tertiary)
                 }
-                .padding(12)
-                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
             }
-            .buttonStyle(.plain)
-            .accessibilityElement(children: .combine)
-            .accessibilityIdentifier("homeUpNext")
+            .padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 20))
         }
+        .buttonStyle(.plain).accessibilityElement(children: .combine).accessibilityIdentifier("homeUpNext")
     }
 
     // MARK: other displays

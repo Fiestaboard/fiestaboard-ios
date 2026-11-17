@@ -92,6 +92,13 @@ public struct BoardDetail: Codable, Sendable {
     public let resolvedPageID: String?
     public let source: String
     public let defaultPageID: String?
+    public let overrideExpiresAt: String?
+    public let overrideStartedAt: String?
+    public let nextChangeAt: String?
+    public let nextChangeReason: String?
+    public let nextPageID: String?
+    public let health: DisplayHealth?
+    public let hasScopedHomeStatus: Bool
     public let layers: [CanvasLayer]?
     public var renderingSupport: RenderingSupport {
         guard summary.charset == "vestaboard_v1", layers?.isEmpty != false,
@@ -100,7 +107,13 @@ public struct BoardDetail: Codable, Sendable {
         return .flapGrid
     }
     enum CodingKeys: String, CodingKey {
-        case characters, text, source, layers
+        case characters, text, source, layers, health
+        case overrideExpiresAt = "override_expires_at"
+        case overrideStartedAt = "override_started_at"
+        case nextChangeAt = "next_change_at"
+        case nextChangeReason = "next_change_reason"
+        case nextPageID = "next_page_id"
+
         case defaultPageID = "default_page_id"
         case expectedCharacters = "expected_characters", readAt = "read_at", activePageID = "active_page_id"
         case scheduledPageID = "scheduled_page_id", resolvedPageID = "resolved_page_id"
@@ -108,6 +121,7 @@ public struct BoardDetail: Codable, Sendable {
     public init(from decoder: any Decoder) throws {
         summary = try BoardSummary(from: decoder)
         let c = try decoder.container(keyedBy: CodingKeys.self)
+        hasScopedHomeStatus = [.overrideStartedAt, .overrideExpiresAt, .nextChangeAt, .nextChangeReason, .health].allSatisfy { c.contains($0) }
         characters = try c.decodeIfPresent([[Int]].self, forKey: .characters)
         expectedCharacters = try c.decodeIfPresent([[Int]].self, forKey: .expectedCharacters)
         text = try c.decodeIfPresent(String.self, forKey: .text)
@@ -118,6 +132,12 @@ public struct BoardDetail: Codable, Sendable {
         defaultPageID = try c.decodeIfPresent(String.self, forKey: .defaultPageID)
         source = try c.decode(String.self, forKey: .source)
         layers = try c.decodeIfPresent([CanvasLayer].self, forKey: .layers)
+        overrideExpiresAt = try c.decodeIfPresent(String.self, forKey: .overrideExpiresAt)
+        overrideStartedAt = try c.decodeIfPresent(String.self, forKey: .overrideStartedAt)
+        nextChangeAt = try c.decodeIfPresent(String.self, forKey: .nextChangeAt)
+        nextChangeReason = try c.decodeIfPresent(String.self, forKey: .nextChangeReason)
+        nextPageID = try c.decodeIfPresent(String.self, forKey: .nextPageID)
+        health = try c.decodeIfPresent(DisplayHealth.self, forKey: .health)
     }
     public func encode(to encoder: any Encoder) throws {
         try summary.encode(to: encoder)
@@ -132,6 +152,19 @@ public struct BoardDetail: Codable, Sendable {
         try c.encodeIfPresent(defaultPageID, forKey: .defaultPageID)
         try c.encode(source, forKey: .source)
         try c.encodeIfPresent(layers, forKey: .layers)
+        try c.encodeIfPresent(overrideExpiresAt, forKey: .overrideExpiresAt)
+        try c.encodeIfPresent(overrideStartedAt, forKey: .overrideStartedAt)
+        try c.encodeIfPresent(nextChangeAt, forKey: .nextChangeAt)
+        try c.encodeIfPresent(nextChangeReason, forKey: .nextChangeReason)
+        try c.encodeIfPresent(nextPageID, forKey: .nextPageID)
+        try c.encodeIfPresent(health, forKey: .health)
+        if hasScopedHomeStatus {
+            try c.encode(overrideStartedAt, forKey: .overrideStartedAt)
+            try c.encode(overrideExpiresAt, forKey: .overrideExpiresAt)
+            try c.encode(nextChangeAt, forKey: .nextChangeAt)
+            try c.encode(nextChangeReason, forKey: .nextChangeReason)
+            try c.encode(health, forKey: .health)
+        }
     }
     func validate() throws {
         try summary.validate()
@@ -208,4 +241,12 @@ public struct MutationResult: Codable, Sendable {
     public let silenced: Bool
     public let deliveryFailed: Bool
     public let warningCount: Int
+}
+
+/// H12: null reachability is unknown, never an inferred successful connection.
+public struct DisplayHealth: Codable, Sendable, Equatable {
+    public let reachable: Bool?
+    public let lastError: String?
+    public let breakerOpen: Bool?
+    enum CodingKeys: String, CodingKey { case reachable, lastError = "last_error", breakerOpen = "breaker_open" }
 }

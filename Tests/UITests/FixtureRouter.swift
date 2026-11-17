@@ -10,6 +10,7 @@ final class FixtureRouter {
     }
     final class State {
         let scenario: String
+        let homeContract: Bool
         var mode: String
         var setup: Bool
         var token: String?
@@ -21,15 +22,20 @@ final class FixtureRouter {
         var flexibleRevision = 1
         var sync: [String: Bool]
         var overrideCleared = false
+        var undoToken: String?
+        var undoDeadline: Date?
         let started = Date()
         init(prefix: String, flexible: [String: Any]) {
             self.flexible = flexible
+            homeContract = prefix.hasPrefix("/board-i7-")
             setup = prefix.hasPrefix("/setup-")
             mode = prefix.hasPrefix("/mixed-") || prefix.hasPrefix("/flexible-") ? "disabled" : (setup ? "undecided" : "enabled")
-            scenario = prefix.hasPrefix("/board-") ? String(prefix.dropFirst(7).split(separator: "-").dropLast().joined(separator: "-")) : "manual"
+            let rawScenario = prefix.hasPrefix("/board-") ? String(prefix.dropFirst(7).split(separator: "-").dropLast().joined(separator: "-")) : "manual"
+            scenario = homeContract ? String(rawScenario.dropFirst(3)) : rawScenario
             sync = ["foreign": scenario == "out-of-sync", "overwritten": scenario == "overwritten", "kept": scenario == "kept"]
         }
     }
+    let homeMutationGate = FixtureHomeMutationGate()
     let seed: [String: Any]
     var recorded: [String: (method: String, path: String, response: Response)] = [:]
     var states: [String: State] = [:]
@@ -48,8 +54,8 @@ final class FixtureRouter {
             }
         }
     }
-    func reply(_ status: Int = 200, _ body: Any = [String: Any]()) -> Response {
-        Response(status: status, body: status == 204 ? Data() : (try! JSONSerialization.data(withJSONObject: body, options: [.sortedKeys, .fragmentsAllowed])))
+    func reply(_ status: Int = 200, _ body: Any = [String: Any](), noStore: Bool = false) -> Response {
+        Response(status: status, body: status == 204 ? Data() : (try! JSONSerialization.data(withJSONObject: body, options: [.sortedKeys, .fragmentsAllowed])), headers: noStore ? ["Cache-Control":"no-store"] : [:])
     }
     func respond(method: String, target: String, headers: [String: String], body raw: Data) -> Response {
         let parts = target.components(separatedBy: "?"); let path = parts[0]
@@ -95,7 +101,8 @@ final class FixtureRouter {
             guard authenticated else { return reply(401, cases["protected_unauthenticated"]!) }; state.token = nil; return reply(200, ["status": "ok"])
         }
         if state.mode != "disabled", !authenticated { return reply(401, cases["protected_unauthenticated"]!) }
-        if prefix.hasPrefix("/board-"), let result = boardRoute(method, route, body, boardID, state) { return result }
+        if prefix.hasPrefix("/board-"), let result = boardRoute(method, route, body, boardID, state,
+            undoRequested: query.first { $0.name == "undo" }?.value == "true") { return result }
         if !prefix.hasPrefix("/mixed-"), let result = renderRoute(method, route, body, prefix) { return result }
         if prefix.hasPrefix("/board-"), let result = catalogRoute(method, route, body, state) { return result }
         if method == "GET", route == "version" { var version = cases["version"] as! [String: Any]; version["build_version"] = "10.1.20"; version["is_dev"] = false; return reply(200, version) }
@@ -150,5 +157,22 @@ final class FixtureRouter {
         for y in 2..<14 { for x in 3..<29 { pixels.replaceSubrange(((y*32+x)*4)..<((y*32+x)*4+4), with: [255, x < 16 ? 128 : 255, 64,255]) } }
         let text = blocks.filter { $0["kind"] as? String == "text" }.map { $0["text"] as? String ?? "" }.joined(separator: "\n")
         return reply(200, ["available": true, "page_id": "unsaved", "message": text, "lines": text.components(separatedBy: "\n"), "display_type": "panel", "raw": [String: Any](), "layout_issues": [["path": ["blocks", "retained"], "code": "block_kind_unsupported", "severity": "warning", "message": "Synthetic fixture: retained unknown block is not drawn."]], "canvas_issues": [], "layers": [["x": 0, "y": 0, "width": 32, "height": 16, "physical_frame_version": 1, "rgba": Data(pixels).base64EncodedString()]]])
+    }
+}
+
+/// Only the I7 delayed UI scenario uses this thread-safe gate. Timeout is a
+/// failed test dependency, not a successful write; every test releases it.
+final class FixtureHomeMutationGate: @unchecked Sendable {
+    private let condition = NSCondition()
+    private var held = false
+    private var waiting = false
+    var isWaiting: Bool { condition.lock(); defer { condition.unlock() }; return waiting }
+    func setHeld(_ value: Bool) { condition.lock(); held = value; if !value { condition.broadcast() }; condition.unlock() }
+    func waitForRelease() -> Bool {
+        condition.lock(); defer { condition.unlock() }
+        waiting = true; defer { waiting = false }
+        let deadline = Date().addingTimeInterval(8)
+        while held { if !condition.wait(until: deadline) { return false } }
+        return true
     }
 }

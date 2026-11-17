@@ -55,16 +55,27 @@ extension FixtureRouter {
                    "source": active != nil ? "manual" : (scheduled != nil ? "schedule" : "none"), "default_page_id": null,
                    "override_expires_at": id == "kitchen" && state.scenario == "override" && !state.overrideCleared ? "2026-10-31T09:09:00Z" as Any : null,
                    "layers": id == "pixoo" ? [["x": 40, "y": 2, "width": 2, "height": 2, "rgba": "AP8A/wD/AP8A/wD/AP8A/w=="]] as Any : null]) { _, new in new }
+        if state.homeContract {
+            // New I7 synthetic cases reuse the actual H1/H2 shapes; legacy
+            // migration-control bytes remain unchanged in their own namespace.
+            let activeOverride = id == "kitchen" && state.scenario == "override" && !state.overrideCleared
+            out["override_started_at"] = activeOverride ? ISO8601DateFormatter().string(from: state.started) as Any : null
+            if activeOverride { out["override_expires_at"] = ISO8601DateFormatter().string(from: state.started.addingTimeInterval(540)) }
+            out["next_change_at"] = id == "kitchen" && state.scenario == "schedule" ? ISO8601DateFormatter().string(from: state.started.addingTimeInterval(3600)) as Any : null
+            out["next_change_reason"] = id == "kitchen" && state.scenario == "schedule" ? "schedule" as Any : null
+            out["next_page_id"] = id == "kitchen" && state.scenario == "schedule" ? "morning" as Any : null
+            out["health"] = ["reachable": null, "last_error": null, "breaker_open": false]
+        }
         return out
     }
-    func boardRoute(_ method: String, _ route: String, _ body: [String: Any], _ boardID: String, _ state: State) -> Response? {
+    func boardRoute(_ method: String, _ route: String, _ body: [String: Any], _ boardID: String, _ state: State, undoRequested: Bool = false) -> Response? {
         if state.boards.isEmpty {
             for entry in boards {
                 let s = entry["summary"] as! [String: Any], id = s["id"] as! String
                 let mapped = (seed["boardPages"] as! [String: [Any]])[id]?.first as? String
                 var active: Any = state.scenario == "no-pages" ? null : (mapped as Any? ?? null)
                 if id == "kitchen" {
-                    if ["manual", "paused", "silence", "out-of-sync", "overwritten", "kept"].contains(state.scenario) { active = "hello" }
+                    if ["manual", "paused", "silence", "silence-held", "out-of-sync", "overwritten", "kept"].contains(state.scenario) { active = "hello" }
                     else if state.scenario.hasPrefix("collection") { active = collectionID }
                 }
                 state.boards[id] = ["paused": state.scenario == "paused", "schedule_enabled": ["schedule", "collection", "override"].contains { state.scenario.hasPrefix($0) }, "auto_restore": true, "active_page_id": active,
@@ -73,13 +84,17 @@ extension FixtureRouter {
         }
         let segments = route.split(separator: "/").map(String.init)
         let selected = boards.first { ($0["summary"] as! [String: Any])["id"] as? String == boardID }
-        if method == "GET", route == "version" { return reply(200, ["package_version": "10.1.20", "build_version": "10.1.20", "running_version": "10.1.20", "is_dev": false, "hardware_model": null]) }
+        if method == "GET", route == "version" { let version = state.homeContract ? "11.0.0-alpha.3" : "10.1.20"; return reply(200, ["package_version": version, "build_version": version, "running_version": version, "is_dev": false, "hardware_model": null]) }
         if method == "GET", route == "v1/boards" { let entries = state.scenario == "no-boards" ? [] : boards.map { boardSummary($0, state) }; return reply(200, ["boards": entries, "total": entries.count]) }
         if segments.count >= 3, segments[0] == "v1", segments[1] == "boards" {
             guard let entry = boards.first(where: { ($0["summary"] as! [String: Any])["id"] as? String == segments[2] }) else { return reply(404, ["detail": "Board not found"]) }
             let s = entry["summary"] as! [String: Any], id = s["id"] as! String
             if method == "GET", segments.count == 3 { return reply(200, boardDetail(entry, state)) }
             if method == "PUT", segments.last == "active-page" {
+                if state.homeContract && state.scenario == "home-unknown" { return reply(503, ["detail":"Synthetic unconfirmed Home mutation"]) }
+                if state.homeContract && state.scenario == "home-delayed", !homeMutationGate.waitForRelease() {
+                    return reply(503, ["detail":"Synthetic Home mutation gate timed out"])
+                }
                 let page = body["page_id"] as? String; state.boards[id]!["active_page_id"] = page as Any? ?? null
                 let sent = state.boards[id]!["paused"] as? Bool != true
                 if sent, let page { state.boards[id]!["characters"] = pageFrame(page, s["rows"] as! Int, s["cols"] as! Int) }
@@ -91,7 +106,27 @@ extension FixtureRouter {
                 return reply(200, ["board_id": id, "page_id": state.boards[id]!["active_page_id"]!, "sent": sent, "reason": sent ? null : "paused" as Any, "device_observed": false])
             }
         }
-        if method == "DELETE", route == "settings/temporary-override" { let was = state.scenario == "override" && !state.overrideCleared; state.overrideCleared = true; return reply(200, ["revert_mode": was ? "schedule" as Any : null]) }
+        if method == "DELETE", route == "settings/temporary-override" {
+            if state.homeContract && boardID != "kitchen" { return reply(200, ["revert_mode": null]) }
+            let was = state.scenario == "override" && !state.overrideCleared; state.overrideCleared = true
+            var result: [String: Any] = ["revert_mode": was ? "schedule" as Any : null]
+            if state.homeContract && undoRequested {
+                state.undoToken = was ? "synthetic-ui-undo" : nil
+                state.undoDeadline = was ? Date().addingTimeInterval(30) : nil
+                result["undo_token"] = state.undoToken as Any? ?? null
+                result["undo_expires_at"] = state.undoDeadline.map { ISO8601DateFormatter().string(from:$0) } as Any? ?? null
+            }
+            return reply(200,result, noStore: state.homeContract)
+        }
+        if state.homeContract, method == "GET", route == "settings/temporary-override" {
+            return reply(200,["undo_supported":true,"active":boardID == "kitchen" && state.scenario == "override" && !state.overrideCleared,"board_id":boardID], noStore:true)
+        }
+        if state.homeContract, method == "POST", route == "settings/temporary-override/undo" {
+            guard body["board_id"] as? String == "kitchen", let value = state.undoToken,
+                  body["undo_token"] as? String == value, let end = state.undoDeadline, end > Date() else { return reply(409,["detail":"Undo unavailable"]) }
+            state.undoToken = nil; state.undoDeadline = nil; state.overrideCleared = false
+            return reply(200,["undo_supported":true,"active":true,"board_id":"kitchen","page_id":"note","started_at":"2026-10-31T09:00:00Z","expires_at":"2026-10-31T09:09:00Z"], noStore:true)
+        }
         if method == "DELETE", route == "board/external-frame" { if boardID == "kitchen" { state.sync["kept"] = false }; return reply(204) }
         if method == "POST", route == "v1/pages" {
             var page = seed["pageCommon"] as! [String: Any]
@@ -127,7 +162,26 @@ extension FixtureRouter {
             let override = state.scenario == "override" && !state.overrideCleared && boardID == "kitchen"
             out["temporary_override"] = ["active": override, "page_id": override ? "note" as Any : null, "expires_at": override ? "2026-10-31T09:09:00Z" as Any : null, "remaining_seconds": override ? 540 as Any : null, "revert_mode": override ? "schedule" as Any : null]; return reply(200, out)
         }
-        if method == "GET", route == "silence-status" { let active = state.scenario == "silence"; return reply(200, ["enabled": active, "active": active, "mode": active ? "indicator" as Any : null, "page_id": null, "ends_at_utc": active ? "2026-10-31T14:00:00Z" as Any : null, "next_change_utc": null, "seconds_until_next_change": null, "holds_blocked_sends": false, "held": null]) }
+        if method == "GET", route == "silence-status" {
+            if !state.homeContract {
+                let active = state.scenario == "silence"
+                return reply(200,["enabled":active,"active":active,"mode":active ? "indicator" as Any : null,"page_id":null,
+                    "ends_at_utc":active ? "2026-10-31T14:00:00Z" as Any : null,"next_change_utc":null,
+                    "seconds_until_next_change":null,"holds_blocked_sends":false,"held":null])
+            }
+            let active = state.scenario.hasPrefix("silence") && boardID == "kitchen"
+            let held: Any = active && state.scenario == "silence-held"
+                ? ["kind":"text","preview":"Package delivered","queued_at":ISO8601DateFormatter().string(from:state.started)] : null
+            return reply(200,["enabled":active,"active":active,"board_id":boardID,"mode":active ? "indicator" as Any : null,
+                "page_id":null,"ends_at_utc":active ? ISO8601DateFormatter().string(from:state.started.addingTimeInterval(3600)) as Any : null,
+                "holds_blocked_sends":active,"held":held])
+        }
+        if state.homeContract, method == "POST", segments.count == 4,
+           segments[0] == "settings", segments[1] == "board", segments[3] == "pause",
+           body["paused"] as? Bool == false, state.boards[segments[2]] != nil {
+            state.boards[segments[2]]!["paused"] = false
+            return reply(200,["board_id":segments[2],"paused":false])
+        }
         if method == "GET", route == "settings/display" { return reply(200, ["reduce_motion": false, "board_animations": true, "site_animations": true, "board_flap_speed": "standard"]) }
         if method == "GET", route == "v1/pages" { let ids = (state.scenario == "no-pages" ? [] : pages.compactMap { $0["id"] as? String }) + state.extraPages.compactMap { $0["id"] as? String }; return reply(200, ["pages": ids.compactMap { currentPage(state, $0) }, "total": ids.count]) }
         if segments.count >= 3, segments[0] == "v1", segments[1] == "pages" {

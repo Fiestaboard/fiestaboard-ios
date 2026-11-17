@@ -75,7 +75,7 @@ public enum NowShowingModel {
 
         var result = NowShowing(name: NowShowing.noPageText, pageID: nil, mode: mode, collection: false,
                                 silence: silenceActive, paused: board.paused, scheduleGap: false)
-        if silenceActive, silence?.mode == "page", let id = silence?.pageID {
+        if override == nil, silenceActive, silence?.mode == "page", let id = silence?.pageID {
             result.name = pageName(id); result.pageID = id
         } else if let activeID, activeID.hasPrefix(collectionPrefix) {
             let uuid = String(activeID.dropFirst(collectionPrefix.count))
@@ -132,10 +132,13 @@ public enum BoardPolling {
     private var stored: [String: [String: Any]] = [:]
     private var schedule: ActivePageStatus?
     private var manual: ActivePageStatus?
+    public var selectedSilence: SilenceStatus? { silence }
+    public var selectedOverride: ActivePageStatus.TemporaryOverride? { schedule?.temporaryOverride }
     private var silence: SilenceStatus?
     private var collectionNames: [String: String] = [:]
     private var tasks: [Task<Void, Never>] = []
     private var postSendTask: Task<Void, Never>?
+    private var homeUndoReadTask: Task<Void, Never>?
     private var observers: Set<AnyCancellable> = []
     private var wasBusy = false
     private var epoch = UUID()
@@ -190,6 +193,7 @@ public enum BoardPolling {
         running = false
         tasks.forEach { $0.cancel() }; tasks = []
         postSendTask?.cancel(); postSendTask = nil
+        homeUndoReadTask?.cancel(); homeUndoReadTask = nil
     }
 
     private func connectionChanged() {
@@ -197,7 +201,7 @@ public enum BoardPolling {
         stored = [:]; models = [:]; runtime = [:]; frames = [:]
         schedule = nil; manual = nil; silence = nil; collectionNames = [:]
         selectedMessage = nil; outOfSync = nil; nowShowing = nil
-        display = BoardDisplaySettings(); overrideClearFailed = false
+        display = BoardDisplaySettings(); homeOutcomes = [:]
         lastBoardID = nil; wasBusy = false
     }
 
@@ -349,23 +353,53 @@ public enum BoardPolling {
         pollSelectedMessage()
     }
 
-    /// Whether this connection can cancel an override at all (P5, B8).
-    public var canClearOverride: Bool { reader() is any TemporaryOverrideClearing }
-    /// The last cancel failed (shown beside the badge until the next try).
-    @Published public private(set) var overrideClearFailed = false
-
-    /// The ✕ on the override badge (B8): `DELETE /settings/temporary-override`, then the status
-    /// and the board are re-read on the post-send schedule. Nothing retries on its own.
-    public func clearTemporaryOverride() async {
-        guard let writer = reader() as? any TemporaryOverrideClearing else { return }
+    private struct HomeTarget: Hashable { let hub: String; let display: String }
+    private var currentHomeTarget: HomeTarget? { store.selectedBoardID.map { HomeTarget(hub: store.connectionLabel, display: $0) } }
+    @Published private var homeOutcomes: [HomeTarget: HomeControlOutcome] = [:]
+    public var homeControlBusy: Bool { store.commandBusy }
+    public var homeControlNeedsReadback: Bool { store.needsReadback }
+    public var homeControlOutcome: HomeControlOutcome? { currentHomeTarget.flatMap { homeOutcomes[$0] } }
+    public var overrideClearFailed: Bool { homeControlOutcome == .unconfirmed || homeControlOutcome == .failed }
+    public var canClearOverride: Bool { store.canPerformHomeControl(.cancelOverride) }
+    public func canSelectHomePage(timed: Bool) -> Bool { store.canPerformHomeControl(timed ? .timedOverride : .selectPage) }
+    public var canHoldHomePage: Bool { store.canPerformHomeControl(.timedOverride) }
+    public func clearTemporaryOverride() async { await performHomeControl(.homeCancelOverride, success: .overrideCanceled) }
+    public var canResumeHomeDisplay: Bool { store.canPerformHomeControl(.resumeDisplay) }
+    public func resumeHomeDisplay() async { await performHomeControl(.homeResumeDisplay, success: .displayResumed) }
+    public var canUndoOverride: Bool { store.canUndoHomeOverride }
+    public func undoTemporaryOverride() async { await performHomeControl(.homeUndoOverride, success: .overrideRestored) }
+    public func selectHomePage(pageID: String, durationMinutes: Int?) async {
+        await performHomeControl(.homePage(id: pageID, durationMinutes: durationMinutes, untilCanceled: false), success: .pageSelected)
+    }
+    public func holdHomePage(pageID: String) async {
+        await performHomeControl(.homePage(id: pageID, durationMinutes: nil, untilCanceled: true), success: .pageSelected)
+    }
+    private func performHomeControl(_ payload: ActionPayload, success: HomeControlOutcome) async {
+        guard let action = store.prepare(payload), let key = currentHomeTarget else { return }
         let token = epoch
-        overrideClearFailed = false
-        var failed = false
-        do { try await writer.clearTemporaryOverride() } catch { failed = true }
-        guard valid(token) else { return }
-        overrideClearFailed = failed
-        pollActive()
-        noteSend()
+        homeOutcomes[key] = nil
+        // prepare/confirm is the single owner of captured targets, busy state,
+        // authentication and mutation/readback barriers for every board action.
+        let task = store.confirm(action)
+        let mutation = store.boardMutationEpoch
+        await task.value
+        guard valid(token), currentHomeTarget == key, mutation == store.boardMutationEpoch else { return }
+        if store.needsReadback { homeOutcomes[key] = store.homeActionWasAcknowledged(action) ? .readbackRequired : .unconfirmed }
+        else if store.homeActionWasAcknowledged(action) { homeOutcomes[key] = success; pollActive(); noteSend() }
+        else { homeOutcomes[key] = .failed }
+    }
+    /// Explicit refresh enters the shared Store immediately, before any await.
+    /// Its captured generation/target prevents a stale caller from refreshing a new hub.
+    public func refreshHomeControlState() async {
+        guard store.selectedBoardID != nil, let key = currentHomeTarget, store.networkAvailable else { return }
+        let token = epoch, previousSnapshot = store.boardSnapshotEpoch, mutation = store.boardMutationEpoch
+        await store.refresh().value
+        guard valid(token), currentHomeTarget == key, mutation == store.boardMutationEpoch else { return }
+        if store.boardSnapshotEpoch > previousSnapshot, !store.needsReadback {
+            homeOutcomes[key] = store.canUndoHomeOverride ? .overrideCanceled : nil
+            pollActive()
+        }
+        else { homeOutcomes[key] = .failed }
     }
 
     private func pollOtherFrames() {
@@ -401,6 +435,8 @@ public enum BoardPolling {
 
     private func pollActive() {
         guard let reader = reader(), let id = store.selectedBoardID else { recompute(); return }
+        homeUndoReadTask?.cancel()
+        homeUndoReadTask = store.refreshHomeUndoCapability()
         let token = epoch
         Task { [weak self] in
             async let schedule = try? reader.activeSchedulePage(boardID: id)

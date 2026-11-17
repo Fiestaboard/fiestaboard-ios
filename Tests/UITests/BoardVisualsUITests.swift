@@ -18,11 +18,11 @@ final class BoardVisualsUITests: XCTestCase {
             ("manual", "Hello World", "Manual Mode", []),
             ("schedule", "Hello World", "Schedule Mode", []),
             ("schedule-gap", "Schedule gap (no default page set)", "Schedule Mode", []),
-            ("collection", "Morning rotation › ", "Schedule Mode", ["collectionBadge"]),
-            ("collection-native-null", "Morning rotation › Device selecting…", "Schedule Mode", ["collectionBadge"]),
-            ("override", "Desk Note", "Override: 9m remaining", []),
-            ("paused", "Hello World", "Manual Mode", ["pausedBadge"]),
-            ("silence", "Hello World", "Manual Mode", ["silenceBadge"]),
+            ("collection", "Morning rotation › ", "Collection", ["collectionBadge"]),
+            ("collection-native-null", "Morning rotation › Device selecting…", "Collection", ["collectionBadge"]),
+            ("override", "Desk Note", "Override", []),
+            ("paused", "Hello World", "Paused", ["pausedBadge"]),
+            ("silence", "Hello World", "Silenced", ["silenceBadge"]),
         ]
         for (scenario, name, mode, badges) in expectations {
             let app = launchSignedIn(scenario: scenario)
@@ -44,6 +44,41 @@ final class BoardVisualsUITests: XCTestCase {
             settle(1.2) // let the flip settle before the picture
             shot(app, "D1-B8-\(scenario)")
             if scenario == "manual" { shot(app, "D1-B33-home") }
+            app.terminate()
+        }
+    }
+
+    @MainActor
+    func testHomePausedBannerResumesSelectedDisplayAndDimsTheLastPage() async throws {
+        try await requireFixture()
+        let app = launchSignedIn(scenario: "paused")
+        let banner = app.descendants(matching: .any)["pausedBadge"]
+        XCTAssertTrue(banner.waitForExistence(timeout:10))
+        let board = app.descendants(matching: .any)["homeBoard"]
+        XCTAssertLessThan(banner.frame.maxY,board.frame.minY,"Paused explanation precedes the last-page preview")
+        let resume = app.buttons["homeResumeDisplay"]
+        XCTAssertTrue(resume.exists); XCTAssertTrue(resume.isEnabled)
+        resume.tap()
+        XCTAssertTrue(banner.waitForNonExistence(timeout:10),"selected display resumed")
+        waitFor(app.descendants(matching:.any)["modeBadge"],NSPredicate(format:"label == %@","Manual Mode"),10,"fresh resumed snapshot")
+        shot(app,"I7-home-resumed")
+        app.terminate()
+    }
+    @MainActor
+    func testHomeSilenceEmptyAndHeldHaveDistinctScopedReadOnlyContent() async throws {
+        try await requireFixture()
+        for scenario in ["silence","silence-held"] {
+            let app = launchSignedIn(scenario:scenario)
+            let banner = app.descendants(matching:.any)["silenceBadge"]
+            XCTAssertTrue(banner.waitForExistence(timeout:10))
+            XCTAssertTrue(app.staticTexts.matching(NSPredicate(format:"label BEGINSWITH %@","Silence Schedule")).firstMatch.exists)
+            XCTAssertEqual(app.descendants(matching:.any)["homeHeldMessage"].exists,scenario == "silence-held")
+            if scenario == "silence-held" {
+                XCTAssertTrue(app.staticTexts["Package delivered"].exists)
+                XCTAssertFalse(app.buttons["Discard"].exists)
+                XCTAssertFalse(app.buttons["Show now"].exists)
+            }
+            shot(app,"I7-home-" + scenario)
             app.terminate()
         }
     }
@@ -84,6 +119,10 @@ final class BoardVisualsUITests: XCTestCase {
         let page = app.buttons["Good Morning"]
         XCTAssertTrue(page.waitForExistence(timeout: 5))
         page.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["homePagePreviewLabel"].waitForExistence(timeout: 5))
+        waitFor(board, NSPredicate(format: "value CONTAINS %@", "GOOD MORNING"), 8, "read-only selected page preview")
+        let show = app.buttons["homeShowPage"]
+        XCTAssertTrue(show.waitForExistence(timeout: 5)); show.tap()
         let back = app.navigationBars.buttons["FiestaBoard"]
         if back.waitForExistence(timeout: 3) { back.tap() }
         waitFor(board, NSPredicate(format: "value CONTAINS %@", "GOOD MORNING"), 8, "flipped frame")
@@ -91,6 +130,79 @@ final class BoardVisualsUITests: XCTestCase {
         waitFor(name, NSPredicate(format: "label == %@", "Good Morning"), 8, "now showing follows the send")
         settle(4)
         shot(app, "D1-B6-after-change")
+    }
+
+    @MainActor
+    func testHomeHeroShowsTitleAndScopedChangePageSheet() async throws {
+        try await requireFixture()
+        let app = launchSignedIn(scenario: "manual")
+        XCTAssertTrue(app.navigationBars["Home"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.descendants(matching: .any)["homeBoard"].exists)
+        XCTAssertTrue(app.buttons["homeCompose"].exists)
+        let change = app.buttons["changePage"]
+        XCTAssertTrue(change.waitForExistence(timeout: 10)); change.tap()
+        XCTAssertTrue(app.navigationBars["Change Page"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Cancel"].exists)
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.navigationBars["Home"].exists)
+        app.terminate()
+    }
+
+    @MainActor
+    func testScopedCancelOffersAtomicSingleUseUndo() async throws {
+        try await requireFixture()
+        let app = launchSignedIn(scenario:"override")
+        let cancel = app.buttons["overrideCancel"]
+        waitFor(cancel, NSPredicate(format:"isEnabled == true"),10,"audited scoped cancel")
+        cancel.tap()
+        let undo = app.buttons["homeUndoOverride"]
+        XCTAssertTrue(undo.waitForExistence(timeout:10))
+        XCTAssertEqual(undo.label,"Undo override cancellation")
+        undo.tap()
+        XCTAssertTrue(app.buttons["overrideCancel"].waitForExistence(timeout:10))
+        XCTAssertFalse(app.buttons["homeUndoOverride"].exists)
+        app.terminate()
+    }
+    @MainActor
+    func testChangePageRetainsSheetAndSelectionWhilePending() async throws {
+        try await requireFixture()
+        FixtureHTTPServer.shared.holdHomeMutations(true)
+        defer { FixtureHTTPServer.shared.holdHomeMutations(false) }
+        let app = launchSignedIn(scenario: "home-delayed")
+        let change = app.buttons["changePage"]
+        waitFor(change, NSPredicate(format: "isEnabled == true"), 10, "audited Home controls")
+        change.tap(); app.buttons["Good Morning"].tap()
+        app.buttons["homeShowPage"].tap()
+        let waiting = XCTNSPredicateExpectation(predicate:NSPredicate { _,_ in FixtureHTTPServer.shared.homeMutationWaiting },object:nil)
+        XCTAssertEqual(XCTWaiter.wait(for:[waiting],timeout:5),.completed)
+        XCTAssertTrue(FixtureHTTPServer.shared.homeMutationWaiting)
+        XCTAssertTrue(app.navigationBars["Change Page"].exists)
+        XCTAssertEqual(app.buttons["Good Morning"].value as? String,"Selected")
+        XCTAssertFalse(app.buttons["homeShowPage"].isEnabled)
+        XCTAssertTrue(app.buttons["homePageDuration-15"].exists)
+        XCTAssertFalse(app.buttons["homePageDuration-15"].isEnabled)
+        XCTAssertTrue(FixtureHTTPServer.shared.homeMutationWaiting, "The dependency must still be held during the pending-state assertions")
+        FixtureHTTPServer.shared.holdHomeMutations(false)
+        waitFor(app.navigationBars["Change Page"], NSPredicate(format: "exists == false"), 10, "acknowledged sheet dismissal")
+        XCTAssertTrue(app.navigationBars["Home"].exists)
+        app.terminate()
+    }
+    @MainActor
+    func testChangePageRetainsSheetAndSelectionForUnknownResult() async throws {
+        try await requireFixture()
+        let app = launchSignedIn(scenario: "home-unknown")
+        let change = app.buttons["changePage"]
+        waitFor(change, NSPredicate(format: "isEnabled == true"), 10, "audited Home controls")
+        change.tap(); app.buttons["Good Morning"].tap(); app.buttons["homeShowPage"].tap()
+        let outcome = app.staticTexts["homePageOutcome"]
+        XCTAssertTrue(outcome.waitForExistence(timeout: 10))
+        XCTAssertTrue(app.navigationBars["Change Page"].exists)
+        XCTAssertEqual(app.buttons["Good Morning"].value as? String,"Selected")
+        XCTAssertFalse(app.buttons["homeShowPage"].isEnabled)
+        XCTAssertTrue(app.buttons["Refresh display"].exists)
+        XCTAssertTrue(app.buttons["homePageDuration-15"].exists)
+        XCTAssertFalse(app.buttons["homePageDuration-15"].isEnabled)
+        app.terminate()
     }
 
     // MARK: helpers
@@ -127,7 +239,8 @@ final class BoardVisualsUITests: XCTestCase {
         XCTAssertTrue(upNext.waitForExistence(timeout: 10), app.debugDescription)
         let others = app.descendants(matching: .any)["otherDisplay_hall"]
         XCTAssertTrue(others.waitForExistence(timeout: 10))
-        for jargon in ["127.0.0.1", "read-only", "checked separately", "Board controls enabled"] {
+        XCTAssertTrue(app.buttons["homeDisplayPicker"].label.contains("127.0.0.1"), "The display switcher includes its host line")
+        for jargon in ["read-only", "checked separately", "Board controls enabled"] {
             XCTAssertFalse(app.staticTexts.matching(NSPredicate(format: "label CONTAINS[c] %@", jargon)).firstMatch.exists, jargon)
         }
         XCTAssertFalse(app.descendants(matching: .any)["homeChangesOff"].exists)
@@ -313,7 +426,7 @@ final class BoardVisualsUITests: XCTestCase {
 
     @MainActor private func launchSignedIn(scenario: String) -> XCUIApplication {
         let app = isolatedApplication(); app.launchArguments = []; app.launch()
-        let alias = "board-\(scenario)-" + UUID().uuidString.prefix(6).lowercased()
+        let alias = "board-i7-\(scenario)-" + UUID().uuidString.prefix(6).lowercased()
         let address = app.textFields["connectionAddress"]
         XCTAssertTrue(app.textFields["connectionAddress"].waitForExistence(timeout: 10))
         reveal(address, app); typeConnectionAddress("http://127.0.0.1:\(port)/" + alias, into: address, in: app)

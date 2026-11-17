@@ -61,7 +61,7 @@ struct DraftScene: View {
         snapshots = persistence.snapshots
         let store = BoardStore()
         _store = StateObject(wrappedValue: store)
-        _thumbnails = StateObject(wrappedValue: PageThumbnails(reader: {
+        _thumbnails = StateObject(wrappedValue: PageThumbnails(store: store, reader: {
             StatusReaderRegistry.shared.previewReader(for: store.connectionLabel)
         }))
         _boardStatus = StateObject(wrappedValue: BoardStatus(store: store, reader: {
@@ -233,11 +233,11 @@ struct DraftScene: View {
         switch route {
         case .home:
             NavigationStack {
-                HomeView(store: store, status: boardStatus, compose: { composing = true },
+                HomeView(store: store, status: boardStatus, thumbnails: thumbnails, compose: { composing = true },
                          preparePage: { if let action = store.prepare(.page($0)) { store.confirm(action) } },
                          prepareRestore: { if let action = store.prepare(.restore) { store.confirm(action) } },
                          openSettings: { tab = .more }, openSchedule: { tab = .schedule },
-                         changePage: { pageChooser }, controls: { boardControlsDestination() })
+                         controls: { boardControlsDestination() })
             }
         case .displays: displays
         case .pages: library
@@ -306,12 +306,6 @@ struct DraftScene: View {
                     }
                 }
         }
-    }
-    private var pageChooser: some View {
-        List(store.pages) { page in
-            Button { if let action = store.prepare(.page(page.id)) { store.confirm(action) } } label: { Label(page.name, systemImage: "rectangle.stack") }
-                .disabled(!store.canWrite)
-        }.navigationTitle("Change page")
     }
     private var displays: some View {
         NavigationStack {

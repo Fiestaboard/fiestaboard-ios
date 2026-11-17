@@ -77,6 +77,10 @@ private typealias ControlState<Value> = SwiftUI.State<Value>
             }
         case .restore: change = "Restore the content FiestaBoard currently intends to show"
         case .text, .page: change = "Change content"
+        case .homeCancelOverride: change = "End the temporary override"
+        case .homeUndoOverride: change = "Restore the canceled override with its original expiry"
+        case .homeResumeDisplay: change = "Resume the paused display"
+        case .homePage: change = "Change the displayed page"
         }
         return "\(change) on \(action.boardName) at \(action.target.deployment.description)?"
     }

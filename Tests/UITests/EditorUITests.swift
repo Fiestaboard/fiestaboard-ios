@@ -354,7 +354,7 @@ import XCTest
         let app = isolatedApplication()
         try connectToFixture(app, scenario: "manual")
         XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "homeChangesOff").firstMatch.exists)
-        XCTAssertTrue(app.buttons["Compose text"].exists)
+        XCTAssertTrue(app.buttons["homeCompose"].exists)
         XCTAssertTrue(app.buttons["changePage"].exists)
         XCTAssertTrue(app.buttons["boardControlsEntry"].exists)
         attach(app, "P1-4-home-changes-off-\(device())")
