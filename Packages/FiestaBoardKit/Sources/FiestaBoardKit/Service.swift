@@ -500,6 +500,58 @@ public actor LiveFiestaBoardService: FiestaBoardService, ComposePrincipalProvidi
         guard result.status == 200 else { throw FiestaBoardError.invalidResponse }
         return try TemplatePreviewResult(rawData: result.data)
     }
+    /// These separately captured catalog operations carry the same protected proof
+    /// through the transport budget as preview. They never consume a send UUID.
+    private func composeCatalogData(_ operation: APIRequest, request: ComposeRequest) async throws -> Data {
+        let token = try await requireCompose(request, writing: false)
+        let result = try await response(operation)
+        guard token == generation else { throw FiestaBoardError.staleSession }
+        _ = try await requireCompose(request, writing: false)
+        guard result.status == 200 else { throw FiestaBoardError.rejected(status: result.status) }
+        return result.data
+    }
+    public func composeTemplateCatalog(_ request: ComposeRequest) async throws -> TemplateCatalog {
+        let data = try await composeCatalogData(APIRequest(path: ["v1", "variables"], cachePolicy: .noStore,
+            composePrincipalProof: request.principal), request: request)
+        guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let variables = object["variables"] as? [String: Any] else { throw FiestaBoardError.invalidResponse }
+        var manifests: [String: TemplateCatalog.Manifest] = [:]
+        for id in variables.keys.sorted() {
+            guard DeploymentURL.validSegment(id) else { throw FiestaBoardError.invalidResponse }
+            let raw = try await composeCatalogData(APIRequest(path: ["plugins", id, "manifest"], cachePolicy: .noStore,
+                composePrincipalProof: request.principal), request: request)
+            manifests[id] = try TemplateCatalog.Manifest(data: raw)
+        }
+        // Reuse the catalog's metadata/group decoding, then offer scalar tokens
+        // only. Neither manifest examples nor current local values are previews.
+        var metadata = object
+        if metadata["colors"] == nil { metadata["colors"] = [String: Int]() }
+        let decoded = try TemplateCatalog(variablesData: JSONSerialization.data(withJSONObject: metadata), manifests: manifests)
+        let plugins = decoded.plugins.map { plugin in
+            let groups = plugin.groups.compactMap { group -> TemplateCatalog.Group? in
+                let fields = group.fields.filter { field in
+                    !field.name.split(separator: ".").contains { $0 == "*" || Int($0) != nil }
+                }.map { field in
+                    TemplateCatalog.Field(name: field.name, path: field.path, summary: field.summary, label: field.label)
+                }
+                return fields.isEmpty ? nil : TemplateCatalog.Group(key: group.key, label: group.label, fields: fields)
+            }
+            return TemplateCatalog.Plugin(id: plugin.id, name: plugin.name, icon: plugin.icon, groups: groups, arrays: [])
+        }
+        return TemplateCatalog(plugins: plugins, colors: decoded.colors, formatting: decoded.formatting,
+            pluginSystemEnabled: decoded.pluginSystemEnabled, isServerCatalog: true)
+    }
+    public func composeFormulaFunctions(_ request: ComposeRequest) async throws -> FunctionCatalog {
+        try FunctionCatalog(data: await composeCatalogData(APIRequest(path: ["v1", "functions"], cachePolicy: .noStore,
+            composePrincipalProof: request.principal), request: request))
+    }
+    public func validateComposeFormula(_ expression: String, request: ComposeRequest) async throws -> FormulaCheck {
+        struct Body: Encodable { let template: [String] }
+        let body = try JSONEncoder().encode(Body(template: ["{{= \(expression) }}"]))
+        let data = try await composeCatalogData(APIRequest(.post, path: ["templates", "validate"], body: body,
+            cachePolicy: .noStore, composePrincipalProof: request.principal), request: request)
+        return FormulaCheck(try TemplateValidationResult(rawData: data))
+    }
     public func composeOutcome(_ request: ComposeRequest) async throws -> ComposeReceipt {
         let token = try await requireCompose(request, writing: false)
         let result = try await response(APIRequest(path: ["v1", "boards", request.target.boardID, "compose", request.requestID.uuidString],
