@@ -130,6 +130,9 @@ public struct PreparedComposeIntent: Sendable {
         if scope == self.scope {
             if unavailableBufferedTargetID != nil {
                 revision &+= 1; bufferedTargetPresentation = scope.presentation
+                unavailableBufferedTargetID = nil; preparedID = nil
+                schedulePreview()
+                return
             }
             unavailableBufferedTargetID = nil; preparedID = nil
             return
@@ -172,7 +175,7 @@ public struct PreparedComposeIntent: Sendable {
         }
         bufferStore = store; bufferLease = lease
         durableRevision = saved?.revision ?? 0; persistedRevision = nil
-        guard let saved, revision == inputRevision else { return false }
+        guard let saved, revision == inputRevision, revision == 0, input.text.isEmpty else { return false }
         if let target = saved.targetID, target != scope.target.boardID {
             if let resolved = resolveTarget(target), resolved.identity == identity,
                resolved.connectionID == scope.connectionID, resolved.valid, resolved.target.boardID == target {
@@ -248,7 +251,8 @@ public struct PreparedComposeIntent: Sendable {
         return SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
     }
     public func retryPreview() {
-        guard !closed, online, scope.valid, input.valid, previewIsStale || previewFailure != nil else { return }
+        guard !closed, online, unavailableBufferedTargetID == nil,
+              scope.valid, input.valid, previewIsStale || previewFailure != nil else { return }
         debounceTask?.cancel(); debounceTask = nil
         lastInputAt = monotonicNow(); readyAt = lastInputAt; readyRevision = revision
         previewFailure = nil
@@ -274,7 +278,7 @@ public struct PreparedComposeIntent: Sendable {
     }
     private func schedulePreview() {
         debounceTask?.cancel(); debounceTask = nil; readyRevision = nil; readyAt = nil
-        guard !closed, online, scope.valid, input.valid else { return }
+        guard !closed, online, unavailableBufferedTargetID == nil, scope.valid, input.valid else { return }
         let capturedRevision = revision, capturedEpoch = epoch, sleep = self.sleep
         debounceTask = Task { [weak self] in
             do { try await sleep(.milliseconds(250)) } catch { return }
@@ -285,7 +289,8 @@ public struct PreparedComposeIntent: Sendable {
         }
     }
     private func requestReadyPreview() {
-        guard renderTask == nil, readyRevision == revision, !closed, online, scope.valid, input.valid else { return }
+        guard renderTask == nil, readyRevision == revision, !closed, online,
+              unavailableBufferedTargetID == nil, scope.valid, input.valid else { return }
         readyRevision = nil
         let captured = ComposePreviewInput(scope: scope, input: input, revision: revision)
         let capturedEpoch = epoch, inputAt = lastInputAt, debounceAt = readyAt, render = self.render
