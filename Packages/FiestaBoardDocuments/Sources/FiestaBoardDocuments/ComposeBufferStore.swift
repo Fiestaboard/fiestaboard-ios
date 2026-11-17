@@ -49,6 +49,36 @@ public struct ComposeBufferPreview: Codable, Equatable, Sendable {
         self.targetID = targetID; self.inputDigest = inputDigest; self.responseData = responseData; self.capturedAt = capturedAt
     }
 }
+/// Last-verified public display facts for explicitly stale offline presentation.
+/// These bytes are never connection/authentication or live action authority.
+public struct ComposeBufferTarget: Codable, Equatable, Sendable {
+    public let id: String
+    public let name: String
+    public let deviceType: String
+    public let rows: Int
+    public let cols: Int
+    public let deviceModel: String?
+    public let charset: String?
+    public let drawingData: Data?
+    public init(id: String, name: String, deviceType: String, rows: Int, cols: Int,
+                deviceModel: String? = nil, charset: String? = nil, drawingData: Data? = nil) {
+        self.id = id; self.name = name; self.deviceType = deviceType; self.rows = rows; self.cols = cols
+        self.deviceModel = deviceModel; self.charset = charset; self.drawingData = drawingData
+    }
+    fileprivate func validate() throws {
+        guard !id.isEmpty, id.utf8.count <= 256, !id.contains("/"), ![".", ".."].contains(id),
+              !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, name.utf8.count <= 1024,
+              ["flagship", "note", "note_array", "panel"].contains(deviceType),
+              (1...256).contains(rows), (1...256).contains(cols),
+              [id, name, deviceModel ?? "", charset ?? ""].allSatisfy({ !$0.contains("\0") }),
+              deviceModel.map({ $0.utf8.count <= 256 }) ?? true,
+              charset.map({ $0.utf8.count <= 256 }) ?? true else { throw ComposeBufferError.invalidContent }
+        if let drawingData {
+            guard drawingData.count <= 16_384,
+                  (try? JSONSerialization.jsonObject(with: drawingData)) is [String: Any] else { throw ComposeBufferError.invalidContent }
+        }
+    }
+}
 public struct ComposeBufferSnapshot: Codable, Equatable, Sendable {
     public let identity: ComposeBufferIdentity
     public let revision: UInt64
@@ -58,16 +88,18 @@ public struct ComposeBufferSnapshot: Codable, Equatable, Sendable {
     public let lineMetadata: [ComposeBufferLine]
     public let duration: ComposeBufferDuration
     public let silence: ComposeBufferSilence
+    public let targetPresentation: ComposeBufferTarget?
     public let preview: ComposeBufferPreview?
     public init(identity: ComposeBufferIdentity, revision: UInt64, text: String, targetID: String? = nil,
                 selection: ComposeBufferSelection = .init(lowerUTF16: 0, upperUTF16: 0),
                 lineMetadata: [ComposeBufferLine] = [], duration: ComposeBufferDuration = .minutes(60),
-                silence: ComposeBufferSilence = .hold, preview: ComposeBufferPreview? = nil) {
+                silence: ComposeBufferSilence = .hold, targetPresentation: ComposeBufferTarget? = nil, preview: ComposeBufferPreview? = nil) {
         self.identity = identity; self.revision = revision; self.text = text; self.targetID = targetID
         self.selection = selection; self.lineMetadata = lineMetadata; self.duration = duration; self.silence = silence; self.preview = preview
+        self.targetPresentation = targetPresentation
     }
     private enum CodingKeys: String, CodingKey {
-        case identity, revision, text, targetID, selection, lineMetadata, duration, silence, preview
+        case identity, revision, text, targetID, selection, lineMetadata, duration, silence, targetPresentation, preview
     }
     public init(from decoder: any Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
@@ -79,6 +111,7 @@ public struct ComposeBufferSnapshot: Codable, Equatable, Sendable {
         lineMetadata = try values.decode([ComposeBufferLine].self, forKey: .lineMetadata)
         duration = try values.decode(ComposeBufferDuration.self, forKey: .duration)
         silence = try values.decodeIfPresent(ComposeBufferSilence.self, forKey: .silence) ?? .hold
+        targetPresentation = try values.decodeIfPresent(ComposeBufferTarget.self, forKey: .targetPresentation)
         preview = try values.decodeIfPresent(ComposeBufferPreview.self, forKey: .preview)
     }
     fileprivate func validate() throws {
@@ -94,6 +127,10 @@ public struct ComposeBufferSnapshot: Codable, Equatable, Sendable {
         case .minutes(let value): guard (1...480).contains(value) else { throw ComposeBufferError.invalidContent }
         case .until(let end): guard end.timeIntervalSince1970.isFinite else { throw ComposeBufferError.invalidContent }
         case .untilCancel: break
+        }
+        if let targetPresentation {
+            guard targetPresentation.id == targetID else { throw ComposeBufferError.invalidContent }
+            try targetPresentation.validate()
         }
         if let preview {
             guard preview.responseData.count <= 3 * 1024 * 1024, preview.inputDigest.utf8.count <= 256,
