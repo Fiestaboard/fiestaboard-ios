@@ -27,6 +27,7 @@ public struct ComposeBufferIdentity: Codable, Hashable, Sendable {
 public enum ComposeBufferDuration: Codable, Equatable, Sendable {
     case minutes(Int), until(Date), untilCancel
 }
+public enum ComposeBufferSilence: String, Codable, Equatable, Sendable { case hold, override }
 public struct ComposeBufferSelection: Codable, Equatable, Sendable {
     public let lowerUTF16: Int
     public let upperUTF16: Int
@@ -56,13 +57,29 @@ public struct ComposeBufferSnapshot: Codable, Equatable, Sendable {
     public let selection: ComposeBufferSelection
     public let lineMetadata: [ComposeBufferLine]
     public let duration: ComposeBufferDuration
+    public let silence: ComposeBufferSilence
     public let preview: ComposeBufferPreview?
     public init(identity: ComposeBufferIdentity, revision: UInt64, text: String, targetID: String? = nil,
                 selection: ComposeBufferSelection = .init(lowerUTF16: 0, upperUTF16: 0),
                 lineMetadata: [ComposeBufferLine] = [], duration: ComposeBufferDuration = .minutes(60),
-                preview: ComposeBufferPreview? = nil) {
+                silence: ComposeBufferSilence = .hold, preview: ComposeBufferPreview? = nil) {
         self.identity = identity; self.revision = revision; self.text = text; self.targetID = targetID
-        self.selection = selection; self.lineMetadata = lineMetadata; self.duration = duration; self.preview = preview
+        self.selection = selection; self.lineMetadata = lineMetadata; self.duration = duration; self.silence = silence; self.preview = preview
+    }
+    private enum CodingKeys: String, CodingKey {
+        case identity, revision, text, targetID, selection, lineMetadata, duration, silence, preview
+    }
+    public init(from decoder: any Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        identity = try values.decode(ComposeBufferIdentity.self, forKey: .identity)
+        revision = try values.decode(UInt64.self, forKey: .revision)
+        text = try values.decode(String.self, forKey: .text)
+        targetID = try values.decodeIfPresent(String.self, forKey: .targetID)
+        selection = try values.decode(ComposeBufferSelection.self, forKey: .selection)
+        lineMetadata = try values.decode([ComposeBufferLine].self, forKey: .lineMetadata)
+        duration = try values.decode(ComposeBufferDuration.self, forKey: .duration)
+        silence = try values.decodeIfPresent(ComposeBufferSilence.self, forKey: .silence) ?? .hold
+        preview = try values.decodeIfPresent(ComposeBufferPreview.self, forKey: .preview)
     }
     fileprivate func validate() throws {
         try identity.validate()
