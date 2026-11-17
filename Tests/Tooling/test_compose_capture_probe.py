@@ -130,7 +130,7 @@ while let line = readLine() {
         result = self.run_lifecycle([dict(kind='request'), dict(kind='cancel'), dict(kind='select'), dict(kind='cleanup')])
         self.assertFalse(result[-2]['requested'])
         self.assertEqual(result[-1]['report']['status'], 'failed')
-        self.assertEqual(result[-1]['report']['reason'], 'cancelled')
+        self.assertEqual(result[-1]['report']['reason'], 'canceled')
         self.assertTrue(result[-1]['report']['cleanupCompleted'])
 
     def test_noncomplete_and_nonscreen_samples_cannot_establish_capability(self):

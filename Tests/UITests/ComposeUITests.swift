@@ -1,4 +1,5 @@
 import XCTest
+import CryptoKit
 
 /// Native navigation/interaction checks use synthetic scenario glue around the
 /// vendored authenticated Compose corpus. They are not physical-output proof.
@@ -8,6 +9,22 @@ import XCTest
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
     }
+    private func missingCaptureEvidence(_ app: XCUIApplication, system: XCUIApplication, stage: String,
+                                        expectedIdentifier: String, elementObserved: Bool, valueObserved: Bool = false,
+                                        reason: String = "required_app_report_not_observed") {
+        shot("i8-capture-harness-failure-" + stage)
+        let hierarchy = XCTAttachment(string: app.debugDescription + "\n\nSPRINGBOARD\n" + system.debugDescription)
+        hierarchy.name = "i8-capture-harness-observed-hierarchy-" + stage
+        hierarchy.lifetime = .keepAlways; add(hierarchy)
+        let payload: [String: Any] = ["origin": "xctest_harness", "status": "failed", "stage": stage,
+            "reason": reason, "expectedIdentifier": expectedIdentifier,
+            "appReportElementObserved": elementObserved, "appReportValueObserved": valueObserved,
+            "measurementEmitted": false]
+        let data = try! JSONSerialization.data(withJSONObject: payload, options: [.sortedKeys])
+        let metadata = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
+        metadata.name = "i8-capture-harness-failure-" + stage; metadata.lifetime = .keepAlways; add(metadata)
+    }
+
     private func tapReady(_ element: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
         let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == true AND enabled == true AND hittable == true"), object: element)
         guard XCTWaiter.wait(for: [ready], timeout: 5) == .completed else {
@@ -172,15 +189,20 @@ import XCTest
         launchFixture(app, arguments: ["-fiestaboard.captureComposeCapability", "YES",
             "-fiestaboard.captureComposeCapabilityOut", output.path], scenario: "i8-compose")
         tapReady(app.buttons["homeCompose"])
+        let system = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         let start = app.buttons["composeCaptureProbeStart"]
         if !start.waitForExistence(timeout: 3) {
             shot("i8-capture-capability-unsupported-original-screen")
             let unsupported = app.staticTexts["composeCaptureProbeReport"]
-            if let raw = unsupported.value as? String {
+            let raw = unsupported.exists ? unsupported.value as? String : nil
+            if let raw {
                 let artifact = XCTAttachment(data: Data(raw.utf8), uniformTypeIdentifier: "public.json")
-                artifact.name = "i8-capture-capability-unsupported-report"; artifact.lifetime = .keepAlways; add(artifact)
+                artifact.name = "i8-capture-capability-unsupported-app-report"; artifact.lifetime = .keepAlways; add(artifact)
             }
-            let hierarchy = XCTAttachment(string: app.debugDescription)
+            missingCaptureEvidence(app, system: system, stage: "unsupported_startup",
+                expectedIdentifier: "composeCaptureProbeStart", elementObserved: unsupported.exists,
+                valueObserved: raw != nil, reason: "required_probe_control_unavailable")
+            let hierarchy = XCTAttachment(string: app.debugDescription + "\n\nSPRINGBOARD\n" + system.debugDescription)
             hierarchy.name = "i8-capture-capability-unsupported-hierarchy"; hierarchy.lifetime = .keepAlways; add(hierarchy)
             XCTFail("Required capability probe cannot start; failed metadata and original screen attached")
             return
@@ -191,7 +213,6 @@ import XCTest
         // This is explicit native consent after the diagnostic button. No
         // permission is bypassed. The selector is pending actual runtime proof;
         // an unrecognized picker ends as timeout with its original screenshot.
-        let system = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         let systemStart = system.buttons["Start Recording"]
         if systemStart.waitForExistence(timeout: 3) { tapReady(systemStart) }
         else if app.buttons["Start Recording"].exists { tapReady(app.buttons["Start Recording"]) }
@@ -200,15 +221,51 @@ import XCTest
             hierarchy.name = "i8-capture-capability-unverified-picker-hierarchy"; hierarchy.lifetime = .keepAlways; add(hierarchy)
         }
         let report = app.staticTexts["composeCaptureProbeReport"]
-        XCTAssertTrue(report.waitForExistence(timeout: 16), "Capability probe must publish success or a bounded failure")
+        guard report.waitForExistence(timeout: 16) else {
+            missingCaptureEvidence(app, system: system, stage: "awaiting_app_report_timeout",
+                expectedIdentifier: "composeCaptureProbeReport", elementObserved: false)
+            XCTFail("Required app capability report missing; observed UI and harness failure metadata attached")
+            return
+        }
         shot("i8-capture-capability-original-native-result")
-        let raw = try XCTUnwrap(report.value as? String)
+        guard let raw = report.value as? String, !raw.isEmpty else {
+            missingCaptureEvidence(app, system: system, stage: "app_report_value_missing",
+                expectedIdentifier: "composeCaptureProbeReport", elementObserved: true)
+            XCTFail("Required app capability report value missing; no app capture or cleanup result inferred")
+            return
+        }
         let data = Data(raw.utf8)
         let metadata = XCTAttachment(data: data, uniformTypeIdentifier: "public.json")
         metadata.name = "i8-capture-capability-actual-report"; metadata.lifetime = .keepAlways; add(metadata)
         let result = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
-        if let files = try? FileManager.default.contentsOfDirectory(at: output, includingPropertiesForKeys: nil) {
-            for file in files { let original = XCTAttachment(contentsOfFile: file); original.name = file.lastPathComponent; original.lifetime = .keepAlways; add(original) }
+        if result["status"] as? String == "metadata_captured" {
+            guard let planes = result["rawPlanes"] as? [[String: Any]], !planes.isEmpty else {
+                missingCaptureEvidence(app, system: system, stage: "raw_plane_manifest_missing",
+                    expectedIdentifier: "rawPlanes", elementObserved: true, valueObserved: true,
+                    reason: "required_raw_plane_manifest_not_observed")
+                XCTFail("App metadata report has no raw-plane manifest; capture proof is incomplete")
+                return
+            }
+            for plane in planes {
+                guard let file = plane["file"] as? String, !file.isEmpty, (file as NSString).lastPathComponent == file,
+                      let bytes = try? Data(contentsOf: output.appendingPathComponent(file)) else {
+                    missingCaptureEvidence(app, system: system, stage: "raw_plane_export_missing",
+                        expectedIdentifier: plane["file"] as? String ?? "raw_sample_plane", elementObserved: true,
+                        valueObserved: true, reason: "required_raw_plane_artifact_not_observed")
+                    XCTFail("Raw capture plane is unavailable; no complete capture evidence inferred")
+                    return
+                }
+                let original = XCTAttachment(data: bytes, uniformTypeIdentifier: "public.data")
+                original.name = file; original.lifetime = .keepAlways; add(original)
+                let digest = SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
+                guard plane["bytes"] as? Int == bytes.count, plane["sha256"] as? String == digest else {
+                    missingCaptureEvidence(app, system: system, stage: "raw_plane_integrity_mismatch",
+                        expectedIdentifier: file, elementObserved: true, valueObserved: true,
+                        reason: "raw_plane_artifact_does_not_match_app_manifest")
+                    XCTFail("Actual attached raw plane differs from the app manifest")
+                    return
+                }
+            }
         }
         XCTAssertEqual(result["measurementEmitted"] as? Bool, false)
         XCTAssertEqual(result["status"] as? String, "metadata_captured", "Required capture capability unavailable: \(raw)")

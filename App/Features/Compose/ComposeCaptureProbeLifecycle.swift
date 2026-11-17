@@ -94,7 +94,7 @@ struct ComposeCaptureProbeLifecycle {
         pending = .init(status: "metadata_captured", reason: nil, frame: frame, errorDomain: nil, errorCode: nil, cleanupCompleted: false)
         phase = .stopping
     }
-    mutating func pickerCancelled() { stop(reason: "cancelled") }
+    mutating func pickerCancelled() { stop(reason: "canceled") }
     mutating func failed(domain: String, code: Int) { stop(reason: "stream_error", domain: domain, code: code) }
     mutating func sceneBecameInactive() { stop(reason: "scene_inactive") }
     mutating func stopRequested() { stop(reason: "stopped") }
