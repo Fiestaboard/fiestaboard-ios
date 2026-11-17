@@ -16,9 +16,12 @@ import FiestaBoardDocuments
         board["compose_protocol"] = protocolName
         let response = try JSONSerialization.data(withJSONObject: recorded["response"]!)
         let responseStatus = recorded["status"] as! Int
+        let poll = try JSONSerialization.data(withJSONObject: fixture("compose-authenticated", "uuid-poll")["response"]!)
         let boardBytes = try JSONSerialization.data(withJSONObject: board)
         let boardsBytes = try JSONSerialization.data(withJSONObject: ["boards": [board], "total": 1])
         let preview = try JSONSerialization.data(withJSONObject: fixture("operations-authenticated", "preview-primary-formatting")["response"]!)
+        let created = try JSONSerialization.data(withJSONObject: fixture("operations-authenticated", "create-hall-1")["response"]!)
+        let readback = try JSONSerialization.data(withJSONObject: fixture("operations-authenticated", "created-readback-hall-1")["response"]!)
         let log = RequestLog(), deployment = try DeploymentURL("https://board.test/prefix")
         FixtureURLProtocol.handler = { request in
             log.append(request)
@@ -36,14 +39,19 @@ import FiestaBoardDocuments
             case "boards": return (200, [:], boardsBytes)
             case "compose": return (responseStatus, [:], response)
             case "render": return (200, [:], preview)
-            default: return (200, [:], boardBytes)
+            case "pages": return (201, [:], created)
+            default:
+                if request.url!.path.contains("/pages/") { return (200, [:], readback) }
+                if request.url!.path.contains("/compose/") { return (200, [:], poll) }
+                return (200, [:], boardBytes)
             }
         }
         let service = LiveFiestaBoardService(deployment: deployment,
             transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self], requestBudget: budget))
         _ = try await service.bootstrap()
         _ = try await service.login(username: "contract_admin", password: "fixture-password", rememberMe: false)
-        _ = try await service.connect(allowCandidateWrites: true)
+        let status = try await service.connect(allowCandidateWrites: true)
+        XCTAssertEqual(status.access, .readOnly, "Compose operation audit must not widen generic writes")
         let target = try BoardTarget(deployment: deployment, boardID: board["id"] as! String)
         _ = try await service.board(target)
         let observed = await service.composePrincipal(), proof = try XCTUnwrap(observed)
@@ -125,5 +133,40 @@ extension ComposeServiceTests {
         await hold.release(); try await occupying.value
         do { _ = try await sending.value; XCTFail("Forgotten authority must retire a queued intent") } catch {}
         XCTAssertTrue(log.requests.filter { $0.url?.lastPathComponent == "compose" }.isEmpty, "Rechecking only after the response cannot undo physical dispatch")
+    }
+}
+
+
+extension ComposeServiceTests {
+    func testUUIDOutcomeReadNeverReplaysMutation() async throws {
+        let (service, request, log) = try await setup()
+        _ = try await service.sendCompose(request)
+        let receipt = try await service.composeOutcome(request)
+        XCTAssertEqual(receipt.requestID, request.requestID); XCTAssertEqual(receipt.state, .sent)
+        XCTAssertEqual(log.requests.filter { $0.url?.lastPathComponent == "compose" }.count, 1)
+        let polls = log.requests.filter { $0.url?.path.contains("/compose/") == true }
+        XCTAssertEqual(polls.count, 1); XCTAssertEqual(polls.first?.httpMethod, "GET")
+    }
+}
+
+
+extension ComposeServiceTests {
+    func testSaveAsPageOnlyCreatesAndReadsBackCapturedContentWithoutDisplayMutation() async throws {
+        let (service, current, log) = try await setup()
+        let request = ComposeRequest(principal: current.principal, target: current.target, text: "KEEP EXACT\nSECOND",
+            lineMetadata: [.init(alignment: "right", wrap: true), .init(alignment: "center", wrap: false)],
+            geometry: .flagship, duration: .until(.distantPast), silence: .hold)
+        let generic = await service.pageManagementCapability()
+        XCTAssertFalse(generic.canCreate); XCTAssertFalse(generic.canDelete)
+        let receipt = try await service.saveComposePage(name: "Captured hall-1", request: request)
+        XCTAssertEqual(receipt.page.template, ["KEEP EXACT", "SECOND"])
+        do { _ = try await service.saveComposePage(name: "Captured hall-1", request: request); XCTFail("An uncertain or consumed create must never replay") } catch {}
+        let mutations = log.requests.filter { $0.httpMethod == "POST" && $0.url?.lastPathComponent != "login" }
+        XCTAssertEqual(mutations.count, 1); XCTAssertEqual(mutations.first?.url?.lastPathComponent, "pages")
+        let body = try JSONSerialization.jsonObject(with: XCTUnwrap(mutations.first?.httpBody)) as! [String: Any]
+        XCTAssertEqual(body["type"] as? String, "template"); XCTAssertEqual(body["template"] as? [String], ["KEEP EXACT", "SECOND"])
+        XCTAssertNil(body["duration"]); XCTAssertNil(body["silence"]); XCTAssertNil(body["board_id"])
+        XCTAssertEqual(log.requests.filter { $0.url?.path.contains("/pages/") == true && $0.httpMethod == "GET" }.count, 1)
+        XCTAssertTrue(log.requests.filter { $0.url?.path.contains("/compose") == true || $0.url?.path.contains("active-page") == true || $0.url?.path.contains("schedule") == true }.isEmpty)
     }
 }
