@@ -28,7 +28,7 @@ H1/H2 field shapes without changing the retained legacy migration oracle. Its
 frames and dates are UI controls, not additional live-hub response recordings.
 
 The original pinned hubs have no atomic restore. `HostUndo/` separately records
-34 responses from unmerged backend commit `c5480cab789b08441e15525b8c2ac3d8b28eaa8d`;
+34 responses from unmerged backend commit `6be367f4a76891d7b11a114a81a7d79f1b50534a`;
 `requests-undo.json` binds the additive capability, opt-in cancel receipt and
 atomic restore. It includes timed and indefinite restoration, unchanged original
 start/expiry, and stale/used/wrong-display/auth/body refusals. Synthetic receipt

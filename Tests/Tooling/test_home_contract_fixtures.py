@@ -9,7 +9,7 @@ HOME = ROOT / 'Tests/Fixtures/Home'
 
 class HomeContractFixtureTests(unittest.TestCase):
     def test_atomic_undo_responses_are_from_the_unmerged_immutable_backend(self):
-        self.verify(HOME/'HostUndo', HOME/'requests-undo.json', 34, 'c5480cab789b08441e15525b8c2ac3d8b28eaa8d')
+        self.verify(HOME/'HostUndo', HOME/'requests-undo.json', 34, '6be367f4a76891d7b11a114a81a7d79f1b50534a')
         source = json.loads((HOME/'HostUndo/SOURCE.json').read_text())
         self.assertIn('not Docker C5 proof',source['method'])
         for name in ['undo-cancel','undo-restored','undo-indefinite-cancel','undo-empty-cancel']:

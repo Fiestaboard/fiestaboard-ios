@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import FiestaBoardKit
 import FiestaBoardAppState
 import FiestaBoardRender
@@ -54,18 +55,8 @@ struct HomeView<Controls: View>: View {
                             Label(outcome.message, systemImage: outcome == .pageSelected || outcome == .overrideCanceled ? "checkmark.circle" : "info.circle")
                                 .font(.callout).accessibilityIdentifier("homeControlOutcome")
                         }
-                        if let message = store.message {
-                            TimelineView(.periodic(from: .now, by: 1)) { _ in
-                                HStack {
-                                    Text(message).font(.callout).accessibilityIdentifier("actionOutcome")
-                                    if status.canUndoOverride {
-                                        Spacer()
-                                        Button("Undo") { Task { await status.undoTemporaryOverride() } }
-                                            .buttonStyle(.bordered).controlSize(.large)
-                                            .accessibilityLabel("Undo override cancellation").accessibilityIdentifier("homeUndoOverride")
-                                    }
-                                }
-                            }
+                        if let message = store.message, !successfulHomeOutcome {
+                            Text(message).font(.callout).accessibilityIdentifier("actionOutcome")
                         }
                         if status.homeControlNeedsReadback {
                             Button("Refresh display") { Task { await status.refreshHomeControlState() } }
@@ -100,17 +91,33 @@ struct HomeView<Controls: View>: View {
                 HomeChangePageSheet(store: store, status: status, selected: $previewedPageID)
             }.presentationDetents([.medium, .large])
         }
-        .overlay(alignment: .top) {
+        .overlay(alignment: .bottom) {
             if successToast, let outcome = status.homeControlOutcome {
-                Label(outcome.message, systemImage: "checkmark.circle.fill")
-                    .font(.callout).padding(12).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
-                    .padding().accessibilityIdentifier("homeSuccessToast")
+                TimelineView(.periodic(from: .now, by: 1)) { _ in
+                    HStack(spacing: 12) {
+                        Image(systemName: "checkmark").foregroundStyle(.tint).accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(outcome.message).font(.subheadline.weight(.semibold))
+                            Text(summary?.name ?? "Display").font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 0)
+                        if status.canUndoOverride {
+                            Button("Undo") { Task { await status.undoTemporaryOverride() } }
+                                .buttonStyle(.glass).controlSize(.large)
+                                .accessibilityLabel("Undo override cancellation").accessibilityIdentifier("homeUndoOverride")
+                        }
+                    }
+                    .padding(12).glassEffect(.regular, in: .rect(cornerRadius: 20))
+                    .padding(16).accessibilityIdentifier("homeSuccessToast")
+                }
             }
         }
+        .sensoryFeedback(.success, trigger: successToast) { _, value in value }
         .task(id: status.homeControlOutcome) {
-            guard status.homeControlOutcome == .pageSelected || status.homeControlOutcome == .overrideCanceled || status.homeControlOutcome == .overrideRestored else { successToast = false; return }
+            guard successfulHomeOutcome, let outcome = status.homeControlOutcome else { successToast = false; return }
             successToast = true
-            do { try await Task.sleep(for: .seconds(3)) } catch { return }
+            UIAccessibility.post(notification: .announcement, argument: outcome.message + ". " + (summary?.name ?? "Display"))
+            do { try await Task.sleep(for: .seconds(5)) } catch { return }
             successToast = false
         }
         .modifier(EditorPresentation(isPresented: $editing) {
@@ -121,6 +128,9 @@ struct HomeView<Controls: View>: View {
         }
         .onChange(of: store.connectionLabel) { _, _ in changingPage = false; editing = false }
         .onChange(of: store.selectedBoardID) { _, _ in changingPage = false; editing = false }
+    }
+    private var successfulHomeOutcome: Bool {
+        status.homeControlOutcome == .pageSelected || status.homeControlOutcome == .overrideCanceled || status.homeControlOutcome == .overrideRestored
     }
     private func homePresentation(now: Date) -> HomePresentation {
         HomePresentation.make(detail: store.board, showing: status.nowShowing, silence: status.selectedSilence,

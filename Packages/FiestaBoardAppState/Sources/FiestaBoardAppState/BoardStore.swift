@@ -734,7 +734,7 @@ public struct PreparedAction: Identifiable, Sendable {
                         let result = try await writer.cancelHomeOverride(boardID: action.target.boardID, requestingUndo: requestingUndo)
                         guard valid(token) else { return }
                         if requestingUndo, let value = result.undoToken, let expiry = HomeTiming.instant(result.undoExpiresAt), expiry > now() {
-                            homeUndoContext = HomeUndoContext(token: value, expiresAt: min(expiry,now().addingTimeInterval(30)), target: action.target, generation: token)
+                            homeUndoContext = HomeUndoContext(token: value, expiresAt: min(expiry,now().addingTimeInterval(5)), target: action.target, generation: token)
                         }
                     } else {
                         guard let writer = service as? any TemporaryOverrideClearing else { throw FiestaBoardError.writesDisabled }

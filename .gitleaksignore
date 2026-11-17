@@ -7,3 +7,9 @@ Tokens/platform-ios.json:generic-api-key:27
 # Recorder revokes this token before exit; SOURCE.json and the revoked HTTP
 # response preserve provenance. Never suppress production mobile credentials.
 Tests/Fixtures/device-login.json:generic-api-key:1
+# I7 byte-exact synthetic Undo receipts from immutable isolated backend6be367f.
+# Recorded use/stale refusals consume or invalidate them; the mobile session is
+# revoked before exit and their at-most30s deadlines have passed. No live tokens.
+Tests/Fixtures/Home/HostUndo/undo-cancel.json:generic-api-key:1
+Tests/Fixtures/Home/HostUndo/undo-stale-cancel.json:generic-api-key:1
+Tests/Fixtures/Home/HostUndo/undo-indefinite-cancel.json:generic-api-key:1
