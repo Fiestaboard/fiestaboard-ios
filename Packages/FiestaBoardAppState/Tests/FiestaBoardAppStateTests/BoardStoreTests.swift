@@ -371,9 +371,12 @@ private actor SessionFaultService: FiestaBoardService {
     }
     func releaseLogout() { logoutGate?.resume(); logoutGate = nil }
     private var authFailure: FiestaBoardError?
+    private var cancelledAuth = false
+    func cancelNextAuth() { cancelledAuth = true }
     func failAuth(_ error: FiestaBoardError?) { authFailure = error }
     func authStatus() async throws -> AuthStatus {
         lifecycle.append("auth")
+        if cancelledAuth { cancelledAuth = false; throw CancellationError() }
         if let authFailure { throw authFailure }
         return try await demo.authStatus()
     }
@@ -1311,19 +1314,22 @@ extension BoardStoreTests {
 
 extension BoardStoreTests {
     func testDelayedReadsCannotRestoreReachabilityAcrossPathLoss() async throws {
-        for kind in ["probe", "detail"] {
-            let service = try DelayedService(delayConnection: false), store = BoardStore()
-            await store.connect(service).value
-            if kind == "probe" { await service.delayNextAuth() } else { await service.delayNextRead() }
-            let request = kind == "probe" ? store.probeReachability() : store.refresh()
-            await service.waitUntilBlocked()
-            store.networkAvailable = false
-            await service.release()
-            await request.value
-            store.networkAvailable = true
-            XCTAssertEqual(store.hubReachable, false, kind)
-            await store.probeReachability().value
-            XCTAssertEqual(store.hubReachable, true, kind)
+        for restoredBeforeReply in [false, true] {
+            for kind in ["probe", "detail"] {
+                let service = try DelayedService(delayConnection: false), store = BoardStore()
+                await store.connect(service).value
+                if kind == "probe" { await service.delayNextAuth() } else { await service.delayNextRead() }
+                let request = kind == "probe" ? store.probeReachability() : store.refresh()
+                await service.waitUntilBlocked()
+                store.networkAvailable = false
+                if restoredBeforeReply { store.networkAvailable = true }
+                await service.release()
+                await request.value
+                store.networkAvailable = true
+                XCTAssertEqual(store.hubReachable, false, kind)
+                await store.probeReachability().value
+                XCTAssertEqual(store.hubReachable, true, kind)
+            }
         }
     }
     func testProbePreservesRetryAfterDeadlineAndNonNetworkErrors() async throws {
@@ -1346,6 +1352,13 @@ extension BoardStoreTests {
         XCTAssertEqual(store.hubReachable, true)
         let after = await service.lifecycle.filter { $0 == "auth" }.count
         XCTAssertEqual(after, calls + 1)
+        await service.failAuth(.rejected(status: 400))
+        await store.probeReachability().value
+        XCTAssertEqual(store.hubReachable, true)
+        await service.failAuth(nil)
+        await service.cancelNextAuth()
+        await store.probeReachability().value
+        XCTAssertEqual(store.hubReachable, true)
         await service.failAuth(.unauthenticated)
         await store.probeReachability().value
         XCTAssertNil(store.status)
