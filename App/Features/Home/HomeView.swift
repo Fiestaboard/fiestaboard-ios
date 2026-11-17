@@ -6,6 +6,7 @@ import FiestaBoardRender
 struct HomeView<ChangePage: View, Controls: View>: View {
     @ObservedObject var store: BoardStore
     @ObservedObject var status: BoardStatus
+    @ObservedObject var thumbnails: PageThumbnails
     let compose: () -> Void
     let preparePage: (String) -> Void
     let prepareRestore: () -> Void
@@ -16,6 +17,12 @@ struct HomeView<ChangePage: View, Controls: View>: View {
     @Environment(\.colorScheme) private var appearance
     @State private var changingPage = false
     @State private var editing = false
+    @State private var previewedPageID: String?
+    @State private var successToast = false
+    private var previewPage: Page? { store.pages.first { $0.id == previewedPageID } }
+    private var selectedPreview: PagePreview? { previewPage.flatMap { thumbnails.preview(for: $0, boardID: store.selectedBoardID) } }
+    private var previewReady: Bool { selectedPreview?.available == true }
+    private var previewLabel: String { previewReady ? "Preview · Not sent yet" : selectedPreview?.available == false ? "Preview unavailable" : "Loading preview…" }
     private var summary: BoardSummary? { store.boards.first { $0.id == store.selectedBoardID } }
     private var selectedPage: Page? { status.nowShowing?.pageID.flatMap { id in store.pages.first { $0.id == id } } }
 
@@ -24,6 +31,9 @@ struct HomeView<ChangePage: View, Controls: View>: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     if let summary {
+                        if previewedPageID != nil {
+                            Label(previewLabel, systemImage: "eye").font(.caption).accessibilityIdentifier("homePagePreviewLabel")
+                        }
                         board(summary, height: geometry.size.height)
                             .contextMenu {
                                 Button("Change Page", systemImage: "rectangle.stack") { changingPage = true }
@@ -34,14 +44,14 @@ struct HomeView<ChangePage: View, Controls: View>: View {
                         TimelineView(.periodic(from: .now, by: 1)) { timeline in
                             let presentation = homePresentation(now: timeline.date)
                             HomeStatusSummary(presentation: presentation, displayName: summary.name,
-                                pageName: status.nowShowing?.name ?? "No page selected", canCancel: status.canClearOverride,
+                                pageName: previewReady ? (previewPage?.name ?? "") : (status.nowShowing?.name ?? "No page selected"), previewing: previewReady, canCancel: status.canClearOverride,
                                 cancel: { Task { await status.clearTemporaryOverride() } })
                             if let banner = presentation.banner { statusBanner(banner) }
                         }
                         if let face = status.outOfSync {
                             OutOfSyncBanner(face: face, summary: summary, store: store, status: status, restore: prepareRestore)
                         }
-                        if let outcome = status.homeControlOutcome {
+                        if let outcome = status.homeControlOutcome, outcome != .pageSelected && outcome != .overrideCanceled {
                             Label(outcome.message, systemImage: outcome == .pageSelected || outcome == .overrideCanceled ? "checkmark.circle" : "info.circle")
                                 .font(.callout).accessibilityIdentifier("homeControlOutcome")
                         }
@@ -74,15 +84,31 @@ struct HomeView<ChangePage: View, Controls: View>: View {
                     .disabled(store.refreshing || store.commandBusy || status.homeControlBusy)
             }
         }
-        .sheet(isPresented: $changingPage) {
+        .sheet(isPresented: $changingPage, onDismiss: { previewedPageID = nil }) {
             NavigationStack {
-                if status.canSelectHomePage(timed: false) { HomeChangePageSheet(store: store, status: status) }
+                if status.canSelectHomePage(timed: false) { HomeChangePageSheet(store: store, status: status, selected: $previewedPageID) }
                 else { changePage() }
             }.presentationDetents([.medium, .large])
+        }
+        .overlay(alignment: .top) {
+            if successToast, let outcome = status.homeControlOutcome {
+                Label(outcome.message, systemImage: "checkmark.circle.fill")
+                    .font(.callout).padding(12).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                    .padding().accessibilityIdentifier("homeSuccessToast")
+            }
+        }
+        .task(id: status.homeControlOutcome) {
+            guard status.homeControlOutcome == .pageSelected || status.homeControlOutcome == .overrideCanceled else { successToast = false; return }
+            successToast = true
+            do { try await Task.sleep(for: .seconds(3)) } catch { return }
+            successToast = false
         }
         .modifier(EditorPresentation(isPresented: $editing) {
             if let page = selectedPage { PageEditorLoader(pageID: page.id, store: store) }
         })
+        .onChange(of: previewedPageID) { _, id in
+            if let page = store.pages.first(where: { $0.id == id }) { thumbnails.request(page, boardID: store.selectedBoardID) }
+        }
         .onChange(of: store.connectionLabel) { _, _ in changingPage = false; editing = false }
         .onChange(of: store.selectedBoardID) { _, _ in changingPage = false; editing = false }
     }
@@ -107,7 +133,9 @@ struct HomeView<ChangePage: View, Controls: View>: View {
     @ViewBuilder private func board(_ summary: BoardSummary, height: CGFloat) -> some View {
         let model = status.model(for: summary)
         Group {
-            if let detail = store.board, detail.summary.id == summary.id {
+            if previewPage != nil, let preview = selectedPreview, preview.available {
+                BoardViewport(frame: PagePreviewFrame.make(preview, rows: model.rows, cols: model.cols, model: model), model: model)
+            } else if let detail = store.board, detail.summary.id == summary.id {
                 BoardOutputView(board: detail, model: model, animated: status.display.boardAnimations != false, flapStepMs: status.display.flapStepMs)
             } else {
                 BoardFrameView(frame: .empty(rows: model.rows, cols: model.cols), model: model, animated: false, loading: !summary.paused)

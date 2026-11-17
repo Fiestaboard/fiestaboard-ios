@@ -366,6 +366,14 @@ public enum BoardPolling {
     public func canSelectHomePage(timed: Bool) -> Bool {
         reader() is any HomePageSelecting && canPerformHome(timed ? .timedOverride : .selectPage)
     }
+    public var canHoldHomePage: Bool { reader() is any HomePageHolding && canPerformHome(.timedOverride) }
+    public func holdHomePage(pageID: String) async {
+        guard canHoldHomePage, let id = store.selectedBoardID,
+              let writer = reader() as? any HomePageHolding else { return }
+        await performHomeControl(boardID: id, success: .pageSelected) {
+            _ = try await writer.holdHomePage(pageID: pageID, boardID: id, durationMinutes: nil)
+        }
+    }
     private func canPerformHome(_ operation: HomeControlOperation) -> Bool {
         guard store.canPerformScopedHomeControl, !homeControlBusy, !homeControlNeedsReadback else { return false }
         if operation != .timedOverride, store.canWrite { return true }

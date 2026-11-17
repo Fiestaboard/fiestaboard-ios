@@ -85,26 +85,46 @@ public struct ThumbnailCache: Sendable {
     @Published public private(set) var cache = ThumbnailCache()
     public static let batchSize = 20
     private let reader: @MainActor () -> (any PagePreviewReading)?
+    private let scope: @MainActor () -> String
+    private var cacheScope: String
+    private var epoch = UUID()
+    private var observers = Set<AnyCancellable>()
     private var pending: [String: ThumbnailKey] = [:]
     private var inFlight: Set<ThumbnailKey> = []
     private var failed: Set<ThumbnailKey> = []
     private var flushTask: Task<Void, Never>?
 
-    public init(reader: @escaping @MainActor () -> (any PagePreviewReading)?) { self.reader = reader }
+    public init(reader: @escaping @MainActor () -> (any PagePreviewReading)?, scope: @escaping @MainActor () -> String) {
+        self.reader = reader; self.scope = scope; cacheScope = scope()
+    }
+    public convenience init(store: BoardStore, reader: @escaping @MainActor () -> (any PagePreviewReading)?) {
+        self.init(reader: reader, scope: { store.connectionLabel })
+        store.$connectionLabel.dropFirst().sink { [weak self] _ in self?.invalidate() }.store(in: &observers)
+        store.$connecting.dropFirst().filter { $0 }.sink { [weak self] _ in self?.invalidate() }.store(in: &observers)
+    }
+    /// Called synchronously when the connection/session changes, even at the same URL.
+    public func invalidate() {
+        epoch = UUID(); flushTask?.cancel(); flushTask = nil
+        pending = [:]; inFlight = []; failed = []; cache = ThumbnailCache(); cacheScope = scope()
+    }
 
     public func preview(for page: Page, boardID: String?) -> PagePreview? {
-        cache.preview(for: ThumbnailKey(page: page, boardID: boardID))
+        guard cacheScope == scope() else { return nil }
+        return cache.preview(for: ThumbnailKey(page: page, boardID: boardID))
     }
 
     /// A row appeared: queue its page unless it is cached, loading or failed.
     public func request(_ page: Page, boardID: String?) {
+        if cacheScope != scope() { invalidate() }
         let key = ThumbnailKey(page: page, boardID: boardID)
         guard cache.preview(for: key) == nil, !inFlight.contains(key), !failed.contains(key) else { return }
         pending[page.id] = key
         guard flushTask == nil else { return }
+        let token = epoch
         flushTask = Task { [weak self] in
             try? await Task.sleep(nanoseconds: 60_000_000)
-            self?.flush()
+            guard !Task.isCancelled, let self, token == self.epoch, self.scope() == self.cacheScope else { return }
+            self.flush()
         }
     }
 
@@ -113,7 +133,8 @@ public struct ThumbnailCache: Sendable {
 
     private func flush() {
         flushTask = nil
-        guard let reader = reader(), !pending.isEmpty else { pending.removeAll(); return }
+        guard cacheScope == scope(), let reader = reader(), !pending.isEmpty else { pending.removeAll(); return }
+        let token = epoch
         let keys = Array(pending.values); pending.removeAll()
         let groups = Dictionary(grouping: keys, by: \.boardID)
         for (boardID, group) in groups {
@@ -122,7 +143,7 @@ public struct ThumbnailCache: Sendable {
                 chunk.forEach { inFlight.insert($0) }
                 Task { [weak self] in
                     let result = try? await reader.previewBatch(pageIDs: chunk.map(\.pageID), boardID: boardID)
-                    guard let self else { return }
+                    guard let self, token == self.epoch, self.scope() == self.cacheScope else { return }
                     for key in chunk {
                         self.inFlight.remove(key)
                         if let preview = result?[key.pageID] { self.cache.store(preview, for: key) }

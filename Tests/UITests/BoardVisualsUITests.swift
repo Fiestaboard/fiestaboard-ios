@@ -84,6 +84,8 @@ final class BoardVisualsUITests: XCTestCase {
         let page = app.buttons["Good Morning"]
         XCTAssertTrue(page.waitForExistence(timeout: 5))
         page.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["homePagePreviewLabel"].waitForExistence(timeout: 5))
+        waitFor(board, NSPredicate(format: "value CONTAINS %@", "GOOD MORNING"), 8, "read-only selected page preview")
         let show = app.buttons["homeShowPage"]
         XCTAssertTrue(show.waitForExistence(timeout: 5)); show.tap()
         let back = app.navigationBars.buttons["FiestaBoard"]

@@ -45,3 +45,13 @@ extension HomePresentationTests {
         XCTAssertNil(p.nextChange)
     }
 }
+
+extension HomePresentationTests {
+    func testUntilScheduleBoundaryUsesFreshClockAndRejectsExpiredOrLongTimers() {
+        let now = Date(timeIntervalSince1970: 0)
+        XCTAssertEqual(HomeTiming.durationMinutes(until: now.addingTimeInterval(162 * 60), now: now),162)
+        XCTAssertEqual(HomeTiming.durationMinutes(until: now.addingTimeInterval(61), now: now),2)
+        XCTAssertNil(HomeTiming.durationMinutes(until: now, now: now))
+        XCTAssertNil(HomeTiming.durationMinutes(until: now.addingTimeInterval(86401), now: now))
+    }
+}

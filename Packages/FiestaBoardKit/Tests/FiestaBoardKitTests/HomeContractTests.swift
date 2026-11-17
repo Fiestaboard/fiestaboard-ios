@@ -129,3 +129,23 @@ extension HomeContractTests {
         catch { XCTAssertEqual(error as? FiestaBoardError, .unknownMutationOutcome) }
     }
 }
+
+extension HomeContractTests {
+    func testUntilCanceledUsesRecordedIndefiniteOverrideWithoutDuration() async throws {
+        let source = try JSONSerialization.jsonObject(with: read("SOURCE")) as! [String: Any]
+        let pageID = (source["scenario"] as! [String: String])["pageID"]!
+        let response = try read("override-indefinite")
+        let log = RequestLog()
+        FixtureURLProtocol.handler = { request in log.append(request); return (200, [:], response) }
+        let deployment = try DeploymentURL("https://hub.test")
+        let service = LiveFiestaBoardService(deployment: deployment,
+            transport: URLSessionTransport(deployment: deployment, protocolClasses: [FixtureURLProtocol.self]))
+        let receipt = try await service.holdHomePage(pageID: pageID, boardID: "cx-kitchen", durationMinutes: nil)
+        XCTAssertEqual(receipt.active,true)
+        XCTAssertNil(receipt.expiresAt)
+        let body = try JSONSerialization.jsonObject(with: XCTUnwrap(log.requests[0].httpBody)) as! [String: Any]
+        XCTAssertNil(body["duration_minutes"], "Indefinite does not encode a zero-length timer")
+        XCTAssertEqual(body["board_id"] as? String,"cx-kitchen")
+        XCTAssertEqual(body["revert_mode"] as? String,"schedule")
+    }
+}

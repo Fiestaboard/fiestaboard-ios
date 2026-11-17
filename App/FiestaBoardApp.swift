@@ -61,7 +61,7 @@ struct DraftScene: View {
         snapshots = persistence.snapshots
         let store = BoardStore()
         _store = StateObject(wrappedValue: store)
-        _thumbnails = StateObject(wrappedValue: PageThumbnails(reader: {
+        _thumbnails = StateObject(wrappedValue: PageThumbnails(store: store, reader: {
             StatusReaderRegistry.shared.previewReader(for: store.connectionLabel)
         }))
         _boardStatus = StateObject(wrappedValue: BoardStatus(store: store, reader: {
@@ -241,7 +241,7 @@ struct DraftScene: View {
         switch route {
         case .home:
             NavigationStack {
-                HomeView(store: store, status: boardStatus, compose: { composing = true },
+                HomeView(store: store, status: boardStatus, thumbnails: thumbnails, compose: { composing = true },
                          preparePage: { if let action = store.prepare(.page($0)) { store.confirm(action) } },
                          prepareRestore: { if let action = store.prepare(.restore) { store.confirm(action) } },
                          openSettings: { tab = .more }, openSchedule: { tab = .schedule },
