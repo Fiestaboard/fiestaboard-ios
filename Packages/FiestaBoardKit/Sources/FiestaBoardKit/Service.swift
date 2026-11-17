@@ -76,7 +76,7 @@ public protocol FiestaBoardService: Sendable {
 
 /// Native phone authentication/read foundation with retained version-gated editor
 /// adapters. I5 does not widen historical mutation audits or claim a released pairing.
-public actor LiveFiestaBoardService: FiestaBoardService {
+public actor LiveFiestaBoardService: FiestaBoardService, ComposePrincipalProviding {
     public nonisolated let deployment: DeploymentURL
     public nonisolated let isDemo = false
     private let transport: any APITransport
@@ -84,6 +84,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     private var generation: UInt64 = 0
     private var observedInstallationID: String?
     private var activeScope: VerifiedConnectionScope?
+    private var activeComposePrincipal: ComposePrincipalProof?
     private var replacementConnectionID: UUID?
     private var persistenceWarning: SessionPersistenceWarning?
     private var access = DraftAccess.readOnly
@@ -141,7 +142,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     private func bootstrapSnapshot(invalidateUnauthenticated: Bool) async throws -> BootstrapSnapshot {
         if invalidateUnauthenticated {
             replacementConnectionID = activeScope?.connectionID ?? replacementConnectionID
-            activeScope = nil
+            activeScope = nil; activeComposePrincipal = nil
         }
         let token = generation
         try Task.checkCancellation()
@@ -152,7 +153,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard identity.product == "FiestaBoard" else { throw FiestaBoardError.wrongProduct }
         guard token == generation else { throw FiestaBoardError.staleSession }
         if let previous = observedInstallationID, previous != identity.installationID {
-            activeScope = nil; replacementConnectionID = UUID()
+            activeScope = nil; activeComposePrincipal = nil; replacementConnectionID = UUID()
         }
         observedInstallationID = identity.installationID
         let auth: AuthStatus = try await fetch(APIRequest(path: ["auth", "status"], cachePolicy: .noStore), invalidateUnauthenticated: invalidateUnauthenticated)
@@ -160,7 +161,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         try Task.checkCancellation()
         if invalidateUnauthenticated && auth.bootstrapPhase != .ready { invalidateAuthentication() }
         if invalidateUnauthenticated && auth.bootstrapPhase == .ready && (!auth.enabled || auth.authenticated) {
-            try await publishVerifiedScope(token: token)
+            try await publishVerifiedScope(token: token, auth: auth)
         }
         return BootstrapSnapshot(deployment: deployment, health: health, identity: identity, auth: auth)
     }
@@ -174,7 +175,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard token == generation else { throw FiestaBoardError.staleSession }
         let status = try await verifiedAuthReadback()
         guard status.enabled == enabled, status.mode == (enabled ? "enabled" : "disabled"), status.firstRun != true else { throw FiestaBoardError.unknownMutationOutcome }
-        if status.bootstrapPhase == .ready && (!status.enabled || status.authenticated) { try await publishVerifiedScope(token: token) }
+        if status.bootstrapPhase == .ready && (!status.enabled || status.authenticated) { try await publishVerifiedScope(token: token, auth: status) }
         return status
     }
 
@@ -216,7 +217,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     /// Retire old reads/mutations before dispatch and clear their credential generation before accepting a replacement session.
     private func beginAuthenticationTransition() async throws -> UInt64 {
         generation &+= 1
-        activeScope = nil; replacementConnectionID = nil
+        activeScope = nil; activeComposePrincipal = nil; replacementConnectionID = nil
         creationContexts = [:]; deletionContexts = [:]; creatingPage = false
         savingPages = []; pageReadbacks = []; pageWriteGenerations = [:]
         controlVersion = nil; controlOptIn = false
@@ -246,7 +247,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard token == generation else { throw FiestaBoardError.staleSession }
         let status = try await verifiedAuthReadback()
         guard status.authenticated, status.bootstrapPhase == .ready, status.username == username else { throw FiestaBoardError.unknownMutationOutcome }
-        try await publishVerifiedScope(token: token)
+        try await publishVerifiedScope(token: token, auth: status)
         return status
     }
 
@@ -268,7 +269,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard token == generation, reply.isValid else { throw FiestaBoardError.staleSession }
         let status = try await verifiedAuthReadback()
         guard token == generation, status.authenticated, status.bootstrapPhase == .ready else { throw FiestaBoardError.unknownMutationOutcome }
-        try await publishVerifiedScope(token: token)
+        try await publishVerifiedScope(token: token, auth: status)
         return status
     }
 
@@ -303,7 +304,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
                 await transport.resetSession()
                 return false
             }
-            try await publishVerifiedScope(token: token)
+            try await publishVerifiedScope(token: token, auth: verified.auth)
             return true
         } catch {
             guard token == generation else { throw FiestaBoardError.staleSession }
@@ -327,7 +328,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
     }
 
     public func logout() async throws {
-        activeScope = nil
+        activeScope = nil; activeComposePrincipal = nil
         generation &+= 1
         creationContexts = [:]; deletionContexts = [:]; creatingPage = false
         savingPages = []; pageReadbacks = []; pageWriteGenerations = [:]
@@ -427,7 +428,7 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         try JSONDecoder().decode(Page.self, from: await pageDocumentData(id: id))
     }
 
-    private func publishVerifiedScope(token: UInt64) async throws {
+    private func publishVerifiedScope(token: UInt64, auth: AuthStatus) async throws {
         guard let installation = observedInstallationID, !installation.isEmpty else { return }
         let provisional = await transport.provisionalConnectionID()
         guard token == generation else { throw FiestaBoardError.staleSession }
@@ -436,6 +437,28 @@ public actor LiveFiestaBoardService: FiestaBoardService {
         guard token == generation, let confirmedID else { throw FiestaBoardError.staleSession }
         activeScope = VerifiedConnectionScope(deployment: deployment, installationID: installation, connectionID: confirmedID)
         replacementConnectionID = nil
+        activeComposePrincipal = nil
+        if auth.authenticated, auth.authKind == "mobile", let principal = auth.username,
+           let scope = activeScope {
+            let proof = await transport.bindComposePrincipal(principal, scope: scope)
+            guard token == generation, activeScope == scope else { throw FiestaBoardError.staleSession }
+            activeComposePrincipal = proof
+        }
+    }
+
+    public func composePrincipal() async -> ComposePrincipalProof? {
+        let token = generation
+        guard let proof = activeComposePrincipal, let scope = activeScope else { return nil }
+        let owned = await transport.ownsComposePrincipal(proof)
+        guard token == generation, activeScope == scope, activeComposePrincipal == proof, owned else { return nil }
+        return proof
+    }
+    public func rememberedComposePrincipal(installationID: String) async -> ComposePrincipalProof? {
+        let token = generation
+        if let observedInstallationID, Data(observedInstallationID.utf8) != Data(installationID.utf8) { return nil }
+        let proof = await transport.rememberedComposePrincipal(installationID: installationID)
+        guard token == generation else { return nil }
+        return proof
     }
 
     /// Scope and exact bytes are captured under one service generation, including vault ownership.
@@ -690,7 +713,7 @@ extension LiveFiestaBoardService {
         collectionCreationWriteGeneration = 0; collectionCreationReviewed = false
     }
     private func invalidateAuthentication() {
-        activeScope = nil; replacementConnectionID = UUID()
+        activeScope = nil; activeComposePrincipal = nil; replacementConnectionID = UUID()
         generation &+= 1
         creationContexts = [:]; deletionContexts = [:]; creatingPage = false
         savingPages = []; pageReadbacks = []; pageWriteGenerations = [:]

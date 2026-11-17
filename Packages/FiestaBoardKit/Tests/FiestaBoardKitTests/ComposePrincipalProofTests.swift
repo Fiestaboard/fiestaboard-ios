@@ -53,6 +53,9 @@ import XCTest
         let publicString = String(decoding:publicBytes,as:UTF8.self)
         XCTAssertFalse(publicString.contains("fb_mob_")); XCTAssertFalse(publicString.contains("fixture-password"))
         XCTAssertFalse(publicString.contains("sessionID"))
+        _ = try? await fresh.bootstrap()
+        XCTAssertEqual(log.requests.count,1)
+        XCTAssertNil(log.requests.first?.value(forHTTPHeaderField:"Authorization"),"Offline identity lookup must not import a credential")
     }
     func testUnrememberedIdentityIsUsableOnlyAfterActualAuthentication() async throws {
         let vault = MemorySessionVault(), first = service(vault)
