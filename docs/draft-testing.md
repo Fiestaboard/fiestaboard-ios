@@ -37,7 +37,7 @@ Project regeneration is a separate step, only needed after changing `project.yml
 xcodegen generate
 ```
 
-Regeneration replaces project settings and can reset a Team chosen in Xcode; recheck signing afterward. Normal `build-draft.sh` builds never regenerate the project. No development team or signing credential is committed. There is intentionally no asset catalog or app icon in this draft.
+Regeneration replaces project settings and can reset a Team chosen in Xcode; recheck signing afterward. Normal `build-draft.sh` builds never regenerate the project. No development team or signing credential is committed. Original onboarding vectors are bundled in `App/Assets.xcassets`; their source dimensions and hashes are recorded in `docs/onboarding-artwork.json`. This unsigned draft still has no app icon, so `ASSETCATALOG_COMPILER_APPICON_NAME` is explicitly empty.
 
 ## Demo walkthrough
 
