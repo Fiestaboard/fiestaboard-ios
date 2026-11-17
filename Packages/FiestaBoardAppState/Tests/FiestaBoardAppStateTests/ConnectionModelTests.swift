@@ -192,6 +192,36 @@ import FiestaBoardKit
         XCTAssertNotNil(store.status)
         XCTAssertFalse(model.savedServers.contains { $0.id == removed.id })
     }
+    func testLogoutPurgesCachedContentBeforeRemoteSignOutCompletes() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let service = try OnboardingService()
+        await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        let snapshots = ShellSnapshotStore(directory: directory.appendingPathComponent("snapshots"))
+        let model = ConnectionModel(store: BoardStore(), catalog: ServerCatalog(directory: directory), discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, snapshots: snapshots, serviceFactory: { _ in service })
+        await model.selectSaved(SavedServer(deployment: service.deployment, alias: "Kitchen", installationID: "installation")).value
+        let hub = try XCTUnwrap(model.selectedSavedHub), lease = try XCTUnwrap(model.snapshotLease)
+        let snapshot = ShellSnapshot(hub: hub, capturedAt: Date(), board: nil, displayName: "Private content", pages: [.init(id: "private", name: "Private page")])
+        _ = try await snapshots.write(snapshot, lease: lease)
+        await service.blockLogout()
+        let logout = model.logout()
+        await service.waitForLogout()
+        // Observe local cleanup independently while DELETE remains suspended.
+        var cached = try await snapshots.read(for: hub, at: Date())
+        for _ in 0..<200 where cached != nil {
+            try await Task.sleep(for: .milliseconds(5))
+            cached = try await snapshots.read(for: hub, at: Date())
+        }
+        XCTAssertNil(cached, "Explicit logout must purge local content without waiting for the hub")
+        let staleWrite = try await snapshots.write(snapshot, lease: lease)
+        XCTAssertFalse(staleWrite, "A pending writer cannot restore content after logout")
+        let newerLease = try await snapshots.beginSession(for: hub)
+        _ = try await snapshots.write(snapshot, lease: newerLease)
+        await service.releaseLogout()
+        await logout.value
+        let newerSnapshot = try await snapshots.read(for: hub, at: Date())
+        XCTAssertNotNil(newerSnapshot, "Old remote completion cannot purge a newer same-hub cache")
+    }
     func testBootstrapPrecedesRestoreAndNeverReplacesRememberedConsent() async throws {
         let service = try OnboardingService(); let model = model(service)
         model.address = "https://board.example.com"
