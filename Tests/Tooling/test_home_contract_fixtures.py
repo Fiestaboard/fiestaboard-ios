@@ -8,6 +8,14 @@ ROOT = Path(__file__).resolve().parents[2]
 HOME = ROOT / 'Tests/Fixtures/Home'
 
 class HomeContractFixtureTests(unittest.TestCase):
+    def test_atomic_undo_responses_are_from_the_unmerged_immutable_backend(self):
+        self.verify(HOME/'HostUndo', HOME/'requests-undo.json', 34, 'c5480cab789b08441e15525b8c2ac3d8b28eaa8d')
+        source = json.loads((HOME/'HostUndo/SOURCE.json').read_text())
+        self.assertIn('not Docker C5 proof',source['method'])
+        for name in ['undo-cancel','undo-restored','undo-indefinite-cancel','undo-empty-cancel']:
+            entry = next(r for r in source['responses'] if r['file'] == name+'.json')
+            self.assertEqual(entry['headers']['cache-control'],'no-store')
+
     def test_original_docker_responses_and_manifest_are_intact(self):
         self.verify(HOME, HOME/'requests.json', 13, 'f47da6e4e764fc2826f396210f013e45dc1a7fd8')
         source = json.loads((HOME/'SOURCE.json').read_text())

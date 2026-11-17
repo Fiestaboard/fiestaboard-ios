@@ -14,7 +14,7 @@ mkdir "$cx_tmp/hub" "$cx_tmp/data"
 git -C "$cx_repo" archive "$cx_commit" src plugins assets staff-picks package.json plugin-registry.json outputs.lock.json requirements.txt | tar -x -C "$cx_tmp/hub"
 mkdir -p "$cx_out"
 CX_FIXTURE_OUT="$PWD/$cx_out" CX_DATA_DIR="$cx_tmp/data" \
-CX_REQUEST_MANIFEST="$PWD/Tests/Fixtures/Home/requests-host.json" \
+CX_REQUEST_MANIFEST="$PWD/${CX_HOME_MANIFEST:-Tests/Fixtures/Home/requests-host.json}" \
 CX_RECORDING_METHOD='Host isolated uv environment; immutable runtime source git archive; real FastAPI HTTP boundary; supplemental not Docker C5 proof' \
 CX_HUB_COMMIT="$cx_commit" PYTHONPATH="$cx_tmp/hub" "$cx_python" scripts/record-home-fixtures.py
 UV_CACHE_DIR="$HOME/Library/Developer/FiestaBoard/ios/cx-iosnext5-i7-uv-cache" uv pip freeze --python "$cx_python" > "$cx_out/environment.txt"

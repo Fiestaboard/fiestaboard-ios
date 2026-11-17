@@ -69,6 +69,23 @@ capture('home-runtime','GET','/v1/status',200)
 if 'override-duration-max' in requests:
     capture('override-duration-max','POST','/settings/temporary-override',200,json={'board_id':kitchen,'page_id':page_id,'duration_minutes':480,'revert_mode':'schedule'})
     capture('override-duration-too-long','POST','/settings/temporary-override',422,json={'board_id':kitchen,'page_id':page_id,'duration_minutes':481,'revert_mode':'schedule'})
+if 'undo-capability' in requests:
+    capture('undo-capability','GET',f'/settings/temporary-override?board_id={kitchen}',200)
+    receipt = capture('undo-cancel','DELETE',f'/settings/temporary-override?board_id={kitchen}&undo=true',200).json()
+    restore = {'board_id':kitchen,'undo_token':receipt['undo_token']}
+    capture('undo-wrong-display','POST','/settings/temporary-override/undo',409,json={**restore,'board_id':desk})
+    capture('undo-unauthorized','POST','/settings/temporary-override/undo',401,request_headers={},json=restore)
+    capture('undo-extra-fields','POST','/settings/temporary-override/undo',422,json={**restore,'duration_minutes':480})
+    capture('undo-restored','POST','/settings/temporary-override/undo',200,json=restore)
+    capture('undo-used','POST','/settings/temporary-override/undo',409,json=restore)
+    receipt = capture('undo-stale-cancel','DELETE',f'/settings/temporary-override?board_id={kitchen}&undo=true',200).json()
+    capture('undo-newer-selection','PUT',f'/v1/boards/{kitchen}/active-page',200,json={'page_id':page_id})
+    capture('undo-stale','POST','/settings/temporary-override/undo',409,json={'board_id':kitchen,'undo_token':receipt['undo_token']})
+    capture('undo-indefinite-create','POST','/settings/temporary-override',200,json={'board_id':kitchen,'page_id':page_id,'revert_mode':'schedule'})
+    receipt = capture('undo-indefinite-cancel','DELETE',f'/settings/temporary-override?board_id={kitchen}&undo=true',200).json()
+    capture('undo-indefinite-restored','POST','/settings/temporary-override/undo',200,json={'board_id':kitchen,'undo_token':receipt['undo_token']})
+    capture('undo-legacy-cancel','DELETE',f'/settings/temporary-override?board_id={kitchen}',200)
+    capture('undo-empty-cancel','DELETE',f'/settings/temporary-override?board_id={kitchen}&undo=true',200)
 revoke=client.delete('/auth/device/session',headers=headers)
 assert revoke.status_code == 200, revoke.text
 source={'hubRepository':'Fiestaboard/FiestaBoard','hubCommit':os.environ['CX_HUB_COMMIT'],
