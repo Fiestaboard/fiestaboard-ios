@@ -6,6 +6,7 @@ import FiestaBoardDocuments
 @MainActor private final class ComposeRenderGate {
     var inputs: [ComposePreviewInput] = []
     private var replies: [CheckedContinuation<TemplatePreviewResult, any Error>] = []
+    var waiting: Int { replies.count }
     func render(_ input: ComposePreviewInput) async throws -> TemplatePreviewResult {
         inputs.append(input)
         return try await withCheckedThrowingContinuation { replies.append($0) }
@@ -60,7 +61,7 @@ import FiestaBoardDocuments
         XCTAssertFalse(session.previewIsStale)
     }
     func testTargetConnectionAndHubChangesRejectPreviousScopeReplies() async throws {
-        for changed in [try scope(board:"desk"),try scope(),try scope(hub:"https://other.test")] {
+        for changed in [try scope(board:"desk"),try scope()] {
             let clock = ManualSleeper(), renderer = ComposeRenderGate()
             let session = ComposeSession(scope:try scope(),sleep:{ try await clock.sleep($0) },render:{ try await renderer.render($0) })
             session.update(.init(text:"CAPTURE")); await settle(); clock.advance(); await settle()
@@ -71,6 +72,18 @@ import FiestaBoardDocuments
             renderer.answer(try reply("CURRENT")); await settle()
             XCTAssertEqual(session.preview?.lines,["CURRENT"])
         }
+    }
+    func testIdentityChangeCannotForwardFormerHubsTextOrFrame() async throws {
+        let clock = ManualSleeper(), renderer = ComposeRenderGate()
+        let session = ComposeSession(scope:try scope(),sleep:{ try await clock.sleep($0) },render:{ try await renderer.render($0) })
+        session.update(.init(text:"PRIVATE TO FIRST HUB")); await settle(); clock.advance(); await settle()
+        session.changeScope(try scope(hub:"https://other.test")); await settle(); clock.advance(); await settle()
+        XCTAssertEqual(session.input.text,"")
+        XCTAssertEqual(renderer.inputs.count,1,"Do not forward the previous household's unsent input to a new hub")
+        renderer.answer(try reply("OLD HUB")); await settle()
+        XCTAssertNil(session.preview); XCTAssertNil(session.prepare())
+        session.close(); await settle()
+        while renderer.waiting > 0 { renderer.answer(try reply("DISCARDED")); await settle() }
     }
     func testFailedPreviewKeepsEvidenceAndRequiresExplicitRetry() async throws {
         let clock = ManualSleeper(), renderer = ComposeRenderGate()
