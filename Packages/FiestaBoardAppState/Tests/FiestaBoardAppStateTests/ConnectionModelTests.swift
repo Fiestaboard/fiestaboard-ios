@@ -711,12 +711,14 @@ extension ConnectionModelTests {
 }
 
 extension ConnectionModelTests {
-    // Removing the old sheet while bootstrap is in flight must not cancel the newly selected hub.
+    // A callback from a replaced sheet must not cancel its successor while bootstrap is in flight.
     func testOldPresentationDismissalCannotCancelNewConnectionAttempt() async throws {
         let service = try OnboardingService(), model = model(service)
         await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
         await service.blockBootstrap()
-        let oldPresentation = model.onboardingPresentationIntent
+        let oldPresentation = model.beginOnboardingPresentation()
+        let replacement = model.beginOnboardingPresentation()
+        XCTAssertNotEqual(oldPresentation, replacement)
         model.address = service.deployment.description
         let attempt = model.connectAddress(); await service.waitForBootstrap()
         model.dismissOnboardingPresentation(oldPresentation)
@@ -730,8 +732,8 @@ extension ConnectionModelTests {
     func testSuccessfulConnectionDismissalKeepsTheConnectedHub() async throws {
         let service = try OnboardingService(), model = model(service)
         await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
+        let presentation = model.beginOnboardingPresentation()
         model.address = service.deployment.description; await model.connectAddress().value
-        let presentation = model.onboardingPresentationIntent
         let before = await service.events.filter { $0 == "disconnect" }.count
         model.dismissOnboardingPresentation(presentation)
         XCTAssertEqual(model.phase, .connected); XCTAssertNotNil(model.snapshot)

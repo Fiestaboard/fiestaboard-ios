@@ -14,8 +14,9 @@ struct ConnectionView: View {
     @ConnectionState private var newAlias = ""
     @ConnectionState private var showWelcome = true
     @ConnectionState private var manualPresented = false
-    @ConnectionState private var formPresented = true
-    @ConnectionState private var formIntent: UUID?
+    private struct FormPresentation: Identifiable { let id: UUID }
+    @ConnectionState private var formPresentation: FormPresentation?
+    @ConnectionState private var presentedInitialForm = false
     @Environment(\.horizontalSizeClass) private var sizeClass
     @Environment(\.colorScheme) private var appearance
     @Environment(\.scenePhase) private var scenePhase
@@ -38,29 +39,46 @@ struct ConnectionView: View {
                 ZStack {
                     palette.color("background").ignoresSafeArea()
                     OnboardingBackdrop(tiled: true).ignoresSafeArea()
-                    if !formPresented {
+                    if formPresentation == nil {
                         OnboardingAction(title: "Choose your hub") {
-                            formIntent = model.onboardingPresentationIntent; formPresented = true
+                            presentForm()
                         }.padding().frame(maxWidth: 360).accessibilityIdentifier("reopenOnboarding")
                     }
                 }
-                .sheet(isPresented: $formPresented, onDismiss: {
-                    let dismissedIntent = formIntent; formIntent = nil
-                    if let dismissedIntent { model.dismissOnboardingPresentation(dismissedIntent) }
-                }) {
-                    navigation.presentationSizing(.form).presentationDragIndicator(.visible)
+                .sheet(item: formBinding) { presentation in
+                    navigation(presentation).presentationSizing(.form).presentationDragIndicator(.visible)
                         .interactiveDismissDisabled(model.busy)
-                        .onAppear { if formIntent == nil { formIntent = model.onboardingPresentationIntent } }
                 }
             } else {
-                navigation
+                navigation()
             }
         }
         .onChange(of: scenePhase) { _, phase in if phase == .active { model.returnFromWebSetup() } }
         .onChange(of: model.snapshot != nil) { _, verified in if verified { manualPresented = false } }
-        .onAppear { if sizeClass == .regular && model.snapshot == nil { showWelcome = false } }
+        .onAppear {
+            if sizeClass == .regular && !presentedInitialForm {
+                presentedInitialForm = true
+                if model.snapshot == nil { showWelcome = false }
+                presentForm()
+            }
+        }
     }
-    private var navigation: some View {
+    private func presentForm() {
+        formPresentation = FormPresentation(id: model.beginOnboardingPresentation())
+    }
+    private func dismissForm(_ presentation: FormPresentation) {
+        // A late binding callback must not hide a replacement form either.
+        if formPresentation?.id == presentation.id { formPresentation = nil }
+        model.dismissOnboardingPresentation(presentation.id)
+    }
+    private var formBinding: Binding<FormPresentation?> {
+        // Capture the exact presented item before the system writes nil on a swipe.
+        let presented = formPresentation
+        return Binding(get: { formPresentation }, set: { next in
+            if next == nil, let presented { dismissForm(presented) }
+        })
+    }
+    private func navigation(_ presentation: FormPresentation? = nil) -> some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
@@ -110,8 +128,8 @@ struct ConnectionView: View {
                     if resetting {
                         Button { model.cancelPasswordReset() } label: { Image(systemName: "chevron.left") }
                             .accessibilityLabel("Back to sign in").accessibilityIdentifier("cancelPasswordReset")
-                    } else if sizeClass == .regular {
-                        Button { model.cancel(); formPresented = false } label: { Image(systemName: "xmark") }
+                    } else if let presentation {
+                        Button { dismissForm(presentation) } label: { Image(systemName: "xmark") }
                             .accessibilityLabel("Close onboarding")
                     } else if !welcome {
                         Button { model.cancel(); showWelcome = true } label: { Image(systemName: "chevron.left") }

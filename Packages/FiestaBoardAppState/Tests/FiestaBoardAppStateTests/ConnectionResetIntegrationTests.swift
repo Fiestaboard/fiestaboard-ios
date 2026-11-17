@@ -233,7 +233,7 @@ extension ConnectionResetIntegrationTests {
     func testPresentationDismissalClearsUnsubmittedSecretsAndResetIntent() async throws {
         let fixture = try ResetConnectionHTTP(reply: "reset-code-after-weak")
         let model = try await connected(fixture)
-        let presentation = model.onboardingPresentationIntent
+        let presentation = model.beginOnboardingPresentation()
         model.username = "retained-owner"; model.password = "unsubmitted-login-secret"
         model.beginPasswordReset(); model.enterPasswordResetCode(); fill(model)
         model.dismissOnboardingPresentation(presentation)
@@ -249,7 +249,7 @@ extension ConnectionResetIntegrationTests {
     func testPresentationDismissalRejectsOutstandingResetCompletion() async throws {
         let fixture = try ResetConnectionHTTP(reply: "reset-code-after-weak", deferred: true)
         let model = try await connected(fixture)
-        let presentation = model.onboardingPresentationIntent
+        let presentation = model.beginOnboardingPresentation()
         model.beginPasswordReset(); model.enterPasswordResetCode(); fill(model)
         let attempt = model.submitPasswordReset()
         await fixture.waitForReset()
@@ -267,7 +267,7 @@ extension ConnectionResetIntegrationTests {
     func testPresentationDismissalClearsUnsubmittedLoginPasswordAndSetupProof() async throws {
         let fixture = try ResetConnectionHTTP(reply: "reset-code-after-weak")
         let model = try await connected(fixture)
-        let presentation = model.onboardingPresentationIntent
+        let presentation = model.beginOnboardingPresentation()
         model.username = "retained-owner"; model.password = "unsubmitted-login-secret"
         model.setupToken = "unsubmitted-setup-proof"
         model.dismissOnboardingPresentation(presentation)
@@ -284,7 +284,7 @@ extension ConnectionResetIntegrationTests {
     func testInitialPresentationSelectionThenDismissalClearsLoginSecrets() async throws {
         let fixture = try ResetConnectionHTTP(reply: "reset-code-after-weak")
         var initialPresentation: UUID?
-        let model = try await connected(fixture, beforeSelection: { initialPresentation = $0.onboardingPresentationIntent })
+        let model = try await connected(fixture, beforeSelection: { initialPresentation = $0.beginOnboardingPresentation() })
         let presentation = try XCTUnwrap(initialPresentation)
         model.username = "retained-owner"; model.password = "unsubmitted-login-secret"
         model.setupToken = "unsubmitted-setup-proof"
@@ -298,7 +298,7 @@ extension ConnectionResetIntegrationTests {
     func testInitialPresentationSelectionThenDismissalClearsResetSecrets() async throws {
         let fixture = try ResetConnectionHTTP(reply: "reset-code-after-weak")
         var initialPresentation: UUID?
-        let model = try await connected(fixture, beforeSelection: { initialPresentation = $0.onboardingPresentationIntent })
+        let model = try await connected(fixture, beforeSelection: { initialPresentation = $0.beginOnboardingPresentation() })
         let presentation = try XCTUnwrap(initialPresentation)
         model.beginPasswordReset(); model.enterPasswordResetCode(); fill(model)
         model.dismissOnboardingPresentation(presentation)
@@ -311,7 +311,7 @@ extension ConnectionResetIntegrationTests {
     func testInitialPresentationSelectionThenDismissalRejectsLateResetReply() async throws {
         let fixture = try ResetConnectionHTTP(reply: "reset-code-after-weak", deferred: true)
         var initialPresentation: UUID?
-        let model = try await connected(fixture, beforeSelection: { initialPresentation = $0.onboardingPresentationIntent })
+        let model = try await connected(fixture, beforeSelection: { initialPresentation = $0.beginOnboardingPresentation() })
         let presentation = try XCTUnwrap(initialPresentation)
         model.beginPasswordReset(); model.enterPasswordResetCode(); fill(model)
         let attempt = model.submitPasswordReset()
@@ -328,10 +328,10 @@ extension ConnectionResetIntegrationTests {
     func testObsoleteClosedPresentationCannotCancelReplacementAfterSelection() async throws {
         let fixture = try ResetConnectionHTTP(reply: "reset-code-after-weak")
         var obsoletePresentation: UUID?
-        let model = try await connected(fixture, beforeSelection: { obsoletePresentation = $0.onboardingPresentationIntent })
+        let model = try await connected(fixture, beforeSelection: { obsoletePresentation = $0.beginOnboardingPresentation() })
         let obsolete = try XCTUnwrap(obsoletePresentation)
         model.cancel()
-        let replacement = model.onboardingPresentationIntent
+        let replacement = model.beginOnboardingPresentation()
         await model.connectAddress().value
         model.password = "replacement-unsubmitted-secret"
         model.dismissOnboardingPresentation(obsolete)
@@ -341,5 +341,46 @@ extension ConnectionResetIntegrationTests {
         // A replacement's own close still owns its cleanup after selection.
         model.dismissOnboardingPresentation(replacement)
         XCTAssertEqual(model.phase, .picker); XCTAssertEqual(model.password, "")
+    }
+}
+
+
+extension ConnectionResetIntegrationTests {
+    func testBeginningReplacementPresentationClearsRetiredFormsSecrets() async throws {
+        let fixture = try ResetConnectionHTTP(reply: "reset-code-after-weak")
+        var initialPresentation: UUID?
+        let model = try await connected(fixture, beforeSelection: { initialPresentation = $0.beginOnboardingPresentation() })
+        let retired = try XCTUnwrap(initialPresentation)
+        model.password = "retired-login-secret"; model.setupToken = "retired-setup-proof"
+        model.beginPasswordReset(); model.enterPasswordResetCode(); fill(model)
+        let replacement = model.beginOnboardingPresentation()
+        XCTAssertNotEqual(retired, replacement)
+        XCTAssertEqual(model.phase, .picker); XCTAssertNil(model.snapshot)
+        XCTAssertEqual(model.password, ""); XCTAssertEqual(model.setupToken, "")
+        XCTAssertNil(model.passwordResetFlow)
+        XCTAssertEqual(model.resetCode, ""); XCTAssertEqual(model.resetNewPassword, ""); XCTAssertEqual(model.resetConfirmation, "")
+        await model.connectAddress().value
+        model.password = "replacement-secret"
+        model.dismissOnboardingPresentation(retired)
+        XCTAssertEqual(model.phase, .authentication(.signIn)); XCTAssertEqual(model.password, "replacement-secret")
+        model.dismissOnboardingPresentation(replacement)
+        XCTAssertEqual(model.phase, .picker); XCTAssertEqual(model.password, "")
+    }
+}
+
+
+extension ConnectionResetIntegrationTests {
+    // Removing an active saved hub uses logout while the chooser itself remains presented.
+    func testCurrentPresentationStillOwnsDismissalAfterLogoutAndReselection() async throws {
+        let fixture = try ResetConnectionHTTP(reply: "reset-code-after-weak")
+        var initialPresentation: UUID?
+        let model = try await connected(fixture, beforeSelection: { initialPresentation = $0.beginOnboardingPresentation() })
+        let presentation = try XCTUnwrap(initialPresentation)
+        await model.logout().value
+        await model.connectAddress().value
+        model.password = "unsubmitted-after-logout"
+        model.dismissOnboardingPresentation(presentation)
+        XCTAssertEqual(model.phase, .picker); XCTAssertNil(model.snapshot)
+        XCTAssertEqual(model.password, "")
     }
 }

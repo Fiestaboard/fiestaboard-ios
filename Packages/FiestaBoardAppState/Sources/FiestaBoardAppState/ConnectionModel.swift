@@ -68,11 +68,21 @@ public enum WebSetupReturn: Sendable, Equatable {
     private var selected: SavedServer?
     public var selectedSavedHub: SavedServer? { selected }
     private var generation = UUID()
-    /// Captured by one native presentation; it carries no credential or session authority.
-    public var onboardingPresentationIntent: UUID { generation }
+    // Presentation ownership survives hub selection, independently of request generation.
+    private var onboardingPresentationID: UUID?
+    /// Start one native presentation; replacing an unfinished form clears its secrets.
+    @discardableResult public func beginOnboardingPresentation() -> UUID {
+        if onboardingPresentationID != nil, phase != .connected { cancel() }
+        let intent = UUID()
+        onboardingPresentationID = intent
+        return intent
+    }
     public func dismissOnboardingPresentation(_ intent: UUID) {
-        guard generation == intent, phase != .connected else { return }
-        cancel()
+        guard onboardingPresentationID == intent else { return }
+        onboardingPresentationID = nil
+        // A completed handoff retires the form without revoking the shell's service.
+        guard phase != .connected else { return }
+        cancelConnection()
     }
     private var operation: Task<Void, Never>?
     private var discoveryTask: Task<Void, Never>?
@@ -145,7 +155,7 @@ public enum WebSetupReturn: Sendable, Equatable {
         return select(server.deployment, record: server)
     }
     private func select(_ deployment: DeploymentURL, record: SavedServer?) -> Task<Void, Never> {
-        cancel(); selected = record; phase = .checking; busy = true
+        cancelConnection(); selected = record; phase = .checking; busy = true
         let token = generation, cleanup = cleanupTask
         let next = factory(deployment); service = next
         loginDeadlines = loginDeadlines.filter { $0.value.remainingSeconds(at: now()) > 0 }
@@ -209,7 +219,7 @@ public enum WebSetupReturn: Sendable, Equatable {
             if let known = selected?.installationID, known != result.identity.installationID {
                 invalidateSnapshotSession(); await removeSnapshot(for: selected)
                 guard valid(token) else { return }
-                cancel()
+                cancelConnection()
                 message = "This address identifies a different FiestaBoard installation. Remove the saved server and forget its sign-in before adding it again."
                 return
             }
@@ -386,6 +396,10 @@ public enum WebSetupReturn: Sendable, Equatable {
         await reloadCatalog()
     }
     public func cancel() {
+        onboardingPresentationID = nil
+        cancelConnection()
+    }
+    private func cancelConnection() {
         cancelPasswordReset()
         invalidateSnapshotSession()
         generation = UUID(); operation?.cancel(); operation = nil; stopDiscovery()
