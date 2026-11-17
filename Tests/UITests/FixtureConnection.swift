@@ -105,7 +105,7 @@ extension XCTestCase {
     }
 
     /// Real app sign-in against the loopback HTTP fixture, never a shipping demo path.
-    @MainActor func launchFixture(_ app: XCUIApplication, arguments: [String] = []) {
+    @MainActor func launchFixture(_ app: XCUIApplication, arguments: [String] = [], scenario: String = "manual") {
         // A fixture starts at enrollment; same-app relaunches retain this namespace.
         if app.launchEnvironment["FIESTABOARD_TEST_NAMESPACE"] == nil {
             app.launchEnvironment["FIESTABOARD_TEST_NAMESPACE"] = UUID().uuidString
@@ -123,7 +123,7 @@ extension XCTestCase {
         let port = String(FixtureHTTPServer.shared.port)
         allowFixtureHTTP(app)
         reveal(address)
-        typeConnectionAddress("http://127.0.0.1:\(port)/board-manual-\(UUID().uuidString.lowercased())", into: address, in: app)
+        typeConnectionAddress("http://127.0.0.1:\(port)/board-\(scenario)-\(UUID().uuidString.lowercased())", into: address, in: app)
         let connect = app.buttons["connectionConnect"]
         reveal(connect); connect.tap()
         let username = app.textFields["Username"]
