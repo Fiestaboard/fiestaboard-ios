@@ -54,6 +54,29 @@ import FiestaBoardAppState
             }
         }
     }
+    func testOfflineRetainsRenderedCachedBoardAndPagesUnderNeutralBanner() throws {
+        let hub = try hubs()[0]
+        let detail = try JSONDecoder().decode(BoardDetail.self, from: Data(#"{"id":"kitchen","name":"Kitchen","rows":6,"cols":22,"device_type":"flagship","is_primary":true,"schedule_enabled":false,"paused":false,"output":"vestaboard","charset":"vestaboard_v1","source":"manual","text":"HELLO WORLD","active_page_id":"hello"}"#.utf8))
+        let snapshot = ShellSnapshot(hub: hub, capturedAt: IOSSnapshot.frozenDate, board: detail, displayName: "Kitchen", pages: [.init(id: "hello", name: "Hello World")])
+        for route in [ShellTab.home, .pages] {
+            for (modeName, appearance) in appearances {
+                for (typeName, type) in textSizes {
+                    FigmaGeometryRegistry.shared.reset()
+                    let image = IOSSnapshot.image(NavigationStack {
+                        ShellCachedContent(snapshot: snapshot, route: route, offline: true)
+                    }, appearance: appearance, dynamicType: type)
+                    let nodes = FigmaGeometryRegistry.shared.snapshot()
+                    XCTAssertNotNil(nodes["cache:offline"])
+                    XCTAssertNil(nodes["cache:updating"], "Offline content must not claim Updating")
+                    let content = try XCTUnwrap(nodes[route == .home ? "cache:board" : "cache:page-hello"])
+                    XCTAssertGreaterThan(content.frame.width, 0)
+                    XCTAssertGreaterThan(content.frame.height, 0)
+                    XCTAssertEqual(content.label, route == .home ? "HELLO WORLD" : "Hello World")
+                    IOSSnapshot.assertMatches(image, named: "i6-cached-\(route.rawValue)-offline-\(modeName)-\(typeName)")
+                }
+            }
+        }
+    }
     func testConnectionStatesLightDarkAndAX3() {
         let states: [(String, ShellConnection.Presentation)] = [("offline", .offline), ("unreachable", .unreachable),
             ("connecting", .connecting(still: false, cached: false)), ("still", .connecting(still: true, cached: false))]
