@@ -26,6 +26,12 @@ final class ComposeAuthoringTests: XCTestCase {
         XCTAssertEqual(edited.duration, .untilCancel); XCTAssertEqual(edited.silence, .hold)
     }
 
+    func testInsertionInMiddleKeepsTrailingLinesFormattingAttachedToTheirSource() {
+        let input = ComposeInput(text: "one\ntwo", lineMetadata: [.init(alignment: "center"), .init(alignment: "right")])
+        let edited = ComposeAuthoring.replacingText("one\nnew\ntwo", in: input, selection: .init(lowerUTF16: 7, upperUTF16: 7))
+        XCTAssertEqual(edited.lineMetadata.map(\.alignment), ["center", "left", "right"])
+    }
+
     // A friendly device name must never grant unsupported toolbar operations.
     func testCapabilityToolbarUsesVerifiedH3FactsAndFiltersUnsupportedIcons() throws {
         let baseline = try drawing(source: "baseline")
