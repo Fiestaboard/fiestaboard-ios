@@ -1,0 +1,1703 @@
+{
+  "source_sha": "7c9336e96142280e4404bbaac3b7734ecc1c94ad",
+  "source_tree": "52f2fc55670d7f45bdb0eee14527f76147050587",
+  "files": {
+    "plugins/date_time/__init__.py": "1213cd34498f3ebf4bf12f10447fae9f17b78cf608ff1b5dfbc593d510117036",
+    "plugins/date_time/manifest.json": "1a3853718fe081102f23780af97244109b2affc4d88cd4fdbe60067e4a9955f5",
+    "src/__init__.py": "eb9b5841d77521327832d3a2786d91cb2df962ef4819765646bf048237b28d9c",
+    "src/ai/__init__.py": "0e2594e1223e4c949c255da53124c0cc616b7cf510c1f8b01cce194d93a19867",
+    "src/ai/agent.py": "0192fc969e3ba61bf3271bf69e88e070c9f50b82f7413823b4b5c11413b956b7",
+    "src/ai/chat.py": "af93ab453264e3d5fe4fbe8c293d1b661e8fa1e7eb20a5617148d76447216112",
+    "src/ai/chat_ops.py": "4ccc11026b659dd0a22e9d37025239daf255e7b8dedffca4f0c43049f6413afa",
+    "src/ai/chat_tools.py": "02da16aaad2e956fd36c30f038d4f9b6145219db9c44c583f833e48527a30962",
+    "src/ai/conversations/__init__.py": "2f7f456d60cb175c902269636494c2977edaf9428808e0f182f5b3d7eb274299",
+    "src/ai/conversations/models.py": "836e08a934ddf0d27c1707f7029859c5bb8a19ad9c65521da3d0e2902d6d9e59",
+    "src/ai/conversations/routes.py": "f7723997d60ffdc07200458e54d99a1f8a4d2cc8a84743799a91eaeeab4050c9",
+    "src/ai/conversations/service.py": "cd5fe52bc22c4b14037c07bc7b6b6b133478a9f4f3d2042faf7534bec168c3c2",
+    "src/ai/conversations/storage.py": "2ac11d07d07d4e625857243d34b579790dc52ad62f1cf58be1c3c938992ff052",
+    "src/ai/generator.py": "59f8869e79344daac1788d69549b20ed4dd5fc6dbc23c34faa9147f779cbf980",
+    "src/ai/mcp_bridge.py": "d90c0f4cebdb854ac57760975ac814309351cbb2641dfb4c34dd6356f802c49f",
+    "src/ai/page_routes.py": "ab60b578d12fbfd21ad95ce1b31269f62fda948f86a75b60e200252d14c1d745",
+    "src/ai/plugin_api.py": "653b99ac7617c75b23a6af0eef625f17d0c3a5f3a42c7e8f79465334ab16fb24",
+    "src/ai/prompt_builder.py": "103f9cc15a56110c281b13325a59e6c07b7fb11dfc01e7d4077c2a91592862b9",
+    "src/ai/protocols.py": "6c4daa46f3c7553f9386f58263d3209e01a2a7b3fb0f666ee628a404a529bd0c",
+    "src/ai/routes.py": "12a2658941859ff08294447f80ab138dca0e7fde33d986a08fb01955375bbe30",
+    "src/ai/sign_in.py": "32bf2e0ac766c8f5454a9903c697ad82dc5fede3981f16e4e17766ee87995f72",
+    "src/ai/template_validator.py": "13aab4275305fc0f2fb5a22dd2778b8e652f5ef7b7cd5a8198ba4bc558e5498d",
+    "src/ai/tool_catalog.py": "756f2c6e3045c93b24a83ae4f5c5470a44b8bd2e75afaa1d89003a10f2dd6230",
+    "src/ai/transcript.py": "620fac90e0cb7e2cfec174c7eb9e5085fe343df69708fadfec7f354e65d7b125",
+    "src/api_deprecation.py": "7e749acdfe3aa75e81a7ca6b1d1f7fe22b6f13b68c3181a5129bfd25d9309421",
+    "src/api_errors.py": "82fda8a78ce12294792f37541af7316739467ccd26dc4e075a7a83457b5d2cbc",
+    "src/api_server.py": "fd0b3a621695c2e41ca1642f078e52f028ed68e9065a4f65d15d272e002dd895",
+    "src/atomic_io.py": "5b6f16e535ce57b767999177ccb5d30dbd09e51ab599191b47e9c2a745a1bd59",
+    "src/auth/__init__.py": "722154be3208cacd428f3a34ed8732d6f5b4b10744bcd2477abdbc1452aa5827",
+    "src/auth/browser_routes.py": "5b53f6b0c36dd817d89b29a41e4c3cb43d6101464b19f7c5d6026106930b6940",
+    "src/auth/device_models.py": "a9766d8c97bf1f918e20ce6da6488542747a62b7b0f51b3a5b08d3ab14fa4c30",
+    "src/auth/device_routes.py": "09034f0f0c6790003ff7342fc7fc8185052b80dc11b86fa74e85e18a6e4bdee6",
+    "src/auth/device_service.py": "23f91415e0b6d6a77a27dbff6105b7fcdf39324b6c105db0d6295652de88c781",
+    "src/auth/hub_addresses.py": "02b5275b58292be9079592403a6452e9d74657a77327db44e95db11bb58c9375",
+    "src/auth/middleware.py": "5279db0abd8dd15883b6dba621938fa82ba748714c5ee39e68b074bea91ad6b0",
+    "src/auth/origins.py": "9b61bd26d308488613e956c9ae9d9ecdd59e1b35cb3a9c5e1b33f22ec0904ad5",
+    "src/auth/pairing_routes.py": "565ed6d2f03316ed211a3eebc11af33ddb8be103c57f2c1847b910f49b46a1f9",
+    "src/auth/password_reset.py": "9c1a66308a604b360a7ed4f0d7927c0da876303b5c0714bbb91fbf09b308456e",
+    "src/auth/routes.py": "26bfb97ab6d836ae42cb400dd898cd2378f1db490fb6b7ea993cac83de60ba29",
+    "src/auth/scopes.py": "fd12216295452dcb5f1e9effee78abae7235b89fc7671e9383d7f7fc2e5c722f",
+    "src/auth/service.py": "4b1524077bbcda2930ae1782d33efef11fbe68c11181b6de31adffca7516793b",
+    "src/auth/session_models.py": "170f3721a5fc296f62abf6dc25ee073e015b2532758a578c86045aac9492c3fc",
+    "src/auth/session_routes.py": "b0f14cde8df716800a6371a8420dea2c514d415450b06ed3c3699bb848586794",
+    "src/auth/session_store.py": "39278f7b4c7fd65254a815332d44971cb045ef53787c1341dcae9ad22f3e39d0",
+    "src/backup/__init__.py": "9c2f084aca69d707be773e65f6fcd4b748e619b626854aef24fd00bc35175c1d",
+    "src/backup/models.py": "877dc0c8eb0135de1c376a480f1244eff21dcaf84b9c5ace96a6360cbe52c9f4",
+    "src/backup/routes.py": "0b16daeb4d6dbd2c4c7deac4f30eb457f289c9e8118f4b7d7abfddd9b8b47329",
+    "src/backup/service.py": "5d647ac915d61d88b697018580bd0c978284bfc5d27ca07518865f08cdddee78",
+    "src/board_api/__init__.py": "6a9b05c9bd72db2d71835fd8c9da2a87bb5f7c47ea73c0465514600df6f35106",
+    "src/board_api/models.py": "ed61c518af9cc5e71354457a8a29379e780c189f629150de00bec6e1e6362b35",
+    "src/board_api/routes.py": "ae69e2b8c7854cdb1b5d3f2369c92796edb66fcd7874d85794f17d8fcde9291a",
+    "src/board_api/welcome.py": "e034da9389197c807411723772921179347a32fe17228d64d14f2adcd643e604",
+    "src/board_chars.py": "0ae0a5a59bcbcaf9847b651296727ef08f5ede09ad675df2edac0afa348ee637",
+    "src/board_guards.py": "9abed066fbf18d7773088a0349401041a94f904df654b36eccfa13d8676b5a38",
+    "src/board_html_renderer.py": "5f2d6cb43fefdee3f436d6f15584dbe3ad91c851fb6b155f6af8a8bb084e1e5c",
+    "src/board_send_executor.py": "4d4060623d8f53bf5e1db06c4f8f918d5c20dfba521447db68386bd022e9f228",
+    "src/board_state.py": "91a438e854553bdc3eddde88e6a266dc03bc2869678c0b982fc13a0263904099",
+    "src/canvas/__init__.py": "ad307ddf60d9a247d6743dbd18486e5694fb5b32ac117f3184960a12399b5b69",
+    "src/canvas/evaluate.py": "714248be0ac96039abb931eb10608eb2a48a9ebc6dd7bd29064d47f65005962f",
+    "src/canvas/geometry.py": "2dd64c92daac74bdf41929a89252b5a970ef2ae0005cb815702a5040c659eab5",
+    "src/canvas/layer.py": "f1bfdaf2e5b48b5c8cccb0d267c1c07217a6ab02e122b739f3ae476e4153b44a",
+    "src/canvas/models.py": "6e768e2ca1cd75c6a55b02203aa7965663ba1aaff706018e70f16290fee84923",
+    "src/canvas/raster.py": "3a575d62507e0ea66f1d2b4d064ac445bbe65b56e865240625588746a3eba492",
+    "src/canvas/refs.py": "dcf8ba02665d88c51586acff15000240138df82a21cbe1b13f84245dd8b5e5bf",
+    "src/canvas/schemas.py": "72bf08134c173268b9bec042d44eff6351be8f7153ccec8fc855e0269ea33051",
+    "src/collections/__init__.py": "f58139b03f6d4161b8aac46a5b858721be5b094d926439bc6919f3d536f6c40d",
+    "src/collections/dry_run.py": "ad8396b5b12ff138b948e2dfd6b6f00f65ca38f0213ac5616de1f44492891462",
+    "src/collections/models.py": "36c0f974ff90c7b3f42d0fbe9e93d9c7954f3f5a8217290326437b9f159dbfae",
+    "src/collections/routes.py": "9c6d9a606293a155b02978eb12fa7a9fbbc90b3d6ed1e06b758df5529421cdde",
+    "src/collections/service.py": "08f26f57f1adc73f5e69878f819f2021c14ad52ffe9a0e1ce558913b1165afc1",
+    "src/collections/storage.py": "77869ee4e60ab00cc23ea87cbb1be017f5da7d7b91cf895a9b629e6c74b7e6f3",
+    "src/compose/__init__.py": "bda05b28069d588c30e6f4a0d43713114137d7bea2944ae6a8904a9e14d54be0",
+    "src/compose/ledger.py": "751dbcf720f0fd9429e4f5a518720ce7410bf8a3d4dc6661dbd94e19499c12a1",
+    "src/compose/models.py": "20030e20f9a5ca71fbcd08f43e922d30368fc515805b1b6321ca7cfd893a80ec",
+    "src/compose/routes.py": "240b27c581604cac7bb7f2b4d8fd9ba4a0a10efef1f30022c53a28007c0ef649",
+    "src/compose/service.py": "43cf4a200d01665e6f656719f328043183dff7c4ef7a24db4c78aea6a6a4a0a3",
+    "src/config.py": "8a9dee10d6690e87d070162f59608fc7e3029230ab53251d70b5adf93c9bbd24",
+    "src/config_api/__init__.py": "f8c6f02723f78a2a626170e1518e5dd77a61171cb0309050ee4ca687bebb6da0",
+    "src/config_api/existing.py": "701f5eb6ad1f51c0ee7d6f800067843ad99329d2cda2987332ccd0fe80f777c5",
+    "src/config_api/models.py": "7726097fd7f30f1bb7564660d9eb7cfc1ae6b8fba93d14fccedcd03fc2c6aaca",
+    "src/config_api/routes.py": "3ba6e00717a43a19a8ff6685cf0d25ff01412582cb522ae5b54dff89ae4d7283",
+    "src/config_api/service.py": "f4bd82fc66d17c43529759321e27489e12d75adb4df92970fdda22a8afe4ee4a",
+    "src/config_manager.py": "ab79a6e383e6cdca9148a4788cbde0cea1aebedd6e2e18502698f49094c51b98",
+    "src/content_references.py": "a91f9263bd3db0295d73d9a7ee5c1fc2e5e7c5f77639750b9337c84333a22ccb",
+    "src/debug/__init__.py": "568659b4946a60a24c3951dd2c81b4258b7710f15e882b31e6e41bf59c7fa84b",
+    "src/debug/models.py": "479a7c962f965e7549952081f607724a2365489ee008d6af652e2477c041f366",
+    "src/debug/routes.py": "8ce08caabc828b5d26dc01420bf03067378a0d1e2c86b95747724950e57fe13d",
+    "src/devices.py": "a760d0bacc2a3d95c02fc94480e061b3c92046a86ded0e4c14e71ca1d245c2ee",
+    "src/display_runtime.py": "3e36b3bad5b6b931865bfc7847f8b6a482ec47ee3a2196ceb673b11312e367fd",
+    "src/displays/__init__.py": "0993d809274a0ce047d645dbd358c0b990a4b12a2a295cdd2a3ac257d688d134",
+    "src/displays/messages.py": "91ff3733a87338a2c1f64cb84b802b0396f26068adbadc30a97d83a551cec1b6",
+    "src/displays/models.py": "8845512ac1e8ebffca265e7e9dbf28eaffb529d3e4d9df7adda8e215fb5bc2bf",
+    "src/displays/routes.py": "65d7cadc534f7c12fc460e231d3fa48fa847f4bd8079db0ace5e611de6115301",
+    "src/displays/send_worker.py": "d860b7fdbb7bcb3ec8cf44b1584894bb89265bc01fba98a3c7a7e2fff76f8ac7",
+    "src/displays/service.py": "ca162870040ca5fd2d55baf167e070aa00786227a3d79c41fbf91055f456d8ca",
+    "src/fiestaui/__init__.py": "c6db24a4d9156221f4a473a2800361df9f2367eac7144ef48cb028eef95ce0c2",
+    "src/fiestaui/character-set.schema.json": "69efe686fc58060361d279be453b12f44395fa1a879dcac7c82ce559628437b3",
+    "src/fiestaui/character-sets.json": "3f5705bb7746f817e91fc685e65616bb4470aa1496068bf72db994c3de5b6e91",
+    "src/fiestaui/device-model.schema.json": "1142b53cb1dbf32f0799cfde5ccbbf6a9f1b82ae10c6c2bf0298692a8ab00388",
+    "src/fiestaui/device-models.json": "c0eec08656fb5cf4af137595d8f5ac2cfc6af0b00a25b4657121165a0d9f400d",
+    "src/fiestaui/led-fonts.json": "975e1ee0eb0eea1e0138d1eeb3217eb3f4d9b610c55cfd66d6a7f65ecb02446d",
+    "src/fiestaui/plugin-models.json": "2c7d8826ae969b2a32ce2ddc95aeb1ff0603a51b8fe0b851a831213d423cbb8a",
+    "src/fiestaui/provenance.json": "3f8f627962d0ee09a3d16847eb9100aedac2fbe1d96295f82c08a73e33ef32bb",
+    "src/formatters/__init__.py": "a2985f1732ff1b034f1d3d8335eed1a0a0e87b6da5c4b4060cf8b57bad9aabd0",
+    "src/formatters/message_formatter.py": "6448ba6e1cb1b0f04928bb2497ce406fa99af724c20c9d6e71b5425bb3a2f6ff",
+    "src/led/__init__.py": "7bf32e2027cb1de86bf3f96ba1c1b1bad3b203c25360baec866e82334a7d90ce",
+    "src/led/charsets.py": "c49a642f3e77a1b1c60377399bcf2bab3b8b78961cc2895fdd678ace65364622",
+    "src/led/fonts.py": "b3ef2759490727b56f1cfff02dba1c96ab78bed8dff7d7b72f3ac909dd486560",
+    "src/led/matrix.py": "958cddf76eb14bdba6932ba3d3a5d800e02edebcce344628d5ca68a44eeaa8cc",
+    "src/led/transition_registry.py": "33e8dba1183b774c63ae5f965f20ae7bcafdd14163a0a95bb00687c8c568dbe8",
+    "src/led/transitions.py": "221c637fb2e23c06b354b220b68973abc520537b58bffaa0ad02917d15250f0f",
+    "src/log_store.py": "eb635e1614700277b0e2e58083fa6c7840d1fa0934cae5a74b1593e774d1caad",
+    "src/main.py": "5fe2040f1c510f55b83da7a2d0dbb494c93bb2e0b3acfa93677d7fb0900e6371",
+    "src/markup.py": "5e9ec00856f16907111feb6d1c40c2b84d90436b9fe363f245cc8bd3fc3ad08c",
+    "src/markup_compat.py": "6953be71a401b61be76f5a7b539686cccd8b8a3d0b720125729a455f68c901d7",
+    "src/markup_icons.json": "fc7eb7cabc90ff6c295e197a8609d74bd5ddbb4832bd7a0c06ac973f6aa6e712",
+    "src/mcp_displays.py": "544dc9b1187a436fc2ec7b7d009bc5a7111928b0eb594b1b86fbb1ee533fa4c6",
+    "src/mcp_server.py": "270866b9302ad7168599266759149cfb56f3446ca6c14e4c4a586938ab947b50",
+    "src/mqtt/__init__.py": "71a092c3c45a2766cdac7f83b8233facf4748786d9cf61f3d18598f87fa5ac97",
+    "src/mqtt/client.py": "18de9aaebc20fb60c5c9d35af60539fb5228ee87edf3dd75054bb7e080e75dc8",
+    "src/mqtt/commands.py": "a2b617cfa9576cc0e615a602efe1c5a77b774b04ae6fbc885e89d00adc08d7b1",
+    "src/mqtt/config.py": "b2ffaf80ed0e33f5844663801d128d30ecbcc66a6a835fc9697268d4fc4f106a",
+    "src/mqtt/content.py": "0dcba0288a3f5cc6bc12b08a5622c616825d7f96ce8e2ff5219e88bf5c727d3f",
+    "src/mqtt/discovery.py": "9a0793e0434b6161fb6b09210392fd1fdae7a7807668655c19014cda205fa0de",
+    "src/mqtt/models.py": "89ba38d78d802802da9b4afb3a0f9558b2a29ff2a36c57a04e2df012f19eb745",
+    "src/mqtt/routes.py": "308593c728fadf0ad7510490e697ff3683ccbf8dbabde92ffd2a6974778ba5f3",
+    "src/mqtt/state.py": "010ba7ead0192280df778b2d9624980dad80af2823af3b239592be19e4d8dc17",
+    "src/network/__init__.py": "f3699f38397d2e4b5044e8c67cd6970e778aac1414e9e59f47f0216a187d58d1",
+    "src/network/models.py": "c76e2296cd9f153b932b541f5f4fee55090f44af17504f34fa795fb78ad691ac",
+    "src/network/routes.py": "677e0edba886a0e1a3fc3b8874160927af5e7178e1d34c274ceb57dbbd613e1e",
+    "src/network/wifi.py": "3c039f2ac17a5ebb25e134aaf045c6634df4df5f49a08b8ef3c9305daa660ef7",
+    "src/network_diagnostics.py": "bd406b6fc44d8627eace2812eb6a2cf2c6dc2cc001a3f42378a324a3a575cc68",
+    "src/oauth/__init__.py": "d931332b009e7b1b5fea1c1314704ec5b2c7de51198f3ae02229827a05d76a28",
+    "src/oauth/client.py": "48dd9858766bbc9e6777ed2ae857316d6ee60f63f03a80d5c2d30aae9d39a5bb",
+    "src/oauth/errors.py": "5c539f3664f425ff595f8c5686bbe20776fe678ef5aa48e3ffac2b54000708fa",
+    "src/oauth/install_id.py": "79a2b78b1c1022636648e5ec1e19ac21ad64ca808f81063532fa9b8a0b79f22c",
+    "src/oauth/models.py": "38fdd10e765bbf2a16a4a1edbb8785c038d0de467fd8e04f413c987d3e27c9a4",
+    "src/oauth/overrides.py": "15c6399d514504438f72e8090c3f83b23777600d5c6efe1c3a2f7239ea8aead1",
+    "src/oauth/paste.py": "4f21c2a1504e91d919a5b92ca7a34d7232a7c3e66010627217e8d352850cde5e",
+    "src/oauth/pkce.py": "4ec2caca0f2bd570e19c3a5793b2e56f094eb7e77ec6180fe7db229fb325c12b",
+    "src/oauth/plex.py": "3929bfb0d6dac215b499d59d97e47fc3912e1f6e2000236d565b21336a8b7eb1",
+    "src/oauth/provider.py": "4565b97160c38faa42840ef49aaeb77410f152cf562f49a74af92baaf2f4fdca",
+    "src/oauth/routes.py": "1492cea6ee7a69369e55df9f5d1af76d49f1e2d9637246521b8baf20cf11c6ea",
+    "src/oauth/service.py": "7f8fed295b7050032d87f82ec8dfa23e7e243216633d1f1499057062b3bab0ef",
+    "src/oauth/state.py": "f378ef195c06ffafb012f6f00fe223affe21b21b3c478ebf555464996072c333",
+    "src/oauth/tokens.py": "d2041beb76cf7ee9c42ed26ae123c1283ea78c38b834a086b3c54016a13d36bb",
+    "src/ops/__init__.py": "0e7c22db067d99bff1fbe564738281fd53e95486ac52e86bbf87c9d6999203f5",
+    "src/ops/executors.py": "60ec0e5a85610c4593f9a273004125bb96aed6afffb1e2d14b65998ce97f7dac",
+    "src/ops/grammar.py": "bc64467c525792fc9f719946d861071859bf01954a08f56034cfc2e132c54a53",
+    "src/ops/registry.py": "e465f5973113341f874fd6c03567a70e2032a9c97d494b5550e056f2cdcffe9b",
+    "src/ops/results.py": "f574ed9f44f08fbe031c1d7e2eed31000ef41d0123afb9c8ee98d332eb27ba04",
+    "src/ops/teaching.py": "513d3903e9bf36cdd3920e1f827c25dd17015ce5684cefb6133eab4da126510c",
+    "src/output_allowlist.py": "c3fe2ab98d4840662891296d19e25f41b967428f0c664180bdcb1da37bc5e7b0",
+    "src/outputs/__init__.py": "1479f0a53e797045ae84759d0993d592ef50df5c715f3c23355e3c76c9f88caa",
+    "src/outputs/actions.py": "eddb0860a21f04187bfb6927bcab235431ebaeb683c989e70cc8611ef5af315b",
+    "src/outputs/author_kit.py": "a98802531d6ade1f078690bad4971ef117076a239fb8d6f449e7e529d2c0fac4",
+    "src/outputs/board_profile.py": "9b40fd67f27e7c011d7a40abeeba5e8ddd8aa87cda5c74fcdf53b6088299936d",
+    "src/outputs/breaker.py": "1dec838d2249a82515c2c4cb8c0665137edd5befd0ed3c5e553df9e88df33e1f",
+    "src/outputs/catalog_metadata.py": "0efde1361576604aa8fd6344b4f44ab980185f634aba2ec6fbaf78725875a5b5",
+    "src/outputs/cells.py": "f3fbd1edebec7a2fb425e81d38759c09a067eedd7470502acfaf2ac639c65012",
+    "src/outputs/client_hint.py": "aa560a6f20da5f8a8675cbedc12f47840fc2f758e3e525e3dbacd61c07ac1a36",
+    "src/outputs/config_hooks.py": "2b6b3c96c515c6c24acf1685631b43c5eccc83d9adb6637fe53f5cb7000c6644",
+    "src/outputs/conformance.py": "2aa8109673b4982a2fa2c7f148efe356697253d0e24a0c7feec12aad32a781e4",
+    "src/outputs/description.py": "82bb9d36cdd60ec04695771c45eb1cdc6e52acc233413350055baf34cb5e281d",
+    "src/outputs/display_profile.py": "c836f014faa0dc42b3b53ae0d4c1a48c0e363e352be693699f6b7788b1e64469",
+    "src/outputs/drawing.py": "29b755160f49e29aa2fba5b8a2add8e1defb5f4a77b943259f5f77692d592579",
+    "src/outputs/driver.py": "877d72741898c2fd0147fe391af9329e03e60a8c95e774e1176a395bea57028e",
+    "src/outputs/errors.py": "7219bd74c7f95f35907b7a2222cd4ffd0e242aa3b1f834319aa9d3081102811e",
+    "src/outputs/factory.py": "ff788eb7a05250ec0c8c5c56ba21d86725391373d4605894e26dc7a6888b3c23",
+    "src/outputs/fiestaui.py": "c80a810298144e96f2a04d40f0ff7abd25c2a51e73f0034bbe6cb6d2bed70d9c",
+    "src/outputs/first_party.py": "cf712bc6ae48095b668c8713d353380aa4be2dd120813fd9ebb2f31a8b170a57",
+    "src/outputs/floor.py": "e2af192ffd389adaae6c68811f60f48d2c55b4ba3151f031e73d1c7473d4e6a8",
+    "src/outputs/frames.py": "a7b3642f5ca1b6e1bedbd01edc8c510616df6020386b52aebaa0d5ce35769396",
+    "src/outputs/geometry.py": "1a36744eeb1790cbe043c6cd70c68b137e7bce10be2a8eff4da36bf1731891fe",
+    "src/outputs/health.py": "030f55ea936ebe90d5417ada7d114bf6706c9cf78434e8501a4efacc73ea7bd9",
+    "src/outputs/hooks.py": "92880bbe62bee321b5dc27764894a4b988956b9039c89dca796a04fb3d29041b",
+    "src/outputs/http.py": "ed0927209a24363bf58bc9e25fe578ad9564425b754d974c37f84a1bd4d9863a",
+    "src/outputs/install.py": "5ec02c577a696485e3dfac8b1b1a73c0a33f3b022254894082263e63565e3a05",
+    "src/outputs/models.py": "b225be41e491d3bac2be10a408e282328151077da14063088b610b2e638f1da3",
+    "src/outputs/native_playlist.py": "6d573612a2c896f8d324a3d8d0515bdc27e0965e61a400ca1947db0ecafefb3d",
+    "src/outputs/output_config.py": "db42ece7e5c7f02919b13a7129040dd0d4f18a63bb001f715d839605083046c1",
+    "src/outputs/output_manifest.py": "1d1a78c80ba5c1c32c1d301cb97a70c047d3fc406f0934c02db408406a0e2dce",
+    "src/outputs/plugin_base.py": "b250c1eac6f5be07527b05335bbbd4f7def8d7b5a3ca231516f6d84a19d2a83c",
+    "src/outputs/plugin_driver.py": "bd135feeec6973bb940150ce14c9a96f2cfc725fe33681172300f9081e531b67",
+    "src/outputs/plugin_registration.py": "0d4847b7fc89912235570d3b5bfe4c72f5ed8b426551b13663b52caf6002d72c",
+    "src/outputs/registry.py": "5c38220088997419fde5de6134536bcb990bdfcc11b37b65b5a2c3e489b84b40",
+    "src/outputs/routes.py": "1e0f90cfb44cd35ff39c71f543c590d99a4fcb51fa37ba4fd60f4f693dbf391b",
+    "src/outputs/runtime.py": "64426ef5e543adf199c3dbdebf69d86f2fbc31935430dee76ee2c9e8fd13d872",
+    "src/outputs/seed.py": "33130450bf25417c9fc52e5695f48801908917c1005d70231a17f6fee74a3d2c",
+    "src/outputs/service.py": "67592819586c90d4d2241ec88b9b43046876789393563e82c204b231e1c57f06",
+    "src/outputs/transitions.py": "4b7755889f41ff2986dcc458992f6fc357f5340e32857cd1fd9b15d7f9afece8",
+    "src/override_undo.py": "200c1d2bf5d24444abb038bdb0a5d452ac74a573d36ec65c3bb626b3af9da37f",
+    "src/pages/__init__.py": "2e3c3d64eb8845e0411a6d37798520125fc2a917249cecb53b49088fbabc2182",
+    "src/pages/document.py": "037d5115453be31f2ab6b3bae6472a17fde77b43e11742875a8f741a120b3950",
+    "src/pages/drafts.py": "9f91a57fac18d3eaa763e24e521ca20214a98b2a0c7d16ee5de97275c12818f5",
+    "src/pages/duplicate.py": "10c780cf30c0a2d781d804230f21278a476bee8812c08d012ba3ee945c30ad3f",
+    "src/pages/history.py": "73210669053e7f33a687fd800456321e634d05cb872206c4230296ec30cad123",
+    "src/pages/models.py": "a8e6fd30ec4f6722e0edc2705fb1aabbbe2fe51f3b142bf873b8e4a10b350b0b",
+    "src/pages/retarget.py": "96d1ce4e4e7e095ed8ec289a721de947236829f5500010f777ba58522d722c1b",
+    "src/pages/routes.py": "45dbeed66dcb6ade1d36fe525208c958f2e919ce82cd189129958222a8f2e70e",
+    "src/pages/sends.py": "1e7737643a9250f46e4b1ec43f508718f4a3ca98aeeb6b3927dd05ef4e554024",
+    "src/pages/service.py": "4d612e1870f0c8e6561f9092371fa7f3479821530927bfad9a630b6a2a6e146a",
+    "src/pages/share.py": "8497b4b61edb01f20370850308f39694369149faa6db41113c6cbe36c219fa8d",
+    "src/pages/storage.py": "ffaaacf98089fadbce66114e87daf5cae6ad98e98baab189eed5c8c99d2d9b5a",
+    "src/pages/tags.py": "4265d9733f3f2f1de31e1f72f400629e4ac2be93fc4f248baa887f3103a1b314",
+    "src/panels/__init__.py": "65f6ec34b02af741ca3acd666e7f335e559c5e81e7e61d84d4003376a25fa1b3",
+    "src/panels/autofit.py": "f75890b1eacb2a32feeab4671e6d1c52462b8814383b928ead26a98f39e77fd8",
+    "src/panels/content_resize.py": "73fa900d76964f3cf09923e04bfc658fdd75a7af3c4a64bc337441065fa84abd",
+    "src/panels/content_resize_recovery.py": "07975cdb5164393bb5b2d1fbd14858e3759d760d6ac5becc7eb2c4dbd8610e8c",
+    "src/panels/geometry.py": "661c1450f4e2c021c77f40c2858a733a26a9af4df28194c3529258419b000f03",
+    "src/panels/models.py": "c287a26c70514ea2673881e7af59eae281ddc13e427283bb4055b6a5cf4ddeb5",
+    "src/panels/reconcile.py": "3f63449634082303a91dd3b42914a314cd599435ea399dd4c5fd2b684688ee67",
+    "src/panels/routes.py": "639d3e0ea01990cd6b345dc33d025e913c8dbeeaa98f5ab498956d8f8e9867f0",
+    "src/panels/service.py": "01fa2f6e8e5143dc69c90b32c7aa581eeffd23b7b796e76116ba57ce10dbff63",
+    "src/panels/status.py": "afe840c34d15ff14e9ff7492df09302a592878c9956b3dabb2e446e27df3c4e2",
+    "src/panels/storage.py": "27020e6d51064d4f277f72f691eaf15f4bd7f2bc2eceb93bdda56233397f07e4",
+    "src/paths.py": "80c262a5b4eeed0a1a470389d235469c084c8887e733b008a7c6b612b8c1f871",
+    "src/plugin_support/__init__.py": "d9c58662f8b906215d1ab3f7c45ddf19a3c2998733eb6d0eccb1a30d029cb234",
+    "src/plugin_support/models.py": "5c5fc69ae5fd2725d1644fb7cbc10176bf59911680b3bdcdfa87cfd3e79695a3",
+    "src/plugin_support/routes.py": "69d8dc64af31191398379cc63c11bb715078f23a5c2ce008bc2818945b2fe33e",
+    "src/plugin_support/url_guard.py": "a8e74617b310064b7d79eb963b24d486441359b3535240fd5a114485d33d3dbd",
+    "src/plugins/__init__.py": "49ca57ff162bf8e9dc6e1847d93af7934df93a6e694252dd504afa3ef11d9f49",
+    "src/plugins/base.py": "eedf15e36779c70a2f39ee8b3ad546f93e3f589114437a474467c7e2b9ec673c",
+    "src/plugins/config_interpolation.py": "c69151ae2d45c785bf318887b6020d0679739ec831621c46aa6786e78048e7df",
+    "src/plugins/errors.py": "79ec36d41c42861a61f600c58684a988c2d9c5b24854fd56152dc21c39830047",
+    "src/plugins/geometry_conformance.py": "9e647b632d26669170202ac46e1b3e656f7e26e0eebfe587865b3247f38e2433",
+    "src/plugins/install_check.py": "816f14edc33df54cb1dd22385ae406397808dc6d764ae56f6555ecb52b858688",
+    "src/plugins/loader.py": "20641d8f6f0a3939d6b05375d938a1c7767eb823a042bca07c2472b68dd3b43f",
+    "src/plugins/manifest.py": "818684c591ff48e3c1c5ae13d08fec8d913656c1098eb2705e1d0fdbc61b9ac6",
+    "src/plugins/models.py": "009586ce00f0107ae414ed413d6e0c215007fe6af014f601c57cf8e5efc3fb39",
+    "src/plugins/options_runtime.py": "4083ff953ccd6f0c49937eb31702dc7ac55df55f72effa301d0991904194d6a4",
+    "src/plugins/previews.py": "a05522e477b9dfb312ada96b71b971e094dbba3217325feb4ffaea631d613e7c",
+    "src/plugins/registry.py": "07664de900571a59b17084da3e141cdcc3a3d1e3e2bef4d50ca7472a548e95bc",
+    "src/plugins/routes.py": "b4b06df8f5022f7c786f8b5e15288fdfe53c8a328f5d7c1d2c2f47cbe3825681",
+    "src/plugins/service.py": "d404f7eb5c2c2934c95a66490ead740cb0b2cf1f7221eaea18df916353f287a8",
+    "src/plugins/settings_ui.py": "881b3fa540801267ef62af5f84758313411e641d4436c6a70ad12cbbca7809f3",
+    "src/plugins/sources.py": "2c53142f8c367d205b506c68e9d1414e503e1feb095aee02cfbfb8cf2c214943",
+    "src/plugins/testing.py": "6255e105ed1ca35814f24eea07e4d7e47fdf3b1642deb34fe32626fc6e28cf65",
+    "src/plugins/update_refusals.py": "4065fc84be74687db8251562854673c821442f4f3254805e35b8fee0fbb09e63",
+    "src/request_trace.py": "4a4e9871beb86745857a7422055c782b040559f41dfc11e4205b71e2c45166dc",
+    "src/schedules/__init__.py": "22d46b8e70ac323453089b17dae45e197c63ed2b33aab0ad44e302fe78c23123",
+    "src/schedules/at_time.py": "1517de64f6b47897523adfa8bef632793355425fecec5e1467263f813711abbb",
+    "src/schedules/models.py": "20ff39e9de2826b6e7078438d55b3ecbe189d8d4dbedcd12f38ced733e7f7360",
+    "src/schedules/next_change.py": "c45a6c70efd97c00e54b02efef3220a57c1550cebe9d873e229d894836e50471",
+    "src/schedules/routes.py": "71a4a53ff841195e80230d0a2f09818679f5a1818620e669a3979d3ff50357ae",
+    "src/schedules/service.py": "5774f1e6fee6f2d749b6d1f5f47c2e917dcdc3971172c7d3ae9bc80e699fef14",
+    "src/schedules/storage.py": "4056e11fcedd0207bb09b250e1f99bf5c31e9309bf0ec8dc8c904e32c68d5b03",
+    "src/schedules/sun_times.py": "285a9c877a79c6b689f367f162a7a02ded5b8a82c257324098565b8a82209827",
+    "src/send_outcome.py": "26109f1cdf238352f3d0c877a329f7a056329fd4f3d6479c026c8820e5ce0a0a",
+    "src/service_api/__init__.py": "7e5776aea6882220b4d1abb007e7689df125b143a45c251607793ddb1bb486ab",
+    "src/service_api/install_id.py": "1a9fa5190328e0098971ed03e6ef2c1fd990d09fdee86228da9b53addbf17481",
+    "src/service_api/models.py": "3d4490c519e466d0d683d406705c1fd8e48dd526feda2c89201fac380c007ac5",
+    "src/service_api/routes.py": "14715414aa3f948a5d79619ed2accbd33d7d64ba7c06c617d86c2399e895d38f",
+    "src/settings/__init__.py": "57121f722e977b2fb8f3bbebd8480cb579a1fd159b097476223195d00896928c",
+    "src/settings/board_shape.py": "3e8d968a04e316312f461a5158f6317f985b7c0413d258894bb5f32f43269cbc",
+    "src/settings/models.py": "f35218fc388be30b37500ee7bedfcd1e73b64340704417932d35d97f144a4dea",
+    "src/settings/routes.py": "6b03abdec35bf0a93901dafd904abf274f93d2f57748c75f74915dae9bd877f8",
+    "src/settings/service.py": "b9b790b26c816d6bbddaab28ae94d0128768a3d0ef2c5d28558c346774dca436",
+    "src/silence_queue.py": "365cd0d26bb5eed4ed272415b0dbd8b963e16843eba4c10b915b152e5623f2a7",
+    "src/staff_picks/__init__.py": "49690137035ce08d6853f872348bfd918edb3096e95aeaa617f3a30e81e917f8",
+    "src/staff_picks/models.py": "b0f3bb45c07449a48e2c10d14fb387128e9db733880718ec62fd9c356da5dff8",
+    "src/staff_picks/routes.py": "8897e3c195dd678b4198c5f9743bfa02b0fba203b1aaae1f084841003692e69a",
+    "src/storage/__init__.py": "f329ff6366834a1c6cc4cebae8c31ce6f3fc2ea5cedfe2ddf102191b20abb36e",
+    "src/storage/json_store.py": "f0fc9ce1b07beda34126306fd733467f353db39b1f6ad25f59f0379e24b20c74",
+    "src/system/__init__.py": "f6c8763c565ed2c283901b13c12c3b55fa5e77b4eede895f89cf7acc06824e8e",
+    "src/system/legacy_https.py": "6b55d62d22bc4d98dec8805cb9bd31c19f9d8d9feacb817f1b7bce7dd22130b8",
+    "src/system/mdns.py": "227ff76ee78adf6d4573b8f492558073b6fd9c16dbdc3e8babcba5e2a53c0f80",
+    "src/system/models.py": "58da4c9679ac4b54741de996852f77c56e36345b1933aa5a581699232d7a5ea7",
+    "src/system/routes.py": "0a361fd9389f82d133116e93ffa0dd0a1f21c5dbcd546dbceeaffc0366334cd0",
+    "src/system/update_service.py": "d6faa74082bb79fb3540ac03159ce8cb690d96f16b96f116010906aa10fc69a6",
+    "src/templates/__init__.py": "deac4b1b5b81bc036a3cbb6b395edeea94acd550380ea749939e9815ebf0e9c6",
+    "src/templates/canvas_reference.py": "7e6970943be2425334e40f666c61320dfe27f52a781ed283a9af505a7a0feae1",
+    "src/templates/colors.py": "b849743465cd72be022ac4ed2ecf3eaac6e46e9d646dc4862d61179840ed6c8a",
+    "src/templates/diagnostics.py": "859d9ac3a89b638f8cdfcc248f89cb0e223e25de84b9060445b73a136ef31ae5",
+    "src/templates/engine.py": "533b8793b8ff4c84fde61c6825d2f016ca9f93c70d0eb178688491683c9281b8",
+    "src/templates/expressions.py": "1ed54d31b9a9df4f804fee89c99f1c09ba885c258b11a606c12b0ebab190b0a1",
+    "src/templates/filters.py": "93518a9de8c8856f396aac34764860427fc1af7ac2de91ef39115542bda4e34d",
+    "src/templates/models.py": "86b5e62ff08d9f6a1bd6759c4d0a26445e12d49784f557d514031c2b4f6e2f5f",
+    "src/templates/preview.py": "b192d1a9819ab005fe4be7d14825a9f35712f9c5e99c853714c12e747ae13664",
+    "src/templates/routes.py": "d8d9e1d0b60cde0c8dae652bbe3f04747c08fe6c766deb345fe55a0c61bead17",
+    "src/text_to_board.py": "1802ec24e3dff5e5e7f24cf2113baf607b4f3fd1045b120a1e65c8d9a870b19e",
+    "src/text_utils.py": "3dbfe3f066e2a18013b6ee3a829bc10f20ca8109c16b4df70a5f3b709a6e00b3",
+    "src/time_service.py": "f6efaf0e087fd5ba37c4ad78f37d96efccf6568fcb820833b8f68e486208d90a",
+    "src/transitions/__init__.py": "bbc975655aad81b5a726e8d7b178570143254290e33efa7839c06bfbbf5e6bc1",
+    "src/transitions/runner.py": "6bfcd8f39f4f2e5d2b1b88085c6b1655796faea527eed57d89a215cb1e6ae4c7",
+    "src/triggers/__init__.py": "bc4adf4db87d2280b409e429657f80ce7c1fcf95d1ee0173a74aac5aca80a37a",
+    "src/triggers/models.py": "5051780410dc6c6c85ee530e3150e47801676521d1e26741157c84616f4fd3c9",
+    "src/triggers/priority.py": "a04d3bf87aa7e66c1b89548687ae1b9dfbbc53ae8e21a621b614c12b62661f49",
+    "src/triggers/routes.py": "16e87c62aa166d7f2e531ba2d53e11973792e054cd6fb37c9da3bf005e907a29",
+    "src/triggers/service.py": "39006fea8a44b3e6496063076759c9f78abeafedb469ba9b36aa6b12dbaf8e9a",
+    "src/utils/__init__.py": "fac52d05eb4f673c7cf6df41f03a090ce958001785d262e40a53444c480f190f",
+    "src/utils/baywheels.py": "5c3801da8e84b49be4f16ee9349235ce6f318b896533efc0aecf9ca50c39e0ef",
+    "src/utils/datetime.py": "b427e741adf78d962f00f77d9a5da9e72bccd0c2a62f0f99abafe6a5ac950afe",
+    "src/utils/home_assistant.py": "188de74a3ed4804e0f7eed0aa83a65f3bad0d430d213052c173a256b064a8d99",
+    "src/utils/stocks.py": "2c63ba04f910da9451d1b38df3529e2beb7efe970161ef78c6e07ade2fdd26f7",
+    "src/utils/traffic.py": "880924b4d045c9d807ce27300c9a97e78e4e649141637a377dab748b8fbeab2c",
+    "src/utils/transit_cache.py": "12c99226393797ee0a56c1969eefb77949c42a2f5456687843aa450fe802ebf3",
+    "src/v1/__init__.py": "b593e612740cb73559824985fb9eb9c0fc5893d5a1e2fe01e8d46a4819134cb8",
+    "src/v1/boards.py": "9bfcd1d61f78b02af158b678a4e7cdc809094d6a128771bf41f13d3e28923f2a",
+    "src/v1/models.py": "63ac5920bfa742428aaff2db8e4f8061722dc292fd29f84a7c4f32fbd2aead60",
+    "src/v1/openapi.py": "1c9fc33f14dc6ba83faa70584143d7aafc1d7ce8b9c0d8d7eaeace7baeeb18ab",
+    "src/v1/router.py": "757523c5523f497a72f980a225298a2c46d94e5e6bdb6baab4aa7554b8ddbce8",
+    "src/v1/routes_boards.py": "20419d251f9004d1c159f598c230ad9c503e926e27c8f21104572a8c2f76a300",
+    "src/v1/routes_content.py": "06e5dac8f13ac692ec612cc4e755d2e88d542cc2be709944ceb0009a5614f4db",
+    "src/v1/routes_install.py": "f32a48e3f177cadd4cbdbdb5503c18497e00d9c720feb51144802d7bc94245eb",
+    "src/v1/routes_meta.py": "3b2882057c5b6325b17a3ef9c12d445f633aff1f307397cef9f6cac41435aa9c",
+    "src/v1/routes_plugins.py": "e4f29e10c3603116db7bcb6e9f52c991cf728c481dd404ca3ae6fe86ce1eccc8",
+    "src/v1/visibility.py": "8032487e612b5b3119306f23b390b8fba4e701f8e5ec9811d9662725c498e651",
+    "tests/conftest.py": "3feec22d12484272c3a30e74ef63ac8e196f9aab0dd0dae1afe27a6c83f98a52",
+    "tests/test_auth_mobile_control_scope.py": "09e6378f72096ea3fe35f4970ef4d24bb6a617f9ac811f8902a41722040f5b96",
+    "tests/test_per_board_engine.py": "6c819c0a3943f55fca53e19d0e49885b87f92ebcc5448deb1dedf794175f0ce6"
+  },
+  "recorder_sha256": "9ac485cb9ad4e6feb34c248ce903ac62d38fbc30ea7ed11c038a579ad793a754",
+  "boundary": "Actual authenticated FastAPI ASGI, existing registry/local date_time provider/catalog and formula validator. Synthetic account and output runtime only; no external source, sample catalog fallback or physical hardware.",
+  "source_verification": "Host clean exact Git HEAD/tree plus per-file SHA-256 manifest checked in container; source imported from owned worktree. Linked Git metadata is not used inside container.",
+  "enabled_provider": "Checked-in date_time only; genuine current local clock values, no synthetic plugin data",
+  "array_scope": "POST /displays/raw/batch is forbidden to mobile control; negative capture grants no array hydration capability",
+  "state_before": {
+    "active_page": "844f82eb-3faa-4d02-b35c-72b0d9504c1a",
+    "override": {
+      "page_id": "844f82eb-3faa-4d02-b35c-72b0d9504c1a",
+      "expires_at": "2026-11-17T12:19:29.635680+00:00",
+      "revert_mode": "schedule",
+      "revert_page_id": null,
+      "template": null,
+      "line_metadata": null,
+      "device_type": null,
+      "notes_wide": null,
+      "notes_tall": null,
+      "grid_rows": null,
+      "grid_cols": null,
+      "started_at": "2026-11-17T10:19:29.635693+00:00",
+      "compose_request_id": null,
+      "compose_sent": null,
+      "compose_duration": null,
+      "compose_silence": null
+    },
+    "schedule_enabled": false,
+    "schedules": [
+      {
+        "id": "cc81cec2-f2e1-4011-bf7d-9f459414d80f",
+        "revision": "b4b36437-93b0-4768-b12c-7f51d4855a90",
+        "board_id": "catalog-fixture",
+        "page_id": "844f82eb-3faa-4d02-b35c-72b0d9504c1a",
+        "start_time": "00:00",
+        "end_time": "23:59",
+        "day_pattern": "all",
+        "custom_days": null,
+        "enabled": true,
+        "recurrence_type": "weekly",
+        "annual_date": null,
+        "annual_end_date": null,
+        "one_off_date": null,
+        "one_off_end_date": null,
+        "start_type": "fixed",
+        "start_sun_offset": 0,
+        "end_type": "fixed",
+        "end_sun_offset": 0,
+        "created_at": "2026-11-17T10:19:29.636589Z",
+        "updated_at": null,
+        "edit_protocol": "schedule-revision-v1"
+      }
+    ],
+    "characters": null,
+    "driver_render_count": 0
+  },
+  "state_after": {
+    "active_page": "844f82eb-3faa-4d02-b35c-72b0d9504c1a",
+    "override": {
+      "page_id": "844f82eb-3faa-4d02-b35c-72b0d9504c1a",
+      "expires_at": "2026-11-17T12:19:29.635680+00:00",
+      "revert_mode": "schedule",
+      "revert_page_id": null,
+      "template": null,
+      "line_metadata": null,
+      "device_type": null,
+      "notes_wide": null,
+      "notes_tall": null,
+      "grid_rows": null,
+      "grid_cols": null,
+      "started_at": "2026-11-17T10:19:29.635693+00:00",
+      "compose_request_id": null,
+      "compose_sent": null,
+      "compose_duration": null,
+      "compose_silence": null
+    },
+    "schedule_enabled": false,
+    "schedules": [
+      {
+        "id": "cc81cec2-f2e1-4011-bf7d-9f459414d80f",
+        "revision": "b4b36437-93b0-4768-b12c-7f51d4855a90",
+        "board_id": "catalog-fixture",
+        "page_id": "844f82eb-3faa-4d02-b35c-72b0d9504c1a",
+        "start_time": "00:00",
+        "end_time": "23:59",
+        "day_pattern": "all",
+        "custom_days": null,
+        "enabled": true,
+        "recurrence_type": "weekly",
+        "annual_date": null,
+        "annual_end_date": null,
+        "one_off_date": null,
+        "one_off_end_date": null,
+        "start_type": "fixed",
+        "start_sun_offset": 0,
+        "end_type": "fixed",
+        "end_sun_offset": 0,
+        "created_at": "2026-11-17T10:19:29.636589Z",
+        "updated_at": null,
+        "edit_protocol": "schedule-revision-v1"
+      }
+    ],
+    "characters": null,
+    "driver_render_count": 0
+  },
+  "records": [
+    {
+      "case": "variables-local-provider",
+      "method": "GET",
+      "path": "/v1/variables",
+      "request": null,
+      "status": 200,
+      "response": {
+        "variables": {
+          "date_time": [
+            "time",
+            "hour",
+            "minute",
+            "time_12h",
+            "time_24h",
+            "timezone_abbr",
+            "timezone",
+            "date",
+            "day",
+            "day_of_week",
+            "day_of_week_abbr",
+            "day_of_week_num",
+            "day_of_year",
+            "week_of_year",
+            "month",
+            "month_number",
+            "month_number_padded",
+            "month_abbr",
+            "quarter",
+            "year",
+            "datetime",
+            "date_us",
+            "date_us_short",
+            "time_english",
+            "day_of_week_adaptive",
+            "month_adaptive",
+            "date_pretty"
+          ]
+        },
+        "max_lengths": {
+          "date_time.time": 5,
+          "date_time.hour": 2,
+          "date_time.minute": 2,
+          "date_time.time_12h": 8,
+          "date_time.time_24h": 5,
+          "date_time.timezone_abbr": 5,
+          "date_time.timezone": 30,
+          "date_time.date": 10,
+          "date_time.day": 2,
+          "date_time.day_of_week": 9,
+          "date_time.day_of_week_abbr": 3,
+          "date_time.day_of_week_num": 1,
+          "date_time.day_of_year": 3,
+          "date_time.week_of_year": 2,
+          "date_time.month": 9,
+          "date_time.month_number": 2,
+          "date_time.month_number_padded": 2,
+          "date_time.month_abbr": 3,
+          "date_time.quarter": 1,
+          "date_time.year": 4,
+          "date_time.datetime": 16,
+          "date_time.date_us": 10,
+          "date_time.date_us_short": 8,
+          "date_time.time_english": 50,
+          "date_time.day_of_week_adaptive": 9,
+          "date_time.month_adaptive": 9,
+          "date_time.date_pretty": 22
+        },
+        "variable_metadata": {
+          "date_time": {
+            "time": {
+              "description": "Current time (HH:MM)",
+              "type": "string",
+              "max_length": 5,
+              "group": "time",
+              "example": "14:30",
+              "preview": "02:19"
+            },
+            "hour": {
+              "description": "Current hour (0-23)",
+              "type": "number",
+              "max_length": 2,
+              "group": "time",
+              "example": "14",
+              "preview": "2"
+            },
+            "minute": {
+              "description": "Current minute (00-59)",
+              "type": "number",
+              "max_length": 2,
+              "group": "time",
+              "example": "30",
+              "preview": "19"
+            },
+            "time_12h": {
+              "description": "12-hour time with AM/PM",
+              "type": "string",
+              "max_length": 8,
+              "group": "time",
+              "example": "2:30 PM",
+              "preview": "2:19 AM"
+            },
+            "time_24h": {
+              "description": "24-hour time (HH:MM)",
+              "type": "string",
+              "max_length": 5,
+              "group": "time",
+              "example": "14:30",
+              "preview": "02:19"
+            },
+            "timezone_abbr": {
+              "description": "Timezone abbreviation",
+              "type": "string",
+              "max_length": 5,
+              "group": "time",
+              "example": "PST",
+              "preview": "PST"
+            },
+            "timezone": {
+              "description": "Full IANA timezone name",
+              "type": "string",
+              "max_length": 30,
+              "group": "time",
+              "example": "America/Los_Angeles",
+              "preview": "America/Los_Angeles"
+            },
+            "date": {
+              "description": "Full date (YYYY-MM-DD)",
+              "type": "string",
+              "max_length": 10,
+              "group": "date",
+              "example": "2026-07-04",
+              "preview": "2026-11-17"
+            },
+            "day": {
+              "description": "Day of month (1-31)",
+              "type": "number",
+              "max_length": 2,
+              "group": "date",
+              "example": "4",
+              "preview": "17"
+            },
+            "day_of_week": {
+              "description": "Day name (e.g. Tuesday)",
+              "type": "string",
+              "max_length": 9,
+              "group": "date",
+              "example": "Saturday",
+              "preview": "Tuesday"
+            },
+            "day_of_week_abbr": {
+              "description": "Abbreviated day name (e.g. Tue)",
+              "type": "string",
+              "max_length": 3,
+              "group": "date",
+              "example": "Sat",
+              "preview": "Tue"
+            },
+            "day_of_week_num": {
+              "description": "Day number (1-7)",
+              "type": "string",
+              "max_length": 1,
+              "group": "date",
+              "example": "6",
+              "preview": "2"
+            },
+            "day_of_year": {
+              "description": "Day of year (1-366)",
+              "type": "string",
+              "max_length": 3,
+              "group": "date",
+              "example": "185",
+              "preview": "321"
+            },
+            "week_of_year": {
+              "description": "Week of year (1-53)",
+              "type": "string",
+              "max_length": 2,
+              "group": "date",
+              "example": "27",
+              "preview": "47"
+            },
+            "month": {
+              "description": "Full month name",
+              "type": "string",
+              "max_length": 9,
+              "group": "date",
+              "example": "July",
+              "preview": "November"
+            },
+            "month_number": {
+              "description": "Month number (1-12)",
+              "type": "number",
+              "max_length": 2,
+              "group": "date",
+              "example": "7",
+              "preview": "11"
+            },
+            "month_number_padded": {
+              "description": "Zero-padded month (01-12)",
+              "type": "string",
+              "max_length": 2,
+              "group": "date",
+              "example": "07",
+              "preview": "11"
+            },
+            "month_abbr": {
+              "description": "Abbreviated month (e.g. Mar)",
+              "type": "string",
+              "max_length": 3,
+              "group": "date",
+              "example": "Jul",
+              "preview": "Nov"
+            },
+            "quarter": {
+              "description": "Quarter number (1-4)",
+              "type": "number",
+              "max_length": 1,
+              "group": "date",
+              "example": "3",
+              "preview": "4"
+            },
+            "year": {
+              "description": "Four-digit year",
+              "type": "number",
+              "max_length": 4,
+              "group": "date",
+              "example": "2026",
+              "preview": "2026"
+            },
+            "datetime": {
+              "description": "Combined date and time",
+              "type": "string",
+              "max_length": 16,
+              "group": "formatting",
+              "example": "2026-07-04 14:30",
+              "preview": "2026-11-17 02:19"
+            },
+            "date_us": {
+              "description": "US date format (MM/DD/YYYY)",
+              "type": "string",
+              "max_length": 10,
+              "group": "formatting",
+              "example": "07/04/2026",
+              "preview": "11/17/2026"
+            },
+            "date_us_short": {
+              "description": "Short US date (MM/DD/YY)",
+              "type": "string",
+              "max_length": 8,
+              "group": "formatting",
+              "example": "07/04/26",
+              "preview": "11/17/26"
+            },
+            "time_english": {
+              "description": "Current time as a spoken English expression",
+              "type": "string",
+              "max_length": 50,
+              "group": "formatting",
+              "example": "IT'S A QUARTER PAST ONE IN THE AFTERNOON.",
+              "preview": "IT'S NINETEEN PAST TWO AT NIGHT."
+            },
+            "day_of_week_adaptive": {
+              "description": "Day name, full on wide boards / abbreviated on narrow boards",
+              "type": "string",
+              "max_length": 9,
+              "group": "formatting",
+              "example": "Friday",
+              "preview": "Tuesday"
+            },
+            "month_adaptive": {
+              "description": "Month name, full on wide boards / abbreviated on narrow boards",
+              "type": "string",
+              "max_length": 9,
+              "group": "formatting",
+              "example": "August",
+              "preview": "November"
+            },
+            "date_pretty": {
+              "description": "Friendly date that adapts to board width (e.g. 'Friday, August 27' on Flagship, 'Fri, Aug 27' on Note)",
+              "type": "string",
+              "max_length": 22,
+              "group": "formatting",
+              "example": "Friday, August 27",
+              "preview": "Tuesday, November 17"
+            }
+          }
+        },
+        "variable_groups": {
+          "date_time": {
+            "time": {
+              "label": "Time"
+            },
+            "date": {
+              "label": "Date"
+            },
+            "formatting": {
+              "label": "Formatted"
+            }
+          }
+        },
+        "colors": {
+          "red": 63,
+          "orange": 64,
+          "yellow": 65,
+          "green": 66,
+          "blue": 67,
+          "violet": 68,
+          "white": 69,
+          "black": 70
+        },
+        "symbols": [
+          "sun",
+          "star",
+          "cloud",
+          "rain",
+          "snow",
+          "storm",
+          "fog",
+          "partly",
+          "heart",
+          "check",
+          "x"
+        ],
+        "filters": [
+          "upper",
+          "lower",
+          "pad:N",
+          "truncate:N",
+          "zeropad:N",
+          "wrap"
+        ],
+        "formatting": {
+          "fill_space": {
+            "syntax": "{{fill_space}}",
+            "description": "Expands to fill remaining space on the line. Use multiple for multi-column layouts."
+          },
+          "fill_space_repeat": {
+            "syntax": "{{fill_space_repeat:pattern}}",
+            "description": "Fills remaining space with repeating colors or characters. Examples: {{fill_space_repeat:red}} or {{fill_space_repeat:-}}"
+          }
+        },
+        "syntax_examples": {
+          "variable": "{{weather.temperature}}",
+          "variable_with_filter": "{{weather.temperature|pad:3}}",
+          "color_inline": "{{red}} Warning {{red}}",
+          "color_code": "{63}",
+          "symbol": "{sun}",
+          "wrap": "{{star_trek.quote|wrap}}",
+          "fill_space": "Left{{fill_space}}Right",
+          "fill_space_three_columns": "A{{fill_space}}B{{fill_space}}C"
+        },
+        "plugin_system_enabled": true
+      },
+      "raw_response": "{\"variables\":{\"date_time\":[\"time\",\"hour\",\"minute\",\"time_12h\",\"time_24h\",\"timezone_abbr\",\"timezone\",\"date\",\"day\",\"day_of_week\",\"day_of_week_abbr\",\"day_of_week_num\",\"day_of_year\",\"week_of_year\",\"month\",\"month_number\",\"month_number_padded\",\"month_abbr\",\"quarter\",\"year\",\"datetime\",\"date_us\",\"date_us_short\",\"time_english\",\"day_of_week_adaptive\",\"month_adaptive\",\"date_pretty\"]},\"max_lengths\":{\"date_time.time\":5,\"date_time.hour\":2,\"date_time.minute\":2,\"date_time.time_12h\":8,\"date_time.time_24h\":5,\"date_time.timezone_abbr\":5,\"date_time.timezone\":30,\"date_time.date\":10,\"date_time.day\":2,\"date_time.day_of_week\":9,\"date_time.day_of_week_abbr\":3,\"date_time.day_of_week_num\":1,\"date_time.day_of_year\":3,\"date_time.week_of_year\":2,\"date_time.month\":9,\"date_time.month_number\":2,\"date_time.month_number_padded\":2,\"date_time.month_abbr\":3,\"date_time.quarter\":1,\"date_time.year\":4,\"date_time.datetime\":16,\"date_time.date_us\":10,\"date_time.date_us_short\":8,\"date_time.time_english\":50,\"date_time.day_of_week_adaptive\":9,\"date_time.month_adaptive\":9,\"date_time.date_pretty\":22},\"variable_metadata\":{\"date_time\":{\"time\":{\"description\":\"Current time (HH:MM)\",\"type\":\"string\",\"max_length\":5,\"group\":\"time\",\"example\":\"14:30\",\"preview\":\"02:19\"},\"hour\":{\"description\":\"Current hour (0-23)\",\"type\":\"number\",\"max_length\":2,\"group\":\"time\",\"example\":\"14\",\"preview\":\"2\"},\"minute\":{\"description\":\"Current minute (00-59)\",\"type\":\"number\",\"max_length\":2,\"group\":\"time\",\"example\":\"30\",\"preview\":\"19\"},\"time_12h\":{\"description\":\"12-hour time with AM/PM\",\"type\":\"string\",\"max_length\":8,\"group\":\"time\",\"example\":\"2:30 PM\",\"preview\":\"2:19 AM\"},\"time_24h\":{\"description\":\"24-hour time (HH:MM)\",\"type\":\"string\",\"max_length\":5,\"group\":\"time\",\"example\":\"14:30\",\"preview\":\"02:19\"},\"timezone_abbr\":{\"description\":\"Timezone abbreviation\",\"type\":\"string\",\"max_length\":5,\"group\":\"time\",\"example\":\"PST\",\"preview\":\"PST\"},\"timezone\":{\"description\":\"Full IANA timezone name\",\"type\":\"string\",\"max_length\":30,\"group\":\"time\",\"example\":\"America/Los_Angeles\",\"preview\":\"America/Los_Angeles\"},\"date\":{\"description\":\"Full date (YYYY-MM-DD)\",\"type\":\"string\",\"max_length\":10,\"group\":\"date\",\"example\":\"2026-07-04\",\"preview\":\"2026-11-17\"},\"day\":{\"description\":\"Day of month (1-31)\",\"type\":\"number\",\"max_length\":2,\"group\":\"date\",\"example\":\"4\",\"preview\":\"17\"},\"day_of_week\":{\"description\":\"Day name (e.g. Tuesday)\",\"type\":\"string\",\"max_length\":9,\"group\":\"date\",\"example\":\"Saturday\",\"preview\":\"Tuesday\"},\"day_of_week_abbr\":{\"description\":\"Abbreviated day name (e.g. Tue)\",\"type\":\"string\",\"max_length\":3,\"group\":\"date\",\"example\":\"Sat\",\"preview\":\"Tue\"},\"day_of_week_num\":{\"description\":\"Day number (1-7)\",\"type\":\"string\",\"max_length\":1,\"group\":\"date\",\"example\":\"6\",\"preview\":\"2\"},\"day_of_year\":{\"description\":\"Day of year (1-366)\",\"type\":\"string\",\"max_length\":3,\"group\":\"date\",\"example\":\"185\",\"preview\":\"321\"},\"week_of_year\":{\"description\":\"Week of year (1-53)\",\"type\":\"string\",\"max_length\":2,\"group\":\"date\",\"example\":\"27\",\"preview\":\"47\"},\"month\":{\"description\":\"Full month name\",\"type\":\"string\",\"max_length\":9,\"group\":\"date\",\"example\":\"July\",\"preview\":\"November\"},\"month_number\":{\"description\":\"Month number (1-12)\",\"type\":\"number\",\"max_length\":2,\"group\":\"date\",\"example\":\"7\",\"preview\":\"11\"},\"month_number_padded\":{\"description\":\"Zero-padded month (01-12)\",\"type\":\"string\",\"max_length\":2,\"group\":\"date\",\"example\":\"07\",\"preview\":\"11\"},\"month_abbr\":{\"description\":\"Abbreviated month (e.g. Mar)\",\"type\":\"string\",\"max_length\":3,\"group\":\"date\",\"example\":\"Jul\",\"preview\":\"Nov\"},\"quarter\":{\"description\":\"Quarter number (1-4)\",\"type\":\"number\",\"max_length\":1,\"group\":\"date\",\"example\":\"3\",\"preview\":\"4\"},\"year\":{\"description\":\"Four-digit year\",\"type\":\"number\",\"max_length\":4,\"group\":\"date\",\"example\":\"2026\",\"preview\":\"2026\"},\"datetime\":{\"description\":\"Combined date and time\",\"type\":\"string\",\"max_length\":16,\"group\":\"formatting\",\"example\":\"2026-07-04 14:30\",\"preview\":\"2026-11-17 02:19\"},\"date_us\":{\"description\":\"US date format (MM/DD/YYYY)\",\"type\":\"string\",\"max_length\":10,\"group\":\"formatting\",\"example\":\"07/04/2026\",\"preview\":\"11/17/2026\"},\"date_us_short\":{\"description\":\"Short US date (MM/DD/YY)\",\"type\":\"string\",\"max_length\":8,\"group\":\"formatting\",\"example\":\"07/04/26\",\"preview\":\"11/17/26\"},\"time_english\":{\"description\":\"Current time as a spoken English expression\",\"type\":\"string\",\"max_length\":50,\"group\":\"formatting\",\"example\":\"IT'S A QUARTER PAST ONE IN THE AFTERNOON.\",\"preview\":\"IT'S NINETEEN PAST TWO AT NIGHT.\"},\"day_of_week_adaptive\":{\"description\":\"Day name, full on wide boards / abbreviated on narrow boards\",\"type\":\"string\",\"max_length\":9,\"group\":\"formatting\",\"example\":\"Friday\",\"preview\":\"Tuesday\"},\"month_adaptive\":{\"description\":\"Month name, full on wide boards / abbreviated on narrow boards\",\"type\":\"string\",\"max_length\":9,\"group\":\"formatting\",\"example\":\"August\",\"preview\":\"November\"},\"date_pretty\":{\"description\":\"Friendly date that adapts to board width (e.g. 'Friday, August 27' on Flagship, 'Fri, Aug 27' on Note)\",\"type\":\"string\",\"max_length\":22,\"group\":\"formatting\",\"example\":\"Friday, August 27\",\"preview\":\"Tuesday, November 17\"}}},\"variable_groups\":{\"date_time\":{\"time\":{\"label\":\"Time\"},\"date\":{\"label\":\"Date\"},\"formatting\":{\"label\":\"Formatted\"}}},\"colors\":{\"red\":63,\"orange\":64,\"yellow\":65,\"green\":66,\"blue\":67,\"violet\":68,\"white\":69,\"black\":70},\"symbols\":[\"sun\",\"star\",\"cloud\",\"rain\",\"snow\",\"storm\",\"fog\",\"partly\",\"heart\",\"check\",\"x\"],\"filters\":[\"upper\",\"lower\",\"pad:N\",\"truncate:N\",\"zeropad:N\",\"wrap\"],\"formatting\":{\"fill_space\":{\"syntax\":\"{{fill_space}}\",\"description\":\"Expands to fill remaining space on the line. Use multiple for multi-column layouts.\"},\"fill_space_repeat\":{\"syntax\":\"{{fill_space_repeat:pattern}}\",\"description\":\"Fills remaining space with repeating colors or characters. Examples: {{fill_space_repeat:red}} or {{fill_space_repeat:-}}\"}},\"syntax_examples\":{\"variable\":\"{{weather.temperature}}\",\"variable_with_filter\":\"{{weather.temperature|pad:3}}\",\"color_inline\":\"{{red}} Warning {{red}}\",\"color_code\":\"{63}\",\"symbol\":\"{sun}\",\"wrap\":\"{{star_trek.quote|wrap}}\",\"fill_space\":\"Left{{fill_space}}Right\",\"fill_space_three_columns\":\"A{{fill_space}}B{{fill_space}}C\"},\"plugin_system_enabled\":true}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "formula-functions",
+      "method": "GET",
+      "path": "/v1/functions",
+      "request": null,
+      "status": 200,
+      "response": {
+        "functions": {
+          "NOW": {
+            "category": "date",
+            "signature": "NOW()",
+            "summary": "Current date and time, board timezone"
+          },
+          "TODAY": {
+            "category": "date",
+            "signature": "TODAY()",
+            "summary": "Midnight today, board timezone"
+          },
+          "DATE": {
+            "category": "date",
+            "signature": "DATE(text)",
+            "summary": "Parse an ISO date/datetime string"
+          },
+          "YEAR": {
+            "category": "date",
+            "signature": "YEAR(d)",
+            "summary": "Year number"
+          },
+          "MONTH": {
+            "category": "date",
+            "signature": "MONTH(d)",
+            "summary": "Month number, 1-12"
+          },
+          "DAY": {
+            "category": "date",
+            "signature": "DAY(d)",
+            "summary": "Day of month"
+          },
+          "HOUR": {
+            "category": "date",
+            "signature": "HOUR(d)",
+            "summary": "Hour, 0-23"
+          },
+          "MINUTE": {
+            "category": "date",
+            "signature": "MINUTE(d)",
+            "summary": "Minute, 0-59"
+          },
+          "WEEKDAY": {
+            "category": "date",
+            "signature": "WEEKDAY(d)",
+            "summary": "Day of week, Monday=1 to Sunday=7"
+          },
+          "DATEDIFF": {
+            "category": "date",
+            "signature": "DATEDIFF(start, end[, unit])",
+            "summary": "Whole units from start to end (default days)"
+          },
+          "DATEADD": {
+            "category": "date",
+            "signature": "DATEADD(d, amount[, unit])",
+            "summary": "Shift a date; negative amounts go back"
+          },
+          "FORMATDATE": {
+            "category": "date",
+            "signature": "FORMATDATE(d, \"MMM DD\")",
+            "summary": "Format with YYYY YY MMM MM DD ddd HH hh mm ss AP"
+          },
+          "COUNT": {
+            "category": "array",
+            "signature": "COUNT(array)",
+            "summary": "How many items an array holds"
+          },
+          "AT": {
+            "category": "array",
+            "signature": "AT(array, index[, field])",
+            "summary": "Item field by 0-based index; blank if absent"
+          },
+          "FOREACH": {
+            "category": "array",
+            "signature": "FOREACH(array, rowExpr[, limit])",
+            "summary": "One board row per item; rowExpr may use item"
+          },
+          "FILTER": {
+            "category": "array",
+            "signature": "FILTER(array, condition)",
+            "summary": "Items whose condition is true (uses item)"
+          },
+          "SORT": {
+            "category": "array",
+            "signature": "SORT(array[, field][, \"desc\"])",
+            "summary": "Array sorted by a field"
+          },
+          "SLICE": {
+            "category": "array",
+            "signature": "SLICE(array, start[, count])",
+            "summary": "A window of an array"
+          },
+          "JOIN": {
+            "category": "array",
+            "signature": "JOIN(array, sep[, field])",
+            "summary": "Join items into one line of text"
+          },
+          "SUMOF": {
+            "category": "array",
+            "signature": "SUMOF(array[, field])",
+            "summary": "Sum a field across items"
+          },
+          "AVGOF": {
+            "category": "array",
+            "signature": "AVGOF(array[, field])",
+            "summary": "Average a field across items"
+          },
+          "MINOF": {
+            "category": "array",
+            "signature": "MINOF(array[, field])",
+            "summary": "Smallest value of a field"
+          },
+          "MAXOF": {
+            "category": "array",
+            "signature": "MAXOF(array[, field])",
+            "summary": "Largest value of a field"
+          },
+          "LET": {
+            "category": "logic",
+            "signature": "LET(name, value, ..., body)",
+            "summary": "Name a value once and reuse it in body"
+          },
+          "IF": {
+            "category": "logic",
+            "signature": "IF(cond, then[, else])",
+            "summary": "Conditional value"
+          },
+          "IFS": {
+            "category": "logic",
+            "signature": "IFS(c1, v1, c2, v2, ...[, def])",
+            "summary": "First matching condition's value"
+          },
+          "SWITCH": {
+            "category": "logic",
+            "signature": "SWITCH(x, m1, r1, ...[, def])",
+            "summary": "Match value against options"
+          },
+          "AND": {
+            "category": "logic",
+            "signature": "AND(a, b, ...)",
+            "summary": "True if all args truthy (short-circuit)"
+          },
+          "OR": {
+            "category": "logic",
+            "signature": "OR(a, b, ...)",
+            "summary": "True if any arg truthy (short-circuit)"
+          },
+          "NOT": {
+            "category": "logic",
+            "signature": "NOT(x)",
+            "summary": "Logical negation"
+          },
+          "IFERROR": {
+            "category": "logic",
+            "signature": "IFERROR(expr, fallback)",
+            "summary": "Replace error result with fallback"
+          },
+          "ISERROR": {
+            "category": "logic",
+            "signature": "ISERROR(expr)",
+            "summary": "True if expr evaluated to an error"
+          },
+          "ISBLANK": {
+            "category": "logic",
+            "signature": "ISBLANK(expr)",
+            "summary": "True if expr is null/empty/missing"
+          },
+          "DEFAULT": {
+            "category": "logic",
+            "signature": "DEFAULT(expr, fallback)",
+            "summary": "Fallback for error/null/blank"
+          },
+          "COALESCE": {
+            "category": "logic",
+            "signature": "COALESCE(a, b, c, ...)",
+            "summary": "First non-error/non-blank value"
+          },
+          "ABS": {
+            "category": "math",
+            "signature": "ABS(x)",
+            "summary": "Absolute value"
+          },
+          "FLOOR": {
+            "category": "math",
+            "signature": "FLOOR(x)",
+            "summary": "Round toward -infinity"
+          },
+          "CEIL": {
+            "category": "math",
+            "signature": "CEIL(x)",
+            "summary": "Round toward +infinity"
+          },
+          "INT": {
+            "category": "math",
+            "signature": "INT(x)",
+            "summary": "Truncate toward zero"
+          },
+          "ROUND": {
+            "category": "math",
+            "signature": "ROUND(x[, n])",
+            "summary": "Round to n decimals"
+          },
+          "ROUNDUP": {
+            "category": "math",
+            "signature": "ROUNDUP(x[, n])",
+            "summary": "Round away from zero"
+          },
+          "ROUNDDOWN": {
+            "category": "math",
+            "signature": "ROUNDDOWN(x[, n])",
+            "summary": "Round toward zero"
+          },
+          "POWER": {
+            "category": "math",
+            "signature": "POWER(base, exp)",
+            "summary": "Exponentiation"
+          },
+          "SQRT": {
+            "category": "math",
+            "signature": "SQRT(x)",
+            "summary": "Square root"
+          },
+          "MIN": {
+            "category": "math",
+            "signature": "MIN(a, b, ...)",
+            "summary": "Smallest value"
+          },
+          "MAX": {
+            "category": "math",
+            "signature": "MAX(a, b, ...)",
+            "summary": "Largest value"
+          },
+          "SUM": {
+            "category": "math",
+            "signature": "SUM(a, b, ...)",
+            "summary": "Sum of values"
+          },
+          "AVG": {
+            "category": "math",
+            "signature": "AVG(a, b, ...)",
+            "summary": "Arithmetic mean"
+          },
+          "MOD": {
+            "category": "math",
+            "signature": "MOD(a, b)",
+            "summary": "a modulo b"
+          },
+          "SIGN": {
+            "category": "math",
+            "signature": "SIGN(x)",
+            "summary": "-1, 0, or 1"
+          },
+          "UPPER": {
+            "category": "text",
+            "signature": "UPPER(s)",
+            "summary": "Convert to uppercase"
+          },
+          "LOWER": {
+            "category": "text",
+            "signature": "LOWER(s)",
+            "summary": "Convert to lowercase"
+          },
+          "TRIM": {
+            "category": "text",
+            "signature": "TRIM(s)",
+            "summary": "Strip leading/trailing whitespace"
+          },
+          "PROPER": {
+            "category": "text",
+            "signature": "PROPER(s)",
+            "summary": "Title-case each word"
+          },
+          "LEN": {
+            "category": "text",
+            "signature": "LEN(s)",
+            "summary": "Character length"
+          },
+          "LEFT": {
+            "category": "text",
+            "signature": "LEFT(s, n)",
+            "summary": "First n characters"
+          },
+          "RIGHT": {
+            "category": "text",
+            "signature": "RIGHT(s, n)",
+            "summary": "Last n characters"
+          },
+          "MID": {
+            "category": "text",
+            "signature": "MID(s, start, length)",
+            "summary": "Substring (start is 1-indexed)"
+          },
+          "FIND": {
+            "category": "text",
+            "signature": "FIND(needle, haystack[, start])",
+            "summary": "Case-sensitive position (1-indexed); #VALUE if missing"
+          },
+          "SEARCH": {
+            "category": "text",
+            "signature": "SEARCH(needle, haystack[, start])",
+            "summary": "Case-insensitive position; 0 if missing"
+          },
+          "CONCAT": {
+            "category": "text",
+            "signature": "CONCAT(a, b, ...)",
+            "summary": "Join values as text"
+          },
+          "REPLACE": {
+            "category": "text",
+            "signature": "REPLACE(s, find, repl)",
+            "summary": "Replace all occurrences"
+          },
+          "REPT": {
+            "category": "text",
+            "signature": "REPT(s, n)",
+            "summary": "Repeat n times (capped at 1024)"
+          },
+          "CONTAINS": {
+            "category": "text",
+            "signature": "CONTAINS(s, sub)",
+            "summary": "True if s contains sub"
+          },
+          "STARTSWITH": {
+            "category": "text",
+            "signature": "STARTSWITH(s, prefix)",
+            "summary": "True if s starts with prefix"
+          },
+          "ENDSWITH": {
+            "category": "text",
+            "signature": "ENDSWITH(s, suffix)",
+            "summary": "True if s ends with suffix"
+          },
+          "PAD": {
+            "category": "text",
+            "signature": "PAD(s, width)",
+            "summary": "Right-pad to width"
+          },
+          "PADLEFT": {
+            "category": "text",
+            "signature": "PADLEFT(s, width)",
+            "summary": "Left-pad to width"
+          },
+          "ZEROPAD": {
+            "category": "text",
+            "signature": "ZEROPAD(s, width)",
+            "summary": "Left-pad with zeros to width (e.g. 1 -> 01)"
+          },
+          "CENTER": {
+            "category": "text",
+            "signature": "CENTER(s, width)",
+            "summary": "Center within width"
+          },
+          "SPLIT": {
+            "category": "text",
+            "signature": "SPLIT(text[, sep])",
+            "summary": "Split text into an array (default: whitespace)"
+          },
+          "REGEXMATCH": {
+            "category": "text",
+            "signature": "REGEXMATCH(text, pattern)",
+            "summary": "True if the pattern matches"
+          },
+          "REGEXEXTRACT": {
+            "category": "text",
+            "signature": "REGEXEXTRACT(text, pattern[, group])",
+            "summary": "First match or capture group; blank if none"
+          },
+          "REGEXREPLACE": {
+            "category": "text",
+            "signature": "REGEXREPLACE(text, pattern, repl)",
+            "summary": "Replace every match"
+          },
+          "TEXT": {
+            "category": "convert",
+            "signature": "TEXT(x)",
+            "summary": "Convert to string"
+          },
+          "NUM": {
+            "category": "convert",
+            "signature": "NUM(x)",
+            "summary": "Convert to number"
+          },
+          "FIXED": {
+            "category": "convert",
+            "signature": "FIXED(x[, n])",
+            "summary": "Format with n decimals (default 2)"
+          },
+          "COLOR": {
+            "category": "color",
+            "signature": "COLOR(name_or_code)",
+            "summary": "Single color tile (e.g. \"red\" or 67)"
+          }
+        }
+      },
+      "raw_response": "{\"functions\":{\"NOW\":{\"category\":\"date\",\"signature\":\"NOW()\",\"summary\":\"Current date and time, board timezone\"},\"TODAY\":{\"category\":\"date\",\"signature\":\"TODAY()\",\"summary\":\"Midnight today, board timezone\"},\"DATE\":{\"category\":\"date\",\"signature\":\"DATE(text)\",\"summary\":\"Parse an ISO date/datetime string\"},\"YEAR\":{\"category\":\"date\",\"signature\":\"YEAR(d)\",\"summary\":\"Year number\"},\"MONTH\":{\"category\":\"date\",\"signature\":\"MONTH(d)\",\"summary\":\"Month number, 1-12\"},\"DAY\":{\"category\":\"date\",\"signature\":\"DAY(d)\",\"summary\":\"Day of month\"},\"HOUR\":{\"category\":\"date\",\"signature\":\"HOUR(d)\",\"summary\":\"Hour, 0-23\"},\"MINUTE\":{\"category\":\"date\",\"signature\":\"MINUTE(d)\",\"summary\":\"Minute, 0-59\"},\"WEEKDAY\":{\"category\":\"date\",\"signature\":\"WEEKDAY(d)\",\"summary\":\"Day of week, Monday=1 to Sunday=7\"},\"DATEDIFF\":{\"category\":\"date\",\"signature\":\"DATEDIFF(start, end[, unit])\",\"summary\":\"Whole units from start to end (default days)\"},\"DATEADD\":{\"category\":\"date\",\"signature\":\"DATEADD(d, amount[, unit])\",\"summary\":\"Shift a date; negative amounts go back\"},\"FORMATDATE\":{\"category\":\"date\",\"signature\":\"FORMATDATE(d, \\\"MMM DD\\\")\",\"summary\":\"Format with YYYY YY MMM MM DD ddd HH hh mm ss AP\"},\"COUNT\":{\"category\":\"array\",\"signature\":\"COUNT(array)\",\"summary\":\"How many items an array holds\"},\"AT\":{\"category\":\"array\",\"signature\":\"AT(array, index[, field])\",\"summary\":\"Item field by 0-based index; blank if absent\"},\"FOREACH\":{\"category\":\"array\",\"signature\":\"FOREACH(array, rowExpr[, limit])\",\"summary\":\"One board row per item; rowExpr may use item\"},\"FILTER\":{\"category\":\"array\",\"signature\":\"FILTER(array, condition)\",\"summary\":\"Items whose condition is true (uses item)\"},\"SORT\":{\"category\":\"array\",\"signature\":\"SORT(array[, field][, \\\"desc\\\"])\",\"summary\":\"Array sorted by a field\"},\"SLICE\":{\"category\":\"array\",\"signature\":\"SLICE(array, start[, count])\",\"summary\":\"A window of an array\"},\"JOIN\":{\"category\":\"array\",\"signature\":\"JOIN(array, sep[, field])\",\"summary\":\"Join items into one line of text\"},\"SUMOF\":{\"category\":\"array\",\"signature\":\"SUMOF(array[, field])\",\"summary\":\"Sum a field across items\"},\"AVGOF\":{\"category\":\"array\",\"signature\":\"AVGOF(array[, field])\",\"summary\":\"Average a field across items\"},\"MINOF\":{\"category\":\"array\",\"signature\":\"MINOF(array[, field])\",\"summary\":\"Smallest value of a field\"},\"MAXOF\":{\"category\":\"array\",\"signature\":\"MAXOF(array[, field])\",\"summary\":\"Largest value of a field\"},\"LET\":{\"category\":\"logic\",\"signature\":\"LET(name, value, ..., body)\",\"summary\":\"Name a value once and reuse it in body\"},\"IF\":{\"category\":\"logic\",\"signature\":\"IF(cond, then[, else])\",\"summary\":\"Conditional value\"},\"IFS\":{\"category\":\"logic\",\"signature\":\"IFS(c1, v1, c2, v2, ...[, def])\",\"summary\":\"First matching condition's value\"},\"SWITCH\":{\"category\":\"logic\",\"signature\":\"SWITCH(x, m1, r1, ...[, def])\",\"summary\":\"Match value against options\"},\"AND\":{\"category\":\"logic\",\"signature\":\"AND(a, b, ...)\",\"summary\":\"True if all args truthy (short-circuit)\"},\"OR\":{\"category\":\"logic\",\"signature\":\"OR(a, b, ...)\",\"summary\":\"True if any arg truthy (short-circuit)\"},\"NOT\":{\"category\":\"logic\",\"signature\":\"NOT(x)\",\"summary\":\"Logical negation\"},\"IFERROR\":{\"category\":\"logic\",\"signature\":\"IFERROR(expr, fallback)\",\"summary\":\"Replace error result with fallback\"},\"ISERROR\":{\"category\":\"logic\",\"signature\":\"ISERROR(expr)\",\"summary\":\"True if expr evaluated to an error\"},\"ISBLANK\":{\"category\":\"logic\",\"signature\":\"ISBLANK(expr)\",\"summary\":\"True if expr is null/empty/missing\"},\"DEFAULT\":{\"category\":\"logic\",\"signature\":\"DEFAULT(expr, fallback)\",\"summary\":\"Fallback for error/null/blank\"},\"COALESCE\":{\"category\":\"logic\",\"signature\":\"COALESCE(a, b, c, ...)\",\"summary\":\"First non-error/non-blank value\"},\"ABS\":{\"category\":\"math\",\"signature\":\"ABS(x)\",\"summary\":\"Absolute value\"},\"FLOOR\":{\"category\":\"math\",\"signature\":\"FLOOR(x)\",\"summary\":\"Round toward -infinity\"},\"CEIL\":{\"category\":\"math\",\"signature\":\"CEIL(x)\",\"summary\":\"Round toward +infinity\"},\"INT\":{\"category\":\"math\",\"signature\":\"INT(x)\",\"summary\":\"Truncate toward zero\"},\"ROUND\":{\"category\":\"math\",\"signature\":\"ROUND(x[, n])\",\"summary\":\"Round to n decimals\"},\"ROUNDUP\":{\"category\":\"math\",\"signature\":\"ROUNDUP(x[, n])\",\"summary\":\"Round away from zero\"},\"ROUNDDOWN\":{\"category\":\"math\",\"signature\":\"ROUNDDOWN(x[, n])\",\"summary\":\"Round toward zero\"},\"POWER\":{\"category\":\"math\",\"signature\":\"POWER(base, exp)\",\"summary\":\"Exponentiation\"},\"SQRT\":{\"category\":\"math\",\"signature\":\"SQRT(x)\",\"summary\":\"Square root\"},\"MIN\":{\"category\":\"math\",\"signature\":\"MIN(a, b, ...)\",\"summary\":\"Smallest value\"},\"MAX\":{\"category\":\"math\",\"signature\":\"MAX(a, b, ...)\",\"summary\":\"Largest value\"},\"SUM\":{\"category\":\"math\",\"signature\":\"SUM(a, b, ...)\",\"summary\":\"Sum of values\"},\"AVG\":{\"category\":\"math\",\"signature\":\"AVG(a, b, ...)\",\"summary\":\"Arithmetic mean\"},\"MOD\":{\"category\":\"math\",\"signature\":\"MOD(a, b)\",\"summary\":\"a modulo b\"},\"SIGN\":{\"category\":\"math\",\"signature\":\"SIGN(x)\",\"summary\":\"-1, 0, or 1\"},\"UPPER\":{\"category\":\"text\",\"signature\":\"UPPER(s)\",\"summary\":\"Convert to uppercase\"},\"LOWER\":{\"category\":\"text\",\"signature\":\"LOWER(s)\",\"summary\":\"Convert to lowercase\"},\"TRIM\":{\"category\":\"text\",\"signature\":\"TRIM(s)\",\"summary\":\"Strip leading/trailing whitespace\"},\"PROPER\":{\"category\":\"text\",\"signature\":\"PROPER(s)\",\"summary\":\"Title-case each word\"},\"LEN\":{\"category\":\"text\",\"signature\":\"LEN(s)\",\"summary\":\"Character length\"},\"LEFT\":{\"category\":\"text\",\"signature\":\"LEFT(s, n)\",\"summary\":\"First n characters\"},\"RIGHT\":{\"category\":\"text\",\"signature\":\"RIGHT(s, n)\",\"summary\":\"Last n characters\"},\"MID\":{\"category\":\"text\",\"signature\":\"MID(s, start, length)\",\"summary\":\"Substring (start is 1-indexed)\"},\"FIND\":{\"category\":\"text\",\"signature\":\"FIND(needle, haystack[, start])\",\"summary\":\"Case-sensitive position (1-indexed); #VALUE if missing\"},\"SEARCH\":{\"category\":\"text\",\"signature\":\"SEARCH(needle, haystack[, start])\",\"summary\":\"Case-insensitive position; 0 if missing\"},\"CONCAT\":{\"category\":\"text\",\"signature\":\"CONCAT(a, b, ...)\",\"summary\":\"Join values as text\"},\"REPLACE\":{\"category\":\"text\",\"signature\":\"REPLACE(s, find, repl)\",\"summary\":\"Replace all occurrences\"},\"REPT\":{\"category\":\"text\",\"signature\":\"REPT(s, n)\",\"summary\":\"Repeat n times (capped at 1024)\"},\"CONTAINS\":{\"category\":\"text\",\"signature\":\"CONTAINS(s, sub)\",\"summary\":\"True if s contains sub\"},\"STARTSWITH\":{\"category\":\"text\",\"signature\":\"STARTSWITH(s, prefix)\",\"summary\":\"True if s starts with prefix\"},\"ENDSWITH\":{\"category\":\"text\",\"signature\":\"ENDSWITH(s, suffix)\",\"summary\":\"True if s ends with suffix\"},\"PAD\":{\"category\":\"text\",\"signature\":\"PAD(s, width)\",\"summary\":\"Right-pad to width\"},\"PADLEFT\":{\"category\":\"text\",\"signature\":\"PADLEFT(s, width)\",\"summary\":\"Left-pad to width\"},\"ZEROPAD\":{\"category\":\"text\",\"signature\":\"ZEROPAD(s, width)\",\"summary\":\"Left-pad with zeros to width (e.g. 1 -> 01)\"},\"CENTER\":{\"category\":\"text\",\"signature\":\"CENTER(s, width)\",\"summary\":\"Center within width\"},\"SPLIT\":{\"category\":\"text\",\"signature\":\"SPLIT(text[, sep])\",\"summary\":\"Split text into an array (default: whitespace)\"},\"REGEXMATCH\":{\"category\":\"text\",\"signature\":\"REGEXMATCH(text, pattern)\",\"summary\":\"True if the pattern matches\"},\"REGEXEXTRACT\":{\"category\":\"text\",\"signature\":\"REGEXEXTRACT(text, pattern[, group])\",\"summary\":\"First match or capture group; blank if none\"},\"REGEXREPLACE\":{\"category\":\"text\",\"signature\":\"REGEXREPLACE(text, pattern, repl)\",\"summary\":\"Replace every match\"},\"TEXT\":{\"category\":\"convert\",\"signature\":\"TEXT(x)\",\"summary\":\"Convert to string\"},\"NUM\":{\"category\":\"convert\",\"signature\":\"NUM(x)\",\"summary\":\"Convert to number\"},\"FIXED\":{\"category\":\"convert\",\"signature\":\"FIXED(x[, n])\",\"summary\":\"Format with n decimals (default 2)\"},\"COLOR\":{\"category\":\"color\",\"signature\":\"COLOR(name_or_code)\",\"summary\":\"Single color tile (e.g. \\\"red\\\" or 67)\"}}}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "date-time-manifest",
+      "method": "GET",
+      "path": "/plugins/date_time/manifest",
+      "request": null,
+      "status": 200,
+      "response": {
+        "name": "Date & Time",
+        "version": "1.3.1",
+        "settings_schema": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "title": "Enable Date & Time",
+              "default": true
+            },
+            "timezone": {
+              "type": "string",
+              "title": "Timezone",
+              "description": "IANA timezone name (e.g., America/Los_Angeles)",
+              "default": "America/Los_Angeles",
+              "ui:widget": "timezone"
+            }
+          }
+        },
+        "variables": {
+          "groups": {
+            "time": {
+              "label": "Time"
+            },
+            "date": {
+              "label": "Date"
+            },
+            "formatting": {
+              "label": "Formatted"
+            }
+          },
+          "simple": {
+            "time": {
+              "description": "Current time (HH:MM)",
+              "group": "time",
+              "max_length": 5,
+              "example": "14:30"
+            },
+            "hour": {
+              "description": "Current hour (0-23)",
+              "type": "number",
+              "group": "time",
+              "max_length": 2,
+              "example": "14"
+            },
+            "minute": {
+              "description": "Current minute (00-59)",
+              "type": "number",
+              "group": "time",
+              "max_length": 2,
+              "example": "30"
+            },
+            "time_12h": {
+              "description": "12-hour time with AM/PM",
+              "group": "time",
+              "max_length": 8,
+              "example": "2:30 PM"
+            },
+            "time_24h": {
+              "description": "24-hour time (HH:MM)",
+              "group": "time",
+              "max_length": 5,
+              "example": "14:30"
+            },
+            "timezone_abbr": {
+              "description": "Timezone abbreviation",
+              "group": "time",
+              "max_length": 5,
+              "example": "PST"
+            },
+            "timezone": {
+              "description": "Full IANA timezone name",
+              "group": "time",
+              "max_length": 30,
+              "example": "America/Los_Angeles"
+            },
+            "date": {
+              "description": "Full date (YYYY-MM-DD)",
+              "group": "date",
+              "max_length": 10,
+              "example": "2026-07-04"
+            },
+            "day": {
+              "description": "Day of month (1-31)",
+              "type": "number",
+              "group": "date",
+              "max_length": 2,
+              "example": "4"
+            },
+            "day_of_week": {
+              "description": "Day name (e.g. Tuesday)",
+              "group": "date",
+              "max_length": 9,
+              "example": "Saturday"
+            },
+            "day_of_week_abbr": {
+              "description": "Abbreviated day name (e.g. Tue)",
+              "group": "date",
+              "max_length": 3,
+              "example": "Sat"
+            },
+            "day_of_week_num": {
+              "description": "Day number (1-7)",
+              "group": "date",
+              "max_length": 1,
+              "example": "6"
+            },
+            "day_of_year": {
+              "description": "Day of year (1-366)",
+              "group": "date",
+              "max_length": 3,
+              "example": "185"
+            },
+            "week_of_year": {
+              "description": "Week of year (1-53)",
+              "group": "date",
+              "max_length": 2,
+              "example": "27"
+            },
+            "month": {
+              "description": "Full month name",
+              "group": "date",
+              "max_length": 9,
+              "example": "July"
+            },
+            "month_number": {
+              "description": "Month number (1-12)",
+              "type": "number",
+              "group": "date",
+              "max_length": 2,
+              "example": "7"
+            },
+            "month_number_padded": {
+              "description": "Zero-padded month (01-12)",
+              "group": "date",
+              "max_length": 2,
+              "example": "07"
+            },
+            "month_abbr": {
+              "description": "Abbreviated month (e.g. Mar)",
+              "group": "date",
+              "max_length": 3,
+              "example": "Jul"
+            },
+            "quarter": {
+              "description": "Quarter number (1-4)",
+              "type": "number",
+              "group": "date",
+              "max_length": 1,
+              "example": "3"
+            },
+            "year": {
+              "description": "Four-digit year",
+              "type": "number",
+              "group": "date",
+              "max_length": 4,
+              "example": "2026"
+            },
+            "datetime": {
+              "description": "Combined date and time",
+              "group": "formatting",
+              "max_length": 16,
+              "example": "2026-07-04 14:30"
+            },
+            "date_us": {
+              "description": "US date format (MM/DD/YYYY)",
+              "group": "formatting",
+              "max_length": 10,
+              "example": "07/04/2026"
+            },
+            "date_us_short": {
+              "description": "Short US date (MM/DD/YY)",
+              "group": "formatting",
+              "max_length": 8,
+              "example": "07/04/26"
+            },
+            "time_english": {
+              "description": "Current time as a spoken English expression",
+              "group": "formatting",
+              "max_length": 50,
+              "example": "IT'S A QUARTER PAST ONE IN THE AFTERNOON."
+            },
+            "day_of_week_adaptive": {
+              "description": "Day name, full on wide boards / abbreviated on narrow boards",
+              "group": "formatting",
+              "max_length": 9,
+              "example": "Friday"
+            },
+            "month_adaptive": {
+              "description": "Month name, full on wide boards / abbreviated on narrow boards",
+              "group": "formatting",
+              "max_length": 9,
+              "example": "August"
+            },
+            "date_pretty": {
+              "description": "Friendly date that adapts to board width (e.g. 'Friday, August 27' on Flagship, 'Fri, Aug 27' on Note)",
+              "group": "formatting",
+              "max_length": 22,
+              "example": "Friday, August 27"
+            }
+          }
+        },
+        "max_lengths": {},
+        "id": "date_time",
+        "description": "Display current date and time in configurable formats",
+        "author": "FiestaBoard Team",
+        "repository": "https://github.com/FiestaBoard/FiestaBoard",
+        "documentation": "README.md",
+        "icon": "clock",
+        "category": "utility",
+        "live_data": true,
+        "env_vars": [
+          {
+            "name": "TIMEZONE",
+            "required": false,
+            "description": "IANA timezone (e.g., America/Los_Angeles)",
+            "default": "America/Los_Angeles"
+          }
+        ],
+        "demo": {
+          "name": "Date & Time Demo",
+          "device_type": "flagship",
+          "template": [
+            "",
+            "{{date_time.day_of_week}}",
+            "{{date_time.month}} {{date_time.day}} {{date_time.year}}",
+            "{{date_time.time_12h}}",
+            "{{date_time.timezone_abbr}}",
+            ""
+          ],
+          "line_metadata": [
+            {
+              "alignment": "center",
+              "wrap": false
+            },
+            {
+              "alignment": "center",
+              "wrap": false
+            },
+            {
+              "alignment": "center",
+              "wrap": false
+            },
+            {
+              "alignment": "center",
+              "wrap": false
+            },
+            {
+              "alignment": "center",
+              "wrap": false
+            },
+            {
+              "alignment": "center",
+              "wrap": false
+            }
+          ]
+        },
+        "teaser": "Sat  2:30 PM",
+        "previews": [
+          {
+            "device_type": "flagship",
+            "rows": [
+              "                      ",
+              "       Saturday       ",
+              "     July 4 2026      ",
+              "       2:30 PM        ",
+              "         PST          ",
+              "                      "
+            ]
+          },
+          {
+            "device_type": "note",
+            "rows": [
+              "{67}{67} SATURDAY",
+              "JULY 4 2026",
+              "2:30 PM PST"
+            ]
+          }
+        ],
+        "screenshots": [
+          {
+            "src": "docs/board-display.png",
+            "alt": "Date and Time displayed on a Vestaboard",
+            "caption": "Date and time with 12-hour format and timezone",
+            "primary": true
+          }
+        ]
+      },
+      "raw_response": "{\"name\":\"Date & Time\",\"version\":\"1.3.1\",\"settings_schema\":{\"type\":\"object\",\"properties\":{\"enabled\":{\"type\":\"boolean\",\"title\":\"Enable Date & Time\",\"default\":true},\"timezone\":{\"type\":\"string\",\"title\":\"Timezone\",\"description\":\"IANA timezone name (e.g., America/Los_Angeles)\",\"default\":\"America/Los_Angeles\",\"ui:widget\":\"timezone\"}}},\"variables\":{\"groups\":{\"time\":{\"label\":\"Time\"},\"date\":{\"label\":\"Date\"},\"formatting\":{\"label\":\"Formatted\"}},\"simple\":{\"time\":{\"description\":\"Current time (HH:MM)\",\"group\":\"time\",\"max_length\":5,\"example\":\"14:30\"},\"hour\":{\"description\":\"Current hour (0-23)\",\"type\":\"number\",\"group\":\"time\",\"max_length\":2,\"example\":\"14\"},\"minute\":{\"description\":\"Current minute (00-59)\",\"type\":\"number\",\"group\":\"time\",\"max_length\":2,\"example\":\"30\"},\"time_12h\":{\"description\":\"12-hour time with AM/PM\",\"group\":\"time\",\"max_length\":8,\"example\":\"2:30 PM\"},\"time_24h\":{\"description\":\"24-hour time (HH:MM)\",\"group\":\"time\",\"max_length\":5,\"example\":\"14:30\"},\"timezone_abbr\":{\"description\":\"Timezone abbreviation\",\"group\":\"time\",\"max_length\":5,\"example\":\"PST\"},\"timezone\":{\"description\":\"Full IANA timezone name\",\"group\":\"time\",\"max_length\":30,\"example\":\"America/Los_Angeles\"},\"date\":{\"description\":\"Full date (YYYY-MM-DD)\",\"group\":\"date\",\"max_length\":10,\"example\":\"2026-07-04\"},\"day\":{\"description\":\"Day of month (1-31)\",\"type\":\"number\",\"group\":\"date\",\"max_length\":2,\"example\":\"4\"},\"day_of_week\":{\"description\":\"Day name (e.g. Tuesday)\",\"group\":\"date\",\"max_length\":9,\"example\":\"Saturday\"},\"day_of_week_abbr\":{\"description\":\"Abbreviated day name (e.g. Tue)\",\"group\":\"date\",\"max_length\":3,\"example\":\"Sat\"},\"day_of_week_num\":{\"description\":\"Day number (1-7)\",\"group\":\"date\",\"max_length\":1,\"example\":\"6\"},\"day_of_year\":{\"description\":\"Day of year (1-366)\",\"group\":\"date\",\"max_length\":3,\"example\":\"185\"},\"week_of_year\":{\"description\":\"Week of year (1-53)\",\"group\":\"date\",\"max_length\":2,\"example\":\"27\"},\"month\":{\"description\":\"Full month name\",\"group\":\"date\",\"max_length\":9,\"example\":\"July\"},\"month_number\":{\"description\":\"Month number (1-12)\",\"type\":\"number\",\"group\":\"date\",\"max_length\":2,\"example\":\"7\"},\"month_number_padded\":{\"description\":\"Zero-padded month (01-12)\",\"group\":\"date\",\"max_length\":2,\"example\":\"07\"},\"month_abbr\":{\"description\":\"Abbreviated month (e.g. Mar)\",\"group\":\"date\",\"max_length\":3,\"example\":\"Jul\"},\"quarter\":{\"description\":\"Quarter number (1-4)\",\"type\":\"number\",\"group\":\"date\",\"max_length\":1,\"example\":\"3\"},\"year\":{\"description\":\"Four-digit year\",\"type\":\"number\",\"group\":\"date\",\"max_length\":4,\"example\":\"2026\"},\"datetime\":{\"description\":\"Combined date and time\",\"group\":\"formatting\",\"max_length\":16,\"example\":\"2026-07-04 14:30\"},\"date_us\":{\"description\":\"US date format (MM/DD/YYYY)\",\"group\":\"formatting\",\"max_length\":10,\"example\":\"07/04/2026\"},\"date_us_short\":{\"description\":\"Short US date (MM/DD/YY)\",\"group\":\"formatting\",\"max_length\":8,\"example\":\"07/04/26\"},\"time_english\":{\"description\":\"Current time as a spoken English expression\",\"group\":\"formatting\",\"max_length\":50,\"example\":\"IT'S A QUARTER PAST ONE IN THE AFTERNOON.\"},\"day_of_week_adaptive\":{\"description\":\"Day name, full on wide boards / abbreviated on narrow boards\",\"group\":\"formatting\",\"max_length\":9,\"example\":\"Friday\"},\"month_adaptive\":{\"description\":\"Month name, full on wide boards / abbreviated on narrow boards\",\"group\":\"formatting\",\"max_length\":9,\"example\":\"August\"},\"date_pretty\":{\"description\":\"Friendly date that adapts to board width (e.g. 'Friday, August 27' on Flagship, 'Fri, Aug 27' on Note)\",\"group\":\"formatting\",\"max_length\":22,\"example\":\"Friday, August 27\"}}},\"max_lengths\":{},\"id\":\"date_time\",\"description\":\"Display current date and time in configurable formats\",\"author\":\"FiestaBoard Team\",\"repository\":\"https://github.com/FiestaBoard/FiestaBoard\",\"documentation\":\"README.md\",\"icon\":\"clock\",\"category\":\"utility\",\"live_data\":true,\"env_vars\":[{\"name\":\"TIMEZONE\",\"required\":false,\"description\":\"IANA timezone (e.g., America/Los_Angeles)\",\"default\":\"America/Los_Angeles\"}],\"demo\":{\"name\":\"Date & Time Demo\",\"device_type\":\"flagship\",\"template\":[\"\",\"{{date_time.day_of_week}}\",\"{{date_time.month}} {{date_time.day}} {{date_time.year}}\",\"{{date_time.time_12h}}\",\"{{date_time.timezone_abbr}}\",\"\"],\"line_metadata\":[{\"alignment\":\"center\",\"wrap\":false},{\"alignment\":\"center\",\"wrap\":false},{\"alignment\":\"center\",\"wrap\":false},{\"alignment\":\"center\",\"wrap\":false},{\"alignment\":\"center\",\"wrap\":false},{\"alignment\":\"center\",\"wrap\":false}]},\"teaser\":\"Sat  2:30 PM\",\"previews\":[{\"device_type\":\"flagship\",\"rows\":[\"                      \",\"       Saturday       \",\"     July 4 2026      \",\"       2:30 PM        \",\"         PST          \",\"                      \"]},{\"device_type\":\"note\",\"rows\":[\"{67}{67} SATURDAY\",\"JULY 4 2026\",\"2:30 PM PST\"]}],\"screenshots\":[{\"src\":\"docs/board-display.png\",\"alt\":\"Date and Time displayed on a Vestaboard\",\"caption\":\"Date and time with 12-hour format and timezone\",\"primary\":true}]}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "validate-valid",
+      "method": "POST",
+      "path": "/templates/validate",
+      "request": {
+        "template": [
+          "{{= 1 + 2 }}"
+        ]
+      },
+      "status": 200,
+      "response": {
+        "valid": true,
+        "errors": [],
+        "rows": 6,
+        "cols": 22
+      },
+      "raw_response": "{\"valid\":true,\"errors\":[],\"rows\":6,\"cols\":22}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "validate-syntax",
+      "method": "POST",
+      "path": "/templates/validate",
+      "request": {
+        "template": [
+          "{{= 1 + @ }}"
+        ]
+      },
+      "status": 200,
+      "response": {
+        "valid": false,
+        "errors": [
+          {
+            "line": 1,
+            "column": 0,
+            "message": "Formula #SYNTAX: Unexpected character '@' at position 4",
+            "code": "formula",
+            "max_length": null
+          }
+        ],
+        "rows": 6,
+        "cols": 22
+      },
+      "raw_response": "{\"valid\":false,\"errors\":[{\"line\":1,\"column\":0,\"message\":\"Formula #SYNTAX: Unexpected character '@' at position 4\",\"code\":\"formula\",\"max_length\":null}],\"rows\":6,\"cols\":22}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "validate-unknown-function",
+      "method": "POST",
+      "path": "/templates/validate",
+      "request": {
+        "template": [
+          "{{= BOGUSFN(1) }}"
+        ]
+      },
+      "status": 200,
+      "response": {
+        "valid": false,
+        "errors": [
+          {
+            "line": 1,
+            "column": 0,
+            "message": "Formula #NAME?: Unknown function: BOGUSFN",
+            "code": "formula",
+            "max_length": null
+          }
+        ],
+        "rows": 6,
+        "cols": 22
+      },
+      "raw_response": "{\"valid\":false,\"errors\":[{\"line\":1,\"column\":0,\"message\":\"Formula #NAME?: Unknown function: BOGUSFN\",\"code\":\"formula\",\"max_length\":null}],\"rows\":6,\"cols\":22}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "validate-unknown-source",
+      "method": "POST",
+      "path": "/templates/validate",
+      "request": {
+        "template": [
+          "{{= mystery.thing }}"
+        ]
+      },
+      "status": 200,
+      "response": {
+        "valid": false,
+        "errors": [
+          {
+            "line": 1,
+            "column": 0,
+            "message": "Formula #REF: Unknown source: mystery",
+            "code": "formula",
+            "max_length": null
+          }
+        ],
+        "rows": 6,
+        "cols": 22
+      },
+      "raw_response": "{\"valid\":false,\"errors\":[{\"line\":1,\"column\":0,\"message\":\"Formula #REF: Unknown source: mystery\",\"code\":\"formula\",\"max_length\":null}],\"rows\":6,\"cols\":22}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "validate-schema-rejection",
+      "method": "POST",
+      "path": "/templates/validate",
+      "request": {},
+      "status": 422,
+      "response": {
+        "detail": [
+          {
+            "type": "missing",
+            "loc": [
+              "body",
+              "template"
+            ],
+            "msg": "Field required",
+            "input": {}
+          }
+        ]
+      },
+      "raw_response": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"template\"],\"msg\":\"Field required\",\"input\":{}}]}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "mobile-array-batch-denied",
+      "method": "POST",
+      "path": "/displays/raw/batch",
+      "request": {
+        "display_types": [
+          "date_time"
+        ],
+        "enabled_only": true
+      },
+      "status": 403,
+      "response": {
+        "error": "forbidden",
+        "detail": "This phone sign-in does not permit that operation."
+      },
+      "raw_response": "{\"error\":\"forbidden\",\"detail\":\"This phone sign-in does not permit that operation.\"}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "anonymous-variables-denied",
+      "method": "GET",
+      "path": "/v1/variables",
+      "request": null,
+      "status": 401,
+      "response": {
+        "detail": "Not authenticated"
+      },
+      "raw_response": "{\"detail\":\"Not authenticated\"}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "tv-functions-denied",
+      "method": "GET",
+      "path": "/v1/functions",
+      "request": null,
+      "status": 403,
+      "response": {
+        "error": "forbidden",
+        "detail": "This TV sign-in does not permit that operation."
+      },
+      "raw_response": "{\"error\":\"forbidden\",\"detail\":\"This TV sign-in does not permit that operation.\"}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "tv-validation-denied",
+      "method": "POST",
+      "path": "/templates/validate",
+      "request": {
+        "template": [
+          "{{= 1 + 2 }}"
+        ]
+      },
+      "status": 403,
+      "response": {
+        "error": "forbidden",
+        "detail": "This TV sign-in does not permit that operation."
+      },
+      "raw_response": "{\"error\":\"forbidden\",\"detail\":\"This TV sign-in does not permit that operation.\"}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    },
+    {
+      "case": "anonymous-validation-denied",
+      "method": "POST",
+      "path": "/templates/validate",
+      "request": {
+        "template": [
+          "{{= 1 + 2 }}"
+        ]
+      },
+      "status": 401,
+      "response": {
+        "detail": "Not authenticated"
+      },
+      "raw_response": "{\"detail\":\"Not authenticated\"}",
+      "headers": {
+        "content-type": "application/json"
+      }
+    }
+  ]
+}

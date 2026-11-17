@@ -49,12 +49,99 @@ while let line = readLine() {
         subprocess.run(['swiftc', '-swift-version', '6', '-module-cache-path', str(BUILD/'modules'),
                         str(ROOT/'Tests/UITests/FixtureRouter.swift'), str(ROOT/'Tests/UITests/FixtureHTTPServer.swift'),
                         str(ROOT/'Tests/UITests/FixtureBoardRoutes.swift'),
+                        str(ROOT/'Tests/UITests/FixtureComposeRoutes.swift'),
                         str(ROOT/'Tests/UITests/FixtureRenderRoutes.swift'), str(main), '-o', str(cls.binary)],check=True,capture_output=True,text=True)
 
     def run_sequence(self, inputs):
         result = subprocess.run([str(self.binary), str(ROOT/'Tests/UITests/FixtureResources/retained-ui.json'), str(ROOT/'Tests/Fixtures')],
           input=''.join(json.dumps(i)+'\n' for i in inputs),text=True,capture_output=True,check=True)
         return [json.loads(line) for line in result.stdout.splitlines()]
+
+    def test_compose_namespace_retains_recorded_h3_and_clipped_preview_evidence(self):
+        prefix='/board-i8-compose-new/api/'
+        auth={'authorization':'Bearer fb_mob_fixture_board-i8-compose-new'}
+        request={'board_id':'tc001-fixture','template':['ABCDEFGHIJKLMNOPQRS'],
+                 'line_metadata':[{'alignment':'left','wrap':False}], 'device_type':'panel',
+                 'grid_rows':1,'grid_cols':8,'notes_wide':1,'notes_tall':1,
+                 'diagnostics':True,'preview':{'data':'cached'}}
+        result=self.run_sequence([
+            dict(target=prefix+'discover'),
+            dict(target=prefix+'v1/boards'),
+            dict(method='POST',target=prefix+'auth/device/login',body={'username':'fixture_admin','password':'fixture-password','client_id':'fiestaboard-ios'}),
+            dict(target=prefix+'version',headers=auth),
+            dict(target=prefix+'v1/boards/tc001-fixture',headers=auth),
+            dict(method='POST',target=prefix+'templates/render',headers=auth,body=request)])
+        self.assertEqual(result[0]['body']['version'],'11.0.0-alpha.3')
+        self.assertEqual(result[1]['status'],401)
+        self.assertEqual(result[3]['body']['running_version'],'11.0.0-alpha.3')
+        self.assertTrue(result[3]['body']['is_dev'])
+        records=json.loads((ROOT/'Tests/Fixtures/Compose/operations-authenticated.json').read_text())['records']
+        drawing=next(r['response']['drawing'] for r in records if r['case']=='drawing-tc001-fixture')
+        self.assertEqual(result[4]['body']['drawing'],drawing)
+        long=json.loads((ROOT/'Tests/Fixtures/Compose/long-led-authenticated.json').read_text())['records']
+        preview=next(r for r in long if r['case']=='preview-plain-19')
+        self.assertEqual(base64.b64decode(result[5]['raw']).decode(),preview['raw_response'])
+
+    def test_compose_catalog_keeps_recorded_bytes_and_denies_array_hydration(self):
+        prefix='/board-i8-compose-catalog/api/'
+        auth={'authorization':'Bearer fb_mob_fixture_board-i8-compose-catalog'}
+        records=json.loads((ROOT/'Tests/Fixtures/Compose/catalog-authenticated.json').read_text())['records']
+        cases=['variables-local-provider','formula-functions','date-time-manifest','validate-valid','mobile-array-batch-denied']
+        inputs=[dict(method='POST',target=prefix+'auth/device/login',body={'username':'fixture_admin','password':'fixture-password'})]
+        selected=[next(r for r in records if r['case']==case) for case in cases]
+        for record in selected:
+            inputs.append(dict(method=record['method'],target=prefix+record['path'][1:],headers=auth,body=record['request'] or {}))
+        results=self.run_sequence(inputs)[1:]
+        for record,result in zip(selected,results):
+            with self.subTest(case=record['case']):
+                self.assertEqual(result['status'],record['status'])
+                self.assertEqual(base64.b64decode(result['raw']).decode(),record['raw_response'])
+        self.assertEqual(results[-1]['status'],403)
+        self.assertNotIn('displays',results[-1]['body'])
+
+    def test_compose_unknown_uuid_is_not_replayed_or_shared_between_namespaces(self):
+        # Full UUID namespace exercises the same scenario parser as XCUITest.
+        namespace='board-i8-compose-unknown-aabbccdd-1234-4567-89ab-0123456789ab'
+        prefix='/'+namespace+'/api/'
+        auth={'authorization':'Bearer fb_mob_fixture_'+namespace}
+        other='/board-i8-compose-other/api/'
+        request={'protocol':'compose-intent-v1','request_id':'11223344-1234-4567-89ab-0123456789ab',
+                 'template':['Keep this draft'],'line_metadata':[{'alignment':'left','wrap':False}],
+                 'geometry':{'device_type':'flagship','notes_wide':1,'notes_tall':1},
+                 'duration':{'kind':'minutes','minutes':120},'silence':'hold'}
+        route='v1/boards/hall-1/compose'
+        results=self.run_sequence([
+            dict(method='POST',target=prefix+'auth/device/login',body={'username':'fixture_admin','password':'fixture-password'}),
+            dict(method='POST',target=prefix+route,headers=auth,body=request),
+            dict(method='GET',target=prefix+route+'/'+request['request_id'],headers=auth),
+            dict(method='POST',target=prefix+route,headers=auth,body=request),
+            dict(method='GET',target=other+route+'/'+request['request_id'],headers=auth),
+            dict(method='DELETE',target=prefix+'auth/device/session',headers=auth),
+            dict(method='GET',target=prefix+route+'/'+request['request_id'],headers=auth)])
+        self.assertEqual([r['status'] for r in results],[200,503,200,409,401,200,401])
+        self.assertEqual(results[1]['body']['detail']['status'],'unknown')
+        self.assertEqual(results[2]['body'],results[1]['body']['detail'])
+        self.assertEqual(results[2]['body']['request_id'],request['request_id'])
+
+    def test_compose_page_copy_keeps_display_state_and_exact_source_metadata(self):
+        prefix='/board-i8-compose-copy/api/'
+        auth={'authorization':'Bearer fb_mob_fixture_board-i8-compose-copy'}
+        page={'name':'Keep exact','type':'template','template':['Keep {{red:This}}','第二行'],
+              'line_metadata':[{'alignment':'right','wrap':True},{'alignment':'center','wrap':False}],
+              'device_type':'flagship','notes_wide':1,'notes_tall':1}
+        results=self.run_sequence([
+            dict(method='POST',target=prefix+'auth/device/login',body={'username':'fixture_admin','password':'fixture-password'}),
+            dict(target=prefix+'v1/boards/hall-1',headers=auth),
+            dict(method='POST',target=prefix+'pages',headers=auth,body=page),
+            dict(target=prefix+'pages/synthetic-compose-page-1',headers=auth),
+            dict(target=prefix+'v1/boards/hall-1',headers=auth),
+            dict(target=prefix+'v1/pages',headers=auth)])
+        self.assertEqual([r['status'] for r in results],[200,200,201,200,200,200])
+        self.assertEqual(results[1]['body'],results[4]['body'])
+        for key,value in page.items():
+            self.assertEqual(results[2]['body'][key],value)
+        self.assertEqual(results[2]['body'],results[3]['body'])
+        self.assertEqual(results[5]['body']['pages'],[results[3]['body']])
 
     def test_retained_route_behaviors_match_exported_migration_controls(self):
         cases=json.loads((ROOT/'Tests/Tooling/native-fixture-cases.json').read_text())['cases']

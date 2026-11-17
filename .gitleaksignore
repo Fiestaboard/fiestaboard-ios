@@ -34,3 +34,13 @@ Packages/FiestaBoardAppState/Tests/FiestaBoardAppStateTests/ComposePreviewProjec
 Packages/FiestaBoardAppState/Tests/FiestaBoardAppStateTests/ComposePreviewProjectionTests.swift:generic-api-key:27
 Packages/FiestaBoardKit/Tests/FiestaBoardKitTests/ComposeDrawingTests.swift:generic-api-key:14
 Packages/FiestaBoardKit/Tests/FiestaBoardKitTests/ComposeDrawingTests.swift:generic-api-key:27
+# I8 catalog corpus source-integrity manifest: these exact lines map checked-in
+# source paths to SHA-256 file hashes. API/auth/token filenames trigger the rule;
+# the values are content digests, not credentials. Preserve original corpus bytes.
+Tests/Fixtures/Compose/catalog-authenticated.json:generic-api-key:21
+Tests/Fixtures/Compose/catalog-authenticated.json:generic-api-key:29
+Tests/Fixtures/Compose/catalog-authenticated.json:generic-api-key:30
+Tests/Fixtures/Compose/catalog-authenticated.json:generic-api-key:31
+Tests/Fixtures/Compose/catalog-authenticated.json:generic-api-key:42
+Tests/Fixtures/Compose/catalog-authenticated.json:generic-api-key:150
+Tests/Fixtures/Compose/catalog-authenticated.json:generic-api-key:305

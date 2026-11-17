@@ -20,6 +20,12 @@
       "source_file": "i8-long-led-corpus-b33160f3c.json",
       "source_sha": "b33160f3cae395d95ff62772653b4e2d45862ea7",
       "sha256": "bc599c8c22ba9c39d448ddcdc33a4528a8bb145469f5b258bf011e2ac02b97de"
+    },
+    {
+      "file": "catalog-authenticated.json",
+      "source_file": "i8-catalog-corpus-7c9336e96.json",
+      "source_sha": "7c9336e96142280e4404bbaac3b7734ecc1c94ad",
+      "sha256": "bec862b651e0b27010f11c1eb65fe4ae7076f12f442c65c53facbb4da81a5a2d"
     }
   ]
 }

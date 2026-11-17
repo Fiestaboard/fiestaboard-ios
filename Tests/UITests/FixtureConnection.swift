@@ -121,7 +121,7 @@ extension XCTestCase {
     }
 
     /// Real app sign-in against the loopback HTTP fixture, never a shipping demo path.
-    @MainActor func launchFixture(_ app: XCUIApplication, arguments: [String] = [], scenario: String = "manual") {
+    @MainActor func launchFixture(_ app: XCUIApplication, arguments: [String] = [], scenario: String = "manual", remember: Bool = false) {
         // A fixture starts at enrollment; same-app relaunches retain this namespace.
         if app.launchEnvironment["FIESTABOARD_TEST_NAMESPACE"] == nil {
             app.launchEnvironment["FIESTABOARD_TEST_NAMESPACE"] = UUID().uuidString
@@ -146,6 +146,13 @@ extension XCTestCase {
         let username = app.textFields["Username"]
         reveal(username)
         XCTAssertTrue(username.waitForExistence(timeout: 10))
+        if remember {
+            let toggle = app.switches["Remember sign-in"]
+            reveal(toggle)
+            XCTAssertTrue(toggle.waitForExistence(timeout: 5))
+            if toggle.value as? String != "1" { toggle.tap() }
+            XCTAssertEqual(toggle.value as? String, "1")
+        }
         reveal(username); username.tap(); username.typeText("fixture_admin")
         let password = app.secureTextFields["connectionPassword"]
         reveal(password); password.tap(); password.typeText("fixture-password")
