@@ -6,6 +6,21 @@ import FiestaBoardKit
     private func model(_ service: OnboardingService) -> ConnectionModel {
         ConnectionModel(store: BoardStore(), catalog: ServerCatalog(directory: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)), discovery: EmptyDiscovery(), preferences: UserDefaults(suiteName: UUID().uuidString)!, serviceFactory: { _ in service })
     }
+    // Removing the auth Retry-After gate must dispatch a second forbidden login.
+    func testLoginLockoutDoesNotDispatchAnImmediateSecondAttempt() async throws {
+        let service = try OnboardingService(), model = model(service)
+        await service.setLoginError(.rateLimited(retryAfterSeconds: 60))
+        model.address = service.deployment.description
+        await model.connectAddress().value
+        model.username = "admin"; model.password = "wrong-password"
+        await model.signIn().value
+        model.password = "new-attempt-before-deadline"
+        await model.signIn().value
+        let attempts = await service.events.filter { $0 == "login" }.count
+        XCTAssertEqual(attempts, 1, "Retry-After blocks network dispatch, not only the button's copy")
+        XCTAssertEqual(model.username, "admin")
+        XCTAssertTrue(model.password.isEmpty)
+    }
     func testSavedHubBootstrapFailureRetainsShellContextAndCanRecover() async throws {
         let service = try OnboardingService()
         await service.chooseAuth(AuthStatus(enabled: false, setupRequired: false, authenticated: false))
