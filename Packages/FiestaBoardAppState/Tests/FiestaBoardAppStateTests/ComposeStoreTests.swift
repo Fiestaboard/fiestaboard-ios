@@ -17,6 +17,8 @@ private actor ComposeStoreService: FiestaBoardService, ComposeServicing, Compose
     var retrySeconds: Int?
     var readbackFails = false
     var createFails = false
+    var sendError: FiestaBoardError?
+    var readbackRequestID: UUID?
     private var delayed = false
     private var sendGate: CheckedContinuation<Void, Never>?
     private var sendObserver: CheckedContinuation<Void, Never>?
@@ -41,6 +43,8 @@ private actor ComposeStoreService: FiestaBoardService, ComposeServicing, Compose
         self.state = state; retrySeconds = retry; self.readbackFails = readbackFails; self.createFails = createFails
     }
     func blockSend() { delayed = true }
+    func configureSendError(_ error: FiestaBoardError?) { sendError = error }
+    func replaceReadbackRequestID(_ id: UUID?) { readbackRequestID = id }
     func waitForSend() async { if sendGate == nil { await withCheckedContinuation { sendObserver = $0 } } }
     func releaseSend() { sendGate?.resume(); sendGate = nil; delayed = false }
     func composePrincipal() -> ComposePrincipalProof? { active ? proof : nil }
@@ -48,9 +52,15 @@ private actor ComposeStoreService: FiestaBoardService, ComposeServicing, Compose
     func sendCompose(_ request: ComposeRequest) async throws -> ComposeReceipt {
         sends.append(request)
         if delayed { await withCheckedContinuation { sendGate = $0; sendObserver?.resume(); sendObserver = nil } }
+        if let sendError { throw sendError }
         return try receipt(request)
     }
-    func composeOutcome(_ request: ComposeRequest) async throws -> ComposeReceipt { polls += 1; return try receipt(request, read: true) }
+    func composeOutcome(_ request: ComposeRequest) async throws -> ComposeReceipt {
+        polls += 1
+        let captured = try receipt(request, read: true)
+        if delayed { await withCheckedContinuation { sendGate = $0; sendObserver?.resume(); sendObserver = nil } }
+        return captured
+    }
     func previewCompose(_ request: ComposeRequest) async throws -> TemplatePreviewResult {
         let lines = request.text.components(separatedBy: "\n")
         return try TemplatePreviewResult(rawData: JSONSerialization.data(withJSONObject: ["rendered": request.text, "lines": lines, "line_count": lines.count, "charset": "ascii"]))
@@ -112,7 +122,7 @@ private actor ComposeStoreService: FiestaBoardService, ComposeServicing, Compose
         if readbackFails && (!sends.isEmpty || !creates.isEmpty) { throw FiestaBoardError.networkUnavailable }
         var object = try JSONSerialization.jsonObject(with: JSONEncoder().encode(details[target.boardID]!)) as! [String: Any]
         if let last = sends.last, last.target == target, state == .sent || state == .unchanged {
-            object["compose_receipt"] = ["request_id": last.requestID.uuidString, "status": state.rawValue, "sent": state == .sent]
+            object["compose_receipt"] = ["request_id": (readbackRequestID ?? last.requestID).uuidString, "status": state.rawValue, "sent": state == .sent]
         }
         return try JSONDecoder().decode(BoardDetail.self, from: JSONSerialization.data(withJSONObject: object))
     }
@@ -225,6 +235,85 @@ private actor ComposeStoreService: FiestaBoardService, ComposeServicing, Compose
 
 
 extension ComposeStoreTests {
+    func testUnresolvedComposeKeepsOutcomeReachableAcrossSuccessfulOrdinaryAndUUIDReads() async throws {
+        for state in [ComposeReceipt.State.unknown, .preparing, .dispatching] {
+            let (store, service, request) = try await connected()
+            await service.configure(state: state)
+            let action = try XCTUnwrap(store.prepare(.compose(request)))
+            await store.confirm(action).value
+            XCTAssertTrue(store.needsReadback, state.rawValue)
+            XCTAssertTrue(store.canCheckComposeOutcome, state.rawValue)
+            XCTAssertFalse(store.canPerformCompose); XCTAssertFalse(store.canSaveComposePage)
+            let replacement = await service.request(target: request.target)
+            XCTAssertNil(store.prepare(.compose(replacement)))
+            await store.refresh().value; await store.probeReachability().value
+            XCTAssertTrue(store.needsReadback, "A normal board GET cannot settle \(state)")
+            let other = try XCTUnwrap(store.boards.first { $0.id != request.target.boardID })
+            await store.selectBoard(other.id).value
+            XCTAssertEqual(store.selectedBoardID, request.target.boardID)
+            await store.checkComposeOutcome().value
+            XCTAssertTrue(store.needsReadback); XCTAssertTrue(store.canCheckComposeOutcome)
+            XCTAssertEqual(store.composeOperation?.receipt.state, state)
+            await store.confirm(action).value
+            let sends = await service.sends, polls = await service.polls
+            XCTAssertEqual(sends.count, 1); XCTAssertEqual(polls, 1)
+        }
+    }
+    func testAcceptedOutcomeRequiresCurrentCapturedUUIDAndOutcomeChecksAreSingleFlight() async throws {
+        let (store, service, request) = try await connected()
+        await service.configure(state: .dispatching)
+        await store.confirm(try XCTUnwrap(store.prepare(.compose(request)))).value
+        await service.configure(state: .sent)
+        await service.replaceReadbackRequestID(UUID())
+        await service.blockSend()
+        let checking = store.checkComposeOutcome(); await service.waitForSend()
+        XCTAssertTrue(store.commandBusy); XCTAssertFalse(store.canCheckComposeOutcome)
+        await store.checkComposeOutcome().value
+        await service.releaseSend(); await checking.value
+        XCTAssertTrue(store.needsReadback); XCTAssertFalse(store.composeOperation?.acceptedReadback ?? true)
+        await store.refresh().value
+        XCTAssertTrue(store.needsReadback, "A replacement UUID cannot accept this intent")
+        await service.replaceReadbackRequestID(nil)
+        await store.refresh().value
+        XCTAssertFalse(store.needsReadback); XCTAssertTrue(store.composeOperation?.acceptedReadback == true)
+        XCTAssertTrue(store.canPerformCompose)
+        let sends = await service.sends, polls = await service.polls
+        XCTAssertEqual(sends.count, 1); XCTAssertEqual(polls, 1)
+    }
+    func testThrownComposeRetainsCapturedUUIDForOutcomeRecoveryWithoutReplay() async throws {
+        for error in [FiestaBoardError.networkUnavailable, .unknownMutationOutcome, .invalidResponse] {
+            let (store, service, request) = try await connected()
+            await service.configureSendError(error)
+            let action = try XCTUnwrap(store.prepare(.compose(request)))
+            await store.confirm(action).value
+            XCTAssertNil(store.composeOperation, "Do not synthesize a server receipt")
+            XCTAssertTrue(store.needsReadback); XCTAssertTrue(store.canCheckComposeOutcome)
+            await store.refresh().value
+            XCTAssertTrue(store.needsReadback); XCTAssertTrue(store.canCheckComposeOutcome)
+            await service.configureSendError(nil)
+            await store.checkComposeOutcome().value
+            XCTAssertEqual(store.composeOperation?.request.requestID, request.requestID)
+            XCTAssertTrue(store.composeOperation?.acceptedReadback == true)
+            XCTAssertFalse(store.needsReadback)
+            await store.confirm(action).value
+            let sends = await service.sends, polls = await service.polls
+            XCTAssertEqual(sends.count, 1); XCTAssertEqual(polls, 1)
+        }
+    }
+    func testHeldAcknowledgementRetainsOutcomeAccessWithoutInventingDeliveryOrBlockingReplacement() async throws {
+        let (store, service, request) = try await connected()
+        await service.configure(state: .held)
+        await store.confirm(try XCTUnwrap(store.prepare(.compose(request)))).value
+        XCTAssertFalse(store.needsReadback); XCTAssertTrue(store.canPerformCompose)
+        XCTAssertTrue(store.canCheckComposeOutcome)
+        XCTAssertFalse(store.composeOperation?.acceptedReadback ?? true)
+        XCTAssertEqual(store.composeOperation?.receipt.state, .held)
+        await service.configure(state: .sent)
+        await store.checkComposeOutcome().value
+        XCTAssertTrue(store.composeOperation?.acceptedReadback == true)
+        let sends = await service.sends, polls = await service.polls
+        XCTAssertEqual(sends.count, 1); XCTAssertEqual(polls, 1)
+    }
     func testComposeCatalogReadsRejectOfflineAndChangedCapturedTargetWithoutCallingService() async throws {
         let (store, service, request) = try await connected()
         store.networkAvailable = false
