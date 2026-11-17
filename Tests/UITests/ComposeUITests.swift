@@ -8,11 +8,19 @@ import XCTest
         let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
     }
+    private func tapReady(_ element: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == true AND enabled == true AND hittable == true"), object: element)
+        guard XCTWaiter.wait(for: [ready], timeout: 5) == .completed else {
+            XCTFail("Compose control must be ready: \(element.debugDescription)", file: file, line: line)
+            return
+        }
+        element.tap()
+    }
 
     func testComposeSheetShowsExplicitDurationSilenceAndRetainsCanceledDraft() {
         let app = isolatedApplication()
         launchFixture(app, scenario: "i8-compose")
-        app.buttons["homeCompose"].tap()
+        tapReady(app.buttons["homeCompose"])
         let source = app.textViews["composeSource"]
         XCTAssertTrue(source.waitForExistence(timeout: 5))
         source.tap(); source.typeText("Dinner at seven")
@@ -25,7 +33,7 @@ import XCTest
         shot("i8-compose-typing-native-sheet")
         app.buttons["composeCancel"].tap()
         XCTAssertTrue(app.buttons["homeCompose"].waitForExistence(timeout: 5))
-        app.buttons["homeCompose"].tap()
+        tapReady(app.buttons["homeCompose"])
         XCTAssertTrue(source.waitForExistence(timeout: 5))
         XCTAssertEqual(source.value as? String, "Dinner at seven")
     }
@@ -33,7 +41,7 @@ import XCTest
     func testLEDToolbarDoesNotOfferUnadvertisedIconAndWarnsAboutActualClipping() {
         let app = isolatedApplication()
         launchFixture(app, scenario: "i8-compose")
-        app.buttons["homeCompose"].tap()
+        tapReady(app.buttons["homeCompose"])
         app.buttons["composeDisplayPicker"].tap()
         app.buttons["Entry clock"].tap()
         let source = app.textViews["composeSource"]
@@ -50,18 +58,18 @@ import XCTest
     func testUnconfirmedSendKeepsSourceAndBlocksRetargetAndReplay() {
         let app = isolatedApplication()
         launchFixture(app, scenario: "i8-compose-unknown")
-        app.buttons["homeCompose"].tap()
+        tapReady(app.buttons["homeCompose"])
         let source = app.textViews["composeSource"]
         XCTAssertTrue(source.waitForExistence(timeout: 5))
         source.tap(); source.typeText("Keep this draft")
-        app.buttons["composeShowNow"].tap()
+        tapReady(app.buttons["composeShowNow"])
         XCTAssertTrue(app.staticTexts["composeOutcome"].waitForExistence(timeout: 8))
         XCTAssertEqual(source.value as? String, "Keep this draft")
         XCTAssertFalse(app.buttons["composeDisplayPicker"].isEnabled)
         XCTAssertFalse(app.buttons["composeShowNow"].isEnabled)
         shot("i8-compose-unconfirmed-source-retained")
         app.buttons["composeCancel"].tap()
-        app.buttons["homeCompose"].tap()
+        tapReady(app.buttons["homeCompose"])
         XCTAssertTrue(source.waitForExistence(timeout: 5))
         XCTAssertEqual(source.value as? String, "Keep this draft")
         XCTAssertFalse(app.buttons["composeShowNow"].isEnabled)
@@ -70,7 +78,7 @@ import XCTest
     func testSaveAsPageKeepsTheUnsentComposeSource() {
         let app = isolatedApplication()
         launchFixture(app, scenario: "i8-compose")
-        app.buttons["homeCompose"].tap()
+        tapReady(app.buttons["homeCompose"])
         let source = app.textViews["composeSource"]
         XCTAssertTrue(source.waitForExistence(timeout: 5))
         source.tap(); source.typeText("Dinner at seven")
@@ -87,7 +95,7 @@ import XCTest
         let app = isolatedApplication()
         launchFixture(app, arguments: ["-AppleInterfaceStyle", "Dark", "-UIPreferredContentSizeCategoryName",
             UIContentSizeCategory.accessibilityExtraLarge.rawValue], scenario: "i8-compose")
-        app.buttons["homeCompose"].tap()
+        tapReady(app.buttons["homeCompose"])
         let source = app.textViews["composeSource"]
         XCTAssertTrue(source.waitForExistence(timeout: 5))
         XCTAssertEqual(source.label, "Message text")
