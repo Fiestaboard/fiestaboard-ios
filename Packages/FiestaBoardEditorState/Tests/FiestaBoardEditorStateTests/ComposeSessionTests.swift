@@ -256,8 +256,8 @@ private actor DelayedComposeRemoval: ComposeBufferPersisting {
     func load(_ identity: ComposeBufferIdentity) async throws -> ComposeBufferSnapshot? { try await store.load(identity) }
     func save(_ snapshot: ComposeBufferSnapshot, using lease: ComposeBufferLease) async throws -> Bool { try await store.save(snapshot, using: lease) }
     func revoke(_ lease: ComposeBufferLease) async throws { try await store.revoke(lease) }
-    func remove(using lease: ComposeBufferLease, matchingRevision: UInt64?) async throws -> Bool {
-        let result = try await store.remove(using: lease, matchingRevision: matchingRevision)
+    func clear(using lease: ComposeBufferLease, matchingRevision: UInt64) async throws -> ComposeBufferLease? {
+        let result = try await store.clear(using: lease, matchingRevision: matchingRevision)
         removed = true; waiter?.resume(); waiter = nil
         await withCheckedContinuation { paused = $0 }
         return result

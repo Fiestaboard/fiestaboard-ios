@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 import Combine
 import FiestaBoardKit
 import FiestaBoardDocuments
@@ -20,11 +21,11 @@ public struct ComposeScope: Equatable, Sendable {
             && rows > 0 && cols > 0
     }
 }
-public enum ComposeSilenceChoice: String, Equatable, Sendable { case hold, override }
+public typealias ComposeSilenceChoice = ComposeBufferSilence
 
 /// Exact authoring source. In particular, tokens and LED letter case are never projected
 /// back from a preview or replaced with a plausible offline value.
-public struct ComposeInput: Equatable, Sendable {
+public struct ComposeInput: Codable, Equatable, Sendable {
     public let text: String
     public let lineMetadata: [ComposeBufferLine]
     public let selection: ComposeBufferSelection
@@ -83,6 +84,7 @@ public struct PreparedComposeIntent: Sendable {
     @Published public private(set) var previewIsUpdating = false
     @Published public private(set) var previewFailure: String?
     @Published public private(set) var online: Bool
+    @Published public private(set) var unavailableBufferedTargetID: String?
     public private(set) var inputToPreviewSeconds: TimeInterval?
     public private(set) var postDebouncePreviewSeconds: TimeInterval?
     private let sleep: Sleeper
@@ -97,6 +99,12 @@ public struct PreparedComposeIntent: Sendable {
     private var readyRevision: UInt64?
     private var lastInputAt: TimeInterval?
     private var readyAt: TimeInterval?
+    private var bufferStore: (any ComposeBufferPersisting)?
+    private var bufferLease: ComposeBufferLease?
+    private var bufferEpoch: UInt64 = 0
+    private var durableRevision: UInt64 = 0
+    private var persistedRevision: (durable: UInt64, input: UInt64)?
+    private var previewInputDigest: String?
 
     public init(scope: ComposeScope, input: ComposeInput = .init(), online: Bool = true,
                 sleep: @escaping Sleeper = { try await Task.sleep(for: $0) },
@@ -113,13 +121,20 @@ public struct PreparedComposeIntent: Sendable {
         schedulePreview()
     }
     public func changeScope(_ scope: ComposeScope) {
-        guard !closed, scope != self.scope else { return }
+        guard !closed else { return }
+        if scope == self.scope {
+            if unavailableBufferedTargetID != nil { revision &+= 1 }
+            unavailableBufferedTargetID = nil; preparedID = nil
+            return
+        }
         let identityChanged = scope.identity != self.scope.identity
         invalidateRequests()
-        if identityChanged { revision &+= 1; input = .init() }
+        revision &+= 1
+        if identityChanged { detachBuffer(); input = .init() }
         // Clear before publishing the new scope: a former display's frame must
         // never be presented under the new display or authenticated identity.
-        preview = nil; self.scope = scope
+        preview = nil; previewInputDigest = nil; self.scope = scope
+        unavailableBufferedTargetID = nil
         lastInputAt = monotonicNow()
         schedulePreview()
     }
@@ -133,6 +148,87 @@ public struct PreparedComposeIntent: Sendable {
         guard !closed else { return }
         invalidateRequests(); closed = true
         renderTask?.cancel()
+        detachBuffer()
+    }
+    /// Identity comes from authenticated/protected proof. Saved target IDs are
+    /// resolved against today's catalog; cached bytes never supply geometry.
+    @discardableResult public func bindBuffer(_ store: any ComposeBufferPersisting,
+        resolveTarget: (String) -> ComposeScope? = { _ in nil }) async throws -> Bool {
+        guard !closed, bufferLease == nil else { return false }
+        bufferEpoch &+= 1
+        let token = bufferEpoch, identity = scope.identity, inputRevision = revision
+        let lease = try await store.open(identity)
+        let saved = try await store.load(identity)
+        guard !closed, token == bufferEpoch, scope.identity == identity else {
+            try await store.revoke(lease); return false
+        }
+        bufferStore = store; bufferLease = lease
+        durableRevision = saved?.revision ?? 0; persistedRevision = nil
+        guard let saved, revision == inputRevision else { return false }
+        if let target = saved.targetID, target != scope.target.boardID {
+            if let resolved = resolveTarget(target), resolved.identity == identity,
+               resolved.connectionID == scope.connectionID, resolved.valid, resolved.target.boardID == target {
+                changeScope(resolved)
+            } else { unavailableBufferedTargetID = target }
+        }
+        revision &+= 1
+        input = .init(text: saved.text, lineMetadata: saved.lineMetadata, selection: saved.selection,
+                      duration: saved.duration, silence: saved.silence)
+        previewIsStale = true
+        if let evidence = saved.preview, evidence.targetID == scope.target.boardID,
+           let decoded = try? TemplatePreviewResult(rawData: evidence.responseData) {
+            preview = decoded; previewInputDigest = evidence.inputDigest
+        }
+        // Restore is presentation only, including when the connection is online.
+        // An explicit edit/retry starts a read; this method never sends anything.
+        return true
+    }
+    @discardableResult public func persistBuffer() async throws -> UInt64? {
+        guard !closed, let store = bufferStore, let lease = bufferLease,
+              lease.identity == scope.identity, durableRevision < UInt64.max else { return nil }
+        durableRevision += 1
+        let savedRevision = durableRevision, inputRevision = revision, token = bufferEpoch
+        let evidence = preview.flatMap { frame in previewInputDigest.map {
+            ComposeBufferPreview(targetID: scope.target.boardID, inputDigest: $0, responseData: frame.rawData)
+        } }
+        let snapshot = ComposeBufferSnapshot(identity: scope.identity, revision: savedRevision, text: input.text,
+            targetID: unavailableBufferedTargetID ?? scope.target.boardID, selection: input.selection, lineMetadata: input.lineMetadata,
+            duration: input.duration, silence: input.silence, preview: evidence)
+        let accepted = try await store.save(snapshot, using: lease)
+        guard accepted, !closed, token == bufferEpoch else { return nil }
+        if savedRevision >= (persistedRevision?.durable ?? 0) { persistedRevision = (savedRevision, inputRevision) }
+        return savedRevision
+    }
+    @discardableResult public func clearBuffer(matchingRevision expected: UInt64) async throws -> Bool {
+        guard !closed, let store = bufferStore, let lease = bufferLease,
+              persistedRevision?.durable == expected, persistedRevision?.input == revision else { return false }
+        let token = bufferEpoch, inputRevision = revision
+        let replacement = try await store.clear(using: lease, matchingRevision: expected)
+        guard token == bufferEpoch, !closed else {
+            if let replacement { try? await store.revoke(replacement) }
+            return false
+        }
+        guard let replacement else { return false }
+        bufferLease = replacement; persistedRevision = nil
+        guard inputRevision == revision else { return false }
+        detachBuffer()
+        return true
+    }
+    public func revokeBuffer() async {
+        let store = bufferStore, lease = bufferLease
+        detachBuffer(scheduleRevocation: false)
+        if let store, let lease { try? await store.revoke(lease) }
+    }
+    private func detachBuffer(scheduleRevocation: Bool = true) {
+        bufferEpoch &+= 1
+        let store = bufferStore, lease = bufferLease
+        bufferStore = nil; bufferLease = nil; persistedRevision = nil; durableRevision = 0
+        if scheduleRevocation, let store, let lease { Task { try? await store.revoke(lease) } }
+    }
+    private static func digest(_ input: ComposeInput) -> String? {
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.sortedKeys]
+        guard let bytes = try? encoder.encode(input) else { return nil }
+        return SHA256.hash(data: bytes).map { String(format: "%02x", $0) }.joined()
     }
     public func retryPreview() {
         guard !closed, online, scope.valid, input.valid, previewIsStale || previewFailure != nil else { return }
@@ -142,7 +238,8 @@ public struct PreparedComposeIntent: Sendable {
         requestReadyPreview()
     }
     public func prepare(now: Date = Date()) -> PreparedComposeIntent? {
-        guard !closed, online, scope.valid, input.valid, input.durationValid(at: now) else { return nil }
+        guard !closed, online, unavailableBufferedTargetID == nil,
+              scope.valid, input.valid, input.durationValid(at: now) else { return nil }
         let id = UUID(); preparedID = id
         return PreparedComposeIntent(id: id, scope: scope, input: input, revision: revision, preparedAt: now)
     }
@@ -185,6 +282,7 @@ public struct PreparedComposeIntent: Sendable {
                 switch outcome {
                 case .success(let result):
                     preview = result; previewIsStale = false; previewFailure = nil
+                    previewInputDigest = Self.digest(captured.input)
                     let end = monotonicNow()
                     inputToPreviewSeconds = inputAt.map { max(0, end - $0) }
                     postDebouncePreviewSeconds = debounceAt.map { max(0, end - $0) }

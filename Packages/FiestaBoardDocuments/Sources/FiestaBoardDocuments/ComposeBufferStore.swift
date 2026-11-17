@@ -111,7 +111,14 @@ public enum ComposeBufferError: Error, Equatable, Sendable {
 
 /// Shared by Compose surfaces on the device. Atomic file epochs also reject a stale
 /// writer from another store instance; tombstones stop removed drafts being resurrected.
-public actor ComposeBufferStore {
+public protocol ComposeBufferPersisting: Sendable {
+    func open(_ identity: ComposeBufferIdentity) async throws -> ComposeBufferLease
+    func load(_ identity: ComposeBufferIdentity) async throws -> ComposeBufferSnapshot?
+    func save(_ snapshot: ComposeBufferSnapshot, using lease: ComposeBufferLease) async throws -> Bool
+    func clear(using lease: ComposeBufferLease, matchingRevision: UInt64) async throws -> ComposeBufferLease?
+    func revoke(_ lease: ComposeBufferLease) async throws
+}
+public actor ComposeBufferStore: ComposeBufferPersisting {
     public let directory: URL
     private static let maximumBytes = 6 * 1024 * 1024
     // Actor instances share this tiny filesystem transaction. A second scene
@@ -164,6 +171,25 @@ public actor ComposeBufferStore {
             if let matchingRevision, current.snapshot?.revision != matchingRevision { return false }
             try write(Envelope(identity: lease.identity, epoch: UUID(), snapshot: nil))
             return true
+        }
+    }
+    /// Atomically clear one acknowledged revision and hand its current surface a
+    /// replacement lease. New typing during the await can continue without
+    /// reopening (and stealing ownership from) another scene.
+    public func clear(using lease: ComposeBufferLease, matchingRevision: UInt64) throws -> ComposeBufferLease? {
+        try Self.filesystemLock.withLock {
+            guard let current = try read(lease.identity), current.epoch == lease.epoch,
+                  current.snapshot?.revision == matchingRevision else { return nil }
+            let epoch = UUID()
+            try write(Envelope(identity: lease.identity, epoch: epoch, snapshot: nil))
+            return ComposeBufferLease(identity: lease.identity, epoch: epoch)
+        }
+    }
+    /// Retire a surface without deleting its unsent draft.
+    public func revoke(_ lease: ComposeBufferLease) throws {
+        try Self.filesystemLock.withLock {
+            guard let current = try read(lease.identity), current.epoch == lease.epoch else { return }
+            try write(Envelope(identity: lease.identity, epoch: UUID(), snapshot: current.snapshot))
         }
     }
     private func read(_ identity: ComposeBufferIdentity) throws -> Envelope? {
