@@ -308,9 +308,15 @@ public enum BoardPolling {
         guard let reader = reader() else { return }
         let token = epoch
         Task { [weak self] in
-            guard let report = try? await reader.serviceStatus() else { return }
-            guard let self, self.valid(token) else { return }
-            self.runtime = report.boards
+            do {
+                let report = try await reader.serviceStatus()
+                guard let self, self.valid(token) else { return }
+                self.runtime = report.boards
+                self.store.recordHubResponse()
+            } catch {
+                guard let self, self.valid(token) else { return }
+                self.store.recordHubReadFailure(error)
+            }
         }
     }
 

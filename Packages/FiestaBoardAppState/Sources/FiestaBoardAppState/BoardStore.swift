@@ -263,6 +263,7 @@ public struct PreparedAction: Identifiable, Sendable {
                     } catch {
                         guard valid(token) else { return }
                         if handleAuthenticationLoss(error) { return }
+                        if (error as? FiestaBoardError) == .networkUnavailable { hubReachable = false }
                         readbackTargets.insert(target)
                         message = "Display details could not be loaded. Refresh before using controls. " + safeDescription(error)
                     }
@@ -355,6 +356,33 @@ public struct PreparedAction: Identifiable, Sendable {
         refreshTask?.cancel(); commandTask?.cancel()
         selectedBoardID = id; board = nil; defaultPageContext = nil; message = nil; usedActions = []
         return refresh()
+    }
+
+    /// Called only by epoch-checked status polling within this package.
+    func recordHubResponse() { if status != nil && networkAvailable { hubReachable = true } }
+    func recordHubReadFailure(_ error: any Error) {
+        if !handleAuthenticationLoss(error), (error as? FiestaBoardError) == .networkUnavailable { hubReachable = false }
+    }
+
+    /// A hub-level read independent of display selection and explicit mutation readback barriers.
+    @discardableResult public func probeReachability() -> Task<Void, Never> {
+        guard networkAvailable, let service, status != nil else { return Task {} }
+        let token = generation
+        return Task { [weak self] in
+            guard let self else { return }
+            do {
+                let auth = try await service.authStatus()
+                guard valid(token) else { return }
+                if auth.enabled && !auth.authenticated {
+                    _ = handleAuthenticationLoss(FiestaBoardError.unauthenticated)
+                    return
+                }
+                hubReachable = true
+            } catch {
+                guard valid(token) else { return }
+                if !handleAuthenticationLoss(error) { hubReachable = false }
+            }
+        }
     }
 
     @discardableResult public func refresh() -> Task<Void, Never> {

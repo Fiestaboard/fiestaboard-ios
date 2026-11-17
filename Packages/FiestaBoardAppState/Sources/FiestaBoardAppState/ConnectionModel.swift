@@ -10,7 +10,7 @@ public struct ConnectionPersistence: Sendable {
 }
 
 public enum ConnectionPhase: Sendable, Equatable {
-    case picker, checking, authentication(BootstrapPhase), connected
+    case picker, checking, unreachable, authentication(BootstrapPhase), connected
 }
 
 /// One window's onboarding intent. Secrets never enter the catalog or preferences.
@@ -41,6 +41,7 @@ public enum ConnectionPhase: Sendable, Equatable {
     private let factory: @Sendable (DeploymentURL) -> any FiestaBoardService
     private var service: (any FiestaBoardService)?
     private var selected: SavedServer?
+    public var selectedSavedHub: SavedServer? { selected }
     private var generation = UUID()
     private var operation: Task<Void, Never>?
     private var discoveryTask: Task<Void, Never>?
@@ -126,11 +127,19 @@ public enum ConnectionPhase: Sendable, Equatable {
                 await route(next, token: token)
             } catch {
                 guard valid(token) else { return }
-                phase = .picker; snapshot = nil; message = safe(error)
+                phase = knownRecordCanRetry(error) ? .unreachable : .picker
+                snapshot = nil; message = safe(error)
             }
             if valid(token) { busy = false }
         }
         operation = task; return task
+    }
+    private func knownRecordCanRetry(_ error: any Error) -> Bool {
+        selected != nil && (error as? FiestaBoardError) == .networkUnavailable
+    }
+    @discardableResult public func retrySavedHub() -> Task<Void, Never> {
+        guard phase == .unreachable, let selected else { return Task {} }
+        return selectSaved(selected)
     }
     @discardableResult public func checkServerState() -> Task<Void, Never> {
         guard let service, !busy else { return Task {} }
@@ -217,7 +226,10 @@ public enum ConnectionPhase: Sendable, Equatable {
         }
         guard valid(token) else { return }
         if store.status != nil { phase = .connected }
-        else { message = store.message; phase = .authentication(.signIn) }
+        else {
+            message = store.message
+            phase = selected != nil && store.hubReachable == false ? .unreachable : .authentication(.signIn)
+        }
     }
     private func associate(_ next: any FiestaBoardService, token: UUID) async throws {
         guard let snapshot, valid(token) else { return }

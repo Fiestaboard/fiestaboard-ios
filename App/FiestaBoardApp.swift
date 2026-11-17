@@ -52,6 +52,7 @@ struct DraftScene: View {
     @StateObject private var thumbnails: PageThumbnails
     @StateObject private var network = ShellNetwork()
     @DraftState private var shellConnection = ShellConnection()
+    @DraftState private var retryBackoff = ShellBackoff()
     @DraftState private var connectingSince: TimeInterval?
     @DraftState private var cache = ShellCache<CachedShell>()
     @DraftState private var now = Date().timeIntervalSince1970
@@ -84,7 +85,7 @@ struct DraftScene: View {
 
     var body: some View {
         Group {
-            if store.status == nil && connection.phase != .checking {
+            if store.status == nil && connection.phase != .checking && connection.phase != .unreachable {
                 ConnectionView(model: connection, store: store)
             } else {
                 ShellContainer(selection: $tab, editorOpen: editorOpen, destination: shellDestination,
@@ -98,11 +99,16 @@ struct DraftScene: View {
             store.networkAvailable = available
             observeConnection()
         }
-        .onChange(of: store.hubReachable) { _, _ in observeConnection() }
+        .onChange(of: store.hubReachable) { _, reachable in
+            if reachable == true { retryBackoff.reset() }
+            observeConnection()
+        }
+        .onChange(of: shellHub) { _, _ in retryBackoff.reset(); observeConnection() }
         .onChange(of: connection.phase) { _, phase in
             if phase == .checking { connectingSince = now }
             else { connectingSince = nil }
-            if case .authentication = phase { cache.remove(for: connection.address) }
+            if case .authentication = phase { cache.remove(for: connection.address); shellConnection = .init() }
+            if phase == .picker { shellConnection = .init() }
         }
         .onChange(of: store.refreshing) { _, refreshing in
             if !refreshing && store.hubReachable == true { captureCache() }
@@ -111,13 +117,13 @@ struct DraftScene: View {
             if !connecting && store.hubReachable == true { captureCache() }
         }
         .task(id: presentation == .unreachable) {
-            guard presentation == .unreachable, store.status != nil else { return }
-            var delay = 2
+            guard presentation == .unreachable else { return }
             while !Task.isCancelled && presentation == .unreachable {
+                let delay = retryBackoff.next()
                 do { try await Task.sleep(for: .seconds(delay)) } catch { return }
                 guard !Task.isCancelled, network.available else { return }
-                await store.refresh().value
-                delay = min(delay * 2, 30)
+                if connection.phase == .unreachable { await connection.retrySavedHub().value }
+                else { await store.probeReachability().value }
             }
         }
         .overlay(alignment: .top) {
@@ -168,13 +174,13 @@ struct DraftScene: View {
         let display: String
         let pages: [Page]
     }
-    private var shellHub: String { connection.phase == .checking ? connection.address : store.connectionLabel }
+    private var shellHub: String { store.status == nil ? connection.address : store.connectionLabel }
     private var presentation: ShellConnection.Presentation {
         ShellConnection.presentation(pathAvailable: network.available, hubReachable: store.hubReachable == true,
                                      connectingSince: connectingSince, cachedAt: cache.timestamp(for: shellHub), now: now)
     }
     private func observeConnection() {
-        shellConnection.observe(pathAvailable: network.available, hubReachable: store.hubReachable == true)
+        shellConnection.observe(pathAvailable: network.available, hubReachable: store.hubReachable == true, hub: shellHub)
     }
     private func captureCache() {
         guard store.status != nil else { return }
@@ -182,14 +188,14 @@ struct DraftScene: View {
                     for: store.connectionLabel, at: now)
     }
     @ViewBuilder private func shellDestination(_ route: ShellTab) -> some View {
-        if connection.phase == .checking && route == .more {
+        if (connection.phase == .checking || connection.phase == .unreachable) && route == .more {
             more
-        } else if connection.phase == .checking {
+        } else if connection.phase == .checking || connection.phase == .unreachable {
             NavigationStack {
                 if let cached = cache.value(for: shellHub, at: now), route == .pages {
                     List(cached.pages) { page in Text(page.name) }.navigationTitle("Pages")
                         .safeAreaInset(edge: .top) { Text("Updating…").font(.callout).padding() }
-                } else if let cached = cache.value(for: shellHub, at: now), route == .home {
+                } else if connection.phase == .checking, let cached = cache.value(for: shellHub, at: now), route == .home {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 16) {
                             Text("Updating…").font(.callout)
@@ -200,13 +206,13 @@ struct DraftScene: View {
                         }.padding().opacity(0.6)
                     }.navigationTitle("Home")
                 } else {
-                    ShellConnectionView(state: presentation, hub: activeHubName, retry: { connection.checkServerState() })
+                    ShellConnectionView(state: presentation, hub: activeHubName, retry: { connection.retrySavedHub() })
                         .navigationTitle(route.rawValue)
                 }
             }
         } else if presentation == .unreachable && route == .home {
             NavigationStack {
-                ShellConnectionView(state: .unreachable, hub: activeHubName, retry: { store.refresh() })
+                ShellConnectionView(state: .unreachable, hub: activeHubName, retry: { store.probeReachability() })
                     .navigationTitle("Home")
             }
         } else {
@@ -307,7 +313,7 @@ struct DraftScene: View {
         }
     }
     private var activeHubName: String {
-        let saved = connection.savedServers.first { $0.deployment.description == store.connectionLabel }
+        let saved = connection.selectedSavedHub ?? connection.savedServers.first { $0.deployment.description == store.connectionLabel }
         return saved?.alias.isEmpty == false ? saved!.alias : "FiestaBoard hub"
     }
     private var displayAccessory: some View {

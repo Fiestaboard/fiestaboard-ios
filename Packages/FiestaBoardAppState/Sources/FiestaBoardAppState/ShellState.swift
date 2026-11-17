@@ -23,8 +23,12 @@ public struct ShellConnection: Sendable, Equatable {
     public private(set) var reconnected = false
     private var interrupted = false
     private var hasConnected = false
+    private var hubIdentity: String?
     public init() {}
-    public mutating func observe(pathAvailable: Bool, hubReachable: Bool) {
+    public mutating func observe(pathAvailable: Bool, hubReachable: Bool, hub: String = "") {
+        if hubIdentity != hub {
+            hubIdentity = hub; hasConnected = false; interrupted = false; reconnected = false
+        }
         if !pathAvailable || !hubReachable { interrupted = hasConnected; reconnected = false }
         else {
             if interrupted { reconnected = true; interrupted = false }
@@ -54,4 +58,12 @@ public struct ShellCache<Value: Sendable>: Sendable {
     }
     public func timestamp(for hub: String) -> TimeInterval? { entries[hub]?.0 }
     public mutating func remove(for hub: String) { entries.removeValue(forKey: hub) }
+}
+
+/// Retry state outlives an individual view task when a retry re-enters Checking.
+public struct ShellBackoff: Sendable {
+    private var delay: Int = 2
+    public init() {}
+    public mutating func next() -> Int { defer { delay = min(delay * 2, 30) }; return delay }
+    public mutating func reset() { delay = 2 }
 }
