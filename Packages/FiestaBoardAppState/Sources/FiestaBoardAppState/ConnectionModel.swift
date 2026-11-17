@@ -57,6 +57,7 @@ public enum ConnectionPhase: Sendable, Equatable {
     private var discoveryTask: Task<Void, Never>?
     private var cleanupTask: Task<Void, Never>?
     private var handedToStore = false
+    private var removingServers: Set<UUID> = []
     private let selectedKey = "FiestaBoard.selectedServerID"
 
     public init(store: BoardStore, catalog: ServerCatalog, discovery: any ServerDiscovering,
@@ -291,7 +292,7 @@ public enum ConnectionPhase: Sendable, Equatable {
         service = nil; handedToStore = false; snapshot = nil; phase = .picker
         busy = false; password = ""; setupToken = ""; rememberMe = false; persistence = .init()
         let logout = store.logout()
-        return Task { await logout.value; await removeSnapshot(for: hub) }
+        return Task { await removeSnapshot(for: hub); await logout.value }
     }
     public func forgetSignIn() async {
         guard let service else { return }
@@ -303,20 +304,64 @@ public enum ConnectionPhase: Sendable, Equatable {
         guard valid(token) else { return }; persistence = state
     }
     public func removeServer(_ server: SavedServer) async {
-        if selected?.id == server.id { invalidateSnapshotSession() }
-        await removeSnapshot(for: server)
+        guard removingServers.insert(server.id).inserted else { return }
+        defer { removingServers.remove(server.id) }
+        let active = selected?.id == server.id
+        let existing = service?.deployment == server.deployment ? service : nil
+        let ownedByStore = active && handedToStore
         // Prefer this window's captured lease. For an unselected server, confirmation starts a new forget intent.
-        let next: any FiestaBoardService
-        if let service, service.deployment == server.deployment { next = service }
-        else { next = factory(server.deployment) }
+        let next = existing ?? factory(server.deployment)
+        // Retire the active window synchronously so pending reads/writes cannot revive it.
+        let retirement = active ? logout() : nil
+        let noticeID = ownedByStore ? store.logoutNotices.last?.id : nil
+        let token = generation
+        if active { busy = true }
+        await removeSnapshot(for: server)
+        var remoteConfirmed = false
+        if let retirement {
+            await retirement.value
+            if let noticeID {
+                remoteConfirmed = store.logoutNotices.first { $0.id == noticeID }?.state == .succeeded
+            }
+        }
+        if !ownedByStore {
+            do {
+                if existing == nil {
+                    let observed = try await next.bootstrap()
+                    guard let installation = server.installationID,
+                          observed.identity.installationID == installation,
+                          try await next.restoreRememberedSession(observedInstallationID: installation) else {
+                        throw FiestaBoardError.staleSession
+                    }
+                }
+                try await next.logout()
+                remoteConfirmed = true
+            } catch { /* Local removal still proceeds; report unconfirmed remote revocation below. */ }
+        }
         await next.forgetRememberedSession()
         let state = await next.sessionPersistenceState()
-        guard !state.cleanupPending else { message = "Saved sign-in could not be removed. Try again before removing this server."; return }
+        guard !state.cleanupPending else {
+            if valid(token) { busy = false; message = "Saved sign-in could not be removed. Try again before removing this server." }
+            return
+        }
         do {
             try await catalog.remove(id: server.id)
             if preferences.string(forKey: selectedKey) == server.id.uuidString { preferences.removeObject(forKey: selectedKey) }
             await reloadCatalog()
-        } catch { message = safe(error) }
+            guard valid(token) else { return }
+            busy = false
+            if active {
+                selected = nil
+                if let replacement = savedServers.first {
+                    let selection = selectSaved(replacement), selectionToken = generation
+                    await selection.value
+                    guard valid(selectionToken) else { return }
+                }
+            }
+            if !remoteConfirmed {
+                message = "Removed \(server.alias.isEmpty ? server.deployment.description : server.alias) from this device. Hub sign-out could not be confirmed; its session may still appear on the hub."
+            }
+        } catch { if valid(token) { busy = false; message = safe(error) } }
     }
     public func renameServer(_ server: SavedServer, alias: String) async {
         var record = server; record.alias = alias.trimmingCharacters(in: .whitespacesAndNewlines)

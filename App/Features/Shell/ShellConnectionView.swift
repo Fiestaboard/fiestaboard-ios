@@ -34,7 +34,8 @@ struct ShellConnectionView: View {
                     } else {
                         HStack(spacing: 10) {
                             TacoLoader(size: .inline)
-                            Text("Connecting to " + hub + "…").font(.system(size: 15))
+                            Text("Connecting to " + hub + "…").font(.subheadline)
+                                .figmaNode("shell:connecting-label", label: "Connecting to " + hub)
                         }.padding(.leading, 4)
                     }
                     RoundedRectangle(cornerRadius: 8).fill(palette.skeleton).frame(height: 150).accessibilityHidden(true)
