@@ -265,11 +265,7 @@ import XCTest
         reveal(connect, app); connect.tap()
     }
     private func signIn(scenario: String, remember: Bool = false) throws -> XCUIApplication {
-        var request = URLRequest(url: URL(string: "http://127.0.0.1:\(fixturePort)/ready")!); request.timeoutInterval = 3
-        let semaphore = DispatchSemaphore(value: 0); var ready = false
-        URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
-        semaphore.wait()
-        try requireReadyFixture(ready, port: String(fixturePort))
+        try requireReadyFixture(port: String(fixturePort))
         let app = isolatedApplication()
         app.launchArguments = []; app.launch()
         connect(app, path: "board-\(scenario)-" + UUID().uuidString.prefix(8).lowercased())

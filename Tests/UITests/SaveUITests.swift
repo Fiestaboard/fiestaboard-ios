@@ -147,11 +147,7 @@ import XCTest
     /// Sign in to a fresh `/board-manual-<id>/` prefix and turn on changes for this server, so the
     /// session may write pages (the same opt-in a person makes in Settings).
     private func signInWithChanges() throws -> XCUIApplication {
-        var request = URLRequest(url: URL(string: "http://127.0.0.1:\(fixturePort)/ready")!); request.timeoutInterval = 3
-        let semaphore = DispatchSemaphore(value: 0); var ready = false
-        URLSession.shared.dataTask(with: request) { _, response, _ in ready = (response as? HTTPURLResponse)?.statusCode == 200; semaphore.signal() }.resume()
-        semaphore.wait()
-        try requireReadyFixture(ready, port: String(fixturePort))
+        try requireReadyFixture(port: String(fixturePort))
         let app = isolatedApplication()
         app.launchArguments = []; app.launch()
         alias = "board-manual-" + UUID().uuidString.prefix(8).lowercased()
