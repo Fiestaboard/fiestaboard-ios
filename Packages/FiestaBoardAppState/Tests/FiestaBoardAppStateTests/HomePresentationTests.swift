@@ -17,6 +17,97 @@ final class HomePresentationTests: XCTestCase {
 }
 
 extension HomePresentationTests {
+    // Synthetic interval controls; recorded contracts are covered separately below.
+    private func syntheticOverride(start: String? = "1970-01-01T00:00:00Z",
+                                   end: String? = "1970-01-01T02:00:00Z",
+                                   schedule: Bool = true, paused: Bool = false,
+                                   silence: SilenceStatus? = nil, now: TimeInterval = 1800) throws -> HomePresentation {
+        var object: [String: Any] = ["id": "cx-kitchen", "name": "Kitchen", "device_type": "flagship",
+            "rows": 6, "cols": 22, "is_primary": true, "paused": paused,
+            "schedule_enabled": schedule, "output": "none", "source": "manual",
+            "next_change_reason": "override_ends"]
+        object["override_started_at"] = start
+        object["override_expires_at"] = end
+        let detail = try JSONDecoder().decode(BoardDetail.self, from: JSONSerialization.data(withJSONObject: object))
+        return HomePresentation.make(detail: detail, showing: nil, silence: silence, pageNames: [:],
+                                     now: Date(timeIntervalSince1970: now))
+    }
+
+    private func recordedInactiveSilence() throws -> SilenceStatus {
+        var root = URL(fileURLWithPath: #filePath)
+        for _ in 0..<5 { root.deleteLastPathComponent() }
+        return try JSONDecoder().decode(SilenceStatus.self, from: Data(contentsOf:
+            root.appendingPathComponent("Tests/Fixtures/Home/DockerBanners/home-silence.json")))
+    }
+
+    func testOverrideProgressDrainsFromAuthoritativeIntervalWithClock() throws {
+        let start = try syntheticOverride(now: 0)
+        XCTAssertEqual(start.overrideExpiresAt, Date(timeIntervalSince1970: 7200))
+        XCTAssertEqual(try XCTUnwrap(start.overrideRemainingFraction), 1, accuracy: 0.000001)
+        let later = try syntheticOverride(silence: recordedInactiveSilence(), now: 1800)
+        XCTAssertEqual(try XCTUnwrap(later.overrideRemainingFraction), 0.75, accuracy: 0.000001)
+        XCTAssertEqual(later.overrideRemaining, "1h 30m left")
+        XCTAssertTrue(later.overrideResumesSchedule)
+    }
+
+    func testOverrideRejectsUnusableIntervalsInsteadOfInventingProgressOrResume() throws {
+        let intervals: [(String?, String?, TimeInterval)] = [
+            ("1970-01-01T00:00:00Z", nil, 1800),
+            ("invalid", "1970-01-01T02:00:00Z", 1800),
+            ("1970-01-01T00:00:00Z", "invalid", 1800),
+            ("1970-01-01T02:00:00Z", "1970-01-01T02:00:00Z", 1800),
+            ("1970-01-01T03:00:00Z", "1970-01-01T02:00:00Z", 1800),
+            ("1970-01-01T01:00:00Z", "1970-01-01T02:00:00Z", 1800),
+            ("1970-01-01T00:00:00Z", "1970-01-01T02:00:00Z", 7200),
+            ("1970-01-01T00:00:00Z", "1970-01-01T02:00:00Z", 7201)
+        ]
+        for (start, end, now) in intervals {
+            let p = try syntheticOverride(start: start, end: end, now: now)
+            XCTAssertNil(p.overrideExpiresAt, "Unusable interval: \(String(describing: start)) / \(String(describing: end)) @ \(now)")
+            XCTAssertNil(p.overrideRemainingFraction)
+            XCTAssertFalse(p.overrideResumesSchedule)
+        }
+    }
+
+    func testOverrideResumeClaimRequiresEnabledUnpausedUnsilencedSchedule() throws {
+        XCTAssertFalse(try syntheticOverride(schedule: false, silence: recordedInactiveSilence()).overrideResumesSchedule)
+        XCTAssertFalse(try syntheticOverride(paused: true, silence: recordedInactiveSilence()).overrideResumesSchedule)
+        XCTAssertFalse(try syntheticOverride(silence: .init(active: true)).overrideResumesSchedule)
+        XCTAssertTrue(try syntheticOverride(silence: .init(active: false)).overrideResumesSchedule)
+        XCTAssertTrue(try syntheticOverride(silence: recordedInactiveSilence()).overrideResumesSchedule)
+    }
+
+    func testOverrideMissingSilenceReadKeepsExpiryExplanationNeutral() throws {
+        // BoardStatus stores nil both before the first read and after try? fails.
+        let p = try syntheticOverride(silence: nil)
+        XCTAssertNotNil(p.overrideExpiresAt)
+        XCTAssertFalse(p.overrideResumesSchedule, "No response does not prove silence is inactive")
+    }
+
+    func testOverrideOtherDisplayInactiveSilenceDoesNotProveSelectedDisplayResumes() throws {
+        let p = try syntheticOverride(silence: .init(active: false, boardID: "desk"))
+        XCTAssertFalse(p.overrideResumesSchedule)
+    }
+
+    func testNoOverrideDoesNotExposeExpiryProgressOrResumeClaim() {
+        let p = HomePresentation.make(detail: nil, showing: nil, silence: nil, pageNames: [:], now: Date())
+        XCTAssertNil(p.overrideExpiresAt)
+        XCTAssertNil(p.overrideRemainingFraction)
+        XCTAssertFalse(p.overrideResumesSchedule)
+    }
+
+    func testRecordedOverrideEndsReasonDoesNotClaimDisabledScheduleResumes() throws {
+        var root = URL(fileURLWithPath: #filePath)
+        for _ in 0..<5 { root.deleteLastPathComponent() }
+        let detail = try JSONDecoder().decode(BoardDetail.self, from: Data(contentsOf:
+            root.appendingPathComponent("Tests/Fixtures/Home/home-override.json")))
+        let p = HomePresentation.make(detail: detail, showing: nil, silence: nil, pageNames: [:],
+                                     now: try XCTUnwrap(HomeTiming.instant("2026-11-17T03:00:00Z")))
+        XCTAssertNotNil(p.overrideExpiresAt)
+        XCTAssertNotNil(p.overrideRemainingFraction)
+        XCTAssertFalse(p.overrideResumesSchedule, "The recorded override_ends reason coexists with schedule_enabled:false")
+    }
+
     func testCountdownUsesExpiryAndClockRatherThanPolledRemainingValue() {
         let now = Date(timeIntervalSince1970: 0)
         XCTAssertEqual(HomeTiming.remainingLabel(expiresAt: "1970-01-01T02:42:00Z", now: now), "2h 42m left")

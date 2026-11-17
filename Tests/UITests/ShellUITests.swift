@@ -130,4 +130,63 @@ import XCTest
             waitValue(accessory, "expanded")
         }
     }
+
+    func testActualNativeAccessoryAtAX3InLightAppearance() {
+        captureAX3Accessory(appearance: "Light")
+    }
+
+    func testActualNativeAccessoryAtAX3InDarkAppearance() {
+        captureAX3Accessory(appearance: "Dark")
+    }
+
+    /// Original screen pixels come from the UI runner; drawHierarchy can differ
+    /// from native glass compositing. This gathers evidence without accepting a reference.
+    private func captureAX3Accessory(appearance: String) {
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .portrait }
+        let app = isolatedApplication()
+        launchFixture(app, arguments: ["-AppleInterfaceStyle", appearance,
+            "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXL"])
+        XCTAssertTrue(app.buttons["boardControlsEntry"].waitForExistence(timeout: 10))
+        let environment = app.descendants(matching: .any).matching(identifier: "shellAccessoryEnvironment").firstMatch
+        waitValue(environment, appearance.lowercased() + "/ax3")
+        let placement = app.descendants(matching: .any).matching(identifier: "shellTabAccessoryPlacement").firstMatch
+        let device = UIDevice.current.userInterfaceIdiom == .pad ? "pad" : "phone"
+        func record(_ state: String) {
+            let name = "i6-native-accessory-\(device)-\(appearance.lowercased())-ax3-\(state)"
+            shot(name)
+            let hierarchy = XCTAttachment(string: app.debugDescription)
+            hierarchy.name = name + "-hierarchy"
+            hierarchy.lifetime = .keepAlways
+            add(hierarchy)
+        }
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            let tabPlacement = app.descendants(matching: .any).matching(identifier: "shellTabPlacement").firstMatch
+            waitValue(tabPlacement, "top")
+            record("portrait")
+            XCUIDevice.shared.orientation = .landscapeLeft
+            waitValue(tabPlacement, "sidebar")
+            record("landscape")
+            XCUIDevice.shared.orientation = .portrait
+            waitValue(tabPlacement, "top")
+        } else {
+            waitValue(placement, "expanded")
+            record("expanded")
+            let scroll = app.scrollViews.firstMatch
+            XCTAssertTrue(scroll.exists)
+            scroll.swipeUp()
+            waitValue(placement, "inline")
+            record("inline")
+            scroll.swipeDown()
+            waitValue(placement, "expanded")
+        }
+        let more = app.buttons["destination-More"]
+        XCTAssertTrue(more.waitForExistence(timeout: 5))
+        more.tap()
+        XCTAssertTrue(app.buttons["shellHubs"].waitForExistence(timeout: 5))
+        record("more-visible")
+        let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "selected == true"), object: more)
+        XCTAssertEqual(XCTWaiter.wait(for: [selected], timeout: 5), .completed, app.debugDescription)
+        record("more-selected")
+    }
 }

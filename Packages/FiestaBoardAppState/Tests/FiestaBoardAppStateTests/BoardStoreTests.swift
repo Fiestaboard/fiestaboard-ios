@@ -57,10 +57,38 @@ import FiestaBoardKit
         await delayed.delayNextRead()
         let oldRead = store.refresh()
         await delayed.waitUntilBlocked()
+        XCTAssertTrue(store.refreshing)
+        XCTAssertTrue(store.canSelectBoard, "A background read must not disable an open display menu")
+        XCTAssertFalse(store.canWrite, "Allowing target selection does not enable mutations during a read")
         await store.selectBoard("board-led").value
+        let selectedFrame = store.board?.characters
+        XCTAssertEqual(store.selectedBoardID, "board-led")
         await delayed.release()
         await oldRead.value
         XCTAssertEqual(store.board?.summary.id, "board-led")
+        XCTAssertEqual(store.board?.characters, selectedFrame, "A late cancelled read cannot repaint the newly selected display")
+        XCTAssertTrue(store.canSelectBoard)
+        XCTAssertFalse(store.refreshing)
+    }
+
+    func testDisplaySelectionRetainsConnectionAndCommandBarriers() async throws {
+        let delayed = try DelayedService(), store = BoardStore()
+        XCTAssertFalse(store.canSelectBoard)
+        let connection = store.connect(delayed)
+        await delayed.waitUntilBlocked()
+        XCTAssertTrue(store.connecting)
+        XCTAssertFalse(store.canSelectBoard)
+        await delayed.release(); await connection.value
+        XCTAssertTrue(store.canSelectBoard)
+        await delayed.delayNextMutation()
+        let command = store.confirm(try XCTUnwrap(store.prepare(.text("BUSY"))))
+        await delayed.waitUntilBlocked()
+        XCTAssertTrue(store.commandBusy)
+        XCTAssertFalse(store.canSelectBoard, "The read-only selection allowance must not bypass the command barrier")
+        await delayed.release(); await command.value
+        XCTAssertTrue(store.canSelectBoard)
+        store.disconnect()
+        XCTAssertFalse(store.canSelectBoard)
     }
     func testTargetRemainsLockedAfterChangingAwayDuringCommandUntilReadback() async throws {
         let delayed = try DelayedService(delayConnection: false)

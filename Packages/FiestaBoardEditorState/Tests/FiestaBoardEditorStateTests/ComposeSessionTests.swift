@@ -2,6 +2,9 @@ import XCTest
 import FiestaBoardKit
 import FiestaBoardDocuments
 @testable import FiestaBoardEditorState
+#if DEBUG
+import CryptoKit
+#endif
 
 @MainActor private final class ComposeRenderGate {
     var inputs: [ComposePreviewInput] = []
@@ -14,6 +17,170 @@ import FiestaBoardDocuments
     func answer(_ value: TemplatePreviewResult) { replies.removeFirst().resume(returning:value) }
     func fail() { replies.removeFirst().resume(throwing:FiestaBoardError.networkUnavailable) }
 }
+
+#if DEBUG
+/// Synthetic host ticks exercise ownership and arithmetic only. These tests do
+/// not capture native pixels or establish a presentation-performance result.
+@MainActor private final class ComposePresentationTestClock {
+    var ticks: UInt64 = 1_000
+}
+
+extension ComposeSessionTests {
+    private func presentationSession(target: ComposeScope? = nil) throws
+        -> (ComposeSession, ManualSleeper, ComposeRenderGate, ComposePresentationTestClock) {
+        let idle = ManualSleeper(), renderer = ComposeRenderGate(), clock = ComposePresentationTestClock()
+        let session = ComposeSession(scope: try target ?? scope(), sleep: { try await idle.sleep($0) },
+            monotonicNow: { Double(clock.ticks) / 1_000 }, render: { try await renderer.render($0) })
+        session.enableCapturedPresentationDiagnostics(nowTicks: { clock.ticks }, secondsPerTick: 0.001)
+        return (session, idle, renderer, clock)
+    }
+
+    func testCapturedPresentationRequiresPixelMatchedEvidenceAfterAdoptionAndPreservesAdoptionMetrics() async throws {
+        let (session, idle, renderer, clock) = try presentationSession()
+        session.update(.init(text: "FRAME A")); await settle()
+        XCTAssertNil(session.capturedPresentationTicket)
+        XCTAssertNil(session.firstObservedPresentation)
+        clock.ticks = 1_250; idle.advance(); await settle()
+        XCTAssertNil(session.capturedPresentationTicket, "Dispatch is not a drawn or presented result")
+        let result = try reply("FRAME A")
+        clock.ticks = 1_350; renderer.answer(result); await settle()
+        let ticket = try XCTUnwrap(session.capturedPresentationTicket)
+        XCTAssertEqual(ticket.scope, session.scope)
+        XCTAssertEqual(ticket.readyTicks, 1_250); XCTAssertEqual(ticket.adoptedTicks, 1_350)
+        XCTAssertEqual(ticket.responseDigest, SHA256.hash(data: result.rawData).map { String(format: "%02x", $0) }.joined())
+        XCTAssertNil(session.firstObservedPresentation, "Result adoption alone cannot record native presentation")
+        XCTAssertEqual(try XCTUnwrap(session.postDebouncePreviewSeconds), 0.100, accuracy: 0.000001)
+        clock.ticks = 1_450 // Capture callback arrives after the actual captured frame timestamp.
+        let pixels = String(repeating: "a", count: 64)
+        XCTAssertTrue(session.recordCapturedPresentation(ticket: ticket, displayTicks: 1_420,
+            responseDigest: ticket.responseDigest, pixelDigest: pixels))
+        let observed = try XCTUnwrap(session.firstObservedPresentation)
+        XCTAssertEqual(observed.ticket, ticket); XCTAssertEqual(observed.displayTicks, 1_420)
+        XCTAssertEqual(observed.pixelDigest, pixels)
+        XCTAssertEqual(observed.postDebounceUpperBoundSeconds, 0.170, accuracy: 0.000001)
+        XCTAssertEqual(try XCTUnwrap(observed.inputToObservedUpperBoundSeconds), 0.420, accuracy: 0.000001)
+        XCTAssertEqual(observed.adoptionToObservedUpperBoundSeconds, 0.070, accuracy: 0.000001)
+        XCTAssertEqual(try XCTUnwrap(session.postDebouncePreviewSeconds), 0.100, accuracy: 0.000001,
+            "The adoption metric retains its existing meaning and name")
+        XCTAssertFalse(session.recordCapturedPresentation(ticket: ticket, displayTicks: 1_430,
+            responseDigest: ticket.responseDigest, pixelDigest: pixels), "One matched observation per ticket")
+        XCTAssertEqual(session.firstObservedPresentation?.displayTicks, 1_420)
+        session.close()
+    }
+
+    func testCapturedPresentationIncludesWaitBehindOlderInFlightRequestAfterLatestDebounce() async throws {
+        let (session, idle, renderer, clock) = try presentationSession()
+        session.update(.init(text: "OLD")); await settle()
+        clock.ticks = 1_250; idle.advance(); await settle()
+        clock.ticks = 1_260; session.update(.init(text: "LATEST")); await settle()
+        clock.ticks = 1_510; idle.advance(); await settle()
+        XCTAssertEqual(renderer.inputs.count, 1)
+        clock.ticks = 1_700; renderer.answer(try reply("OLD")); await settle()
+        XCTAssertNil(session.capturedPresentationTicket, "The obsolete result cannot mint a measurement ticket")
+        XCTAssertEqual(renderer.inputs.count, 2)
+        clock.ticks = 1_750; renderer.answer(try reply("LATEST")); await settle()
+        let ticket = try XCTUnwrap(session.capturedPresentationTicket)
+        XCTAssertEqual(ticket.readyTicks, 1_510, "Do not start at eventual dispatch and hide queue wait")
+        clock.ticks = 1_810
+        XCTAssertTrue(session.recordCapturedPresentation(ticket: ticket, displayTicks: 1_800,
+            responseDigest: ticket.responseDigest, pixelDigest: String(repeating: "b", count: 64)))
+        XCTAssertEqual(try XCTUnwrap(session.firstObservedPresentation).postDebounceUpperBoundSeconds, 0.290, accuracy: 0.000001)
+        XCTAssertEqual(try XCTUnwrap(session.postDebouncePreviewSeconds), 0.240, accuracy: 0.000001)
+        session.close()
+    }
+
+    func testCapturedPresentationRejectsWrongResultAndInvalidTimestampsWithoutConsumingTicket() async throws {
+        let (session, idle, renderer, clock) = try presentationSession()
+        session.update(.init(text: "CURRENT")); await settle()
+        clock.ticks = 1_250; idle.advance(); await settle()
+        clock.ticks = 1_350; renderer.answer(try reply("CURRENT")); await settle()
+        let ticket = try XCTUnwrap(session.capturedPresentationTicket), pixels = String(repeating: "c", count: 64)
+        clock.ticks = 1_500
+        XCTAssertFalse(session.recordCapturedPresentation(ticket: ticket, displayTicks: 1_400,
+            responseDigest: String(repeating: "0", count: 64), pixelDigest: pixels), "An old pixel match cannot label the new response")
+        for stamp in [UInt64(0), 1_249, 1_349, 1_501] {
+            XCTAssertFalse(session.recordCapturedPresentation(ticket: ticket, displayTicks: stamp,
+                responseDigest: ticket.responseDigest, pixelDigest: pixels), "Reject pre-adoption/future clock samples")
+        }
+        XCTAssertFalse(session.recordCapturedPresentation(ticket: ticket, displayTicks: 1_400,
+            responseDigest: ticket.responseDigest, pixelDigest: ""), "Keep captured pixel evidence addressable")
+        XCTAssertNil(session.firstObservedPresentation)
+        XCTAssertTrue(session.recordCapturedPresentation(ticket: ticket, displayTicks: 1_400,
+            responseDigest: ticket.responseDigest, pixelDigest: pixels))
+        XCTAssertEqual(try XCTUnwrap(session.firstObservedPresentation).postDebounceUpperBoundSeconds, 0.150, accuracy: 0.000001)
+        session.close()
+    }
+
+    func testCapturedPresentationTicketCannotSurviveEditScopeOfflineOrClose() async throws {
+        let mutations: [(ComposeSession) throws -> Void] = [
+            { $0.update(.init(text: "NEW INPUT")) },
+            { $0.changeScope(try self.scope(board: "other")) },
+            { $0.setOnline(false) },
+            { $0.close() }
+        ]
+        for mutate in mutations {
+            let (session, idle, renderer, clock) = try presentationSession()
+            session.update(.init(text: "OLD VISIBLE")); await settle()
+            clock.ticks = 1_250; idle.advance(); await settle()
+            clock.ticks = 1_350; renderer.answer(try reply("OLD VISIBLE")); await settle()
+            let ticket = try XCTUnwrap(session.capturedPresentationTicket)
+            clock.ticks = 1_400; try mutate(session)
+            XCTAssertNil(session.capturedPresentationTicket); XCTAssertNil(session.firstObservedPresentation)
+            XCTAssertFalse(session.recordCapturedPresentation(ticket: ticket, displayTicks: 1_400,
+                responseDigest: ticket.responseDigest, pixelDigest: String(repeating: "d", count: 64)))
+            session.close(); await settle()
+        }
+    }
+
+    func testFailedPreviewCannotMintPresentationEvidenceFromRetainedOldFrame() async throws {
+        let (session, idle, renderer, clock) = try presentationSession()
+        session.update(.init(text: "OLD FRAME")); await settle()
+        clock.ticks = 1_250; idle.advance(); await settle()
+        clock.ticks = 1_350; renderer.answer(try reply("OLD FRAME")); await settle()
+        let old = try XCTUnwrap(session.capturedPresentationTicket)
+        clock.ticks = 1_400; session.update(.init(text: "FAILED NEW FRAME")); await settle()
+        clock.ticks = 1_650; idle.advance(); await settle()
+        clock.ticks = 1_700; renderer.fail(); await settle()
+        XCTAssertEqual(session.preview?.lines, ["OLD FRAME"])
+        XCTAssertTrue(session.previewIsStale)
+        XCTAssertNil(session.capturedPresentationTicket); XCTAssertNil(session.firstObservedPresentation)
+        XCTAssertFalse(session.recordCapturedPresentation(ticket: old, displayTicks: 1_700,
+            responseDigest: old.responseDigest, pixelDigest: String(repeating: "0", count: 64)))
+        session.close()
+    }
+
+    func testCapturedPresentationRetryAndNewSessionRejectOldTicketEvenForIdenticalResultBytes() async throws {
+        let sharedScope = try scope(), same = try reply("SAME PIXELS")
+        let (session, idle, renderer, clock) = try presentationSession(target: sharedScope)
+        session.update(.init(text: "SAME PIXELS")); await settle()
+        clock.ticks = 1_250; idle.advance(); await settle()
+        clock.ticks = 1_350; renderer.answer(same); await settle()
+        let original = try XCTUnwrap(session.capturedPresentationTicket)
+        session.setOnline(false); session.setOnline(true)
+        clock.ticks = 1_400; session.retryPreview(); await settle()
+        clock.ticks = 1_450; renderer.answer(same); await settle()
+        let retry = try XCTUnwrap(session.capturedPresentationTicket)
+        XCTAssertEqual(retry.sessionID, original.sessionID)
+        XCTAssertEqual(retry.revision, original.revision); XCTAssertNotEqual(retry.renderID, original.renderID)
+        XCTAssertEqual(retry.responseDigest, original.responseDigest)
+        XCTAssertFalse(session.recordCapturedPresentation(ticket: original, displayTicks: 1_450,
+            responseDigest: original.responseDigest, pixelDigest: String(repeating: "e", count: 64)))
+        session.close()
+        let (reopened, idle2, renderer2, clock2) = try presentationSession(target: sharedScope)
+        reopened.update(.init(text: "SAME PIXELS")); await settle()
+        clock2.ticks = 1_250; idle2.advance(); await settle()
+        clock2.ticks = 1_350; renderer2.answer(same); await settle()
+        let fresh = try XCTUnwrap(reopened.capturedPresentationTicket)
+        XCTAssertNotEqual(fresh.sessionID, original.sessionID)
+        XCTAssertEqual(fresh.revision, original.revision); XCTAssertEqual(fresh.responseDigest, original.responseDigest)
+        clock2.ticks = 1_500
+        XCTAssertFalse(reopened.recordCapturedPresentation(ticket: original, displayTicks: 1_400,
+            responseDigest: original.responseDigest, pixelDigest: String(repeating: "f", count: 64)))
+        XCTAssertNil(reopened.firstObservedPresentation)
+        reopened.close()
+    }
+}
+#endif
 
 @MainActor final class ComposeSessionTests: XCTestCase {
     private func settle() async { for _ in 0..<30 { await Task.yield() } }

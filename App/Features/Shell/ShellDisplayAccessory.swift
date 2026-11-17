@@ -4,6 +4,8 @@ import FiestaBoardKit
 struct ShellDisplayAccessory: View {
     #if DEBUG
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+    @Environment(\.dynamicTypeSize) private var diagnosticTextSize
+    @Environment(\.colorScheme) private var diagnosticAppearance
     #endif
     let displays: [BoardSummary]
     let selectedID: String?
@@ -39,6 +41,12 @@ struct ShellDisplayAccessory: View {
                 .accessibilityLabel("Native accessory placement")
                 .accessibilityValue(placement == .inline ? "inline" : placement == .expanded ? "expanded" : "none")
                 .accessibilityIdentifier("shellTabAccessoryPlacement")
+        }
+        .overlay(alignment: .bottomTrailing) {
+            Color.clear.frame(width: 1, height: 1).accessibilityElement()
+                .accessibilityLabel("Native accessory environment")
+                .accessibilityValue((diagnosticAppearance == .dark ? "dark" : "light") + "/" + (diagnosticTextSize == .accessibility3 ? "ax3" : "other"))
+                .accessibilityIdentifier("shellAccessoryEnvironment")
         }
         #endif
     }

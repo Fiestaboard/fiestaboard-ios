@@ -187,6 +187,7 @@
 		B6812D033D88859CC339B405 /* RowGutter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15C46416764E0F39777AFD87 /* RowGutter.swift */; };
 		B82369937127BBB2BF333909 /* DisplaysView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB2C6DC9C7DB7F299A22BE33 /* DisplaysView.swift */; };
 		B87FD124C751FC4DA14916E3 /* FiestaBoardError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39295C71C5ED93F6ABEFB0B4 /* FiestaBoardError.swift */; };
+		BAD3482162EB5A5971AA29EF /* ComposeCaptureProbeLifecycle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 066D163CED05F4AD6FBA1B98 /* ComposeCaptureProbeLifecycle.swift */; };
 		BAD482CED31067DA3AED1957 /* FiestaBoardKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5A1D85267DAA6A70C587B2AA /* FiestaBoardKit.framework */; };
 		BCB45C40859662BB3813A5CF /* BoardMessageParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4368DB1EAAF6F199DC1CCAAA /* BoardMessageParser.swift */; };
 		BFC99144DA95364D72D5C87F /* TacoLoader in Resources */ = {isa = PBXBuildFile; fileRef = 10140A34F5ECD86154D7E82A /* TacoLoader */; };
@@ -208,9 +209,11 @@
 		CFB504FE552730FAA589CF16 /* InsertPickerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 325C5B5CD67DA69702635A29 /* InsertPickerSheet.swift */; };
 		D04415239B53F363AD383EA2 /* FiestaBoardAppState.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 2E21A61E3064CBB07099A3E1 /* FiestaBoardAppState.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		D082E1D796CFA35851B0D46C /* CanvasRaster.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0983A5BFD3803290BA5F0FC4 /* CanvasRaster.swift */; };
+		D2F0BA3F52C48A4A90C07BFA /* FixtureSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF3A11B938EB837054388E37 /* FixtureSelection.swift */; };
 		D40E06040470AFB8F828F7EB /* TokenBridgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0933149398C08BD5210E486 /* TokenBridgeTests.swift */; };
 		D43899001FDA9127ACD55778 /* ParityFoundationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3562AE76EFEB035CD14EEEF0 /* ParityFoundationUITests.swift */; };
 		D4E2223DF64508E4FAD15563 /* SessionVaultRuntimeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55F8958AD1F9D24DE397C6D7 /* SessionVaultRuntimeTests.swift */; };
+		D67EDDA6EF3E98BE54E04D4A /* ComposeCaptureProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40F4E5CB21D9D60DBEA73DBA /* ComposeCaptureProbe.swift */; };
 		D7199A803BF30581101F78E7 /* SavedHubsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A281EA3BF233973EA6278BB /* SavedHubsStore.swift */; };
 		D88BBA90133E35DC15BBD1E3 /* FlapPhysics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08CD0DA7C751195DD5C9810F /* FlapPhysics.swift */; };
 		DBD4590104B773E8C67435CB /* DrawModeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1FEF31B8E11F52CFE1BCB7B8 /* DrawModeTests.swift */; };
@@ -386,6 +389,7 @@
 /* Begin PBXFileReference section */
 		0148624436D9E73C46C262C2 /* BoardLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardLayout.swift; sourceTree = "<group>"; };
 		065715F661A235683CCA6A66 /* EditorPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorPresentation.swift; sourceTree = "<group>"; };
+		066D163CED05F4AD6FBA1B98 /* ComposeCaptureProbeLifecycle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeCaptureProbeLifecycle.swift; sourceTree = "<group>"; };
 		07B9190380E5E1F07CB6ED84 /* ComposeEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeEditor.swift; sourceTree = "<group>"; };
 		07D53EC08F3E7E113C2035CD /* TacoMark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TacoMark.swift; sourceTree = "<group>"; };
 		07FC5948A1A2BF18D9D2F81A /* LocalDraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalDraftStore.swift; sourceTree = "<group>"; };
@@ -461,6 +465,7 @@
 		3DD4D3175C0AE6D2D868EC75 /* DeploymentURL.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeploymentURL.swift; sourceTree = "<group>"; };
 		3DDC280AD26E72F5627BC62B /* BoardOffset.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardOffset.swift; sourceTree = "<group>"; };
 		40AB705E1DB7F29BE21009EE /* ConnectionModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionModel.swift; sourceTree = "<group>"; };
+		40F4E5CB21D9D60DBEA73DBA /* ComposeCaptureProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeCaptureProbe.swift; sourceTree = "<group>"; };
 		421E09F47FBEC7115EB00C33 /* OnboardingComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingComponents.swift; sourceTree = "<group>"; };
 		43234759506FED6282380C14 /* ComposePageReceipt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposePageReceipt.swift; sourceTree = "<group>"; };
 		4368DB1EAAF6F199DC1CCAAA /* BoardMessageParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardMessageParser.swift; sourceTree = "<group>"; };
@@ -559,6 +564,7 @@
 		AC609C72CB7F40E61999B7DD /* BoardTablesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BoardTablesTests.swift; sourceTree = "<group>"; };
 		ADD3E20169D98490321CE3F4 /* ServerDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerDiscovery.swift; sourceTree = "<group>"; };
 		AEEB8028464574196027DECB /* RenderHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RenderHarness.swift; sourceTree = "<group>"; };
+		AF3A11B938EB837054388E37 /* FixtureSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureSelection.swift; sourceTree = "<group>"; };
 		AF9F10108415B0B82A438E3E /* CanvasEditorState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasEditorState.swift; sourceTree = "<group>"; };
 		B0041EBC1410F9A22AE2B3E9 /* ComposeAuthoring.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeAuthoring.swift; sourceTree = "<group>"; };
 		B0933149398C08BD5210E486 /* TokenBridgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenBridgeTests.swift; sourceTree = "<group>"; };
@@ -997,6 +1003,7 @@
 				8E6E8776A0D8982BD60EE299 /* FixtureReadiness.swift */,
 				E560F163CC7CD3785EECA9FF /* FixtureRenderRoutes.swift */,
 				1F4F5E3CCE58628FA5AB3938 /* FixtureRouter.swift */,
+				AF3A11B938EB837054388E37 /* FixtureSelection.swift */,
 				6BBD25933907F3239D01D6CC /* FormulaUITests.swift */,
 				EFA6B31F1D4A49A278398FFE /* IntegrationUITests.swift */,
 				E0EBDE35CC98E3503AD48784 /* LaunchUITests.swift */,
@@ -1014,6 +1021,8 @@
 			isa = PBXGroup;
 			children = (
 				B0041EBC1410F9A22AE2B3E9 /* ComposeAuthoring.swift */,
+				40F4E5CB21D9D60DBEA73DBA /* ComposeCaptureProbe.swift */,
+				066D163CED05F4AD6FBA1B98 /* ComposeCaptureProbeLifecycle.swift */,
 				07B9190380E5E1F07CB6ED84 /* ComposeEditor.swift */,
 				A9F84971BFDB2C5375F38521 /* ComposeInsertSheet.swift */,
 				1DA91415D09FF8CA7BD4E4CE /* ComposePreviewPanel.swift */,
@@ -1527,6 +1536,7 @@
 				FA23AFA5B9424ABD9CED10B4 /* FixtureReadiness.swift in Sources */,
 				35AB716CE6F27D9AF8E1BAED /* FixtureRenderRoutes.swift in Sources */,
 				E91F4C81FF4093CC43277CF9 /* FixtureRouter.swift in Sources */,
+				D2F0BA3F52C48A4A90C07BFA /* FixtureSelection.swift in Sources */,
 				82C97A471315A3DDFFC9C514 /* FormulaUITests.swift in Sources */,
 				F18D73674B88F338AC475D79 /* GlassProbe.swift in Sources */,
 				3130713C85FE68151D21B7FA /* IntegrationUITests.swift in Sources */,
@@ -1703,6 +1713,8 @@
 				587319BB9B867A70BF524DC5 /* CollectionEditorView.swift in Sources */,
 				6F7EE5175EA21722C7C5DEBB /* CollectionsView.swift in Sources */,
 				F0D359B5D0323F7DF8E5EC81 /* ComposeAuthoring.swift in Sources */,
+				D67EDDA6EF3E98BE54E04D4A /* ComposeCaptureProbe.swift in Sources */,
+				BAD3482162EB5A5971AA29EF /* ComposeCaptureProbeLifecycle.swift in Sources */,
 				A176B688FB010A6B2FF6D895 /* ComposeEditor.swift in Sources */,
 				26F937B5C99D7DDF5C5F3B34 /* ComposeInsertSheet.swift in Sources */,
 				A1C66CDE24428080BF0EFC2A /* ComposePreviewPanel.swift in Sources */,
