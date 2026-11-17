@@ -61,7 +61,7 @@ import XCTest
 extension HomeContractTests {
     func testHomeControlPolicyIsOperationScopedAndRequiresReadContract() {
         for operation in HomeControlOperation.allCases {
-            XCTAssertTrue(CapabilityPolicy.allowsHomeControl(operation, version: "11.0.0-alpha.2", hasScopedStatus: true))
+            XCTAssertEqual(CapabilityPolicy.allowsHomeControl(operation, version: "11.0.0-alpha.2", hasScopedStatus: true), operation != .resumeDisplay)
             XCTAssertTrue(CapabilityPolicy.allowsHomeControl(operation, version: "11.0.0-alpha.3", hasScopedStatus: true))
             XCTAssertFalse(CapabilityPolicy.allowsHomeControl(operation, version: "11.0.0-alpha.4", hasScopedStatus: true))
             XCTAssertFalse(CapabilityPolicy.allowsHomeControl(operation, version: "11.0.0-alpha.2", hasScopedStatus: false))

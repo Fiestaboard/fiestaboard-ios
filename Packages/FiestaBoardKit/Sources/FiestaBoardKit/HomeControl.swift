@@ -1,12 +1,13 @@
 import Foundation
 
-public enum HomeControlOperation: CaseIterable, Sendable { case cancelOverride, selectPage, timedOverride, undoOverride }
+public enum HomeControlOperation: CaseIterable, Sendable { case cancelOverride, selectPage, timedOverride, undoOverride, resumeDisplay }
 public extension CapabilityPolicy {
     /// Scoped I7 operations audited at e8306aca0 (alpha.2) and immutable
     /// 6be367f4 (alpha.3), whose actual Docker recordings cover these operations. This grants no
     /// editor, scalar-setting, evaluation or page-storage write capability.
     static func allowsHomeControl(_ operation: HomeControlOperation, version: String?, hasScopedStatus: Bool) -> Bool {
-        hasScopedStatus && ["11.0.0-alpha.2", "11.0.0-alpha.3"].contains(version ?? "")
+        if operation == .resumeDisplay { return hasScopedStatus && version == "11.0.0-alpha.3" }
+        return hasScopedStatus && ["11.0.0-alpha.2", "11.0.0-alpha.3"].contains(version ?? "")
     }
 }
 public struct HomeControlReceipt: Decodable, Sendable {

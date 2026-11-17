@@ -57,6 +57,7 @@ public struct HomePresentation: Equatable, Sendable {
         let mode: String
         if detail?.summary.paused == true { mode = "Paused" }
         else if activeOverride { mode = "Override" }
+        else if silence?.active == true { mode = "Silenced" }
         else if showing?.collection == true { mode = "Collection" }
         else if showing?.mode == .schedule || detail?.summary.scheduleEnabled == true { mode = "Schedule Mode" }
         else { mode = "Manual Mode" }
@@ -85,9 +86,10 @@ public struct HomePresentation: Equatable, Sendable {
 }
 
 public enum HomeControlOutcome: Hashable, Sendable {
-    case pageSelected, overrideCanceled, overrideRestored, unconfirmed, readbackRequired, signInRequired, failed
+    case pageSelected, overrideCanceled, overrideRestored, displayResumed, unconfirmed, readbackRequired, signInRequired, failed
     public var message: String {
         switch self {
+        case .displayResumed: "Display resumed"
         case .pageSelected: "Page selected"
         case .overrideCanceled: "Override canceled"
         case .overrideRestored: "Override restored"
@@ -96,5 +98,18 @@ public enum HomeControlOutcome: Hashable, Sendable {
         case .signInRequired: "Sign in again to control this display."
         case .failed: "Couldn't read the display. Refresh and try again."
         }
+    }
+}
+
+/// A single server-reported intent. Never infer a queue or a writable action.
+public struct HomeSilencePresentation: Equatable, Sendable {
+    public let endsAt: Date?
+    public let holdsBlockedSends: Bool
+    public let heldPreview: String?
+    public let queuedAt: Date?
+    public static func make(status: SilenceStatus?, boardID: String) -> Self? {
+        guard let status, status.active, status.boardID == nil || status.boardID == boardID else { return nil }
+        return Self(endsAt: HomeTiming.instant(status.endsAtUTC), holdsBlockedSends: status.holdsBlockedSends,
+            heldPreview: status.held?.preview, queuedAt: HomeTiming.instant(status.held?.queuedAt))
     }
 }
