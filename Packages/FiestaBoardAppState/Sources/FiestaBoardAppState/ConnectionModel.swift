@@ -25,6 +25,7 @@ public enum ConnectionPhase: Sendable, Equatable {
     @Published public private(set) var discoveredServers: [DiscoveredServer] = []
     @Published public private(set) var searching = false
     @Published public private(set) var discoveryMessage: String?
+    @Published public private(set) var hubDiscoveryFlow = HubDiscoveryFlow()
     @Published public private(set) var message: String?
     @Published public private(set) var loginRetryDeadline: LoginRetryDeadline?
     @Published public private(set) var busy = false
@@ -72,10 +73,25 @@ public enum ConnectionPhase: Sendable, Equatable {
     @discardableResult public func start() -> Task<Void, Never> {
         return Task { await reloadCatalog() }
     }
-    public func findServers() {
-        stopDiscovery(); searching = true; discoveryMessage = nil; discoveredServers = []
+    @discardableResult public func findServers() -> Task<Void, Never> {
+        guard snapshot == nil, !busy else { return Task {} }
+        stopDiscovery(); discoveryMessage = nil; discoveredServers = []
+        hubDiscoveryFlow.requestDiscovery()
+        guard hubDiscoveryFlow.mayBrowse else { return Task {} }
+        return browseServers()
+    }
+    @discardableResult public func continueDiscoveryAfterExplanation() -> Task<Void, Never> {
+        guard snapshot == nil, !busy, hubDiscoveryFlow.phase == .localNetworkExplanation else { return Task {} }
+        hubDiscoveryFlow.continueAfterExplanation()
+        return browseServers()
+    }
+    public func enterManualAddress() {
+        stopDiscovery(); hubDiscoveryFlow.enterAddress()
+    }
+    private func browseServers() -> Task<Void, Never> {
+        discoveryTask?.cancel(); searching = true; discoveryMessage = nil; discoveredServers = []
         let token = generation
-        discoveryTask = Task { [weak self, discovery] in
+        let task = Task { [weak self, discovery] in
             do {
                 for try await results in discovery.snapshots() {
                     guard let self, generation == token, !Task.isCancelled else { return }
@@ -83,14 +99,19 @@ public enum ConnectionPhase: Sendable, Equatable {
                 }
                 guard let self, generation == token, !Task.isCancelled else { return }
                 searching = false
-                discoveryMessage = discoveredServers.isEmpty ? "No servers found. Check Wi-Fi or enter an address manually." : nil
+                hubDiscoveryFlow.stopSearching()
+                discoveryMessage = discoveredServers.isEmpty ? "No hubs found. Check Wi-Fi or enter an address manually." : nil
             } catch {
                 guard let self, generation == token, !Task.isCancelled else { return }
-                searching = false; discoveryMessage = "Discovery could not finish. Check Wi-Fi and Local Network settings, or enter an address manually."
+                searching = false; hubDiscoveryFlow.stopSearching()
+                discoveryMessage = "Discovery could not finish. Check Wi-Fi and Local Network settings, or enter an address manually."
             }
         }
+        discoveryTask = task; return task
     }
-    public func stopDiscovery() { discoveryTask?.cancel(); discoveryTask = nil; searching = false }
+    public func stopDiscovery() {
+        discoveryTask?.cancel(); discoveryTask = nil; searching = false; hubDiscoveryFlow.stopSearching()
+    }
     /// Selecting discovery fills the address; local HTTP still requires the user's explicit choice.
     public func useDiscovered(_ server: DiscoveredServer) { address = server.deployment.description; alias = server.displayName; allowLocalHTTP = false }
     @discardableResult public func connectAddress() -> Task<Void, Never> {
