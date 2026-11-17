@@ -116,3 +116,23 @@ extension ComposeBufferStoreTests {
         XCTAssertEqual(restored?.text, "DRAFT 100")
     }
 }
+
+
+extension ComposeBufferStoreTests {
+    func testExplicitSilenceConsentSurvivesFreshOfflineStoreAndLegacyDefaultsToHold() async throws {
+        let directory = directory(); defer { try? FileManager.default.removeItem(at: directory) }
+        let store = ComposeBufferStore(directory: directory), scope = identity()
+        let lease = try await store.open(scope)
+        _ = try await store.save(.init(identity: scope, revision: 1, text: "QUIET", silence: .override), using: lease)
+        let fresh = ComposeBufferStore(directory: directory)
+        let restored = try await fresh.load(scope)
+        XCTAssertEqual(restored?.silence, .override)
+        let url = await store.fileURL(for: scope)
+        var envelope = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
+        var snapshot = envelope["snapshot"] as! [String: Any]
+        snapshot.removeValue(forKey: "silence"); envelope["snapshot"] = snapshot
+        try JSONSerialization.data(withJSONObject: envelope).write(to: url)
+        let legacy = try await fresh.load(scope)
+        XCTAssertEqual(legacy?.silence, .hold, "Old drafts never invent silence override consent")
+    }
+}
