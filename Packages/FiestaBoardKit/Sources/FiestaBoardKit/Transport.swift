@@ -403,6 +403,14 @@ public actor URLSessionTransport: APITransport {
             data.first(where: { ![9, 10, 13, 32].contains($0) }) == 60) {
             throw request.isMutation ? FiestaBoardError.unknownMutationOutcome : .gatewayUnavailable
         }
+        // Only the separately audited one-shot Compose operation owns these
+        // structured error receipts. Its decoder must validate UUID, target,
+        // duration and state before presenting any outcome. Auth remains above.
+        if request.method == .post, request.path.count == 4,
+           request.path[0] == "v1", request.path[1] == "boards", request.path[3] == "compose",
+           [409, 429, 502, 503].contains(http.statusCode) {
+            return APIResponse(status: http.statusCode, data: data)
+        }
         if let error = request.safeError(status: http.statusCode, data: data) { throw error }
         switch http.statusCode {
         case 200..<300: return APIResponse(status: http.statusCode, data: data)
